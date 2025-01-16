@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -36,22 +37,21 @@ func readCreationTime(path string) (string, error) {
 }
 
 func renameFile(path, cTime string) error {
-	// TODO: Parse the base name and extension instead of 'PLACEHOLDER'
-	newPath := strings.ReplaceAll(path, "PLACEHOLDER", cTime)
+	basename, _, _ := strings.Cut(filepath.Base(path), ".")
+	newPath := strings.ReplaceAll(path, basename, cTime)
 	return os.Rename(path, newPath)
 }
 
 func attachRename(cli *clir.Cli) {
 	rename := cli.NewSubCommand("rename", "Rename specified file based on creation date")
-	// PLANNED: `path` should be a positional arg rather than flag
+	// PLANNED: `path` should be a positional arg rather than flag. Consider other CLI libraries
 	var path string
 	rename.StringFlag("path", "Path to file", &path)
 	rename.Action(func() error {
-		fmt.Println("path", path)
 		cTime, err := readCreationTime(path)
 		if err == nil {
-			fmt.Println("cTime:", cTime)
 			renameFile(path, cTime)
+			fmt.Printf("Renamed %s with time %v\n", path, cTime)
 		}
 		return err
 	})
