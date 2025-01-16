@@ -1,0 +1,17 @@
+---
+name: CI
+
+"on":
+  workflow_dispatch: null # For manual runs
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+        with:
+          experimental: true # required for go backend
+
+      - name: Run unit tests
+        run: mise run test

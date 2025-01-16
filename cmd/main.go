@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"github.com/leaanthony/clir"
+
+	"github.com/KyleKing/yak-shears/cmd/subCommand"
 )
 
 // type Flags struct {
@@ -11,7 +13,7 @@ import (
 
 func Main() *clir.Cli {
 	cli := clir.NewCli("yak-shears", "Simple note taking", "v0.0.1")
-	attachRename(cli)
+	subCommand.AttachRename(cli)
 
 	// // >> Base
 	// name := "Anonymous"
