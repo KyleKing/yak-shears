@@ -5,28 +5,17 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
-	"time"
 
+	"github.com/djherbis/times"
 	"github.com/leaanthony/clir"
 )
 
 func readCreationTime(path string) (string, error) {
-	// Utilities adapted from: https://github.com/djherbis/times/blob/d1af0aa12128959e70b9e802c912f302c743c35b/times_darwin.go
-	timespecToTime := func(ts syscall.Timespec) string {
-		return toTimeName(time.Unix(int64(ts.Sec), int64(ts.Nsec)))
-	}
-	getTimespec := func(fi os.FileInfo) string {
-		stat := fi.Sys().(*syscall.Stat_t)
-		return timespecToTime(stat.Ctimespec) // FYI: Mac-only
-	}
-
-	fileInfo, err := os.Stat(path)
+	t, err := times.Stat(path)
 	if err != nil {
 		return "", fmt.Errorf("Error with specified file (`%s`): %w", path, err)
 	}
-
-	return getTimespec(fileInfo), nil
+	return toTimeName(t.BirthTime()), nil
 }
 
 func renameFile(path, cTime string) error {

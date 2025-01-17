@@ -29,4 +29,4 @@ run = "go test -coverprofile=coverage.out -coverpkg=./... ./..."
 sources = ['**/*.go']
 
 [tools]
-"go:github.com/Antonboom/testifylint" = "1.5.2"
+"go:github.com/Antonboom/testifylint" = "latest"
