@@ -67,3 +67,6 @@ Temporary Items
 
 # Generated go
 *_templ.go
+
+# Build binary
+yak-shears
