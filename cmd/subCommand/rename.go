@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -17,16 +16,9 @@ func readCreationTime(path string) (string, error) {
 	timespecToTime := func(ts syscall.Timespec) string {
 		return toTimeName(time.Unix(int64(ts.Sec), int64(ts.Nsec)))
 	}
-	getTimespec := func(fi os.FileInfo) (string, error) {
+	getTimespec := func(fi os.FileInfo) string {
 		stat := fi.Sys().(*syscall.Stat_t)
-		switch platform := runtime.GOOS; {
-		case strings.HasPrefix(platform, "darwin"):
-			return timespecToTime(stat.Ctimespec), nil
-		case strings.HasPrefix(platform, "linux"):
-			return timespecToTime(stat.Ctime), nil
-		default:
-			return "", fmt.Errorf("Unsupported OS: '%s'", platform)
-		}
+		return timespecToTime(stat.Ctimespec) // FYI: Mac-only
 	}
 
 	fileInfo, err := os.Stat(path)
@@ -34,7 +26,7 @@ func readCreationTime(path string) (string, error) {
 		return "", fmt.Errorf("Error with specified file (`%s`): %w", path, err)
 	}
 
-	return getTimespec(fileInfo)
+	return getTimespec(fileInfo), nil
 }
 
 func renameFile(path, cTime string) error {
