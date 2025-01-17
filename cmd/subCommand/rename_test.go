@@ -25,5 +25,4 @@ func TestAttachRename(t *testing.T) {
 	require.NoError(t, err)
 
 	matchCreatedFile(tmpTestSubDir, baseCTime, t)
-
 }

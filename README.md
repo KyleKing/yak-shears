@@ -21,7 +21,7 @@ Just yak shaving to create my personal note taking app. You probably want to use
 
 1. Opinionated. This is my personal app and the design choices are what works for me.
 
-    1. For example, tagging is intentionally limited because selecting the right tag and tagging older notes as the list changes is not an effective use of time.Instead, search and bi-directional linking are prioritized.
+    1. For example, tagging is intentionally limited because selecting the right tag and tagging older notes as the list changes is not an effective use of time. Instead, search and bi-directional linking are prioritized.
 1. Limited features. Having few features is the goal, both for maintainability and focus.
 1. Small composable tools rather than a walled garden/plugin ecosystem.
 

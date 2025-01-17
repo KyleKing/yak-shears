@@ -5,7 +5,7 @@ name: CI
   workflow_dispatch: null # For manual runs
 
 jobs:
-  docs:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
