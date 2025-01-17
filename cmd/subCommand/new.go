@@ -3,6 +3,7 @@ package subCommand
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -28,17 +29,6 @@ func createFile(path string) error {
 	defer file.Close()
 	return err
 }
-func listSubfoldersOld(home string) ([]string, error) {
-	file, err := os.Open(filepath.Join(home, "PLACEHOLDER?"))
-	if err != nil {
-		return []string{}, err
-	}
-	names, err := file.Readdirnames(0)
-	if err != nil {
-		return []string{}, err
-	}
-	return names, err
-}
 
 func listSubfolders(home string) ([]string, error) {
 	folderNames := []string{}
@@ -57,12 +47,18 @@ func listSubfolders(home string) ([]string, error) {
 }
 
 func AttachNew(cli *clir.Cli) {
-	 rename := cli.NewSubCommand("new", "Create a new note and write the path to STDOUT. Example usage: `path=$(go run . new -subfolder test) && nvim \"$path\" || echo $path`")
+	rename := cli.NewSubCommand("new", "Create a new note")
+
 	// PLANNED: `subfolder` should be a positional arg rather than flag. Consider other CLI libraries
 	var subfolder string
 	rename.StringFlag("subfolder", "Subfolder of `home`", &subfolder)
+
 	home := config.GetSyncDir()
 	rename.StringFlag("home", "Home", &home)
+
+	visual := os.Getenv("VISUAL")
+	rename.StringFlag("visual", "Specified application", &visual)
+
 	rename.Action(func() error {
 		folderNames, err := listSubfolders(home)
 		if err != nil {
@@ -74,7 +70,17 @@ func AttachNew(cli *clir.Cli) {
 
 		name := fmt.Sprintf("%s.dj", toTimeName(time.Now()))
 		path := filepath.Join(home, subfolder, name)
+		if err := createFile(path); err != nil {
+			return err
+		}
+		if visual != "" {
+			cmd := exec.Command("open", "-a", visual, path)
+			out, err := cmd.Output()
+			if err != nil {
+				return fmt.Errorf("Failed to run '%v' with error '%s' and output '%v'", cmd, err, out)
+			}
+		}
 		fmt.Println(path)
-		return createFile(path)
+		return nil
 	})
 }

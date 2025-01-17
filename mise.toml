@@ -10,7 +10,7 @@ sources = ['**/*.go']
 
 [tasks.new-test]
 description = "Create a new note in the global test folder"
-run = "path=$(go run . new -subfolder test) && nvim \"$path\" || echo $path"
+run = "go run . new -subfolder=test -visual=TextEdit"
 
 [tasks.install]
 description = "Install latest code system-wide"
