@@ -39,6 +39,7 @@ Just yak shaving to create my personal note taking app. You probably want to use
 - _Subfolder/Context_ ("Yak Pen"): set via environment variable or argument
 
     - `shears new (evergreen|personal|work)?`
+    - What about having all notes in one directory rather than separate and using metadata instead?
 - `shears list -order=(created|modified|count-links|count-merged|count-split) -desc? -status=(?)` defaults to showing the n-most recent notes by modification date
 - No state initially, then manually set to `Atomic` once reviewed/edited. Tasks are just notes with state: `backlog|queue|in-progress|complete|not-planned`
 
@@ -49,6 +50,6 @@ Just yak shaving to create my personal note taking app. You probably want to use
     - For readability, the file header is displayed via virtual text (in NVIM, Web, etc.)
     - Consider `links: []string` to support bi-directional linking between notes (bi-directional part comes from database/tooling rather than in-code). Managed with `shears link <from?> <to?>`
     - `shears split <name>?` and `shears merge <from>? <to>?`. If either argument is missing, an interactive selection follows, which defaults to recent by modified date, then filters based on text input
-
 - Import: `shears import from <source>` supports ingestion of Apple Notes for remote submission. Imported files appear in `/imports` with filename timestamp based on metadata from source or current. `shears import review` allows incremental review of each note for placement in the right context (not sure how to batch this because it is a `change-context`?)
 - What is the story for planning? For example, there are time-sensitive tasks, but they can't start today? Maybe `start-date` and `hard-deadline` (and `soft-deadline`)?
+- What about a concept of a `bookmarklet note` that is managed by a browser extension? This way bookmarked tabs can be archived more easily rather than clutter the bookmarks bar?
