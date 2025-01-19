@@ -13,8 +13,9 @@ import (
 
 func Main() *clir.Cli {
 	cli := clir.NewCli("yak-shears", "Simple note taking", "v0.0.1")
-	subcommands.AttachRename(cli)
+	subcommands.AttachList(cli)
 	subcommands.AttachNew(cli)
+	subcommands.AttachRename(cli)
 
 	// // >> Base
 	// name := "Anonymous"
