@@ -30,10 +30,10 @@ func createFile(path string) error {
 	return err
 }
 
-func listSubfolders(home string) ([]string, error) {
+func listSubfolders(dir string) ([]string, error) {
 	folderNames := []string{}
 
-	files, err := os.ReadDir(home)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return folderNames, err
 	}
@@ -47,34 +47,37 @@ func listSubfolders(home string) ([]string, error) {
 }
 
 func AttachNew(cli *clir.Cli) {
-	rename := cli.NewSubCommand("new", "Create a new note")
+	newCmd := cli.NewSubCommand("new", "Create a new note")
 
-	// PLANNED: `subfolder` should be a positional arg rather than flag. Consider other CLI libraries
-	var subfolder string
-	rename.StringFlag("subfolder", "Subfolder of `home`", &subfolder)
+	// PLANNED: `subfolder` should be a positional arg rather than flag
+	subfolder := config.GetSubfolder()
+	newCmd.StringFlag("subfolder", "Subfolder of Shears Sync directory", &subfolder)
 
-	home := config.GetSyncDir()
-	rename.StringFlag("home", "Home", &home)
+	syncDir := config.GetSyncDir()
+	newCmd.StringFlag("sync-dir", "Sync Directory", &syncDir)
 
 	open := false
-	rename.BoolFlag("o", "If set, opens the file in `$VISUAL`", &open)
+	newCmd.BoolFlag("o", "If set, opens the file in `$VISUAL`", &open)
 
-	rename.Action(func() error {
-		folderNames, err := listSubfolders(home)
+	newCmd.Action(func() error {
+		folderNames, err := listSubfolders(syncDir)
 		if err != nil {
 			return err
 		}
 		if !slices.Contains(folderNames, subfolder) {
-			return fmt.Errorf("'%s' is not one of %v subfolders in '%s'. Create the folder if intended", subfolder, folderNames, home)
+			return fmt.Errorf("'%s' is not one of %v subfolders in '%s'. Create the folder if intended", subfolder, folderNames, syncDir)
 		}
 
 		name := fmt.Sprintf("%s.dj", toTimeName(time.Now()))
-		path := filepath.Join(home, subfolder, name)
+		path := filepath.Join(syncDir, subfolder, name)
 		if err := createFile(path); err != nil {
 			return err
 		}
 		if open {
 			visual := os.Getenv("VISUAL")
+			if visual == "" {
+				return fmt.Errorf("No value is set for Visual")
+			}
 			cmd := exec.Command("open", "-a", visual, path)
 			out, err := cmd.Output()
 			if err != nil {

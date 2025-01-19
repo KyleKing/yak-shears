@@ -25,11 +25,11 @@ func renameFile(path, cTime string) error {
 }
 
 func AttachRename(cli *clir.Cli) {
-	rename := cli.NewSubCommand("rename", "Rename specified file based on creation date")
-	// PLANNED: `path` should be a positional arg rather than flag. Consider other CLI libraries
+	renameCmd := cli.NewSubCommand("rename", "Rename specified file based on creation date")
+	// PLANNED: `path` should be a positional arg rather than flag
 	var path string
-	rename.StringFlag("path", "Path to file", &path)
-	rename.Action(func() error {
+	renameCmd.StringFlag("path", "Path to file", &path)
+	renameCmd.Action(func() error {
 		cTime, err := readCreationTime(path)
 		if err == nil {
 			renameFile(path, cTime)

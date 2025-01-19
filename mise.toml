@@ -10,7 +10,7 @@ sources = ['**/*.go']
 
 [tasks.new-test]
 description = "Create a new note in the global test folder"
-run = "go run . new -subfolder=test -o"
+run = "SHEARS_SUBFOLDER=test go run . new -o"
 
 [tasks.install]
 description = "Install latest code system-wide"
