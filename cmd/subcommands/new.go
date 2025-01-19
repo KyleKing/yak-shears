@@ -56,8 +56,8 @@ func AttachNew(cli *clir.Cli) {
 	home := config.GetSyncDir()
 	rename.StringFlag("home", "Home", &home)
 
-	visual := os.Getenv("VISUAL")
-	rename.StringFlag("visual", "Specified application", &visual)
+	open := false
+	rename.BoolFlag("o", "If set, opens the file in `$VISUAL`", &open)
 
 	rename.Action(func() error {
 		folderNames, err := listSubfolders(home)
@@ -73,7 +73,8 @@ func AttachNew(cli *clir.Cli) {
 		if err := createFile(path); err != nil {
 			return err
 		}
-		if visual != "" {
+		if open {
+			visual := os.Getenv("VISUAL")
 			cmd := exec.Command("open", "-a", visual, path)
 			out, err := cmd.Output()
 			if err != nil {
