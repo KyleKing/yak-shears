@@ -24,17 +24,20 @@ func renameFile(path, cTime string) error {
 	return os.Rename(path, newPath)
 }
 
-func AttachRename(cli *clir.Cli) {
-	renameCmd := cli.NewSubCommand("rename", "Rename specified file based on creation date")
-	// PLANNED: `path` should be a positional arg rather than flag
-	var path string
-	renameCmd.StringFlag("path", "Path to file", &path)
-	renameCmd.Action(func() error {
-		cTime, err := readCreationTime(path)
-		if err == nil {
-			renameFile(path, cTime)
-			fmt.Printf("Renamed %s with time %v\n", path, cTime)
-		}
+type RenameFlags struct {
+	Path string `description:"Path to the file" pos:"1"`
+}
+
+func renameAction(flags *RenameFlags) error {
+	cTime, err := readCreationTime(flags.Path)
+	if err != nil {
 		return err
-	})
+	}
+	renameFile(flags.Path, cTime)
+	fmt.Printf("Renamed %s with time %v\n", flags.Path, cTime)
+	return nil
+}
+
+func AttachRename(cli *clir.Cli) {
+	cli.NewSubCommandFunction("rename", "Rename specified file based on creation date", renameAction)
 }

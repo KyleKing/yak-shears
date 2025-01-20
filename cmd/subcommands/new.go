@@ -49,7 +49,6 @@ func listSubfolders(dir string) ([]string, error) {
 func AttachNew(cli *clir.Cli) {
 	newCmd := cli.NewSubCommand("new", "Create a new note")
 
-	// PLANNED: `subfolder` should be a positional arg rather than flag
 	subfolder := config.GetSubfolder()
 	newCmd.StringFlag("subfolder", "Subfolder of Shears Sync directory", &subfolder)
 
