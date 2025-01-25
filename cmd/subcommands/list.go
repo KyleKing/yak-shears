@@ -15,20 +15,17 @@ import (
 
 // Shared Utilities
 
-func ListSubfolders(dir string) ([]string, error) {
-	folderNames := []string{}
-
+func ListSubfolders(dir string) (folderNames []string, err error) {
 	files, err := os.ReadDir(dir)
 	if err != nil {
-		return folderNames, err
+		return
 	}
-
 	for _, file := range files {
 		if file.IsDir() && !(strings.HasPrefix(file.Name(), ".")) {
 			folderNames = append(folderNames, file.Name())
 		}
 	}
-	return folderNames, nil
+	return
 }
 
 // Sort Helpers
@@ -66,7 +63,7 @@ func summarize(file ExtDirEntry) string {
 func calculateStats(dir string) (stats []ExtDirEntry, err error) {
 	files, err := os.ReadDir(dir)
 	if err != nil {
-		return stats, err
+		return
 	}
 
 	for _, file := range files {
@@ -79,13 +76,13 @@ func calculateStats(dir string) (stats []ExtDirEntry, err error) {
 			stats = append(stats, stat)
 		}
 	}
-	return stats, nil
+	return
 }
 
 func getStats(syncDir string) (stats []ExtDirEntry, err error) {
 	folderNames, err := ListSubfolders(syncDir)
 	if err != nil {
-		return stats, err
+		return
 	}
 	for _, name := range folderNames {
 		subStats, err := calculateStats(filepath.Join(syncDir, name))
@@ -94,7 +91,7 @@ func getStats(syncDir string) (stats []ExtDirEntry, err error) {
 		}
 		stats = append(stats, subStats...)
 	}
-	return stats, nil
+	return
 }
 
 func AttachList(cli *clir.Cli) {
@@ -112,13 +109,13 @@ func AttachList(cli *clir.Cli) {
 	outputFormat := "text"
 	listCmd.StringFlag("output", "Output format", &outputFormat)
 
-	listCmd.Action(func() error {
+	listCmd.Action(func() (err error) {
 		sortMethod := map[string]SortMethod{"name": sortFileName, "mod": sortFileModTime}[sortMethodStr]
 		output := map[string]OutputFormat{"text": summarize}[outputFormat]
 
 		stats, err := getStats(syncDir)
 		if err != nil {
-			return err
+			return
 		}
 		sortMethod(stats)
 		if sortAsc {
@@ -127,6 +124,6 @@ func AttachList(cli *clir.Cli) {
 		for _, s := range stats {
 			fmt.Println(output(s))
 		}
-		return nil
+		return
 	})
 }
