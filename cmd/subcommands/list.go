@@ -2,7 +2,9 @@ package subcommands
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/KyleKing/yak-shears/cmd/config"
@@ -10,8 +12,46 @@ import (
 	"github.com/leaanthony/clir"
 )
 
-func getStats(dir string) ([]string, error) {
-	stats := []string{}
+type ExtDirEntry struct {
+	file fs.DirEntry
+	stat string
+}
+
+// Sort Helpers
+
+func strAsc(left, right string) bool {
+	return left < right
+}
+func strDsc(left, right string) bool {
+	return left > right
+}
+
+func SortFileName(files []ExtDirEntry, fun func(string, string) bool) {
+	sort.Slice(files, func(i, j int) bool {
+		return fun(files[i].file.Name(), files[j].file.Name())
+	})
+}
+
+func SortFileMod(files []ExtDirEntry, fun func(string, string) bool) {
+	sort.Slice(files, func(i, j int) bool {
+		return fun(files[i].stat, files[j].stat)
+	})
+}
+
+type FileSummary struct {
+	mod  string
+	name string
+}
+
+func summarize(file ExtDirEntry) FileSummary {
+	return FileSummary{name: file.file.Name(), mod: file.stat}
+}
+
+// Main Operations
+
+func getStats(dir string) (stats []ExtDirEntry, err error) {
+	// // TIL: you can define variables above ^^
+	// stats := []ExtDirEntry{}
 
 	files, err := os.ReadDir(dir)
 	if err != nil {
@@ -25,8 +65,8 @@ func getStats(dir string) ([]string, error) {
 				return stats, fmt.Errorf("Error with specified file (`%v`): %w", file, err)
 			}
 			t := times.Get(fi)
-			stats = append(stats, fmt.Sprintf("%v", t.ModTime()))
-
+			stat := ExtDirEntry{stat: fmt.Sprintf("%v", t.ModTime()), file: file}
+			stats = append(stats, stat)
 		}
 	}
 	return stats, nil
@@ -38,11 +78,28 @@ func AttachList(cli *clir.Cli) {
 	syncDir := config.GetSyncDir()
 	listCmd.StringFlag("sync-dir", "Sync Directory", &syncDir)
 
+	sortMethodStr := "name"
+	listCmd.StringFlag("sort", "Sort Method", &sortMethodStr)
+
+	sortDirectionStr := "asc"
+	listCmd.StringFlag("direction", "Sort Direction", &sortDirectionStr)
+
+	outputFormat := "table"
+	listCmd.StringFlag("output", "Output format", &outputFormat)
+
+	// TODO: make these dynamic
+	sortMethod := SortFileName
+	sortDirection := strAsc
+	output := summarize
+
 	listCmd.Action(func() error {
 		stats, err := getStats(syncDir)
-		fmt.Println(stats)
 		if err != nil {
 			return err
+		}
+		sortMethod(stats, sortDirection)
+		for _, s := range stats {
+			fmt.Println(output(s))
 		}
 		return nil
 	})
