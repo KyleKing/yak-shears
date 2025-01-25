@@ -58,7 +58,7 @@ type OutputFormat func(ExtDirEntry) string
 
 func summarize(file ExtDirEntry) string {
 	fi := file.fileInfo
-	return fmt.Sprintf("%v %v %v", fi.ModTime(), file.file.Name(), fi.Size())
+	return fmt.Sprintf("%v | %v | %v", fi.ModTime(), file.file.Name(), fi.Size())
 }
 
 // Main Operations
