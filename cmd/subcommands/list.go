@@ -42,13 +42,13 @@ type SortMethod func([]ExtDirEntry)
 
 func sortFileName(files []ExtDirEntry) {
 	sort.Slice(files, func(i, j int) bool {
-		return files[i].file.Name() < files[j].file.Name()
+		return files[i].file.Name() > files[j].file.Name()
 	})
 }
 
 func sortFileModTime(files []ExtDirEntry) {
 	sort.Slice(files, func(i, j int) bool {
-		return files[i].fileInfo.ModTime().Before(files[j].fileInfo.ModTime())
+		return files[i].fileInfo.ModTime().After(files[j].fileInfo.ModTime())
 	})
 }
 
@@ -104,7 +104,7 @@ func AttachList(cli *clir.Cli) {
 	listCmd.StringFlag("sync-dir", "Sync Directory", &syncDir)
 
 	sortMethodStr := "name"
-	listCmd.StringFlag("sort", "Sort Method. One of name or stat", &sortMethodStr)
+	listCmd.StringFlag("sort", "Sort Method. One of name or mod", &sortMethodStr)
 
 	sortAsc := false
 	listCmd.BoolFlag("sort-asc", "If set, sort ascending", &sortAsc)
@@ -112,10 +112,10 @@ func AttachList(cli *clir.Cli) {
 	outputFormat := "text"
 	listCmd.StringFlag("output", "Output format", &outputFormat)
 
-	sortMethod := map[string]SortMethod{"name": sortFileName, "stat": sortFileModTime}[sortMethodStr]
-	output := map[string]OutputFormat{"text": summarize}[outputFormat]
-
 	listCmd.Action(func() error {
+		sortMethod := map[string]SortMethod{"name": sortFileName, "mod": sortFileModTime}[sortMethodStr]
+		output := map[string]OutputFormat{"text": summarize}[outputFormat]
+
 		stats, err := getStats(syncDir)
 		if err != nil {
 			return err
