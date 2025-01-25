@@ -12,47 +12,52 @@ import (
 	"github.com/leaanthony/clir"
 )
 
+// Sort Helpers
+
 type ExtDirEntry struct {
 	file fs.DirEntry
 	stat string
 }
 
-// Sort Helpers
+type SortDirection func(string, string) bool
 
-func strAsc(left, right string) bool {
+func asc(left, right string) bool {
 	return left < right
 }
-func strDsc(left, right string) bool {
+
+func dsc(left, right string) bool {
 	return left > right
 }
 
-func SortFileName(files []ExtDirEntry, fun func(string, string) bool) {
+type SortMethod func([]ExtDirEntry, SortDirection)
+
+func sortFileName(files []ExtDirEntry, fun SortDirection) {
 	sort.Slice(files, func(i, j int) bool {
 		return fun(files[i].file.Name(), files[j].file.Name())
 	})
 }
 
-func SortFileMod(files []ExtDirEntry, fun func(string, string) bool) {
+func sortFileStat(files []ExtDirEntry, fun SortDirection) {
 	sort.Slice(files, func(i, j int) bool {
 		return fun(files[i].stat, files[j].stat)
 	})
 }
 
-type FileSummary struct {
-	mod  string
-	name string
-}
+// Output
 
-func summarize(file ExtDirEntry) FileSummary {
-	return FileSummary{name: file.file.Name(), mod: file.stat}
+type OutputMethod func(ExtDirEntry) (string, error)
+
+func summarize(file ExtDirEntry) (string, error) {
+	fileInfo, err := file.file.Info()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s %s %v %v", file.stat, file.file.Name(), fileInfo.Size(), fileInfo.ModTime()), nil
 }
 
 // Main Operations
 
 func getStats(dir string) (stats []ExtDirEntry, err error) {
-	// // TIL: you can define variables above ^^
-	// stats := []ExtDirEntry{}
-
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return stats, err
@@ -79,18 +84,17 @@ func AttachList(cli *clir.Cli) {
 	listCmd.StringFlag("sync-dir", "Sync Directory", &syncDir)
 
 	sortMethodStr := "name"
-	listCmd.StringFlag("sort", "Sort Method", &sortMethodStr)
+	listCmd.StringFlag("sort", "Sort Method. One of name or stat", &sortMethodStr)
 
 	sortDirectionStr := "asc"
-	listCmd.StringFlag("direction", "Sort Direction", &sortDirectionStr)
+	listCmd.StringFlag("direction", "Sort Direction. One of asc or dsc", &sortDirectionStr)
 
-	outputFormat := "table"
+	outputFormat := "text"
 	listCmd.StringFlag("output", "Output format", &outputFormat)
 
-	// TODO: make these dynamic
-	sortMethod := SortFileName
-	sortDirection := strAsc
-	output := summarize
+	sortMethod := map[string]SortMethod{"name": sortFileName, "stat": sortFileStat}[sortMethodStr]
+	sortDirection := map[string]SortDirection{"asc": asc, "dsc": dsc}[sortDirectionStr]
+	output := map[string]OutputMethod{"text": summarize}[outputFormat]
 
 	listCmd.Action(func() error {
 		stats, err := getStats(syncDir)
@@ -99,7 +103,11 @@ func AttachList(cli *clir.Cli) {
 		}
 		sortMethod(stats, sortDirection)
 		for _, s := range stats {
-			fmt.Println(output(s))
+			out, err := output(s)
+			if err != nil {
+				return err
+			}
+			fmt.Println(out)
 		}
 		return nil
 	})
