@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
@@ -11,6 +12,24 @@ import (
 	"github.com/KyleKing/yak-shears/cmd/config"
 	"github.com/leaanthony/clir"
 )
+
+// Shared Utilities
+
+func ListSubfolders(dir string) ([]string, error) {
+	folderNames := []string{}
+
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return folderNames, err
+	}
+
+	for _, file := range files {
+		if file.IsDir() && !(strings.HasPrefix(file.Name(), ".")) {
+			folderNames = append(folderNames, file.Name())
+		}
+	}
+	return folderNames, nil
+}
 
 // Sort Helpers
 
@@ -44,14 +63,14 @@ func summarize(file ExtDirEntry) string {
 
 // Main Operations
 
-func getStats(dir string) (stats []ExtDirEntry, err error) {
+func calculateStats(dir string) (stats []ExtDirEntry, err error) {
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return stats, err
 	}
 
 	for _, file := range files {
-		if !file.IsDir() && !strings.HasSuffix(file.Name(), ".dj") {
+		if !file.IsDir() && strings.HasSuffix(file.Name(), ".dj") {
 			fi, err := file.Info()
 			if err != nil {
 				return stats, fmt.Errorf("Error with specified file (`%v`): %w", file, err)
@@ -59,6 +78,21 @@ func getStats(dir string) (stats []ExtDirEntry, err error) {
 			stat := ExtDirEntry{file: file, fileInfo: fi}
 			stats = append(stats, stat)
 		}
+	}
+	return stats, nil
+}
+
+func getStats(syncDir string) (stats []ExtDirEntry, err error) {
+	folderNames, err := ListSubfolders(syncDir)
+	if err != nil {
+		return stats, err
+	}
+	for _, name := range folderNames {
+		subStats, err := calculateStats(filepath.Join(syncDir, name))
+		if err != nil {
+			return stats, err
+		}
+		stats = append(stats, subStats...)
 	}
 	return stats, nil
 }

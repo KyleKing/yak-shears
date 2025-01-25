@@ -30,22 +30,6 @@ func createFile(path string) error {
 	return err
 }
 
-func listSubfolders(dir string) ([]string, error) {
-	folderNames := []string{}
-
-	files, err := os.ReadDir(dir)
-	if err != nil {
-		return folderNames, err
-	}
-
-	for _, file := range files {
-		if !(strings.HasPrefix(file.Name(), ".")) {
-			folderNames = append(folderNames, file.Name())
-		}
-	}
-	return folderNames, nil
-}
-
 func AttachNew(cli *clir.Cli) {
 	newCmd := cli.NewSubCommand("new", "Create a new note")
 
@@ -59,7 +43,7 @@ func AttachNew(cli *clir.Cli) {
 	newCmd.BoolFlag("o", "If set, opens the file in `$VISUAL`", &open)
 
 	newCmd.Action(func() error {
-		folderNames, err := listSubfolders(syncDir)
+		folderNames, err := ListSubfolders(syncDir)
 		if err != nil {
 			return err
 		}
