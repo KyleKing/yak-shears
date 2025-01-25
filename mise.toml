@@ -23,10 +23,15 @@ run = "testifylint --enable-all ."
 sources = ['**/*_test.go']
 
 [tasks.test]
+depends = ["format", "lint"]
 description = "Run test"
 # https://stackoverflow.com/a/21725603/3219667
 run = "go test -coverprofile=coverage.out -coverpkg=./... ./..."
 sources = ['**/*.go']
 
+[tasks.update]
+description = "Update dependencies"
+run = ["go get -u ./...", "go mod tidy"]
+
 [tools]
-"go:github.com/Antonboom/testifylint" = "latest"
+"go:github.com/Antonboom/testifylint" = "1.5.2"
