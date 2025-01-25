@@ -4,55 +4,42 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 
 	"github.com/KyleKing/yak-shears/cmd/config"
-	"github.com/djherbis/times"
 	"github.com/leaanthony/clir"
 )
 
 // Sort Helpers
 
 type ExtDirEntry struct {
-	file fs.DirEntry
-	stat string
+	file     fs.DirEntry
+	fileInfo fs.FileInfo
 }
 
-type SortDirection func(string, string) bool
+type SortMethod func([]ExtDirEntry)
 
-func asc(left, right string) bool {
-	return left < right
-}
-
-func dsc(left, right string) bool {
-	return left > right
-}
-
-type SortMethod func([]ExtDirEntry, SortDirection)
-
-func sortFileName(files []ExtDirEntry, fun SortDirection) {
+func sortFileName(files []ExtDirEntry) {
 	sort.Slice(files, func(i, j int) bool {
-		return fun(files[i].file.Name(), files[j].file.Name())
+		return files[i].file.Name() < files[j].file.Name()
 	})
 }
 
-func sortFileStat(files []ExtDirEntry, fun SortDirection) {
+func sortFileModTime(files []ExtDirEntry) {
 	sort.Slice(files, func(i, j int) bool {
-		return fun(files[i].stat, files[j].stat)
+		return files[i].fileInfo.ModTime().Before(files[j].fileInfo.ModTime())
 	})
 }
 
 // Output
 
-type OutputMethod func(ExtDirEntry) (string, error)
+type OutputFormat func(ExtDirEntry) string
 
-func summarize(file ExtDirEntry) (string, error) {
-	fileInfo, err := file.file.Info()
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s %s %v %v", file.stat, file.file.Name(), fileInfo.Size(), fileInfo.ModTime()), nil
+func summarize(file ExtDirEntry) string {
+	fi := file.fileInfo
+	return fmt.Sprintf("%v %v %v", fi.ModTime(), file.file.Name(), fi.Size())
 }
 
 // Main Operations
@@ -69,8 +56,7 @@ func getStats(dir string) (stats []ExtDirEntry, err error) {
 			if err != nil {
 				return stats, fmt.Errorf("Error with specified file (`%v`): %w", file, err)
 			}
-			t := times.Get(fi)
-			stat := ExtDirEntry{stat: fmt.Sprintf("%v", t.ModTime()), file: file}
+			stat := ExtDirEntry{file: file, fileInfo: fi}
 			stats = append(stats, stat)
 		}
 	}
@@ -86,28 +72,26 @@ func AttachList(cli *clir.Cli) {
 	sortMethodStr := "name"
 	listCmd.StringFlag("sort", "Sort Method. One of name or stat", &sortMethodStr)
 
-	sortDirectionStr := "asc"
-	listCmd.StringFlag("direction", "Sort Direction. One of asc or dsc", &sortDirectionStr)
+	sortDesc := false
+	listCmd.BoolFlag("sort-desc", "If set, sort descending", &sortDesc)
 
 	outputFormat := "text"
 	listCmd.StringFlag("output", "Output format", &outputFormat)
 
-	sortMethod := map[string]SortMethod{"name": sortFileName, "stat": sortFileStat}[sortMethodStr]
-	sortDirection := map[string]SortDirection{"asc": asc, "dsc": dsc}[sortDirectionStr]
-	output := map[string]OutputMethod{"text": summarize}[outputFormat]
+	sortMethod := map[string]SortMethod{"name": sortFileName, "stat": sortFileModTime}[sortMethodStr]
+	output := map[string]OutputFormat{"text": summarize}[outputFormat]
 
 	listCmd.Action(func() error {
 		stats, err := getStats(syncDir)
 		if err != nil {
 			return err
 		}
-		sortMethod(stats, sortDirection)
+		sortMethod(stats)
+		if sortDesc {
+			slices.Reverse(stats)
+		}
 		for _, s := range stats {
-			out, err := output(s)
-			if err != nil {
-				return err
-			}
-			fmt.Println(out)
+			fmt.Println(output(s))
 		}
 		return nil
 	})
