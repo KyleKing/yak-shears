@@ -72,8 +72,8 @@ func AttachList(cli *clir.Cli) {
 	sortMethodStr := "name"
 	listCmd.StringFlag("sort", "Sort Method. One of name or stat", &sortMethodStr)
 
-	sortDesc := false
-	listCmd.BoolFlag("sort-desc", "If set, sort descending", &sortDesc)
+	sortAsc := false
+	listCmd.BoolFlag("sort-asc", "If set, sort ascending", &sortAsc)
 
 	outputFormat := "text"
 	listCmd.StringFlag("output", "Output format", &outputFormat)
@@ -87,7 +87,7 @@ func AttachList(cli *clir.Cli) {
 			return err
 		}
 		sortMethod(stats)
-		if sortDesc {
+		if sortAsc {
 			slices.Reverse(stats)
 		}
 		for _, s := range stats {
