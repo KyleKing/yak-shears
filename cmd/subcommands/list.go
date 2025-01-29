@@ -9,8 +9,11 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/KyleKing/yak-shears/cmd/config"
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/leaanthony/clir"
 )
 
@@ -54,15 +57,28 @@ func sortFileModTime(stats []FileStat) {
 // Output
 
 type FileSummary struct {
-	stat FileStat
-	name string
+	stat   FileStat
+	header string
 }
 
-type OutputFormat func(FileSummary) string
+type OutputFormat func([]FileSummary) string
 
-func summarize(summary FileSummary) string {
-	fi := summary.stat.fileInfo
-	return fmt.Sprintf("%v | %v | %v | %v", fi.ModTime(), summary.stat.file.Name(), fi.Size(), summary.name)
+func summarize(summaries []FileSummary) string {
+	mod_time_col := "Modified"
+
+	t := table.NewWriter()
+	t.AppendHeader(table.Row{"File Name", mod_time_col, "Header"})
+	for _, summary := range summaries {
+		fi := summary.stat.fileInfo
+		t.AppendRow([]interface{}{
+			summary.stat.file.Name(), fi.ModTime(), summary.header,
+		})
+	}
+	t.SetColumnConfigs([]table.ColumnConfig{{
+		Name:        mod_time_col,
+		Transformer: text.NewTimeTransformer(time.RFC822, nil), // "02 Jan 06 15:04 MST"
+	}})
+	return t.Render()
 }
 
 func readMeta(path string) (string, error) {
@@ -91,7 +107,7 @@ func enrich(stat FileStat) (fs FileSummary, err error) {
 		return
 	}
 	fs.stat = stat
-	fs.name = header
+	fs.header = header
 	return
 }
 
@@ -158,13 +174,15 @@ func AttachList(cli *clir.Cli) {
 		if sortAsc {
 			slices.Reverse(stats)
 		}
+		summaries := []FileSummary{}
 		for _, s := range stats {
 			summary, err := enrich(s)
 			if err != nil {
 				return err
 			}
-			fmt.Println(output(summary))
+			summaries = append(summaries, summary)
 		}
+		fmt.Println(output(summaries))
 		return
 	})
 }
