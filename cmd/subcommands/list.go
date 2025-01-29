@@ -1,6 +1,7 @@
 package subcommands
 
 import (
+	"bufio"
 	"fmt"
 	"io/fs"
 	"os"
@@ -33,6 +34,7 @@ func ListSubfolders(dir string) (folderNames []string, err error) {
 type FileStat struct {
 	file     fs.DirEntry
 	fileInfo fs.FileInfo
+	path     string
 }
 
 type SortMethod func([]FileStat)
@@ -51,11 +53,46 @@ func sortFileModTime(stats []FileStat) {
 
 // Output
 
-type OutputFormat func(FileStat) string
+type FileSummary struct {
+	stat FileStat
+	name string
+}
 
-func summarize(stat FileStat) string {
-	fi := stat.fileInfo
-	return fmt.Sprintf("%v | %v | %v", fi.ModTime(), stat.file.Name(), fi.Size())
+type OutputFormat func(FileSummary) string
+
+func summarize(summary FileSummary) string {
+	fi := summary.stat.fileInfo
+	return fmt.Sprintf("%v | %v | %v | %v", fi.ModTime(), summary.stat.file.Name(), fi.Size(), summary.name)
+}
+
+func readMeta(path string) (string, error) {
+	// Adapted from: https://www.bytesizego.com/blog/reading-file-line-by-line-golang
+	file, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file %s: %s", path, err)
+	}
+	defer file.Close()
+
+	// Read file line by line
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		return line, nil
+	}
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("error reading file %s: %s", path, err)
+	}
+	return "", nil
+}
+
+func enrich(stat FileStat) (fs FileSummary, err error) {
+	header, err := readMeta(stat.path)
+	if err != nil {
+		return
+	}
+	fs.stat = stat
+	fs.name = header
+	return
 }
 
 // Main Operations
@@ -72,7 +109,7 @@ func calculateStats(dir string) (stats []FileStat, err error) {
 			if err != nil {
 				return stats, fmt.Errorf("Error with specified file (`%v`): %w", file, err)
 			}
-			stat := FileStat{file: file, fileInfo: fi}
+			stat := FileStat{file: file, fileInfo: fi, path: filepath.Join(dir, file.Name())}
 			stats = append(stats, stat)
 		}
 	}
@@ -122,7 +159,11 @@ func AttachList(cli *clir.Cli) {
 			slices.Reverse(stats)
 		}
 		for _, s := range stats {
-			fmt.Println(output(s))
+			summary, err := enrich(s)
+			if err != nil {
+				return err
+			}
+			fmt.Println(output(summary))
 		}
 		return
 	})
