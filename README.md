@@ -1,43 +1,62 @@
 # Yak Shears
 
-Just yak shaving to create my personal note taking app. You probably want to use one of these instead:
+Just yak shaving to create my personal note taking app, but you probably want to use one of these primarily open-source applications instead:
 
 | Service | Notes |
 | --- | --- |
-| [Obsidian](https://obsidian.md) | |
-| [Joplin](https://joplinapp.org) | Open source note-taking app |
+| [Archivy](https://github.com/archivy/archivy) | "self-hostable knowledge repository" |
+| [Awesome List of Note Taking Software](https://github.com/tehtbl/awesome-note-taking) | and more! |
+| [Bear](https://bear.app) | "Markdown notes you’ll love" |
+| [bookmarker](https://github.com/dellsystem/bookmarker) | "personal project to help me retain information from books" |
+| [Buku](https://github.com/jarun/buku) | "Personal mini-web in text" |
+| [DayOne](https://dayoneapp.com) | "Beautiful daily journaling mobile and web app" |
+| [Docmost](https://github.com/docmost/docmost) | "collaborative wiki and documentation software" |
 | [Evernote](https://evernote.com) | |
-| [Notion](https://www.notion.so) | |
-| [Notional Velocity](https://notational.net) ([Source](https://github.com/scrod/nv))| Introduced ideas that are now more commonplace. Such as "searching for notes is not a separate action; rather, it is the primary interface" |
-| [nvpy](https://github.com/cpbotha/nvpy) | |
-| [DayOne](https://dayoneapp.com) | Beautiful daily journaling mobile and web app |
-| [Hypothesis](https://web.hypothes.is) | Collaboratively annotate the web |
-| [Monica](https://github.com/monicahq/monica?tab=readme-ov-file#principles) | "Personal relationship CRM" |
-| [SimpleNotes](https://simplenote.com) | |
+| [flatnotes](https://github.com/dullage/flatnotes) | "database-less note-taking web app that utilises a flat folder of markdown files" |
+| [HedgeDoc](https://github.com/hedgedoc/hedgedoc) | "web-based, self-hosted, collaborative markdown editor" |
+| [Hypothesis](https://web.hypothes.is) | "Collaboratively annotate the web" |
+| [Joplin](https://joplinapp.org) | "Open source note-taking app" |
+| [Jot](https://github.com/shashwatah/jot) | "Rapid note management for the terminal" |
 | [Memos](https://www.usememos.com) | Twitter-like private note taking app |
+| [Monica](https://github.com/monicahq/monica?tab=readme-ov-file#principles) | "Personal relationship CRM" |
+| [nb](https://github.com/xwmx/nb) | "note‑taking, bookmarking, and archiving with linking, tagging, filtering .. + more" |
+| [Notion](https://www.notion.so) | |
+| [Notional Velocity](https://notational.net) ([Source](https://github.com/scrod/nv)) | Introduced ideas that are now more commonplace. Such as "searching for notes is not a separate action; rather, it is the primary interface" |
+| [nvpy](https://github.com/cpbotha/nvpy) | |
+| [Obsidian](https://obsidian.md) | |
+| [Pinboard](https://pinboard.in/about/) | "One of the oldest independently run businesses on the web" with a text-first UI |
+| [Rnote](https://github.com/flxzt/rnote) | "Sketch and take handwritten notes" |
+| [Silicon Notes](https://github.com/cu/silicon) | "A web-based personal knowledge base with few frills" |
+| [SimpleNote by Automatic](https://simplenote.com) | "All your notes, synced on all your devices" |
+| [Siyuan](https://github.com/siyuan-note/siyuan) | "fine-grained block-level reference and Markdown WYSIWYG" |
+| [Standard Notes](https://github.com/standardnotes/server) | "secure note-taking app" |
+| [Textpod](https://github.com/freetonik/textpod) | "inspired by 'One Big Text File' idea" |
+| [Trillium Next Notes](https://github.com/TriliumNext/Notes/) | "hierarchical note taking application with focus on building large personal knowledge bases" |
+| [Untitled](https://github.com/12joan/untitled-note) | "An open-source app for taking notes that feels awesome to use" |
+| [Zettlr](https://github.com/Zettlr/Zettlr) | "One-Stop Publication Workbench" |
 | Open Source hosted on [Pika Pods](https://www.pikapods.com/apps#notes) | Includes Memos, [linkding](https://github.com/sissbruecker/linkding), etc. |
 
 ## Goals
-
 
 ![./assets/shears.webp](./assets/shears.webp)
 
 1. Opinionated. This is my personal app and the design choices are what works for me.
 
-    1. For example, tagging is intentionally limited because selecting the right tag and tagging older notes as the list changes is not an effective use of time. Instead, search and bi-directional linking are prioritized.
-1. Limited features. Having few features is the goal, both for maintainability and focus.
-1. Small composable tools rather than a walled garden/plugin ecosystem.
+    1. For example, tagging is intentionally limited in favor of search and bi-directional linking as [better explained here](https://blog.bityard.net/articles/2022/December/the-design-of-silicon-notes-with-cartoons).
+1. Limited features. Having few features is the goal, for maintainability and usability.
 
 ## Features
 
-- Content is stored in files using the `djot` markup language rather than some flavor of markdown
+- There is a CLI and API for local search, creation, and general management
+- Content is stored in files using the `djot` markup language
 
     - The files can be edited in any editor (nvim, emacs, VSCode, NotePad++, etc.)
-    - They can be synced using SyncThing, DropBox, iCloud, rsync, etc. or other service of choice
-    - Notes can be captured on the go and synced later using Notes.app ([pulled with `notes`](https://github.com/RhetTbull/macnotesapp)), SimpleNote ([via the Simperium Data Sync Service](https://simperium.com/docs/websocket)), etc.
-- Additional magic will be possible with `duckdb` and composable tooling
+    - They can be synced using [Syncthing](https://syncthing.net/), [Dropbox](https://www.dropbox.com), iCloud, [rsync](https://jenkov.com/tutorials/rsync/detecting-file-differences.html), [hyperdrive](https://github.com/holepunchto/hyperdrive), [iroh](https://github.com/n0-computer/iroh), [any-sync](https://github.com/anyproto/tech-docs), etc.
+- Each note is named by the creation timestamp to be unique, predictable, and easier to permalink
 
-## Implementation Prioritization
+### Details
+
+{% In Progress %}
 
 - _Subfolder/Context_ ("Yak Pen"): set via environment variable or argument
 
