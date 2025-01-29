@@ -24,10 +24,10 @@ func fromTimeName(name string) (time.Time, error) {
 	return time.Parse(time.RFC3339, strings.Replace(name, "_", ":", 2))
 }
 
-func createFile(path string) error {
+func createFile(path string) (err error) {
 	file, err := os.Create(path)
 	defer file.Close()
-	return err
+	return
 }
 
 func AttachNew(cli *clir.Cli) {

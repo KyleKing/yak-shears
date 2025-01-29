@@ -30,37 +30,37 @@ func ListSubfolders(dir string) (folderNames []string, err error) {
 
 // Sort Helpers
 
-type ExtDirEntry struct {
+type FileStat struct {
 	file     fs.DirEntry
 	fileInfo fs.FileInfo
 }
 
-type SortMethod func([]ExtDirEntry)
+type SortMethod func([]FileStat)
 
-func sortFileName(files []ExtDirEntry) {
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].file.Name() > files[j].file.Name()
+func sortFileName(stats []FileStat) {
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].file.Name() > stats[j].file.Name()
 	})
 }
 
-func sortFileModTime(files []ExtDirEntry) {
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].fileInfo.ModTime().After(files[j].fileInfo.ModTime())
+func sortFileModTime(stats []FileStat) {
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].fileInfo.ModTime().After(stats[j].fileInfo.ModTime())
 	})
 }
 
 // Output
 
-type OutputFormat func(ExtDirEntry) string
+type OutputFormat func(FileStat) string
 
-func summarize(file ExtDirEntry) string {
-	fi := file.fileInfo
-	return fmt.Sprintf("%v | %v | %v", fi.ModTime(), file.file.Name(), fi.Size())
+func summarize(stat FileStat) string {
+	fi := stat.fileInfo
+	return fmt.Sprintf("%v | %v | %v", fi.ModTime(), stat.file.Name(), fi.Size())
 }
 
 // Main Operations
 
-func calculateStats(dir string) (stats []ExtDirEntry, err error) {
+func calculateStats(dir string) (stats []FileStat, err error) {
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return
@@ -72,14 +72,14 @@ func calculateStats(dir string) (stats []ExtDirEntry, err error) {
 			if err != nil {
 				return stats, fmt.Errorf("Error with specified file (`%v`): %w", file, err)
 			}
-			stat := ExtDirEntry{file: file, fileInfo: fi}
+			stat := FileStat{file: file, fileInfo: fi}
 			stats = append(stats, stat)
 		}
 	}
 	return
 }
 
-func getStats(syncDir string) (stats []ExtDirEntry, err error) {
+func getStats(syncDir string) (stats []FileStat, err error) {
 	folderNames, err := ListSubfolders(syncDir)
 	if err != nil {
 		return

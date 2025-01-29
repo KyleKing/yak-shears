@@ -28,14 +28,14 @@ type RenameFlags struct {
 	Path string `description:"Path to the file" pos:"1"`
 }
 
-func renameAction(flags *RenameFlags) error {
+func renameAction(flags *RenameFlags) (err error) {
 	cTime, err := readCreationTime(flags.Path)
 	if err != nil {
-		return err
+		return
 	}
 	renameFile(flags.Path, cTime)
 	fmt.Printf("Renamed %s with time %v\n", flags.Path, cTime)
-	return nil
+	return
 }
 
 func AttachRename(cli *clir.Cli) {

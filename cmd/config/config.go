@@ -15,7 +15,7 @@ func GetSyncDir() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return filepath.Join(home, "Sync")
+	return filepath.Join(home, "Sync", "yak-shears")
 }
 
 func GetSubfolder() string {
