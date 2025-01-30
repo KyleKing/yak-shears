@@ -15,13 +15,13 @@ func TestAttachRename(t *testing.T) {
 	tmpTestSubDir := resetTmpTestDir(t, "rename")
 
 	baseCTime, _, _ := strings.Cut(toTimeName(time.Now()), "T")
-	pathSrc := filepath.Join(tmpTestSubDir, "test note.ext")
+	pathSrc := filepath.Join(tmpTestSubDir, "test-note.ext")
 	err = createFile(pathSrc)
 	require.NoError(t, err)
 
 	cli := initCli()
 	AttachRename(cli)
-	err = cli.Run("rename", "-path", pathSrc)
+	err = cli.Run("rename", pathSrc)
 	require.NoError(t, err)
 
 	matchCreatedFile(tmpTestSubDir, baseCTime, t)

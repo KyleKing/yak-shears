@@ -12,5 +12,6 @@ func Main() (cli *clir.Cli) {
 	subcommands.AttachList(cli)
 	subcommands.AttachNew(cli)
 	subcommands.AttachRename(cli)
+	subcommands.AttachSearch(cli)
 	return
 }
