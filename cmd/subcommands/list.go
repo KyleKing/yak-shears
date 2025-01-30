@@ -35,9 +35,10 @@ func ListSubfolders(dir string) (folderNames []string, err error) {
 // Sort Helpers
 
 type FileStat struct {
-	file     fs.DirEntry
-	fileInfo fs.FileInfo
-	path     string
+	file      fs.DirEntry
+	fileInfo  fs.FileInfo
+	subfolder string
+	path      string
 }
 
 type SortMethod func([]FileStat)
@@ -67,11 +68,11 @@ func summarize(summaries []FileSummary) string {
 	mod_time_col := "Modified"
 
 	t := table.NewWriter()
-	t.AppendHeader(table.Row{"File Name", mod_time_col, "Header"})
+	t.AppendHeader(table.Row{"Subfolder", "File Name", mod_time_col, "Header"})
 	for _, summary := range summaries {
-		fi := summary.stat.fileInfo
+		stat := summary.stat
 		t.AppendRow([]interface{}{
-			summary.stat.file.Name(), fi.ModTime(), summary.header,
+			stat.subfolder, stat.file.Name(), stat.fileInfo.ModTime(), summary.header,
 		})
 	}
 	t.SetColumnConfigs([]table.ColumnConfig{{
@@ -113,7 +114,8 @@ func enrich(stat FileStat) (fs FileSummary, err error) {
 
 // Main Operations
 
-func calculateStats(dir string) (stats []FileStat, err error) {
+func calculateStats(syncDir, subfolder string) (stats []FileStat, err error) {
+	dir := filepath.Join(syncDir, subfolder)
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return
@@ -125,7 +127,7 @@ func calculateStats(dir string) (stats []FileStat, err error) {
 			if err != nil {
 				return stats, fmt.Errorf("Error with specified file (`%v`): %w", file, err)
 			}
-			stat := FileStat{file: file, fileInfo: fi, path: filepath.Join(dir, file.Name())}
+			stat := FileStat{file: file, fileInfo: fi, subfolder: subfolder, path: filepath.Join(dir, file.Name())}
 			stats = append(stats, stat)
 		}
 	}
@@ -138,7 +140,7 @@ func getStats(syncDir string) (stats []FileStat, err error) {
 		return
 	}
 	for _, name := range folderNames {
-		subStats, err := calculateStats(filepath.Join(syncDir, name))
+		subStats, err := calculateStats(syncDir, name)
 		if err != nil {
 			return stats, err
 		}
