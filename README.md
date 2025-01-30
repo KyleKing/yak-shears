@@ -1,33 +1,33 @@
 # Yak Shears
 
-Just yak shaving to create my personal note taking app, but you probably want to use one of these primarily open-source applications instead:
+My personal note taking app, but you probably want to use one of these primarily open-source applications instead:
 
 | Service | Notes |
 | --- | --- |
 | [Archivy](https://github.com/archivy/archivy) | "self-hostable knowledge repository" |
 | [Awesome List of Note Taking Software](https://github.com/tehtbl/awesome-note-taking) | and more! |
-| [Bear](https://bear.app) | "Markdown notes you’ll love" |
+| [Bear](https://bear.app) | "Markdown notes you’ll love" (Closed source) |
 | [bookmarker](https://github.com/dellsystem/bookmarker) | "personal project to help me retain information from books" |
 | [Buku](https://github.com/jarun/buku) | "Personal mini-web in text" |
-| [DayOne](https://dayoneapp.com) | "Beautiful daily journaling mobile and web app" |
+| [DayOne](https://dayoneapp.com) | "Beautiful daily journaling mobile and web app" (Closed source) |
 | [Docmost](https://github.com/docmost/docmost) | "collaborative wiki and documentation software" |
-| [Evernote](https://evernote.com) | |
-| [flatnotes](https://github.com/dullage/flatnotes) | "database-less note-taking web app that utilises a flat folder of markdown files" |
-| [HedgeDoc](https://github.com/hedgedoc/hedgedoc) | "web-based, self-hosted, collaborative markdown editor" |
-| [Hypothesis](https://web.hypothes.is) | "Collaboratively annotate the web" |
-| [Joplin](https://joplinapp.org) | "Open source note-taking app" |
+| [Evernote](https://evernote.com) | "Remember everything and tackle any project with your notes, tasks, and schedule all in one place" (Closed source) |
+| [flatnotes](https://github.com/dullage/flatnotes) | "Database-less note-taking web app that utilises a flat folder of markdown files" |
+| [HedgeDoc](https://github.com/hedgedoc/hedgedoc) | "Web-based, self-hosted, collaborative markdown editor" |
+| [Hypothesis](https://web.hypothes.is) | "Collaboratively annotate the web" (Closed source) |
+| [Joplin](https://github.com/laurent22/joplin) | "Privacy-focused note taking app with sync capabilities for Windows, macOS, Linux, Android and iOS" |
 | [Jot](https://github.com/shashwatah/jot) | "Rapid note management for the terminal" |
-| [Memos](https://www.usememos.com) | Twitter-like private note taking app |
+| [Memos](https://github.com/usememos/memos) | "The pain-less way to create your meaningful notes. Your Notes, Your Way" |
 | [Monica](https://github.com/monicahq/monica?tab=readme-ov-file#principles) | "Personal relationship CRM" |
 | [nb](https://github.com/xwmx/nb) | "note‑taking, bookmarking, and archiving with linking, tagging, filtering .. + more" |
-| [Notion](https://www.notion.so) | |
+| [Notion](https://www.notion.so) | "Write. Plan. Collaborate. With a little help from AI" (Closed source) |
 | [Notional Velocity](https://notational.net) ([Source](https://github.com/scrod/nv)) | Introduced ideas that are now more commonplace. Such as "searching for notes is not a separate action; rather, it is the primary interface" |
-| [nvpy](https://github.com/cpbotha/nvpy) | |
-| [Obsidian](https://obsidian.md) | |
+| [nvpy](https://github.com/cpbotha/nvpy) | "Simplenote syncing note-taking application, inspired by Notational Velocity and ResophNotes, but uglier and cross-platformerer" |
+| [Obsidian](https://obsidian.md) | "With thousands of plugins and themes, you can shape Obsidian to fit your way of thinking" (Closed source) |
 | [Pinboard](https://pinboard.in/about/) | "One of the oldest independently run businesses on the web" with a text-first UI |
 | [Rnote](https://github.com/flxzt/rnote) | "Sketch and take handwritten notes" |
 | [Silicon Notes](https://github.com/cu/silicon) | "A web-based personal knowledge base with few frills" |
-| [SimpleNote by Automatic](https://simplenote.com) | "All your notes, synced on all your devices" |
+| [SimpleNote by Automatic](https://simplenote.com) | "All your notes, synced on all your devices" (Closed source) |
 | [Siyuan](https://github.com/siyuan-note/siyuan) | "fine-grained block-level reference and Markdown WYSIWYG" |
 | [Standard Notes](https://github.com/standardnotes/server) | "secure note-taking app" |
 | [Textpod](https://github.com/freetonik/textpod) | "inspired by 'One Big Text File' idea" |
