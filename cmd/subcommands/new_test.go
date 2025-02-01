@@ -29,7 +29,7 @@ func TestAttachNew(t *testing.T) {
 
 	cli := initCli()
 	AttachNew(cli)
-	err = cli.Run("new", "-subfolder", "new", "-sync-dir", filepath.Dir(tmpTestSubDir))
+	err = cli.Run("new", "-sub-dir", "new", "-sync-dir", filepath.Dir(tmpTestSubDir))
 	require.NoError(t, err)
 
 	matchCreatedFile(tmpTestSubDir, baseCTime, t)

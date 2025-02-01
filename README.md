@@ -64,7 +64,7 @@ My personal note taking app, but you probably want to use one of these primarily
 
 {% In Progress %}
 
-- _Subfolder/Context_ ("Yak Pen"): set via environment variable or argument
+- _subDir/Context_ ("Yak Pen"): set via environment variable or argument
 
     - `shears new (evergreen|personal|work)?`
     - What about having all notes in one directory rather than separate and using metadata instead?

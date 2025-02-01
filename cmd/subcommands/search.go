@@ -19,7 +19,7 @@ import (
 var SQL_INIT string
 
 type Note struct {
-	subfolder   string
+	subDir      string
 	filename    string
 	content     string
 	modified_at time.Time
@@ -32,12 +32,12 @@ func storeNotes(db *sql.DB, notes []Note) {
 	defer stmt.Close()
 
 	for _, note := range notes {
-		check(stmt.Exec(note.subfolder, note.filename, note.content, note.modified_at))
+		check(stmt.Exec(note.subDir, note.filename, note.content, note.modified_at))
 	}
 }
 
-func ingestSubdir(db *sql.DB, syncDir, subfolder string) (err error) {
-	dir := filepath.Join(syncDir, subfolder)
+func ingestSubdir(db *sql.DB, syncDir, subDir string) (err error) {
+	dir := filepath.Join(syncDir, subDir)
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return
@@ -54,7 +54,7 @@ func ingestSubdir(db *sql.DB, syncDir, subfolder string) (err error) {
 			if err != nil {
 				return err
 			}
-			note := Note{subfolder: subfolder, filename: file.Name(), content: string(content), modified_at: fi.ModTime()}
+			note := Note{subDir: subDir, filename: file.Name(), content: string(content), modified_at: fi.ModTime()}
 			notes = append(notes, note)
 		}
 	}
@@ -65,12 +65,12 @@ func ingestSubdir(db *sql.DB, syncDir, subfolder string) (err error) {
 
 // Ingest ALL Notes
 func ingestAllNotes(db *sql.DB, syncDir string) (err error) {
-	folderNames, err := ListSubfolders(syncDir)
+	folderNames, err := ListsubDirs(syncDir)
 	if err != nil {
 		return
 	}
-	for _, subfolder := range folderNames {
-		err := ingestSubdir(db, syncDir, subfolder)
+	for _, subDir := range folderNames {
+		err := ingestSubdir(db, syncDir, subDir)
 		if err != nil {
 			return err
 		}
@@ -100,11 +100,11 @@ func search(db *sql.DB) (err error) {
 	log.Println("\n\n==============\n ")
 	for rows.Next() {
 		n := new(Note)
-		if err := rows.Scan(&n.subfolder, &n.filename, &n.content, &n.modified_at); err != nil {
+		if err := rows.Scan(&n.subDir, &n.filename, &n.content, &n.modified_at); err != nil {
 			return err
 		}
 		log.Println("\n\n--------------\n ")
-		log.Printf("%s | %s | %v", n.subfolder, n.filename, n.modified_at.Format(time.RFC3339))
+		log.Printf("%s | %s | %v", n.subDir, n.filename, n.modified_at.Format(time.RFC3339))
 		log.Println(n.content)
 	}
 	log.Println("\n\n==============\n ")

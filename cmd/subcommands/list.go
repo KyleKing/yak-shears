@@ -19,7 +19,7 @@ import (
 
 // Shared Utilities
 
-func ListSubfolders(dir string) (folderNames []string, err error) {
+func ListsubDirs(dir string) (folderNames []string, err error) {
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return
@@ -35,10 +35,10 @@ func ListSubfolders(dir string) (folderNames []string, err error) {
 // Sort Helpers
 
 type FileStat struct {
-	file      fs.DirEntry
-	fileInfo  fs.FileInfo
-	subfolder string
-	path      string
+	file     fs.DirEntry
+	fileInfo fs.FileInfo
+	subDir   string
+	path     string
 }
 
 type SortMethod func([]FileStat)
@@ -68,11 +68,11 @@ func summarize(summaries []FileSummary) string {
 	mod_time_col := "Modified"
 
 	t := table.NewWriter()
-	t.AppendHeader(table.Row{"Subfolder", "File Name", mod_time_col, "Header"})
+	t.AppendHeader(table.Row{"subDir", "File Name", mod_time_col, "Header"})
 	for _, summary := range summaries {
 		stat := summary.stat
 		t.AppendRow([]interface{}{
-			stat.subfolder, stat.file.Name(), stat.fileInfo.ModTime(), summary.header,
+			stat.subDir, stat.file.Name(), stat.fileInfo.ModTime(), summary.header,
 		})
 	}
 	t.SetColumnConfigs([]table.ColumnConfig{{
@@ -114,8 +114,8 @@ func enrich(stat FileStat) (fs FileSummary, err error) {
 
 // Main Operations
 
-func calculateStats(syncDir, subfolder string) (stats []FileStat, err error) {
-	dir := filepath.Join(syncDir, subfolder)
+func calculateStats(syncDir, subDir string) (stats []FileStat, err error) {
+	dir := filepath.Join(syncDir, subDir)
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return
@@ -127,7 +127,7 @@ func calculateStats(syncDir, subfolder string) (stats []FileStat, err error) {
 			if err != nil {
 				return stats, fmt.Errorf("Error with specified file (`%v`): %w", file, err)
 			}
-			stat := FileStat{file: file, fileInfo: fi, subfolder: subfolder, path: filepath.Join(dir, file.Name())}
+			stat := FileStat{file: file, fileInfo: fi, subDir: subDir, path: filepath.Join(dir, file.Name())}
 			stats = append(stats, stat)
 		}
 	}
@@ -135,12 +135,12 @@ func calculateStats(syncDir, subfolder string) (stats []FileStat, err error) {
 }
 
 func getStats(syncDir string) (stats []FileStat, err error) {
-	folderNames, err := ListSubfolders(syncDir)
+	folderNames, err := ListsubDirs(syncDir)
 	if err != nil {
 		return
 	}
-	for _, subfolder := range folderNames {
-		subStats, err := calculateStats(syncDir, subfolder)
+	for _, subDir := range folderNames {
+		subStats, err := calculateStats(syncDir, subDir)
 		if err != nil {
 			return stats, err
 		}

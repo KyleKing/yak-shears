@@ -33,26 +33,26 @@ func createFile(path string) (err error) {
 func AttachNew(cli *clir.Cli) {
 	newCmd := cli.NewSubCommand("new", "Create a new note")
 
-	subfolder := config.GetSubfolder()
-	newCmd.StringFlag("subfolder", "Subfolder of Shears Sync directory", &subfolder)
-
 	syncDir := config.GetSyncDir()
 	newCmd.StringFlag("sync-dir", "Sync Directory", &syncDir)
+
+	subDir := config.GetSubDir()
+	newCmd.StringFlag("sub-dir", "SubDir of Shears Sync directory", &subDir)
 
 	open := false
 	newCmd.BoolFlag("o", "If set, opens the file in `$VISUAL`", &open)
 
 	newCmd.Action(func() error {
-		folderNames, err := ListSubfolders(syncDir)
+		folderNames, err := ListsubDirs(syncDir)
 		if err != nil {
 			return err
 		}
-		if !slices.Contains(folderNames, subfolder) {
-			return fmt.Errorf("'%s' is not one of %v subfolders in '%s'. Create the folder if intended", subfolder, folderNames, syncDir)
+		if !slices.Contains(folderNames, subDir) {
+			return fmt.Errorf("'%s' is not one of %v subDirs in '%s'. Create the folder if intended", subDir, folderNames, syncDir)
 		}
 
 		name := fmt.Sprintf("%s.dj", toTimeName(time.Now()))
-		path := filepath.Join(syncDir, subfolder, name)
+		path := filepath.Join(syncDir, subDir, name)
 		if err := createFile(path); err != nil {
 			return err
 		}

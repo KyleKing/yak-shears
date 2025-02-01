@@ -1,6 +1,6 @@
 -- Docs: https://duckdb.org/docs/sql/statements/overview
 CREATE TABLE IF NOT EXISTS note(
-    subfolder VARCHAR NOT NULL,
+    subDir VARCHAR NOT NULL,
     filename VARCHAR NOT NULL UNIQUE,
     content VARCHAR NOT NULL,
     modified_at DATE NOT NULL

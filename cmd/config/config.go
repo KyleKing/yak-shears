@@ -17,6 +17,6 @@ func GetSyncDir() string {
 	return filepath.Join(home, "Sync", "yak-shears")
 }
 
-func GetSubfolder() string {
-	return os.Getenv("SHEARS_SUBFOLDER")
+func GetSubDir() string {
+	return os.Getenv("SHEARS_SUBDIR")
 }
