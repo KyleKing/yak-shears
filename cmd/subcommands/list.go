@@ -139,8 +139,8 @@ func getStats(syncDir string) (stats []FileStat, err error) {
 	if err != nil {
 		return
 	}
-	for _, name := range folderNames {
-		subStats, err := calculateStats(syncDir, name)
+	for _, subfolder := range folderNames {
+		subStats, err := calculateStats(syncDir, subfolder)
 		if err != nil {
 			return stats, err
 		}

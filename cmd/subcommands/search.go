@@ -1,12 +1,13 @@
 package subcommands
 
 import (
-	"context"
 	"database/sql"
 	_ "embed" // Required for compiler
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/KyleKing/yak-shears/cmd/config"
@@ -14,145 +15,120 @@ import (
 	_ "github.com/marcboeker/go-duckdb"
 )
 
-var db *sql.DB
-
 //go:embed sql/init.sql
 var SQL_INIT string
 
-type user struct {
-	username string
-	age      int
-	height   float32
-	awesome  bool
-	bday     time.Time
+type Note struct {
+	subfolder   string
+	filename    string
+	content     string
+	modified_at time.Time
 }
 
-func simpleMain(dir string) {
-	var err error
-	db, err = sql.Open("duckdb", filepath.Join(dir, "db.duckdb?access_mode=READ_WRITE"))
+// Upsert modified notes
+func storeNotes(db *sql.DB, notes []Note) {
+	stmt, err := db.Prepare("INSERT INTO note VALUES(?, ?, ?, ?)")
 	check(err)
-	defer db.Close()
+	defer stmt.Close()
 
-	check(db.Ping())
-
-	setting := db.QueryRow("SELECT current_setting('access_mode')")
-	var accessMode string
-	check(setting.Scan(&accessMode))
-	log.Printf("DB opened with access mode %s", accessMode)
-
-	check(db.Exec(SQL_INIT))
-	check(db.Exec("INSERT INTO users VALUES('marc', 99, 1.91, true, '1970-01-01')"))
-
-	rows, err := db.QueryContext(
-		context.Background(), `
-		SELECT username, age, height, awesome, bday
-		FROM users
-		WHERE (username = ? OR username = ?) AND age > ? AND awesome = ?`,
-		"macgyver", "marc", 30, true,
-	)
-	check(err)
-	defer rows.Close()
-
-	for rows.Next() {
-		u := new(user)
-		err := rows.Scan(&u.username, &u.age, &u.height, &u.awesome, &u.bday)
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf(
-			"%s is %d years old, %.2f tall, bday on %s and has awesomeness: %t\n",
-			u.username, u.age, u.height, u.bday.Format(time.RFC3339), u.awesome,
-		)
+	for _, note := range notes {
+		check(stmt.Exec(note.subfolder, note.filename, note.content, note.modified_at))
 	}
-	check(rows.Err())
+}
 
-	res, err := db.Exec("DELETE FROM users CASCADE")
+func ingestSubdir(db *sql.DB, syncDir, subfolder string) (err error) {
+	dir := filepath.Join(syncDir, subfolder)
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+
+	notes := []Note{}
+	for _, file := range files {
+		if !file.IsDir() && strings.HasSuffix(file.Name(), ".dj") {
+			fi, err := file.Info()
+			if err != nil {
+				return fmt.Errorf("Error with specified file (`%v`): %w", file, err)
+			}
+			content, err := os.ReadFile(filepath.Join(dir, file.Name()))
+			if err != nil {
+				return err
+			}
+			note := Note{subfolder: subfolder, filename: file.Name(), content: string(content), modified_at: fi.ModTime()}
+			notes = append(notes, note)
+		}
+	}
+
+	storeNotes(db, notes)
+	return
+}
+
+// Ingest ALL Notes
+func ingestAllNotes(db *sql.DB, syncDir string) (err error) {
+	folderNames, err := ListSubfolders(syncDir)
+	if err != nil {
+		return
+	}
+	for _, subfolder := range folderNames {
+		err := ingestSubdir(db, syncDir, subfolder)
+		if err != nil {
+			return err
+		}
+	}
+	return
+}
+
+// Remove ALL notes
+func removeAllNotes(db *sql.DB) {
+	res, err := db.Exec("DELETE FROM note CASCADE")
 	check(err)
 
 	ra, _ := res.RowsAffected()
 	log.Printf("Deleted %d rows\n", ra)
-
-	runTransaction()
-	testPreparedStmt()
 }
 
-func runTransaction() {
-	log.Println("Starting transaction...")
-	tx, err := db.Begin()
+// Search for note in database
+func search(db *sql.DB) (err error) {
+	// TODO: currently only a PoC with LIMIT rather than WHERE
+	stmt, err := db.Prepare("SELECT * FROM note LIMIT ?")
 	check(err)
 
-	check(
-		tx.ExecContext(
-			context.Background(),
-			"INSERT INTO users VALUES('gru', 25, 1.35, false, '1996-04-03')",
-		),
-	)
-	row := tx.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", "gru")
-	var count int64
-	check(row.Scan(&count))
-	if count > 0 {
-		log.Println("User Gru was inserted")
-	}
-
-	log.Println("Rolling back transaction...")
-	check(tx.Rollback())
-
-	row = db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", "gru")
-	check(row.Scan(&count))
-	if count > 0 {
-		log.Println("Found user Gru")
-	} else {
-		log.Println("Couldn't find user Gru")
-	}
-}
-
-func testPreparedStmt() {
-	stmt, err := db.Prepare("INSERT INTO users VALUES(?, ?, ?, ?, ?)")
-	check(err)
-	defer stmt.Close()
-
-	check(stmt.Exec("Kevin", 11, 0.55, true, "2013-07-06"))
-	check(stmt.Exec("Bob", 12, 0.73, true, "2012-11-04"))
-	check(stmt.Exec("Stuart", 13, 0.66, true, "2014-02-12"))
-
-	stmt, err = db.Prepare("SELECT * FROM users WHERE age > ?")
-	check(err)
-
-	rows, err := stmt.Query(1)
+	rows, err := stmt.Query(10)
 	defer rows.Close()
 	check(err)
 
+	log.Println("\n\n==============\n ")
 	for rows.Next() {
-		u := new(user)
-		err := rows.Scan(&u.username, &u.age, &u.height, &u.awesome, &u.bday)
-		if err != nil {
-			log.Fatal(err)
+		n := new(Note)
+		if err := rows.Scan(&n.subfolder, &n.filename, &n.content, &n.modified_at); err != nil {
+			return err
 		}
-		log.Printf(
-			"%s is %d years old, %.2f tall, bday on %s and has awesomeness: %t\n",
-			u.username, u.age, u.height, u.bday.Format(time.RFC3339), u.awesome,
-		)
+		log.Println("\n\n--------------\n ")
+		log.Printf("%s | %s | %v", n.subfolder, n.filename, n.modified_at.Format(time.RFC3339))
+		log.Println(n.content)
 	}
+	log.Println("\n\n==============\n ")
+	return
 }
 
-// func dontForgetToClose() {
-// 	db, err := sql.Open("duckdb", "/path/to/foo.db")
-// 	defer db.Close()
-//
-// 	conn, err := db.Conn(context.Background())
-// 	defer conn.Close()
-//
-// 	rows, err := conn.Query("SELECT 42")
-// 	// Alternatively, rows.Next() has to return false.
-// 	rows.Close()
-//
-// 	appender, err := NewAppenderFromConn(conn, "", "test")
-// 	defer appender.Close()
-//
-// 	// If not passed to sql.OpenDB.
-// 	connector, err := NewConnector("", nil)
-// 	defer connector.Close()
-// }
+// Connect to the database and non-destructively initialize the schema, if not already found
+func connectDb(dir string) (db *sql.DB) {
+	var err error
+	db, err = sql.Open("duckdb", filepath.Join(dir, "yak-shears.db?access_mode=READ_WRITE"))
+	check(err)
+
+	// PLANNED: when you want to use a Connection rather than DB?
+	// conn, err := db.Conn(context.Background())
+	// check(err)
+	// defer conn.Close()
+	// return conn
+
+	check(db.Exec(SQL_INIT))
+
+	return db
+}
+
+// CLI
 
 type SearchQuery struct {
 	Query string `description:"" pos:"1"`
@@ -170,8 +146,17 @@ func AttachSearch(cli *clir.Cli) {
 	searchCmd.AddFlags(&searchQuery)
 
 	searchCmd.Action(func() (err error) {
+		db := connectDb(syncDir)
+		defer db.Close()
+		if err := ingestAllNotes(db, syncDir); err != nil {
+			return err
+		}
+		// PLANNED: Use the query against embedded data
 		fmt.Println(searchQuery.Query)
-		simpleMain(syncDir)
+		if err := search(db); err != nil {
+			return err
+		}
+		removeAllNotes(db)
 		return
 	})
 }

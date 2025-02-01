@@ -16,7 +16,7 @@ func initCli() *clir.Cli {
 	return clir.NewCli("_", "test cli", "v0.0.1")
 }
 
-// Empty the subdirectory used for testing
+// Empty the subfolder used for testing
 func resetTmpTestDir(t *testing.T, subfolder string) string {
 	tmpTestSubDir := filepath.Join("tmpTestData", subfolder)
 
