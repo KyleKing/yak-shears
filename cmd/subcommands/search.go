@@ -15,8 +15,15 @@ import (
 	_ "github.com/marcboeker/go-duckdb"
 )
 
+// TODO: implement Ollama client for embeddings
+//  https://gobyexample.com/http-client
+//  https://www.digitalocean.com/community/tutorials/how-to-make-http-requests-in-go
+
 //go:embed sql/init.sql
 var SQL_INIT string
+
+//go:embed sql/searchQuery.sql
+var SEARCH_QUERY string
 
 type Note struct {
 	subDir      string
@@ -26,14 +33,31 @@ type Note struct {
 }
 
 // Upsert modified notes
-func storeNotes(db *sql.DB, notes []Note) {
-	stmt, err := db.Prepare("INSERT INTO note VALUES(?, ?, ?, ?)")
-	check(err)
-	defer stmt.Close()
+func storeNotes(db *sql.DB, notes []Note) (err error) {
+	stmtNote, err := db.Prepare("INSERT INTO note VALUES(?, ?, ?, ?)")
+	if err != nil {
+		return
+	}
+	defer stmtNote.Close()
+
+	stmtEmbed, err := db.Prepare("INSERT INTO embedding VALUES(?, ?)")
+	if err != nil {
+		return
+	}
+	defer stmtEmbed.Close()
 
 	for _, note := range notes {
-		check(stmt.Exec(note.subDir, note.filename, note.content, note.modified_at))
+		if _, err := stmtNote.Exec(note.subDir, note.filename, note.content, note.modified_at); err != nil {
+			return err
+		}
+		// TODO: Consider a binning technique to break up long paragraphs and join sort lists
+		for _, chunk := range strings.Split(note.content, `\n`) {
+			if _, err := stmtEmbed.Exec(note.filename, chunk); err != nil {
+				return err
+			}
+		}
 	}
+	return
 }
 
 func ingestSubdir(db *sql.DB, syncDir, subDir string) (err error) {
@@ -59,7 +83,9 @@ func ingestSubdir(db *sql.DB, syncDir, subDir string) (err error) {
 		}
 	}
 
-	storeNotes(db, notes)
+	if err := storeNotes(db, notes); err != nil {
+		return err
+	}
 	return
 }
 
@@ -88,14 +114,18 @@ func removeAllNotes(db *sql.DB) {
 }
 
 // Search for note in database
-func search(db *sql.DB) (err error) {
-	// TODO: currently only a PoC with LIMIT rather than WHERE
-	stmt, err := db.Prepare("SELECT * FROM note LIMIT ?")
-	check(err)
+func search(db *sql.DB, query string) (err error) {
+	// TODO: currently only a PoC with LIMIT rather than WHERE and 'query'
+	stmt, err := db.Prepare(SEARCH_QUERY)
+	if err != nil {
+		return
+	}
 
-	rows, err := stmt.Query(10)
+	rows, err := stmt.Query(2)
 	defer rows.Close()
-	check(err)
+	if err != nil {
+		return
+	}
 
 	log.Println("\n\n==============\n ")
 	for rows.Next() {
@@ -112,20 +142,24 @@ func search(db *sql.DB) (err error) {
 }
 
 // Connect to the database and non-destructively initialize the schema, if not already found
-func connectDb(dir string) (db *sql.DB) {
-	var err error
-	db, err = sql.Open("duckdb", filepath.Join(dir, "yak-shears.db?access_mode=READ_WRITE"))
-	check(err)
+func connectDb(dir string) (db *sql.DB, err error) {
+	path := filepath.Join(dir, "yak-shears.db?access_mode=READ_WRITE")
+	db, err = sql.Open("duckdb", path)
+	if err != nil {
+		return
+	}
 
-	// PLANNED: when you want to use a Connection rather than DB?
+	// PLANNED: use a connection for threading
 	// conn, err := db.Conn(context.Background())
 	// check(err)
 	// defer conn.Close()
-	// return conn
+	// return conn, nil
 
-	check(db.Exec(SQL_INIT))
-
-	return db
+	_, err = db.Exec(SQL_INIT)
+	if err != nil {
+		return
+	}
+	return
 }
 
 // CLI
@@ -137,26 +171,25 @@ type SearchQuery struct {
 func AttachSearch(cli *clir.Cli) {
 	searchCmd := cli.NewSubCommand("search", "Search notes")
 
-	syncDir := config.GetSyncDir()
-	searchCmd.StringFlag("sync-dir", "Sync Directory", &syncDir)
-
-	// var query string
-	// searchCmd.StringFlag("query", "Search Query", &query)
 	searchQuery := SearchQuery{}
 	searchCmd.AddFlags(&searchQuery)
 
+	syncDir := config.GetSyncDir()
+	searchCmd.StringFlag("sync-dir", "Sync Directory", &syncDir)
+
 	searchCmd.Action(func() (err error) {
-		db := connectDb(syncDir)
+		db, err := connectDb(syncDir)
+		if err != nil {
+			return
+		}
 		defer db.Close()
+		removeAllNotes(db) // HACK: temporary workaround during development
 		if err := ingestAllNotes(db, syncDir); err != nil {
 			return err
 		}
-		// PLANNED: Use the query against embedded data
-		fmt.Println(searchQuery.Query)
-		if err := search(db); err != nil {
+		if err := search(db, searchQuery.Query); err != nil {
 			return err
 		}
-		removeAllNotes(db)
 		return
 	})
 }
