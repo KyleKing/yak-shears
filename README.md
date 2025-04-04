@@ -26,6 +26,7 @@ My personal note taking app, but you probably want to use one of these primarily
 | [Obsidian](https://obsidian.md) | "With thousands of plugins and themes, you can shape Obsidian to fit your way of thinking" (Closed source) |
 | [Org-Mode](https://orgmode.org/features.html) | Support Clocking, Capture, and Task/Agenda |
 | [Org-Roam](https://github.com/org-roam/org-roam) | "Rudimentary Roam replica with Org-mode" |
+| [Outline](https://github.com/outline/outline) | "The fastest knowledge base for growing teams. Beautiful, realtime collaborative, feature packed, and markdown compatible." |
 | [Pinboard](https://pinboard.in/about/) | "One of the oldest independently run businesses on the web" with a text-first UI |
 | [Rnote](https://github.com/flxzt/rnote) | "Sketch and take handwritten notes" |
 | [Roam Research](https://roamresearch.com) | "As easy to use as a document. As powerful as a graph database. Roam helps you organize your research for the long haul" (Closed source) |
@@ -57,7 +58,7 @@ My personal note taking app, but you probably want to use one of these primarily
 - Content is stored in files using the `djot` markup language
 
     - The files can be edited in any editor (nvim, emacs, VSCode, NotePad++, etc.)
-    - They can be synced using [Syncthing](https://syncthing.net/), [Dropbox](https://www.dropbox.com), iCloud, [rsync](https://jenkov.com/tutorials/rsync/detecting-file-differences.html), [hyperdrive](https://github.com/holepunchto/hyperdrive), [iroh](https://github.com/n0-computer/iroh), [any-sync](https://github.com/anyproto/tech-docs), etc.
+    - They can be synced using [Rclone](https://github.com/rclone/rclone), [rsync](https://jenkov.com/tutorials/rsync/detecting-file-differences.html), [Gofile](https://gofile.io/home), [Syncthing](https://syncthing.net/), [Dropbox](https://www.dropbox.com), [Apple iCloud](https://www.icloud.com), [hyperdrive](https://github.com/holepunchto/hyperdrive), [iroh](https://github.com/n0-computer/iroh), [any-sync](https://github.com/anyproto/tech-docs), etc.
 - Each note is named by the creation timestamp to be unique, predictable, and easier to permalink
 
 ### Details
