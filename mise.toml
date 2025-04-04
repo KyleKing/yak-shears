@@ -17,13 +17,11 @@ description = "Install latest code system-wide"
 run = "go install ."
 
 [tasks.lint]
-depends = ["format"]
 description = "Run linters"
 run = "testifylint --enable-all --fix ./..."
 sources = ['**/*_test.go']
 
 [tasks.test]
-depends = ["format", "lint"]
 description = "Run test"
 # https://stackoverflow.com/a/21725603/3219667
 run = "go test -coverprofile=coverage.out -coverpkg=./... ./..."

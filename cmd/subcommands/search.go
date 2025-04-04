@@ -50,7 +50,7 @@ func storeNotes(db *sql.DB, notes []Note) (err error) {
 		if _, err := stmtNote.Exec(note.subDir, note.filename, note.content, note.modified_at); err != nil {
 			return err
 		}
-		// TODO: Consider a binning technique to break up long paragraphs and join sort lists
+		// TODO: Consider alternative chunking techniques
 		for _, chunk := range strings.Split(note.content, `\n`) {
 			if _, err := stmtEmbed.Exec(note.filename, chunk); err != nil {
 				return err
@@ -106,7 +106,10 @@ func ingestAllNotes(db *sql.DB, syncDir string) (err error) {
 
 // Remove ALL notes
 func removeAllNotes(db *sql.DB) {
-	res, err := db.Exec("DELETE FROM note CASCADE")
+    // PLANNED: CASCADE from table note didn't work
+	res, err := db.Exec("DELETE FROM embedding")
+	check(err)
+	res, err = db.Exec("DELETE FROM note")
 	check(err)
 
 	ra, _ := res.RowsAffected()
@@ -143,7 +146,6 @@ func search(db *sql.DB, query string) (err error) {
 
 // Connect to the database and non-destructively initialize the schema, if not already found
 func connectDb(dir string) (db *sql.DB, err error) {
-	// FIXME: I need to delete this DB on demand while debugging. Remove All isn't useful when the schema changes
 	path := filepath.Join(dir, "yak-shears.db?access_mode=READ_WRITE")
 	db, err = sql.Open("duckdb", path)
 	if err != nil {
@@ -184,7 +186,10 @@ func AttachSearch(cli *clir.Cli) {
 			return
 		}
 		defer db.Close()
-		removeAllNotes(db) // HACK: temporary workaround during development
+		// HACK: if the schema changes, the current workaround is to run:
+		// rm yak-shears.db
+		// HACK: removal and re-ingestion is sub-optimal and only for development
+		removeAllNotes(db)
 		if err := ingestAllNotes(db, syncDir); err != nil {
 			return err
 		}

@@ -2,6 +2,12 @@
 
 Based on: https://github.com/RhetTbull/macnotesapp
 
+```sh
+uv sync
+uv run note_import.py
+# Creates local directory `./notes-export`
+```
+
 """
 
 import shutil
