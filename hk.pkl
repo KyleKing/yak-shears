@@ -1,0 +1,19 @@
+amends "package://github.com/jdx/hk/releases/download/v0.6.5/hk@0.6.5#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v0.6.5/hk@0.6.5#/builtins/actionlint.pkl"
+import "package://github.com/jdx/hk/releases/download/v0.6.5/hk@0.6.5#/builtins/sql_fluff.pkl"
+// import "package://github.com/jdx/hk/releases/download/v0.6.5/hk@0.6.5#/builtins/taplo.pkl"
+
+linters = new {
+    ["actionlint"] = new actionlint.Actionlint {}
+    ["sql_fluff"] = new sql_fluff.SqlFluff {}
+    // ["taplo"] = new taplo.Taplo {}  // TODO: prefer pappasam/toml-sort instead
+}
+
+hooks = new {
+  ["pre-commit"] {
+    ["fix"] = new Fix {}
+  }
+  ["pre-push"] {
+    ["check"] = new Check {}
+  }
+}
