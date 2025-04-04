@@ -1,4 +1,6 @@
+-- sqlfluff:dialect:duckdb
 -- Docs: https://duckdb.org/docs/sql/statements/overview
+
 CREATE TABLE IF NOT EXISTS note(
     subDir VARCHAR NOT NULL,
     filename VARCHAR NOT NULL UNIQUE PRIMARY KEY,
