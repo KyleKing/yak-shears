@@ -12,7 +12,7 @@ func TestAttachList(t *testing.T) {
 
 	tmpTestSubDir := resetTmpTestDir(t, "list")
 
-	cli := initCli()
+	cli := initTestCli()
 	AttachList(cli)
 	err = cli.Run("list", "-sync-dir", filepath.Dir(tmpTestSubDir))
 	require.NoError(t, err)

@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMain(t *testing.T) {
-	err := Main().Run("-help")
+func TestInitCli(t *testing.T) {
+	err := InitCli().Run("-help")
 	require.NoError(t, err)
 }

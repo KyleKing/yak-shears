@@ -19,7 +19,7 @@ run = "go install ."
 [tasks.lint]
 depends = ["format"]
 description = "Run linters"
-run = "testifylint --enable-all ."
+run = "testifylint --enable-all --fix ./..."
 sources = ['**/*_test.go']
 
 [tasks.test]
@@ -34,4 +34,4 @@ description = "Update dependencies"
 run = ["go get -u ./...", "go mod tidy"]
 
 [tools]
-"go:github.com/Antonboom/testifylint" = "1.5.2"
+"go:github.com/Antonboom/testifylint" = "1.6.1"

@@ -143,7 +143,7 @@ func search(db *sql.DB, query string) (err error) {
 
 // Connect to the database and non-destructively initialize the schema, if not already found
 func connectDb(dir string) (db *sql.DB, err error) {
-// FIXME: I need to delete this DB on demand while debugging. Remove All isn't useful when the schema changes
+	// FIXME: I need to delete this DB on demand while debugging. Remove All isn't useful when the schema changes
 	path := filepath.Join(dir, "yak-shears.db?access_mode=READ_WRITE")
 	db, err = sql.Open("duckdb", path)
 	if err != nil {

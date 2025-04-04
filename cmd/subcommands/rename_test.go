@@ -19,7 +19,7 @@ func TestAttachRename(t *testing.T) {
 	err = createFile(pathSrc)
 	require.NoError(t, err)
 
-	cli := initCli()
+	cli := initTestCli()
 	AttachRename(cli)
 	err = cli.Run("rename", pathSrc)
 	require.NoError(t, err)

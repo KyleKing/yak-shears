@@ -27,7 +27,7 @@ func TestAttachNew(t *testing.T) {
 
 	baseCTime, _, _ := strings.Cut(toTimeName(time.Now()), "T")
 
-	cli := initCli()
+	cli := initTestCli()
 	AttachNew(cli)
 	err = cli.Run("new", "-sync-dir", filepath.Dir(tmpTestSubDir), "-sub-dir", "new")
 	require.NoError(t, err)

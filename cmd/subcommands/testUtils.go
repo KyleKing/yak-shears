@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func initCli() *clir.Cli {
+func initTestCli() *clir.Cli {
 	return clir.NewCli("_", "test cli", "v0.0.1")
 }
 
@@ -51,5 +51,5 @@ func matchCreatedFile(testDir string, prefix string, t *testing.T) {
 
 	err := filepath.Walk(testDir, validateFiles)
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(matchedPaths), matchedPaths)
+	assert.Len(t, matchedPaths, 1, "%+v", matchedPaths)
 }

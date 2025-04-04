@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	cli := cmd.Main()
+	cli := cmd.InitCli()
 
 	if err := cli.Run(); err != nil {
 		fmt.Println("Error encountered: ", err)

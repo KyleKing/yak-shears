@@ -12,7 +12,7 @@ func TestAttachSearch(t *testing.T) {
 
 	tmpTestSubDir := resetTmpTestDir(t, "search")
 
-	cli := initCli()
+	cli := initTestCli()
 	AttachSearch(cli)
 	err = cli.Run("search", "Are there matches to this?", "-sync-dir", filepath.Dir(tmpTestSubDir))
 	require.NoError(t, err)
