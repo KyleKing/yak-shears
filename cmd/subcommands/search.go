@@ -45,7 +45,7 @@ func storeNotes(db *sqlx.DB, notes []Note) (err error) {
 	for _, note := range notes {
 		_, err := db.NamedExec(INSERT_NOTE, note)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute INSERT_NOTE for note %s: %w", note.Filename, err)
 		}
 
 		for _, chunk := range strings.Split(note.Content, `\n`) {
@@ -54,7 +54,7 @@ func storeNotes(db *sqlx.DB, notes []Note) (err error) {
 				"embedding": chunk,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to execute INSERT_EMBEDDING for chunk in note %s: %w", note.Filename, err)
 			}
 		}
 	}
@@ -65,7 +65,7 @@ func ingestSubdir(db *sqlx.DB, syncDir, subDir string) (err error) {
 	dir := filepath.Join(syncDir, subDir)
 	files, err := os.ReadDir(dir)
 	if err != nil {
-		return
+		return fmt.Errorf("failed to read directory %s: %w", dir, err)
 	}
 
 	notes := []Note{}
@@ -73,11 +73,11 @@ func ingestSubdir(db *sqlx.DB, syncDir, subDir string) (err error) {
 		if !file.IsDir() && strings.HasSuffix(file.Name(), ".dj") {
 			fi, err := file.Info()
 			if err != nil {
-				return fmt.Errorf("Error with specified file (`%v`): %w", file, err)
+				return fmt.Errorf("failed to get file info for %s: %w", file.Name(), err)
 			}
 			content, err := os.ReadFile(filepath.Join(dir, file.Name()))
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to read file %s: %w", file.Name(), err)
 			}
 			note := Note{SubDir: subDir, Filename: file.Name(), Content: string(content), ModifiedAt: fi.ModTime()}
 			notes = append(notes, note)
@@ -85,24 +85,24 @@ func ingestSubdir(db *sqlx.DB, syncDir, subDir string) (err error) {
 	}
 
 	if err := storeNotes(db, notes); err != nil {
-		return err
+		return fmt.Errorf("failed to store notes for subdir %s: %w", subDir, err)
 	}
-	return
+	return nil
 }
 
 // Ingest ALL Notes
 func ingestAllNotes(db *sqlx.DB, syncDir string) (err error) {
 	folderNames, err := ListsubDirs(syncDir)
 	if err != nil {
-		return
+		return fmt.Errorf("failed to list subdirectories in %s: %w", syncDir, err)
 	}
 	for _, subDir := range folderNames {
 		err := ingestSubdir(db, syncDir, subDir)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to ingest subdir %s: %w", subDir, err)
 		}
 	}
-	return
+	return nil
 }
 
 // Remove ALL notes
@@ -121,13 +121,13 @@ func search(db *sqlx.DB, query string) (err error) {
 		"offset_": 0,
 	})
 	if err != nil {
-		return
+		return fmt.Errorf("failed to execute search query: %w", err)
 	}
 
 	for _, n := range notes {
 		log.Printf("%s | %s | %v\n%s", n.SubDir, n.Filename, n.ModifiedAt.Format(time.RFC3339), n.Content)
 	}
-	return
+	return nil
 }
 
 // Connect to the database and non-destructively initialize the schema, if not already found
@@ -135,7 +135,7 @@ func connectDb(dir string) (db *sqlx.DB, err error) {
 	path := filepath.Join(dir, "yak-shears.db?access_mode=READ_WRITE")
 	db, err = sqlx.Open("duckdb", path)
 	if err != nil {
-		return
+		return nil, fmt.Errorf("failed to open database at %s: %w", path, err)
 	}
 
 	// PLANNED: use a connection for threading
@@ -146,9 +146,9 @@ func connectDb(dir string) (db *sqlx.DB, err error) {
 
 	_, err = db.Exec(SQL_INIT)
 	if err != nil {
-		return
+		return nil, fmt.Errorf("failed to initialize database schema: %w", err)
 	}
-	return
+	return db, nil
 }
 
 // CLI
@@ -174,7 +174,7 @@ func AttachSearch(cli *clir.Cli) {
 
 		db, err := connectDb(syncDir)
 		if err != nil {
-			return
+			return err
 		}
 		defer db.Close()
 		// // HACK: removal and re-ingestion is sub-optimal and only for development
