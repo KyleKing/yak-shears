@@ -1,7 +1,6 @@
 package subcommands
 
 import (
-	"database/sql"
 	_ "embed" // Required for compiler
 	"fmt"
 	"log"
@@ -10,9 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmoiron/sqlx"
+	_ "github.com/marcboeker/go-duckdb"
+
 	"github.com/KyleKing/yak-shears/cmd/config"
 	"github.com/leaanthony/clir"
-	_ "github.com/marcboeker/go-duckdb"
 )
 
 // TODO: implement Ollama client for embeddings
@@ -24,6 +25,12 @@ var SQL_INIT string
 
 //go:embed sql/searchQuery.sql
 var SEARCH_QUERY string
+
+//go:embed sql/insertNote.sql
+var INSERT_NOTE string
+
+//go:embed sql/insertEmbedding.sql
+var INSERT_EMBEDDING string
 
 type Note struct {
 	sub_dir     string
@@ -45,14 +52,21 @@ func storeNotes(db *sql.DB, notes []Note) (err error) {
 		return
 	}
 	defer stmtEmbed.Close()
+}
 
+func storeNotes(db *sqlx.DB, notes []Note) (err error) {
 	for _, note := range notes {
-		if _, err := stmtNote.Exec(note.sub_dir, note.filename, note.content, note.modified_at); err != nil {
+		_, err := db.NamedExec(INSERT_NOTE, note)
+		if err != nil {
 			return err
 		}
-		// TODO: Consider alternative chunking techniques
+
 		for _, chunk := range strings.Split(note.content, `\n`) {
-			if _, err := stmtEmbed.Exec(note.filename, chunk); err != nil {
+			_, err := db.NamedExec(INSERT_EMBEDDING, map[string]interface{}{
+				"filename":  note.filename,
+				"embedding": chunk,
+			})
+			if err != nil {
 				return err
 			}
 		}
@@ -60,7 +74,7 @@ func storeNotes(db *sql.DB, notes []Note) (err error) {
 	return
 }
 
-func ingestSubdir(db *sql.DB, syncDir, subDir string) (err error) {
+func ingestSubdir(db *sqlx.DB, syncDir, subDir string) (err error) {
 	dir := filepath.Join(syncDir, subDir)
 	files, err := os.ReadDir(dir)
 	if err != nil {
@@ -90,7 +104,7 @@ func ingestSubdir(db *sql.DB, syncDir, subDir string) (err error) {
 }
 
 // Ingest ALL Notes
-func ingestAllNotes(db *sql.DB, syncDir string) (err error) {
+func ingestAllNotes(db *sqlx.DB, syncDir string) (err error) {
 	folderNames, err := ListsubDirs(syncDir)
 	if err != nil {
 		return
@@ -105,49 +119,35 @@ func ingestAllNotes(db *sql.DB, syncDir string) (err error) {
 }
 
 // Remove ALL notes
-func removeAllNotes(db *sql.DB) {
-	// PLANNED: CASCADE from table note didn't work
-	res, err := db.Exec("DELETE FROM embedding")
+func removeAllNotes(db *sqlx.DB) {
+	_, err := db.Exec("DELETE FROM embedding")
 	check(err)
-	res, err = db.Exec("DELETE FROM note")
+	_, err = db.Exec("DELETE FROM note")
 	check(err)
-
-	ra, _ := res.RowsAffected()
-	log.Printf("Deleted %d rows\n", ra)
 }
 
 // Search for note in database
-func search(db *sql.DB, query string) (err error) {
-	// TODO: currently only a PoC with LIMIT rather than WHERE and 'query'
-	stmt, err := db.Prepare(SEARCH_QUERY)
+func search(db *sqlx.DB, query string) (err error) {
+	rows, err := db.Queryx(SEARCH_QUERY, 2, 0)
 	if err != nil {
 		return
 	}
-
-	rows, err := stmt.Query(2, 0)
 	defer rows.Close()
-	if err != nil {
-		return
-	}
 
-	log.Println("\n\n==============\n ")
 	for rows.Next() {
-		n := new(Note)
-		if err := rows.Scan(&n.sub_dir, &n.filename, &n.content, &n.modified_at); err != nil {
+		n := Note{}
+		if err := rows.StructScan(&n); err != nil {
 			return err
 		}
-		log.Println("\n\n--------------\n ")
-		log.Printf("%s | %s | %v", n.sub_dir, n.filename, n.modified_at.Format(time.RFC3339))
-		log.Println(n.content)
+		log.Printf("%s | %s | %v\n%s", n.sub_dir, n.filename, n.modified_at.Format(time.RFC3339), n.content)
 	}
-	log.Println("\n\n==============\n ")
 	return
 }
 
 // Connect to the database and non-destructively initialize the schema, if not already found
-func connectDb(dir string) (db *sql.DB, err error) {
+func connectDb(dir string) (db *sqlx.DB, err error) {
 	path := filepath.Join(dir, "yak-shears.db?access_mode=READ_WRITE")
-	db, err = sql.Open("duckdb", path)
+	db, err = sqlx.Open("duckdb", path)
 	if err != nil {
 		return
 	}

@@ -7,6 +7,4 @@ FROM note
 INNER JOIN embedding ON note.filename = embedding.filename
 -- Order by match quality
 ORDER BY note.modified_at
-LIMIT
-    ?
-    OFFSET ?;
+LIMIT :lim OFFSET :off;

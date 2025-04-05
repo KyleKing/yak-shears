@@ -5,7 +5,7 @@ templater = "placeholder"
 
 # templater docs: https://docs.sqlfluff.com/en/stable/configuration/templating/placeholder.html
 [tool.sqlfluff.templater.placeholder]
-param_style = "question_mark"
+param_style = "colon"
 
 [tool.sqlfluff.indentation]
 allow_implicit_indents = true
