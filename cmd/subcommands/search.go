@@ -48,6 +48,7 @@ func storeNotes(db *sqlx.DB, notes []Note) (err error) {
 			return fmt.Errorf("failed to execute INSERT_NOTE for note %s: %w", note.Filename, err)
 		}
 
+		// TODO: Consider alternative chunking techniques
 		for _, chunk := range strings.Split(note.Content, `\n`) {
 			_, err := db.NamedExec(INSERT_EMBEDDING, map[string]interface{}{
 				"filename":  note.Filename,
@@ -90,7 +91,7 @@ func ingestSubdir(db *sqlx.DB, syncDir, subDir string) (err error) {
 	return nil
 }
 
-// Ingest ALL Notes
+// Ingest ALL Notes (HACK: Should be replaced by incremental ingestion)
 func ingestAllNotes(db *sqlx.DB, syncDir string) (err error) {
 	folderNames, err := ListsubDirs(syncDir)
 	if err != nil {
@@ -105,8 +106,9 @@ func ingestAllNotes(db *sqlx.DB, syncDir string) (err error) {
 	return nil
 }
 
-// Remove ALL notes
+// HACK: Remove ALL notes (only for testing)
 func removeAllNotes(db *sqlx.DB) {
+	// PLANNED: CASCADE from table note didn't work
 	_, err := db.Exec("DELETE FROM embedding")
 	check(err)
 	_, err = db.Exec("DELETE FROM note")
@@ -117,6 +119,7 @@ func removeAllNotes(db *sqlx.DB) {
 func search(db *sqlx.DB, query string) (err error) {
 	notes := []Note{}
 	nstmt, err := db.PrepareNamed(SEARCH_QUERY)
+	// TODO: currently only a PoC without WHERE/'query'
 	if err != nil {
 		return fmt.Errorf("failed to prepare search query: %w", err)
 	}
@@ -128,9 +131,11 @@ func search(db *sqlx.DB, query string) (err error) {
 		return fmt.Errorf("failed to execute search query: %w", err)
 	}
 
+	log.Println("\n\n==============\n ")
 	for _, n := range notes {
-		log.Printf("%s | %s | %v\n%s", n.SubDir, n.Filename, n.ModifiedAt.Format(time.RFC3339), n.Content)
+		log.Printf("\n\n--------------\n\n%s | %s | %v\n%s", n.SubDir, n.Filename, n.ModifiedAt.Format(time.RFC3339), n.Content)
 	}
+	log.Println("\n\n==============\n ")
 	return nil
 }
 
@@ -181,7 +186,7 @@ func AttachSearch(cli *clir.Cli) {
 			return err
 		}
 		defer db.Close()
-		// // HACK: removal and re-ingestion is sub-optimal and only for development
+		// // HACK: re-ingestion on search is only for testing
 		// removeAllNotes(db)
 		if err := ingestAllNotes(db, syncDir); err != nil {
 			return err
