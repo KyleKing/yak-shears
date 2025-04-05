@@ -5,7 +5,7 @@ sources = ['**/*.go']
 
 [tasks.hooks]
 description = "Run git hook fixes"
-run = ["hk fix --all"]
+run = ["hk fix --all --quiet"]
 
 [tasks.install-system]
 description = "Install latest code system-wide"

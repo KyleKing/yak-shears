@@ -23,38 +23,25 @@ import (
 //go:embed sql/init.sql
 var SQL_INIT string
 
-//go:embed sql/searchQuery.sql
-var SEARCH_QUERY string
-
 //go:embed sql/insertNote.sql
 var INSERT_NOTE string
 
 //go:embed sql/insertEmbedding.sql
 var INSERT_EMBEDDING string
 
+//go:embed sql/searchQuery.sql
+var SEARCH_QUERY string
+
 type Note struct {
-	sub_dir     string
-	filename    string
-	content     string
-	modified_at time.Time
+	subDir     string `db:"sub_dir"`
+	filename   string
+	content    string
+	modifiedAt time.Time `db:"modified_at"`
 }
 
 // Upsert modified notes
-func storeNotes(db *sql.DB, notes []Note) (err error) {
-	stmtNote, err := db.Prepare("INSERT INTO note VALUES(?, ?, ?, ?)")
-	if err != nil {
-		return
-	}
-	defer stmtNote.Close()
-
-	stmtEmbed, err := db.Prepare("INSERT INTO embedding VALUES(?, ?)")
-	if err != nil {
-		return
-	}
-	defer stmtEmbed.Close()
-}
-
 func storeNotes(db *sqlx.DB, notes []Note) (err error) {
+	// PLANNED: submit multiple notes in single statement
 	for _, note := range notes {
 		_, err := db.NamedExec(INSERT_NOTE, note)
 		if err != nil {
@@ -92,7 +79,7 @@ func ingestSubdir(db *sqlx.DB, syncDir, subDir string) (err error) {
 			if err != nil {
 				return err
 			}
-			note := Note{sub_dir: subDir, filename: file.Name(), content: string(content), modified_at: fi.ModTime()}
+			note := Note{subDir: subDir, filename: file.Name(), content: string(content), modifiedAt: fi.ModTime()}
 			notes = append(notes, note)
 		}
 	}
@@ -128,18 +115,17 @@ func removeAllNotes(db *sqlx.DB) {
 
 // Search for note in database
 func search(db *sqlx.DB, query string) (err error) {
-	rows, err := db.Queryx(SEARCH_QUERY, 2, 0)
+	notes := []Note{}
+	err = db.Select(&notes, SEARCH_QUERY, map[string]interface{}{
+		"limit_":  2,
+		"offset_": 0,
+	})
 	if err != nil {
 		return
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		n := Note{}
-		if err := rows.StructScan(&n); err != nil {
-			return err
-		}
-		log.Printf("%s | %s | %v\n%s", n.sub_dir, n.filename, n.modified_at.Format(time.RFC3339), n.content)
+	for _, n := range notes {
+		log.Printf("%s | %s | %v\n%s", n.subDir, n.filename, n.modifiedAt.Format(time.RFC3339), n.content)
 	}
 	return
 }

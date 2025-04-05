@@ -7,6 +7,7 @@ toolchain go1.24.1
 require (
 	github.com/djherbis/times v1.6.0
 	github.com/jedib0t/go-pretty/v6 v6.6.7
+	github.com/jmoiron/sqlx v1.4.0
 	github.com/leaanthony/clir v1.7.0
 	github.com/marcboeker/go-duckdb v1.8.5
 	github.com/stretchr/testify v1.10.0
@@ -19,7 +20,6 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
