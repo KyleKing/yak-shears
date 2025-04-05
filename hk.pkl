@@ -3,6 +3,8 @@
 amends "package://github.com/jdx/hk/releases/download/v0.7.0/hk@0.7.0#/Config.pkl"
 import "package://github.com/jdx/hk/releases/download/v0.7.0/hk@0.7.0#/builtins.pkl"
 
+min_hk_version = "0.7.0"
+
 local linters = new Mapping<String, LinterStep> {
     ["actionlint"] = builtins.actionlint
     ["pkl"] {
@@ -13,17 +15,34 @@ local linters = new Mapping<String, LinterStep> {
     // ["taplo"] = builtins.taplo  // TODO: prefer pappasam/toml-sort instead
 }
 
-// There are additional configuration options for check_first, batch, workspace_indicator, etc. https://hk.jdx.dev/configuration.html
+local commit_msg_checks = new Mapping<String, LinterStep> {
+    ["commitizen"] {
+        check = "cz check --allow-abort --commit-msg-file={{commit_msg_file}}"
+    }
+}
+local pre_push_checks = new Mapping<String, LinterStep> {
+    ["commitizen-branch"] {
+        check = "cz check --rev-range origin/HEAD..HEAD"
+    }
+}
+
+// FYI: there are additional configuration options for check_first, batch, workspace_indicator, etc. https://hk.jdx.dev/configuration.html
 hooks = new {
     ["pre-commit"] {
         fix = true
         steps = new {
-            ["stash"] = new StashStep {} // stashes unstaged changes during the hook
-            ...linters // add all linters defined above
+            ["stash"] = new StashStep {}
+            ...linters
         }
     }
     ["pre-push"] {
-        steps = linters
+        steps = new {
+            ...pre_push_checks
+            ...linters
+        }
+    }
+    ["commit-msg"] {
+        steps = commit_msg_checks
     }
 
     // "fix" and "check" are special steps for `hk fix` and `hk check` commands
@@ -32,6 +51,9 @@ hooks = new {
         steps = linters
     }
     ["check"] {
-        steps = linters
+        steps = new {
+            ...pre_push_checks
+            ...linters
+        }
     }
 }

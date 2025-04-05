@@ -34,4 +34,5 @@ run = ["go get -u ./...", "go mod tidy"]
 [tools]
 go = "1.24.1"
 "go:github.com/Antonboom/testifylint" = "1.6.1"
+"pipx:commitizen" = "latest"
 "pipx:sqlfluff" = "latest"
