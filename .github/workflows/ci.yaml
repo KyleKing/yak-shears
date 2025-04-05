@@ -1,20 +1,27 @@
----
 name: CI
 
-"on":
+on:
+  workflow_dispatch:
+  pull_request:
   push:
-    branches: [main]
-  workflow_dispatch: null # For manual runs
+    tags: ["*"]
+    branches: ["main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MISE_EXPERIMENTAL: true  # required for go for now
 
 jobs:
   ci:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
         with:
-          experimental: true # required for go backend
           install: false # [default: true] runs `mise install`
 
-      - name: Run unit tests
-        run: mise run test
+      - run: mise run ci
