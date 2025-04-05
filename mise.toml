@@ -1,6 +1,6 @@
 [tasks.format]
 description = "Format code"
-run = ["go fmt ./..."]
+run = ["go fmt ./...", "testifylint --enable-all --fix ./..."]
 sources = ['**/*.go']
 
 [tasks.hooks]
@@ -10,11 +10,6 @@ run = ["hk check --quiet", "hk fix --quiet"]
 [tasks.install-system]
 description = "Install latest code system-wide"
 run = "go install ."
-
-[tasks.lint]
-description = "Run linters"
-run = "testifylint --enable-all --fix ./..."
-sources = ['**/*_test.go']
 
 [tasks.test]
 description = "Run test"
@@ -35,9 +30,6 @@ run = "SHEARS_SUBDIR=test go run . new -o"
 description = "Update dependencies"
 run = ["go get -u ./...", "go mod tidy"]
 
-[tools]
+[tools] # Note: all tools are installed by default in CI
 go = "1.24.2"
 "go:github.com/Antonboom/testifylint" = "1.6.1"
-"pipx:commitizen" = "latest"
-"pipx:pre-commit-hooks" = "latest"
-"pipx:sqlfluff" = "latest"
