@@ -38,14 +38,17 @@ local linters = new Mapping<String, LinterStep> {
     }
     ["pch-end-of-file-fixer"] {
         glob = file_list
+        check = "echo 'No check available for end-of-file-fixer'"
         fix = "end-of-file-fixer {{ files }}"
     }
     ["pch-mixed-line-ending"] {
         glob = file_list
+        check = "echo 'No check available for mixed-line-ending'"
         fix = "mixed-line-ending {{ files }}"
     }
     ["pch-trailing-whitespace-fixer"] {
         glob = file_list
+        check = "echo 'No check available for trailing-whitespace-fixer'"
         fix = "trailing-whitespace-fixer {{ files }}"
     }
     ["sql_fluff"] = builtins.sql_fluff
@@ -67,9 +70,6 @@ local pre_push_checks = new Mapping<String, LinterStep> {
     ["commitizen-branch"] {
         check = "cz check --rev-range origin/HEAD..HEAD"
     }
-    ["pch-no-commit-to-branch"] {
-        check = "no-commit-to-branch --branch=main"
-    }
 }
 
 // FYI: there are additional configuration options for check_first, batch, workspace_indicator, etc. https://hk.jdx.dev/configuration.html
@@ -83,6 +83,9 @@ hooks = new {
     }
     ["pre-push"] {
         steps = new {
+            ["pch-no-commit-to-branch"] {
+                run = "no-commit-to-branch --branch=main"
+            }
             ...pre_push_checks
             ...linters
         }

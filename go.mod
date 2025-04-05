@@ -2,7 +2,7 @@ module github.com/KyleKing/yak-shears
 
 go 1.24
 
-toolchain go1.24.1
+toolchain go1.24.2
 
 require (
 	github.com/djherbis/times v1.6.0

@@ -5,7 +5,7 @@ sources = ['**/*.go']
 
 [tasks.hooks]
 description = "Run git hook fixes"
-run = ["hk fix --all --quiet"]
+run = ["hk check --quiet", "hk fix --quiet"]
 
 [tasks.install-system]
 description = "Install latest code system-wide"
@@ -36,7 +36,7 @@ description = "Update dependencies"
 run = ["go get -u ./...", "go mod tidy"]
 
 [tools]
-go = "1.24.1"
+go = "1.24.2"
 "go:github.com/Antonboom/testifylint" = "1.6.1"
 "pipx:commitizen" = "latest"
 "pipx:pre-commit-hooks" = "latest"
