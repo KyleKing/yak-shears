@@ -7,11 +7,46 @@ min_hk_version = "0.7.0"
 
 // FYI: see file extension mappings used by pre-commit: https://github.com/pre-commit/identify/blob/dc20df20bda102dc74ca8531465bfcd20a7f26bf/identify/extensions.py
 
+// PLANNED: I'm not sure how to filter for only files. Created with: `cloc . --vcs=git`
+local file_list = List("**/*.{gitignore,go,md,pkl,py,sql,toml,yaml,yml}")
+
 local linters = new Mapping<String, LinterStep> {
     ["actionlint"] = builtins.actionlint
     ["pkl"] {
         glob = List("*.pkl")
         check = "pkl eval {{files}} >/dev/null"
+    }
+    ["pch-check-added-large-files"] {
+        glob = file_list
+        check = "check-added-large-files {{ files }}"
+    }
+    ["pch-check-merge-conflict"] {
+        glob = file_list
+        check = "check-merge-conflict {{ files }}"
+    }
+    ["pch-check-symlinks"] {
+        glob = file_list
+        check = "check-symlinks {{ files }}"
+    }
+    ["pch-check-vcs-permalinks"] {
+        glob = file_list
+        check = "check-vcs-permalinks {{ files }}"
+    }
+    ["pch-check-yaml"] {
+        glob = List("**/*.{yml,yaml}")
+        check = "check-yaml {{ files }}"
+    }
+    ["pch-end-of-file-fixer"] {
+        glob = file_list
+        fix = "end-of-file-fixer {{ files }}"
+    }
+    ["pch-mixed-line-ending"] {
+        glob = file_list
+        fix = "mixed-line-ending {{ files }}"
+    }
+    ["pch-trailing-whitespace-fixer"] {
+        glob = file_list
+        fix = "trailing-whitespace-fixer {{ files }}"
     }
     ["sql_fluff"] = builtins.sql_fluff
     ["toml-sort"] {
@@ -21,6 +56,8 @@ local linters = new Mapping<String, LinterStep> {
     }
 }
 
+
+
 local commit_msg_checks = new Mapping<String, LinterStep> {
     ["commitizen"] {
         check = "cz check --allow-abort --commit-msg-file={{commit_msg_file}}"
@@ -29,6 +66,9 @@ local commit_msg_checks = new Mapping<String, LinterStep> {
 local pre_push_checks = new Mapping<String, LinterStep> {
     ["commitizen-branch"] {
         check = "cz check --rev-range origin/HEAD..HEAD"
+    }
+    ["pch-no-commit-to-branch"] {
+        check = "no-commit-to-branch --branch=main"
     }
 }
 
