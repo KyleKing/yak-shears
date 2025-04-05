@@ -83,9 +83,10 @@ hooks = new {
     }
     ["pre-push"] {
         steps = new {
-            ["pch-no-commit-to-branch"] {
-                run = "no-commit-to-branch --branch=main"
-            }
+            // FYI: PRs aren't required for this project
+            // ["pch-no-commit-to-branch"] {
+            //     run = "no-commit-to-branch --branch=main"
+            // }
             ...pre_push_checks
             ...linters
         }

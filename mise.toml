@@ -1,3 +1,6 @@
+[settings]
+experimental = true # required for go for now
+
 [tasks.ci]
 depends = ["test"]
 description = "Use in GitHub Actions"
@@ -35,10 +38,10 @@ description = "Update dependencies"
 run = ["go get -u ./...", "go mod tidy"]
 
 [tools] # Upgrade with `mise upgrade --bump`
-go = "1.24.2"
-"go:github.com/Antonboom/testifylint" = "1.6.1"
-"go:github.com/rhysd/actionlint/cmd/actionlint" = "1.7.7"
+go = "latest"
+"go:github.com/Antonboom/testifylint" = "latest"
+"go:github.com/rhysd/actionlint/cmd/actionlint" = "latest"
 "pipx:commitizen" = "latest"
 "pipx:pre-commit-hooks" = "latest"
 "pipx:sqlfluff" = "latest"
-"pipx:toml-sort" = "0.24.2"
+"pipx:toml-sort" = "latest"

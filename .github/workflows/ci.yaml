@@ -11,9 +11,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  MISE_EXPERIMENTAL: true  # required for go for now
-
 jobs:
   ci:
     runs-on: ubuntu-latest
