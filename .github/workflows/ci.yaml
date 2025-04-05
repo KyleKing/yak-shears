@@ -14,6 +14,7 @@ jobs:
       - uses: jdx/mise-action@v2
         with:
           experimental: true # required for go backend
+          install: false # [default: true] runs `mise install`
 
       - name: Run unit tests
         run: mise run test

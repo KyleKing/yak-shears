@@ -30,6 +30,11 @@ run = "SHEARS_SUBDIR=test go run . new -o"
 description = "Update dependencies"
 run = ["go get -u ./...", "go mod tidy"]
 
-[tools] # Note: all tools are installed by default in CI
+[tools] # Upgrade with `mise upgrade --bump`
 go = "1.24.2"
 "go:github.com/Antonboom/testifylint" = "1.6.1"
+"go:github.com/rhysd/actionlint/cmd/actionlint" = "1.7.7"
+"pipx:commitizen" = "latest"
+"pipx:pre-commit-hooks" = "latest"
+"pipx:sqlfluff" = "latest"
+"pipx:toml-sort" = "0.24.2"

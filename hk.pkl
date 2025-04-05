@@ -1,76 +1,61 @@
 // Install with `hk install --mise` to ensure local tools are available
 
 amends "package://github.com/jdx/hk/releases/download/v0.7.0/hk@0.7.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v0.7.0/hk@0.7.0#/builtins.pkl"
 
 min_hk_version = "0.7.0"
-
-// Partially lock tool version used by hooks. Tip: `mise latest <tool>`
-local actionlint = "mise exec go:github.com/rhysd/actionlint/cmd/actionlint@1.7.7 -- "
-local cz = "mise exec pipx:commitizen@4.5.0 -- "
-local pch = "mise exec pipx:pre-commit-hooks@5.0.0 -- "
-local sqlfluff = "mise exec pipx:sqlfluff@3.3.1 -- "
-local toml_sort = "mise exec pipx:toml-sort@0.24.2 -- "
 
 // FYI: see file extension mappings used by pre-commit: https://github.com/pre-commit/identify/blob/dc20df20bda102dc74ca8531465bfcd20a7f26bf/identify/extensions.py
 
 // PLANNED: I'm not sure how to filter for only files. Created with: `cloc . --vcs=git`
 local file_list = List("**/*.{gitignore,go,md,pkl,py,sql,toml,yaml,yml}")
 
-
 local linters = new Mapping<String, LinterStep> {
-    ["actionlint"] {
-        glob = List(".github/workflows/*.{yml,yaml}")
-        batch = true
-        check = actionlint + "actionlint {{ files }}"
-    }
+    ["actionlint"] = builtins.actionlint
     ["pkl"] {
         glob = List("*.pkl")
         check = "pkl eval {{files}} >/dev/null"
     }
     ["pch-check-added-large-files"] {
         glob = file_list
-        check = pch + "check-added-large-files {{ files }}"
+        check = "check-added-large-files {{ files }}"
     }
     ["pch-check-merge-conflict"] {
         glob = file_list
-        check = pch + "check-merge-conflict {{ files }}"
+        check = "check-merge-conflict {{ files }}"
     }
     ["pch-check-symlinks"] {
         glob = file_list
-        check = pch + "check-symlinks {{ files }}"
+        check = "check-symlinks {{ files }}"
     }
     ["pch-check-vcs-permalinks"] {
         glob = file_list
-        check = pch + "check-vcs-permalinks {{ files }}"
+        check = "check-vcs-permalinks {{ files }}"
     }
     ["pch-check-yaml"] {
         glob = List("**/*.{yml,yaml}")
-        check = pch + "check-yaml {{ files }}"
+        check = "check-yaml {{ files }}"
     }
     ["pch-end-of-file-fixer"] {
         glob = file_list
         check_first = false
-        fix = pch + "end-of-file-fixer {{ files }}"
+        fix = "end-of-file-fixer {{ files }}"
     }
     ["pch-mixed-line-ending"] {
         glob = file_list
         check_first = false
-        fix = pch + "mixed-line-ending {{ files }}"
+        fix = "mixed-line-ending {{ files }}"
     }
     ["pch-trailing-whitespace-fixer"] {
         glob = file_list
         check_first = false
-        fix = pch + "trailing-whitespace-fixer {{ files }}"
+        fix = "trailing-whitespace-fixer {{ files }}"
     }
-    ["sql_fluff"] {
-        glob = List("**/*.sql")
-        check = sqlfluff + "sqlfluff lint {{ files }}"
-        fix = sqlfluff + "sqlfluff fix {{ files }}"
-    }
+    ["sql_fluff"] = builtins.sql_fluff
     ["toml-sort"] {
         glob = List("**/*.toml")
-        check = toml_sort + "toml-sort {{ files }}"
-        fix = toml_sort + "toml-sort --in-place {{ files }}"
+        check = "toml-sort {{ files }}"
+        fix = "toml-sort --in-place {{ files }}"
     }
 }
 
@@ -78,12 +63,12 @@ local linters = new Mapping<String, LinterStep> {
 
 local commit_msg_checks = new Mapping<String, LinterStep> {
     ["commitizen"] {
-        check = cz + "cz check --allow-abort --commit-msg-file={{commit_msg_file}}"
+        check = "cz check --allow-abort --commit-msg-file={{commit_msg_file}}"
     }
 }
 local pre_push_checks = new Mapping<String, LinterStep> {
     ["commitizen-branch"] {
-        check = cz + "cz check --rev-range origin/HEAD..HEAD"
+        check = "cz check --rev-range origin/HEAD..HEAD"
     }
 }
 
@@ -99,7 +84,7 @@ hooks = new {
     ["pre-push"] {
         steps = new {
             ["pch-no-commit-to-branch"] {
-                run = pch + "no-commit-to-branch --branch=main"
+                run = "no-commit-to-branch --branch=main"
             }
             ...pre_push_checks
             ...linters
