@@ -1,7 +1,0 @@
-import "package://github.com/jdx/hk/releases/download/v0.6.5/hk@0.6.5#/Config.pkl"
-
-class SqlFluff extends Config.Linter {
-    glob = List("**/*.sql")
-    check = "sqlfluff lint --dialect duckdb {{ files }}"
-    fix = "sqlfluff fix --dialect duckdb {{ files }}"
-}

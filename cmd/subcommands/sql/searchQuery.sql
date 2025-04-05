@@ -1,6 +1,12 @@
--- sqlfluff:dialect:duckdb
-
-SELECT subDir, filename, content, modified_at
+SELECT
+    note.sub_dir,
+    note.filename,
+    note.content,
+    note.modified_at
 FROM note
-JOIN embedding USING (filename)
-LIMIT ?;
+INNER JOIN embedding ON note.filename = embedding.filename
+-- Order by match quality
+ORDER BY note.modified_at
+LIMIT
+    ?
+    OFFSET ?;

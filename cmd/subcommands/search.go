@@ -26,7 +26,7 @@ var SQL_INIT string
 var SEARCH_QUERY string
 
 type Note struct {
-	subDir      string
+	sub_dir     string
 	filename    string
 	content     string
 	modified_at time.Time
@@ -47,7 +47,7 @@ func storeNotes(db *sql.DB, notes []Note) (err error) {
 	defer stmtEmbed.Close()
 
 	for _, note := range notes {
-		if _, err := stmtNote.Exec(note.subDir, note.filename, note.content, note.modified_at); err != nil {
+		if _, err := stmtNote.Exec(note.sub_dir, note.filename, note.content, note.modified_at); err != nil {
 			return err
 		}
 		// TODO: Consider alternative chunking techniques
@@ -78,7 +78,7 @@ func ingestSubdir(db *sql.DB, syncDir, subDir string) (err error) {
 			if err != nil {
 				return err
 			}
-			note := Note{subDir: subDir, filename: file.Name(), content: string(content), modified_at: fi.ModTime()}
+			note := Note{sub_dir: subDir, filename: file.Name(), content: string(content), modified_at: fi.ModTime()}
 			notes = append(notes, note)
 		}
 	}
@@ -106,7 +106,7 @@ func ingestAllNotes(db *sql.DB, syncDir string) (err error) {
 
 // Remove ALL notes
 func removeAllNotes(db *sql.DB) {
-    // PLANNED: CASCADE from table note didn't work
+	// PLANNED: CASCADE from table note didn't work
 	res, err := db.Exec("DELETE FROM embedding")
 	check(err)
 	res, err = db.Exec("DELETE FROM note")
@@ -124,7 +124,7 @@ func search(db *sql.DB, query string) (err error) {
 		return
 	}
 
-	rows, err := stmt.Query(2)
+	rows, err := stmt.Query(2, 0)
 	defer rows.Close()
 	if err != nil {
 		return
@@ -133,11 +133,11 @@ func search(db *sql.DB, query string) (err error) {
 	log.Println("\n\n==============\n ")
 	for rows.Next() {
 		n := new(Note)
-		if err := rows.Scan(&n.subDir, &n.filename, &n.content, &n.modified_at); err != nil {
+		if err := rows.Scan(&n.sub_dir, &n.filename, &n.content, &n.modified_at); err != nil {
 			return err
 		}
 		log.Println("\n\n--------------\n ")
-		log.Printf("%s | %s | %v", n.subDir, n.filename, n.modified_at.Format(time.RFC3339))
+		log.Printf("%s | %s | %v", n.sub_dir, n.filename, n.modified_at.Format(time.RFC3339))
 		log.Println(n.content)
 	}
 	log.Println("\n\n==============\n ")
@@ -181,15 +181,18 @@ func AttachSearch(cli *clir.Cli) {
 	searchCmd.StringFlag("sync-dir", "Sync Directory", &syncDir)
 
 	searchCmd.Action(func() (err error) {
+		// HACK: if the schema changes, the current workaround is to remove the file
+		if err := os.Remove(filepath.Join(syncDir, "yak-shears.db")); err != nil {
+			return err
+		}
+
 		db, err := connectDb(syncDir)
 		if err != nil {
 			return
 		}
 		defer db.Close()
-		// HACK: if the schema changes, the current workaround is to run:
-		// rm yak-shears.db
-		// HACK: removal and re-ingestion is sub-optimal and only for development
-		removeAllNotes(db)
+		// // HACK: removal and re-ingestion is sub-optimal and only for development
+		// removeAllNotes(db)
 		if err := ingestAllNotes(db, syncDir); err != nil {
 			return err
 		}

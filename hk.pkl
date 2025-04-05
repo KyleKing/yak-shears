@@ -1,7 +1,6 @@
 amends "package://github.com/jdx/hk/releases/download/v0.6.5/hk@0.6.5#/Config.pkl"
 import "package://github.com/jdx/hk/releases/download/v0.6.5/hk@0.6.5#/builtins/actionlint.pkl"
-// import "package://github.com/jdx/hk/releases/download/v0.6.5/hk@0.6.5#/builtins/sql_fluff.pkl"
-import "./sql_fluff.pkl"
+import "package://github.com/jdx/hk/releases/download/v0.6.5/hk@0.6.5#/builtins/sql_fluff.pkl"
 // import "package://github.com/jdx/hk/releases/download/v0.6.5/hk@0.6.5#/builtins/taplo.pkl"
 
 linters = new {
