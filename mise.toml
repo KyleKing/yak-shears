@@ -1,18 +1,13 @@
-[tasks.coverage]
-description = "View test coverage"
-# https://go.dev/blog/cover#heat-maps
-run = "go tool cover -html=coverage.out"
-
 [tasks.format]
 description = "Format code"
 run = ["go fmt ./..."]
 sources = ['**/*.go']
 
-[tasks.new-test]
-description = "Create a new note in the global test folder"
-run = "SHEARS_SUBDIR=test go run . new -o"
+[tasks.hooks]
+description = "Run git hook fixes"
+run = ["hk fix --all"]
 
-[tasks.install]
+[tasks.install-system]
 description = "Install latest code system-wide"
 run = "go install ."
 
@@ -26,6 +21,15 @@ description = "Run test"
 # https://stackoverflow.com/a/21725603/3219667
 run = "go test -coverprofile=coverage.out -coverpkg=./... ./..."
 sources = ['**/*.go']
+
+[tasks.test-coverage]
+description = "View test coverage"
+# https://go.dev/blog/cover#heat-maps
+run = "go tool cover -html=coverage.out"
+
+[tasks.test-new]
+description = "Create a new note in the global test folder"
+run = "SHEARS_SUBDIR=test go run . new -o"
 
 [tasks.update]
 description = "Update dependencies"

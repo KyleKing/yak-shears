@@ -5,6 +5,8 @@ import "package://github.com/jdx/hk/releases/download/v0.7.0/hk@0.7.0#/builtins.
 
 min_hk_version = "0.7.0"
 
+// FYI: see file extension mappings used by pre-commit: https://github.com/pre-commit/identify/blob/dc20df20bda102dc74ca8531465bfcd20a7f26bf/identify/extensions.py
+
 local linters = new Mapping<String, LinterStep> {
     ["actionlint"] = builtins.actionlint
     ["pkl"] {
@@ -12,7 +14,11 @@ local linters = new Mapping<String, LinterStep> {
         check = "pkl eval {{files}} >/dev/null"
     }
     ["sql_fluff"] = builtins.sql_fluff
-    // ["taplo"] = builtins.taplo  // TODO: prefer pappasam/toml-sort instead
+    ["toml-sort"] {
+        glob = List("**/*.toml")
+        check = "toml-sort {{ files }}"
+        fix = "toml-sort --in-place {{ files }}"
+    }
 }
 
 local commit_msg_checks = new Mapping<String, LinterStep> {

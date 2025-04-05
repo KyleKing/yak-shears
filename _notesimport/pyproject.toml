@@ -1,8 +1,8 @@
 [project]
-name = "notesimport"
-version = "0.0.0"
-description = "One-time export"
-requires-python = ">=3.13"
 dependencies = [
-    "macnotesapp>=0.8.0",
+  "macnotesapp>=0.8.0",
 ]
+description = "One-time export"
+name = "notesimport"
+requires-python = ">=3.13"
+version = "0.0.0"
