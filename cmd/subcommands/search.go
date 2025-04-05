@@ -33,10 +33,10 @@ var INSERT_EMBEDDING string
 var SEARCH_QUERY string
 
 type Note struct {
-	subDir     string `db:"sub_dir"`
-	filename   string
-	content    string
-	modifiedAt time.Time `db:"modified_at"`
+	SubDir     string    `db:"sub_dir"`
+	Filename   string    `db:"filename"`
+	Content    string    `db:"content"`
+	ModifiedAt time.Time `db:"modified_at"`
 }
 
 // Upsert modified notes
@@ -48,9 +48,9 @@ func storeNotes(db *sqlx.DB, notes []Note) (err error) {
 			return err
 		}
 
-		for _, chunk := range strings.Split(note.content, `\n`) {
+		for _, chunk := range strings.Split(note.Content, `\n`) {
 			_, err := db.NamedExec(INSERT_EMBEDDING, map[string]interface{}{
-				"filename":  note.filename,
+				"filename":  note.Filename,
 				"embedding": chunk,
 			})
 			if err != nil {
@@ -79,7 +79,7 @@ func ingestSubdir(db *sqlx.DB, syncDir, subDir string) (err error) {
 			if err != nil {
 				return err
 			}
-			note := Note{subDir: subDir, filename: file.Name(), content: string(content), modifiedAt: fi.ModTime()}
+			note := Note{SubDir: subDir, Filename: file.Name(), Content: string(content), ModifiedAt: fi.ModTime()}
 			notes = append(notes, note)
 		}
 	}
@@ -125,7 +125,7 @@ func search(db *sqlx.DB, query string) (err error) {
 	}
 
 	for _, n := range notes {
-		log.Printf("%s | %s | %v\n%s", n.subDir, n.filename, n.modifiedAt.Format(time.RFC3339), n.content)
+		log.Printf("%s | %s | %v\n%s", n.SubDir, n.Filename, n.ModifiedAt.Format(time.RFC3339), n.Content)
 	}
 	return
 }
