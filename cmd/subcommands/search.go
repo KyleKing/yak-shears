@@ -116,7 +116,11 @@ func removeAllNotes(db *sqlx.DB) {
 // Search for note in database
 func search(db *sqlx.DB, query string) (err error) {
 	notes := []Note{}
-	err = db.Select(&notes, SEARCH_QUERY, map[string]interface{}{
+	nstmt, err := db.PrepareNamed(SEARCH_QUERY)
+	if err != nil {
+		return fmt.Errorf("failed to prepare search query: %w", err)
+	}
+	err = nstmt.Select(&notes, map[string]interface{}{
 		"limit_":  2,
 		"offset_": 0,
 	})
