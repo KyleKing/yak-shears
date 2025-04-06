@@ -13,7 +13,7 @@ func TestAttachSearch(t *testing.T) {
 	tmpTestSubDir := resetTmpTestDir(t, "search")
 
 	// PLANNED: Consider testing against a seeded database
-	// db, err := connectDb(filepath.Dir(tmpTestSubDir))
+	// db, err := connectDB(filepath.Dir(tmpTestSubDir))
 	// require.NoError(t, err)
 	// defer db.Close()
 	//

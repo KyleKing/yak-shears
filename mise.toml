@@ -7,7 +7,7 @@ description = "Use in GitHub Actions"
 
 [tasks.format]
 description = "Format code"
-run = ["hk fix --quiet", "testifylint --enable-all --fix ./...", "golangci-lint run --fix ./..."]
+run = ["golangci-lint run --fix ./...", "hk fix --quiet"]
 sources = ['**/*.go']
 
 [tasks.install-system]

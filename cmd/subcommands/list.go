@@ -65,10 +65,10 @@ type FileSummary struct {
 type OutputFormat func([]FileSummary) string
 
 func summarize(summaries []FileSummary) string {
-	mod_time_col := "Modified"
+	modTimeCol := "Modified"
 
 	t := table.NewWriter()
-	t.AppendHeader(table.Row{"subDir", "File Name", mod_time_col, "Header"})
+	t.AppendHeader(table.Row{"subDir", "File Name", modTimeCol, "Header"})
 	for _, summary := range summaries {
 		stat := summary.stat
 		t.AppendRow([]interface{}{
@@ -76,7 +76,7 @@ func summarize(summaries []FileSummary) string {
 		})
 	}
 	t.SetColumnConfigs([]table.ColumnConfig{{
-		Name:        mod_time_col,
+		Name:        modTimeCol,
 		Transformer: text.NewTimeTransformer(time.RFC822, nil), // "02 Jan 06 15:04 MST"
 	}})
 	return t.Render()
@@ -125,7 +125,7 @@ func calculateStats(syncDir, subDir string) (stats []FileStat, err error) {
 		if !file.IsDir() && strings.HasSuffix(file.Name(), ".dj") {
 			fi, err := file.Info()
 			if err != nil {
-				return stats, fmt.Errorf("Error with specified file (`%v`): %w", file, err)
+				return stats, fmt.Errorf("error with specified file (`%v`): %w", file, err)
 			}
 			stat := FileStat{file: file, fileInfo: fi, subDir: subDir, path: filepath.Join(dir, file.Name())}
 			stats = append(stats, stat)

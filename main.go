@@ -11,7 +11,7 @@ func main() {
 	cli := cmd.InitCli()
 
 	if err := cli.Run(); err != nil {
-		fmt.Println("Error encountered: ", err)
+		fmt.Fprintf(os.Stderr, "Error encountered: %v\n", err)
 		os.Exit(1)
 	}
 }

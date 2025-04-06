@@ -34,7 +34,7 @@ func resetTmpTestDir(t *testing.T, subDir string) string {
 // Look for exactly one file that matches the prefix
 func matchCreatedFile(testDir string, prefix string, t *testing.T) {
 	matchedPaths := []string{}
-	validateFiles := func(path string, fileInfo os.FileInfo, inpErr error) error {
+	validateFiles := func(path string, _ os.FileInfo, _ error) error {
 		stat, err := os.Stat(path)
 		if err != nil {
 			return err
@@ -43,7 +43,7 @@ func matchCreatedFile(testDir string, prefix string, t *testing.T) {
 		if strings.HasPrefix(filepath.Base(path), prefix) {
 			matchedPaths = append(matchedPaths, path)
 		} else if stat.Mode().IsRegular() {
-			return fmt.Errorf("At least one unrecognized file when attempting to match (%s): %s (matchedPaths=%v)", prefix, path, matchedPaths)
+			return fmt.Errorf("at least one unrecognized file when attempting to match (%s): %s (matchedPaths=%v)", prefix, path, matchedPaths)
 		}
 
 		return nil

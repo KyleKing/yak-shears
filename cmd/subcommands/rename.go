@@ -13,7 +13,7 @@ import (
 func readCreationTime(path string) (string, error) {
 	t, err := times.Stat(path)
 	if err != nil {
-		return "", fmt.Errorf("Error with specified file (`%s`): %w", path, err)
+		return "", fmt.Errorf("error with specified file (`%s`): %w", path, err)
 	}
 	return toTimeName(t.BirthTime()), nil
 }
@@ -33,7 +33,10 @@ func renameAction(flags *RenameFlags) (err error) {
 	if err != nil {
 		return
 	}
-	renameFile(flags.Path, cTime)
+	err = renameFile(flags.Path, cTime)
+	if err != nil {
+		return fmt.Errorf("failed to rename file: %w", err)
+	}
 	fmt.Printf("Renamed %s with time %v\n", flags.Path, cTime)
 	return
 }
