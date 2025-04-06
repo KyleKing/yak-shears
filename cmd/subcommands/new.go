@@ -64,7 +64,7 @@ func AttachNew(cli *clir.Cli) {
 			cmd := exec.Command("open", "-a", visual, path)
 			out, err := cmd.Output()
 			if err != nil {
-				return fmt.Errorf("Failed to run '%v' with error '%s' and output '%v'", cmd, err, out)
+				return fmt.Errorf("Failed to run '%v' with error '%w' and output '%v'", cmd, err, out)
 			}
 		}
 		fmt.Println(path)

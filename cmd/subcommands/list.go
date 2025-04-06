@@ -86,7 +86,7 @@ func readMeta(path string) (string, error) {
 	// Adapted from: https://www.bytesizego.com/blog/reading-file-line-by-line-golang
 	file, err := os.Open(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to open file %s: %s", path, err)
+		return "", fmt.Errorf("failed to open file %s: %w", path, err)
 	}
 	defer file.Close()
 
@@ -97,7 +97,7 @@ func readMeta(path string) (string, error) {
 		return line, nil
 	}
 	if err := scanner.Err(); err != nil {
-		return "", fmt.Errorf("error reading file %s: %s", path, err)
+		return "", fmt.Errorf("error reading file %s: %w", path, err)
 	}
 	return "", nil
 }
