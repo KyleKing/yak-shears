@@ -54,7 +54,7 @@ local linters = new Mapping<String, LinterStep> {
     ["sql_fluff"] = builtins.sql_fluff
     ["toml-sort"] {
         glob = List("**/*.toml")
-        check = "toml-sort {{ files }}"
+        check = "toml-sort --check {{ files }}"
         fix = "toml-sort --in-place {{ files }}"
     }
 }

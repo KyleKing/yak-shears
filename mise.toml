@@ -7,7 +7,7 @@ description = "Use in GitHub Actions"
 
 [tasks.format]
 description = "Format code"
-run = ["go fmt ./...", "testifylint --enable-all --fix ./...", "golangci-lint run --fix ./..."]
+run = ["testifylint --enable-all --fix ./...", "golangci-lint run --fix ./..."]
 sources = ['**/*.go']
 
 [tasks.hooks]
