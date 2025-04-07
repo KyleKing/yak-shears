@@ -47,14 +47,30 @@ func storeNotes(db *sqlx.DB, notes []Note) (err error) {
 			return fmt.Errorf("failed to execute insertNote for note %s: %w", note.Filename, err)
 		}
 
-		// TODO: Consider alternative chunking techniques
-		for _, chunk := range strings.Split(note.Content, `\n`) {
-			_, err := db.NamedExec(insertEmbeddingStmt, map[string]interface{}{
-				"filename":  note.Filename,
-				"embedding": chunk,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to execute insertEmbeddingStmt for chunk in note %s: %w", note.Filename, err)
+		// Updated chunking logic: split by paragraph, then by sentence if necessary
+		paragraphs := strings.Split(note.Content, "\n\n")
+		for _, paragraph := range paragraphs {
+			if len(paragraph) > 500 { // Example threshold for large chunks
+				sentences := strings.Split(paragraph, ". ")
+				for _, sentence := range sentences {
+					if len(sentence) > 0 {
+						_, err := db.NamedExec(insertEmbeddingStmt, map[string]interface{}{
+							"filename":  note.Filename,
+							"embedding": sentence,
+						})
+						if err != nil {
+							return fmt.Errorf("failed to execute insertEmbeddingStmt for sentence in note %s: %w", note.Filename, err)
+						}
+					}
+				}
+			} else {
+				_, err := db.NamedExec(insertEmbeddingStmt, map[string]interface{}{
+					"filename":  note.Filename,
+					"embedding": paragraph,
+				})
+				if err != nil {
+					return fmt.Errorf("failed to execute insertEmbeddingStmt for paragraph in note %s: %w", note.Filename, err)
+				}
 			}
 		}
 	}
