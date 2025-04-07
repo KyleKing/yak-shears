@@ -39,42 +39,43 @@ type Note struct {
 }
 
 // Upsert modified notes
-func storeNotes(db *sqlx.DB, notes []Note) (err error) {
-	// PLANNED: submit multiple notes in single statement
+// PLANNED: submit multiple notes in single statement
+func storeNotes(db *sqlx.DB, notes []Note, chunkingFunc func(string) []string) (err error) {
 	for _, note := range notes {
 		_, err := db.NamedExec(insertNoteStmt, note)
 		if err != nil {
 			return fmt.Errorf("failed to execute insertNote for note %s: %w", note.Filename, err)
 		}
 
-		// Updated chunking logic: split by paragraph, then by sentence if necessary
-		paragraphs := strings.Split(note.Content, "\n\n")
-		for _, paragraph := range paragraphs {
-			if len(paragraph) > 500 { // Example threshold for large chunks
-				sentences := strings.Split(paragraph, ". ")
-				for _, sentence := range sentences {
-					if len(sentence) > 0 {
-						_, err := db.NamedExec(insertEmbeddingStmt, map[string]interface{}{
-							"filename":  note.Filename,
-							"embedding": sentence,
-						})
-						if err != nil {
-							return fmt.Errorf("failed to execute insertEmbeddingStmt for sentence in note %s: %w", note.Filename, err)
-						}
-					}
-				}
-			} else {
+		chunks := chunkingFunc(note.Content)
+		for _, chunk := range chunks {
+			if len(chunk) > 0 {
 				_, err := db.NamedExec(insertEmbeddingStmt, map[string]interface{}{
 					"filename":  note.Filename,
-					"embedding": paragraph,
+					"embedding": chunk,
 				})
 				if err != nil {
-					return fmt.Errorf("failed to execute insertEmbeddingStmt for paragraph in note %s: %w", note.Filename, err)
+					return fmt.Errorf("failed to execute insertEmbeddingStmt for chunk in note %s: %w", note.Filename, err)
 				}
 			}
 		}
 	}
 	return
+}
+
+// Default chunking logic: split by paragraph, then by sentence if necessary
+func defaultChunkingLogic(content string) []string {
+	var chunks []string
+	paragraphs := strings.Split(content, "\n\n")
+	for _, paragraph := range paragraphs {
+		if len(paragraph) > 500 { // Example threshold for large chunks
+			sentences := strings.Split(paragraph, ". ")
+			chunks = append(chunks, sentences...)
+		} else {
+			chunks = append(chunks, paragraph)
+		}
+	}
+	return chunks
 }
 
 func ingestSubdir(db *sqlx.DB, syncDir, subDir string) (err error) {
@@ -100,7 +101,7 @@ func ingestSubdir(db *sqlx.DB, syncDir, subDir string) (err error) {
 		}
 	}
 
-	if err := storeNotes(db, notes); err != nil {
+	if err := storeNotes(db, notes, defaultChunkingLogic); err != nil {
 		return fmt.Errorf("failed to store notes for subdir %s: %w", subDir, err)
 	}
 	return nil
