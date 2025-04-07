@@ -185,7 +185,7 @@ func AttachSearch(cli *clir.Cli) {
 
 	searchCmd.Action(func() (err error) {
 		// HACK: if the schema changes, the current workaround is to remove the file
-		if err := os.Remove(filepath.Join(syncDir, "yak-shears.db")); err != nil {
+		if err := os.Remove(filepath.Join(syncDir, "yak-shears.db")); err != nil && !os.IsNotExist(err) {
 			return fmt.Errorf("failed to remove database file: %w", err)
 		}
 
