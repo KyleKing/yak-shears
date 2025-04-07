@@ -1,4 +1,4 @@
-package subcommands
+package subcommands_test
 
 import (
 	"fmt"
@@ -37,7 +37,7 @@ func matchCreatedFile(testDir string, prefix string, t *testing.T) {
 	validateFiles := func(path string, _ os.FileInfo, _ error) error {
 		stat, err := os.Stat(path)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get file info for %s: %w", path, err)
 		}
 
 		if strings.HasPrefix(filepath.Base(path), prefix) {

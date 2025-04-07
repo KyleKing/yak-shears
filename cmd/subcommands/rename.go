@@ -15,13 +15,16 @@ func readCreationTime(path string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error with specified file (`%s`): %w", path, err)
 	}
-	return toTimeName(t.BirthTime()), nil
+	return ToTimeName(t.BirthTime()), nil
 }
 
 func renameFile(path, cTime string) error {
 	basename, _, _ := strings.Cut(filepath.Base(path), ".")
 	newPath := strings.ReplaceAll(path, basename, cTime)
-	return os.Rename(path, newPath)
+	if err := os.Rename(path, newPath); err != nil {
+		return fmt.Errorf("failed to rename file from %s to %s: %w", path, newPath, err)
+	}
+	return nil
 }
 
 type RenameFlags struct {

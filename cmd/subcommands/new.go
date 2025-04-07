@@ -15,13 +15,13 @@ import (
 	"github.com/KyleKing/yak-shears/cmd/config"
 )
 
-func toTimeName(t time.Time) string {
+func ToTimeName(t time.Time) string {
 	// Adapted from: https://stackoverflow.com/a/65221179/3219667
 	//  and https://pkg.go.dev/time
 	return strings.Replace(t.UTC().Format(time.RFC3339), ":", "_", 2) // or RFC9557?
 }
 
-func fromTimeName(name string) (time.Time, error) {
+func FromTimeName(name string) (time.Time, error) {
 	parsedName := strings.Replace(name, "_", ":", 2)
 	time, err := time.Parse(time.RFC3339, parsedName)
 	if err != nil {
@@ -31,7 +31,7 @@ func fromTimeName(name string) (time.Time, error) {
 
 }
 
-func createFile(path string) (err error) {
+func CreateFile(path string) (err error) {
 	file, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
@@ -61,9 +61,9 @@ func AttachNew(cli *clir.Cli) {
 			return fmt.Errorf("'%s' is not one of %v subDirs in '%s'. Create the folder if intended", subDir, folderNames, syncDir)
 		}
 
-		name := toTimeName(time.Now()) + ".dj"
+		name := ToTimeName(time.Now()) + ".dj"
 		path := filepath.Join(syncDir, subDir, name)
-		if err := createFile(path); err != nil {
+		if err := CreateFile(path); err != nil {
 			return err
 		}
 		if open {

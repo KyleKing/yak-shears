@@ -21,13 +21,13 @@ import (
 //  https://www.digitalocean.com/community/tutorials/how-to-make-http-requests-in-go
 
 var (
-	//go:embed sql/init.sql
-	sqlInitStmt string
-	//go:embed sql/insertNote.sql
+	//go:embed sql/initStmt.sql
+	initStmt string
+	//go:embed sql/insertNoteStmt.sql
 	insertNoteStmt string
-	//go:embed sql/insertEmbedding.sql
+	//go:embed sql/insertEmbeddingStmt.sql
 	insertEmbeddingStmt string
-	//go:embed sql/searchQuery.sql
+	//go:embed sql/searchQueryStmt.sql
 	searchQueryStmt string
 )
 
@@ -91,17 +91,22 @@ func ingestSubdir(db *sqlx.DB, syncDir, subDir string) (err error) {
 }
 
 // Purge data
-func dropDataHack(db *sqlx.DB) (err error) {
-	_, err = db.Exec("DROP TABLE IF EXISTS note CASCADE")
+func purgeData(db *sqlx.DB) (err error) {
+	// PLANNED: DROP IF EXISTS _ CASCADE should require only dropping the note table, right?
+	_, err = db.Exec("DELETE FROM embedding")
 	if err != nil {
-		return fmt.Errorf("failed to remove tables: %w", err)
+		return fmt.Errorf("failed to purge embedding table: %w", err)
+	}
+	_, err = db.Exec("DELETE FROM note")
+	if err != nil {
+		return fmt.Errorf("failed to purge note table: %w", err)
 	}
 	return nil
 }
 
 // Ingest ALL Notes
 func ingestAllNotes(db *sqlx.DB, syncDir string) (err error) {
-	if err = dropDataHack(db); err != nil {
+	if err = purgeData(db); err != nil {
 		return err
 	}
 
@@ -156,7 +161,7 @@ func connectDB(dir string) (db *sqlx.DB, err error) {
 	// defer conn.Close()
 	// return conn, nil
 
-	_, err = db.Exec(sqlInitStmt)
+	_, err = db.Exec(initStmt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize database schema: %w", err)
 	}
@@ -181,7 +186,7 @@ func AttachSearch(cli *clir.Cli) {
 	searchCmd.Action(func() (err error) {
 		// HACK: if the schema changes, the current workaround is to remove the file
 		if err := os.Remove(filepath.Join(syncDir, "yak-shears.db")); err != nil {
-			return err
+			return fmt.Errorf("failed to remove database file: %w", err)
 		}
 
 		db, err := connectDB(syncDir)

@@ -1,12 +1,13 @@
-package cmd
+package cmd_test
 
 import (
 	"testing"
 
+	"github.com/KyleKing/yak-shears/cmd"
 	"github.com/stretchr/testify/require"
 )
 
 func TestInitCli(t *testing.T) {
-	err := InitCli().Run("-help")
+	err := cmd.InitCli().Run("-help")
 	require.NoError(t, err)
 }

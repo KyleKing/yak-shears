@@ -7,7 +7,7 @@ description = "Use in GitHub Actions"
 
 [tasks.format]
 description = "Format code"
-run = ["golangci-lint run --fix ./...", "hk fix --quiet"]
+run = ["hk fix --quiet"]
 sources = ['**/*.go']
 
 [tasks.install-system]
@@ -20,14 +20,14 @@ description = "Run test"
 run = "go test -coverprofile=coverage.out -coverpkg=./... ./..."
 sources = ['**/*.go']
 
-[tasks.test-coverage]
-description = "View test coverage"
-# https://go.dev/blog/cover#heat-maps
-run = "go tool cover -html=coverage.out"
-
 [tasks.test-new]
 description = "Create a new note in the global test folder"
 run = "SHEARS_SUBDIR=test go run . new -o"
+
+[tasks.test-view-coverage]
+description = "View last run test coverage. Alternatively, use `gocovsh`"
+# https://go.dev/blog/cover#heat-maps
+run = "go tool cover -html=coverage.out"
 
 [tasks.update]
 description = "Update dependencies"
@@ -35,7 +35,6 @@ run = ["go get -u ./...", "go mod tidy"]
 
 [tools] # Upgrade with `mise upgrade --bump`
 go = "latest"
-"go:github.com/Antonboom/testifylint" = "latest"
 "go:github.com/golangci/golangci-lint/cmd/golangci-lint" = "latest"
 "go:github.com/rhysd/actionlint/cmd/actionlint" = "latest"
 "pipx:commitizen" = "latest"
