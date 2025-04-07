@@ -33,11 +33,5 @@ run = "go tool cover -html=coverage.out"
 description = "Update dependencies"
 run = ["go get -u ./...", "go mod tidy"]
 
-[tools] # Upgrade with `mise upgrade --bump`
+[tools]
 go = "latest"
-"go:github.com/golangci/golangci-lint/cmd/golangci-lint" = "latest"
-"go:github.com/rhysd/actionlint/cmd/actionlint" = "latest"
-"pipx:commitizen" = "latest"
-"pipx:pre-commit-hooks" = "latest"
-"pipx:sqlfluff" = "latest"
-"pipx:toml-sort" = "latest"

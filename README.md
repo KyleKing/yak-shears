@@ -43,6 +43,12 @@ My personal note taking app, but you probably want to use one of these primarily
 | _[Digital Gardens](https://github.com/MaggieAppleton/digital-gardeners)_ | "Resources, links, projects, and ideas for gardeners tending their digital notes on the public interwebs" |
 | Open Source hosted on [Pika Pods](https://www.pikapods.com/apps#notes) | Supports self-hosting of Memos, [linkding](https://github.com/sissbruecker/linkding), etc. |
 
+## Installation
+
+1. Run `echo '[env]\nMISE_ENV = "hk"' > mise.local.toml`
+1. Then run `mise install` and `hk` (`brew install mise hk`)
+2. Validate with `mise run format ::: test`
+
 ## Goals
 
 ![./assets/shears.webp](./assets/shears.webp)
