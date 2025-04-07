@@ -173,11 +173,6 @@ func connectDB(dir string) (db *sqlx.DB, err error) {
 		return nil, fmt.Errorf("failed to open database at %s: %w", path, err)
 	}
 
-	// PLANNED: use a connection for threading
-	// conn, err := db.Conn(context.Background())
-	// defer conn.Close()
-	// return conn, nil
-
 	_, err = db.Exec(initStmt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize database schema: %w", err)
