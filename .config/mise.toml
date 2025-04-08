@@ -7,30 +7,36 @@ description = "Use in GitHub Actions"
 
 [tasks.format]
 description = "Format code"
+dir = "./../" # FYI: required because the default is otherwise `.config/` where these files are located
 run = ["hk fix --quiet"]
 sources = ['**/*.go']
 
-[tasks.install-system]
+[tasks."system:create-new"]
+description = "Create a new note in the global test folder"
+dir = "./../"
+run = "SHEARS_SUBDIR=test go run . new -o"
+
+[tasks."system:install"]
 description = "Install latest code system-wide"
+dir = "./../"
 run = "go install ."
 
 [tasks.test]
 description = "Run test"
+dir = "./../"
 # https://stackoverflow.com/a/21725603/3219667
 run = "go test -coverprofile=coverage.out -coverpkg=./... ./..."
 sources = ['**/*.go']
 
-[tasks.test-new]
-description = "Create a new note in the global test folder"
-run = "SHEARS_SUBDIR=test go run . new -o"
-
-[tasks.test-view-coverage]
+[tasks."test:view-coverage"]
 description = "View last run test coverage. Alternatively, use `gocovsh`"
+dir = "./../"
 # https://go.dev/blog/cover#heat-maps
 run = "go tool cover -html=coverage.out"
 
 [tasks.update]
 description = "Update dependencies"
+dir = "./../"
 run = ["go get -u ./...", "go mod tidy"]
 
 [tools]
