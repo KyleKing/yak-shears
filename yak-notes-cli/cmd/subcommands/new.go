@@ -12,7 +12,7 @@ import (
 
 	"github.com/leaanthony/clir"
 
-	"github.com/KyleKing/yak-shears/cmd/config"
+	"github.com/KyleKing/yak-shears/yak-notes-cli/cmd/config"
 )
 
 func ToTimeName(t time.Time) string {

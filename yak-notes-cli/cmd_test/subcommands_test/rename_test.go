@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/KyleKing/yak-shears/cmd/subcommands"
+	"github.com/KyleKing/yak-shears/yak-notes-cli/cmd/subcommands"
 	"github.com/stretchr/testify/require"
 )
 

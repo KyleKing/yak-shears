@@ -4,7 +4,7 @@ import (
 	// PLANNED: Consider building with the builtin package instead
 	"github.com/leaanthony/clir"
 
-	"github.com/KyleKing/yak-shears/cmd/subcommands"
+	"github.com/KyleKing/yak-shears/yak-notes-cli/cmd/subcommands"
 )
 
 func InitCli() (cli *clir.Cli) {

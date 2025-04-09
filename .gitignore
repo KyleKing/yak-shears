@@ -69,7 +69,7 @@ Temporary Items
 *_templ.go
 
 # Build binary
-^yak-shears$
+^yak-notes-cli$
 
 # Local configuration
 mise.local.toml

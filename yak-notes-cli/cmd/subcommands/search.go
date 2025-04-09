@@ -12,7 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/marcboeker/go-duckdb" // Configure DuckDB driver
 
-	"github.com/KyleKing/yak-shears/cmd/config"
+	"github.com/KyleKing/yak-shears/yak-notes-cli/cmd/config"
 	"github.com/leaanthony/clir"
 )
 

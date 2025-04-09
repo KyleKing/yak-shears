@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/KyleKing/yak-shears/cmd"
+	"github.com/KyleKing/yak-shears/yak-notes-cli/cmd"
 )
 
 func main() {

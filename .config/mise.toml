@@ -2,11 +2,17 @@
 experimental = true # required for go for now
 
 [tasks.ci]
-depends = ["ci:notes-cli"]
+depends = ["ci:notes-cli", "ci:web"]
 description = "Used in GitHub Actions"
 
 [tasks."ci:notes-cli"]
-dir = "../yak-notes-cli/yak-shears"
+dir = "../yak-notes-cli"
+hide = true
+run = "mise run test"
+
+[tasks."ci:web"]
+dir = "../yak-shears-web"
+hide = true
 run = "mise run test"
 
 [tasks.hooks]

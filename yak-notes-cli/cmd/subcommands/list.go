@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/KyleKing/yak-shears/cmd/config"
+	"github.com/KyleKing/yak-shears/yak-notes-cli/cmd/config"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/leaanthony/clir"
