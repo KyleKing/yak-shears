@@ -1,0 +1,2 @@
+[tasks.test]
+run = "go test -coverprofile=coverage.out -coverpkg=./... ./..."

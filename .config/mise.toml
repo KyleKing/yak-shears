@@ -9,7 +9,6 @@ description = "Use in GitHub Actions"
 description = "Format code"
 dir = "./../" # FYI: required because the default is otherwise `.config/` where these files are located
 run = ["hk fix --quiet"]
-sources = ['**/*.go']
 
 [tasks."system:create-new"]
 description = "Create a new note in the global test folder"
@@ -26,7 +25,6 @@ description = "Run test"
 dir = "./../"
 # https://stackoverflow.com/a/21725603/3219667
 run = "go test -coverprofile=coverage.out -coverpkg=./... ./..."
-sources = ['**/*.go']
 
 [tasks."test:view-coverage"]
 description = "View last run test coverage. Alternatively, use `gocovsh`"
