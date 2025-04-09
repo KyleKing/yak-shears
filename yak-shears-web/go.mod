@@ -2,7 +2,10 @@ module github.com/KyleKing/yak-shears/yak-shears-web
 
 go 1.24.2
 
-require github.com/KyleKing/yak-shears/yak-notes-cli v0.0.0-20250409034217-46fefc0cd620
+require (
+	github.com/KyleKing/yak-shears/yak-notes-cli v0.0.0-20250409034217-46fefc0cd620
+	github.com/a-h/templ v0.3.857
+)
 
 require (
 	github.com/apache/arrow-go/v18 v18.2.0 // indirect
