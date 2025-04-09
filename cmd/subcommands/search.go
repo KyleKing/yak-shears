@@ -23,10 +23,10 @@ import (
 var (
 	//go:embed sql/initStmt.sql
 	initStmt string
-	//go:embed sql/insertNoteStmt.sql
-	insertNoteStmt string
-	//go:embed sql/insertEmbeddingStmt.sql
-	insertEmbeddingStmt string
+	//go:embed sql/insertNotesStmt.sql
+	insertNotesStmt string
+	//go:embed sql/insertEmbeddingsStmt.sql
+	insertEmbeddingsStmt string
 	//go:embed sql/searchQueryStmt.sql
 	searchQueryStmt string
 )
@@ -38,29 +38,38 @@ type Note struct {
 	ModifiedAt time.Time `db:"modified_at"`
 }
 
-// Upsert modified notes
-// PLANNED: submit multiple notes in single statement
+// Batch insert modified notes
 func storeNotes(db *sqlx.DB, notes []Note, chunkingFunc func(string) []string) (err error) {
-	for _, note := range notes {
-		_, err := db.NamedExec(insertNoteStmt, note)
-		if err != nil {
-			return fmt.Errorf("failed to execute insertNote for note %s: %w", note.Filename, err)
-		}
+	if len(notes) == 0 {
+		return nil
+	}
+	_, err = db.NamedExec(insertNotesStmt, notes)
+	if err != nil {
+		return fmt.Errorf("failed to execute batch insertNotes: %w", err)
+	}
 
+	// Prepare embeddings for batch insert
+	var embeddings []map[string]interface{}
+	for _, note := range notes {
 		chunks := chunkingFunc(note.Content)
 		for _, chunk := range chunks {
 			if len(chunk) > 0 {
-				_, err := db.NamedExec(insertEmbeddingStmt, map[string]interface{}{
+				embeddings = append(embeddings, map[string]interface{}{
 					"filename":  note.Filename,
 					"embedding": chunk,
 				})
-				if err != nil {
-					return fmt.Errorf("failed to execute insertEmbeddingStmt for chunk in note %s: %w", note.Filename, err)
-				}
 			}
 		}
 	}
-	return
+
+	// Batch insert embeddings
+	if len(embeddings) > 0 {
+		_, err = db.NamedExec(insertEmbeddingsStmt, embeddings)
+		if err != nil {
+			return fmt.Errorf("failed to execute batch insertEmbeddings: %w", err)
+		}
+	}
+	return nil
 }
 
 // Default chunking logic: split by paragraph, then by sentence if necessary
