@@ -1,0 +1,6 @@
+go {
+	directives {
+		use ./yak-notes-cli
+		use ./yak-shears-web
+	}
+}
