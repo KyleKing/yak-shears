@@ -2,8 +2,16 @@ package main
 
 import (
 	"fmt"
+	"os"
+
+	"github.com/KyleKing/yak-shears/yak-notes-cli/cmd"
 )
 
 func main() {
-	fmt.Print("Hello World")
+	cli := cmd.InitCli()
+
+	if err := cli.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error encountered: %v\n", err)
+		os.Exit(1)
+	}
 }
