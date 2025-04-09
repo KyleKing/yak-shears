@@ -1,0 +1,4 @@
+[tasks."system:create-new"]
+description = "Create a new note in the global test folder"
+dir = "./../"
+run = "SHEARS_SUBDIR=test go run . new -o"

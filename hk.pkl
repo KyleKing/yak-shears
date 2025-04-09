@@ -14,11 +14,6 @@ local linters = new Mapping<String, LinterStep> {
     ["actionlint"] = builtins.actionlint
     // TODO: can't use `{{ files }}` because of error: `typechecking error: named files must all be in one directory; have cmd/config and cmd`
     // ["golangci_lint"] = builtins.golangci_lint
-    ["golangci_lint"] {
-        glob = List("**/*.go")
-        check = "golangci-lint run ./..."
-        fix = "golangci-lint run --fix ./..."
-    }
     ["pkl"] {
         glob = List("*.pkl")
         check = "pkl eval {{files}} >/dev/null"
@@ -43,7 +38,6 @@ local linters = new Mapping<String, LinterStep> {
         glob = List("**/*.{yml,yaml}")
         check = "check-yaml {{ files }}"
     }
-
     ["pch-end-of-file-fixer"] {
         glob = file_list
         check_first = false  // FYI: without check_first, these linters request write-locks on all files
@@ -88,7 +82,7 @@ hooks = new {
     ["pre-commit"] {
         fix = true
         steps = new {
-            ["stash"] = new StashStep {} // TODO: submit ticket that this fails when tools aren't avaialble
+            ["stash"] = new StashStep {}
             ...linters
         }
     }

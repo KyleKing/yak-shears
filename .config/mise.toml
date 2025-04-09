@@ -2,40 +2,17 @@
 experimental = true # required for go for now
 
 [tasks.ci]
-depends = ["test"]
-description = "Use in GitHub Actions"
+depends = ["ci:notes-cli"]
+description = "Used in GitHub Actions"
 
-[tasks.format]
-description = "Format code"
+[tasks."ci:notes-cli"]
+dir = "../yak-notes-cli/yak-shears"
+run = "mise run test"
+
+[tasks.hooks]
+description = "Run git hooks"
 dir = "./../" # FYI: required because the default is otherwise `.config/` where these files are located
 run = ["hk fix --quiet"]
-
-[tasks."system:create-new"]
-description = "Create a new note in the global test folder"
-dir = "./../"
-run = "SHEARS_SUBDIR=test go run . new -o"
-
-[tasks."system:install"]
-description = "Install latest code system-wide"
-dir = "./../"
-run = "go install ."
-
-[tasks.test]
-description = "Run test"
-dir = "./../"
-# https://stackoverflow.com/a/21725603/3219667
-run = "go test -coverprofile=coverage.out -coverpkg=./... ./..."
-
-[tasks."test:view-coverage"]
-description = "View last run test coverage. Alternatively, use `gocovsh`"
-dir = "./../"
-# https://go.dev/blog/cover#heat-maps
-run = "go tool cover -html=coverage.out"
-
-[tasks.update]
-description = "Update dependencies"
-dir = "./../"
-run = ["go get -u ./...", "go mod tidy"]
 
 [tools]
 go = "latest"

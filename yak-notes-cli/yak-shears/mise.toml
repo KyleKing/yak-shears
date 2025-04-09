@@ -1,2 +1,27 @@
+[env]
+MISE_ENV = 'subproject'
+
+[tasks.format]
+description = "Format code"
+run = ["golangci-lint run --fix ./..."]
+
+[tasks."system:install"]
+description = "Install latest code system-wide"
+dir = "./../"
+run = "go install ."
+
 [tasks.test]
+description = "Run test"
+# https://stackoverflow.com/a/21725603/3219667
 run = "go test -coverprofile=coverage.out -coverpkg=./... ./..."
+
+[tasks."test:view-coverage"]
+description = "View last run test coverage. Alternatively, use `gocovsh`"
+dir = "./../"
+# https://go.dev/blog/cover#heat-maps
+run = "go tool cover -html=coverage.out"
+
+[tasks.update]
+description = "Update dependencies"
+dir = "./../"
+run = ["go get -u ./...", "go mod tidy"]
