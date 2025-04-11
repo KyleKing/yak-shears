@@ -1,0 +1,11 @@
+ls:
+  .github/**/:
+    yml: kebab-case
+    yaml: kebab-case
+
+  .go: regex:.+_test | camelCase
+  .html: camelCase
+
+ignore:
+  - .git
+  - .jj

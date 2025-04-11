@@ -14,6 +14,15 @@ local linters = new Mapping<String, LinterStep> {
     ["actionlint"] = builtins.actionlint
     // TODO: can't use `{{ files }}` because of error: `typechecking error: named files must all be in one directory; have cmd/config and cmd`
     // ["golangci_lint"] = builtins.golangci_lint
+    ["golangci_lint"] {
+        glob = List("**/*.go")
+        check = "golangci-lint run {{ files }}"
+        fix = "golangci-lint run --fix {{ files }}"
+        workspace_indicator = "go.mod"
+    }
+    ["ls-lint"] {
+        check = "ls-lint"
+    }
     ["pkl"] {
         glob = List("*.pkl")
         check = "pkl eval {{files}} >/dev/null"
@@ -40,6 +49,7 @@ local linters = new Mapping<String, LinterStep> {
     }
     ["pch-end-of-file-fixer"] {
         glob = file_list
+        // FYI: without check, these fixers are always run!
         check_first = false  // FYI: without check_first, these linters request write-locks on all files
         fix = "end-of-file-fixer {{ files }}"
     }
