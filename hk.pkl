@@ -1,7 +1,7 @@
 // Install with `hk install --mise` to ensure local tools are available
 
-amends "package://github.com/jdx/hk/releases/download/v0.7.3/hk@0.7.3#/Config.pkl"
-import "package://github.com/jdx/hk/releases/download/v0.7.3/hk@0.7.3#/builtins.pkl"
+amends "package://github.com/jdx/hk/releases/download/v0.7.5/hk@0.7.5#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v0.7.5/hk@0.7.5#/builtins.pkl"
 
 min_hk_version = "0.7.0"
 

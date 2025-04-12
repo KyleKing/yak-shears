@@ -1,3 +1,7 @@
 [tasks."system:create-new"]
 description = "Create a new note in the global test folder"
 run = "SHEARS_SUBDIR=test go run . new -o"
+
+[tasks."system:install"]
+description = "Install latest code system-wide"
+run = "go install ."

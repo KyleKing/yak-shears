@@ -1,11 +1,13 @@
-package main
+package cmd_test
 
 import (
 	"database/sql"
 	"os"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/KyleKing/yak-shears/geese-migrations/cmd"
+
+	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
 
 func TestProcessMigrations(t *testing.T) {
@@ -37,7 +39,7 @@ DROP TABLE IF EXISTS note;`
 	os.WriteFile(migrationFile, []byte(content), 0644)
 
 	// Run processMigrations
-	err = processMigrations(dirPath, "sqlite3", dbFile)
+	err = cmd.ProcessMigrations(dirPath, "sqlite3", dbFile)
 	if err != nil {
 		t.Fatalf("processMigrations failed: %v", err)
 	}
@@ -62,13 +64,13 @@ CREATE TABLE test (id INT);
 DROP TABLE test;`
 
 	expected := "CREATE TABLE test (id INT);"
-	result, err := extractUpgradeSQL(content)
+	result, err := cmd.ExtractUpgradeSQL(content)
 	if err != nil {
 		t.Fatalf("extractUpgradeSQL failed: %v", err)
 	}
 
 	if result != expected {
-		t.Errorf("extractUpgradeSQL returned unexpected result: got %s, want %s", result, expected)
+		t.Errorf("extractUpmain.gradeSQL returned unexpected result: got %s, want %s", result, expected)
 	}
 }
 
@@ -101,7 +103,7 @@ DROP TABLE IF EXISTS note;`
 	os.WriteFile(migrationFile, []byte(content), 0644)
 
 	// Run processMigrations
-	err = processMigrations(dirPath, "sqlite3", dbFile)
+	err = cmd.ProcessMigrations(dirPath, "sqlite3", dbFile)
 	if err != nil {
 		t.Fatalf("processMigrations failed: %v", err)
 	}
@@ -113,7 +115,7 @@ DROP TABLE IF EXISTS note;`
 	}
 
 	// Run processDowngrades
-	err = processDowngrades(dirPath, "sqlite3", dbFile)
+	err = cmd.ProcessDowngrades(dirPath, "sqlite3", dbFile)
 	if err != nil {
 		t.Fatalf("processDowngrades failed: %v", err)
 	}

@@ -1,6 +1,7 @@
 go 1.24.2
 
 use (
+	./geese-migrations
 	./yak-notes-cli
 	./yak-shears-web
 )

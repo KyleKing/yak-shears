@@ -5,10 +5,6 @@ MISE_ENV = 'subproject'
 description = "Format code"
 run = ["golangci-lint run --fix ./..."]
 
-[tasks."system:install"]
-description = "Install latest code system-wide"
-run = "go install ."
-
 [tasks.test]
 description = "Run test"
 # https://stackoverflow.com/a/21725603/3219667

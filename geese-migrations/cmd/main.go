@@ -1,33 +1,18 @@
-package main
+package cmd
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"sort"
 	"strings"
+
+	"github.com/KyleKing/yak-shears/geese-migrations/internal"
 
 	_ "github.com/marcboeker/go-duckdb" // DuckDB driver
 	_ "github.com/mattn/go-sqlite3"     // SQLite driver
 )
-
-func main() {
-	// Example usage
-	dirPath := "./migrations"
-	dbType := "sqlite" // or "duckdb"
-	dsn := "example.db"
-
-	err := processMigrations(dirPath, dbType, dsn)
-	if err != nil {
-		log.Fatalf("Error processing migrations: %v", err)
-	}
-
-	err = processDowngrades(dirPath, dbType, dsn)
-	if err != nil {
-		log.Fatalf("Error processing downgrades: %v", err)
-	}
-}
 
 func processSQL(dirPath, dbType, dsn string, extractSQL func(string) (string, error), reverseOrder bool) error {
 	// Open database connection
@@ -37,23 +22,9 @@ func processSQL(dirPath, dbType, dsn string, extractSQL func(string) (string, er
 	}
 	defer db.Close()
 
-	// Read and sort filenames
-	files, err := ioutil.ReadDir(dirPath)
+	filenames, err := internal.ReadMigrationDir(dirPath)
 	if err != nil {
 		return fmt.Errorf("failed to read directory: %w", err)
-	}
-
-	var filenames []string
-	for _, file := range files {
-		if !file.IsDir() {
-			filenames = append(filenames, file.Name())
-		}
-	}
-
-	if reverseOrder {
-		sort.Sort(sort.Reverse(sort.StringSlice(filenames)))
-	} else {
-		sort.Strings(filenames)
 	}
 
 	// Process each file
@@ -78,15 +49,15 @@ func processSQL(dirPath, dbType, dsn string, extractSQL func(string) (string, er
 	return nil
 }
 
-func processMigrations(dirPath, dbType, dsn string) error {
-	return processSQL(dirPath, dbType, dsn, extractUpgradeSQL, false)
+func ProcessMigrations(dirPath, dbType, dsn string) error {
+	return processSQL(dirPath, dbType, dsn, ExtractUpgradeSQL, false)
 }
 
-func processDowngrades(dirPath, dbType, dsn string) error {
-	return processSQL(dirPath, dbType, dsn, extractDowngradeSQL, true)
+func ProcessDowngrades(dirPath, dbType, dsn string) error {
+	return processSQL(dirPath, dbType, dsn, ExtractDowngradeSQL, true)
 }
 
-func extractUpgradeSQL(content string) (string, error) {
+func ExtractUpgradeSQL(content string) (string, error) {
 	startMarker := "-- +geese up"
 	endMarker := "-- +geese down"
 
@@ -94,19 +65,19 @@ func extractUpgradeSQL(content string) (string, error) {
 	endIdx := strings.Index(content, endMarker)
 
 	if startIdx == -1 || endIdx == -1 || startIdx >= endIdx {
-		return "", fmt.Errorf("invalid markers")
+		return "", errors.New("invalid markers")
 	}
 
 	return strings.TrimSpace(content[startIdx+len(startMarker) : endIdx]), nil
 }
 
-func extractDowngradeSQL(content string) (string, error) {
+func ExtractDowngradeSQL(content string) (string, error) {
 	startMarker := "-- +geese down"
 	endMarker := "-- +geese up"
 
 	startIdx := strings.Index(content, startMarker)
 	if startIdx == -1 {
-		return "", fmt.Errorf("missing downgrade marker")
+		return "", errors.New("missing downgrade marker")
 	}
 
 	endIdx := len(content)
@@ -143,6 +114,7 @@ func executeTransaction(db *sql.DB, upgradeSQL, filename, content string) error 
 	}
 	// Insert metadata into the geese table
 	insertSQL := `INSERT INTO geese (filename, content, modified_at) VALUES (?, ?, ?, ?)`
+	migrationId := 1 // FIXME: replace with real id
 	_, err = tx.Exec(insertSQL, migrationId, filename, content, "2025-04-09")
 	if err != nil {
 		tx.Rollback()
@@ -150,4 +122,21 @@ func executeTransaction(db *sql.DB, upgradeSQL, filename, content string) error 
 	}
 
 	return tx.Commit()
+}
+
+func main() {
+	// Example usage
+	dirPath := "./migrations"
+	dbType := "sqlite" // or "duckdb"
+	dsn := "example.db"
+
+	err := ProcessMigrations(dirPath, dbType, dsn)
+	if err != nil {
+		log.Fatalf("Error processing migrations: %v", err)
+	}
+
+	err = ProcessDowngrades(dirPath, dbType, dsn)
+	if err != nil {
+		log.Fatalf("Error processing downgrades: %v", err)
+	}
 }
