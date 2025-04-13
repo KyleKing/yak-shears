@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"database/sql"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/KyleKing/yak-shears/geese-migrations/cmd"
@@ -21,22 +22,11 @@ func TestProcessMigrations(t *testing.T) {
 	}
 	defer db.Close()
 
-	// Create migrations directory and test file
-	dirPath := "./test_migrations"
-	os.Mkdir(dirPath, 0755)
-	defer os.RemoveAll(dirPath)
-
-	migrationFile := dirPath + "/001_init.sql"
-	content := `-- +geese up
-CREATE TABLE note (
-    sub_dir VARCHAR NOT NULL,
-    filename VARCHAR NOT NULL UNIQUE PRIMARY KEY,
-    content VARCHAR NOT NULL,
-    modified_at DATE NOT NULL
-);
--- +geese down
-DROP TABLE IF EXISTS note;`
-	os.WriteFile(migrationFile, []byte(content), 0644)
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("could not get cwd: %v", err)
+	}
+	dirPath := filepath.Join(cwd, "test_migrations")
 
 	// Run processMigrations
 	err = cmd.ProcessMigrations(dirPath, "sqlite3", dbFile)
@@ -44,16 +34,22 @@ DROP TABLE IF EXISTS note;`
 		t.Fatalf("processMigrations failed: %v", err)
 	}
 
+	// Verify the table exists
+	insertedFilename := "test.md"
+	_, err = db.Exec("INSERT INTO note (sub_dir, filename, content, modified_at) VALUES (?, ?, ?, ?)", "migrations", insertedFilename, "...content...", "2025-04-09")
+	if err != nil {
+		t.Fatalf("Failed to insert into note table: %v", err)
+	}
+
 	// Verify the table and data
-	row := db.QueryRow("SELECT filename, content FROM note WHERE filename = ?", "001_init.sql")
-	var filename, fileContent string
-	err = row.Scan(&filename, &fileContent)
+	row := db.QueryRow("SELECT filename FROM note WHERE filename = ?", insertedFilename)
+	var filename string
+	err = row.Scan(&filename)
 	if err != nil {
 		t.Fatalf("Failed to query note table: %v", err)
 	}
-
-	if filename != "001_init.sql" || fileContent != content {
-		t.Errorf("Unexpected data in note table: got (%s, %s), want (%s, %s)", filename, fileContent, "001_init.sql", content)
+	if filename != insertedFilename {
+		t.Errorf("Unexpected data in note table: got (%s) want (%s)", filename, insertedFilename)
 	}
 }
 
@@ -70,7 +66,7 @@ DROP TABLE test;`
 	}
 
 	if result != expected {
-		t.Errorf("extractUpmain.gradeSQL returned unexpected result: got %s, want %s", result, expected)
+		t.Errorf("extractUpgradeSQL returned unexpected result: got %s, want %s", result, expected)
 	}
 }
 
@@ -85,44 +81,29 @@ func TestProcessDowngrades(t *testing.T) {
 	}
 	defer db.Close()
 
-	// Create migrations directory and test file
-	dirPath := "./test_migrations_downgrade"
-	os.Mkdir(dirPath, 0755)
-	defer os.RemoveAll(dirPath)
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("could not get cwd: %v", err)
+	}
+	dirPath := filepath.Join(cwd, "test_migrations_downgrade")
 
-	migrationFile := dirPath + "/001_init.sql"
-	content := `-- +geese up
-CREATE TABLE note (
-    sub_dir VARCHAR NOT NULL,
-    filename VARCHAR NOT NULL UNIQUE PRIMARY KEY,
-    content VARCHAR NOT NULL,
-    modified_at DATE NOT NULL
-);
--- +geese down
-DROP TABLE IF EXISTS note;`
-	os.WriteFile(migrationFile, []byte(content), 0644)
-
-	// Run processMigrations
 	err = cmd.ProcessMigrations(dirPath, "sqlite3", dbFile)
 	if err != nil {
 		t.Fatalf("processMigrations failed: %v", err)
 	}
-
-	// Verify the table exists
-	_, err = db.Exec("INSERT INTO note (sub_dir, filename, content, modified_at) VALUES (?, ?, ?, ?)", "migrations", "001_init.sql", content, "2025-04-09")
+	// Verify that the table exists
+	_, err = db.Exec("SELECT * FROM note")
 	if err != nil {
-		t.Fatalf("Failed to insert into note table: %v", err)
+		t.Fatalf("unexpected error querying new table: %v", err)
 	}
 
-	// Run processDowngrades
 	err = cmd.ProcessDowngrades(dirPath, "sqlite3", dbFile)
 	if err != nil {
 		t.Fatalf("processDowngrades failed: %v", err)
 	}
-
-	// Verify the table is dropped
+	// Verify the table is dropped by downgrade
 	_, err = db.Exec("SELECT * FROM note")
 	if err == nil {
-		t.Fatalf("Expected error querying dropped table, but got none")
+		t.Fatalf("expected error querying dropped table, but got none")
 	}
 }
