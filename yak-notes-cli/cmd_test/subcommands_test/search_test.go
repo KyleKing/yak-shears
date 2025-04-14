@@ -12,6 +12,7 @@ func TestAttachSearch(t *testing.T) {
 	var err error
 
 	tmpTestSubDir := resetTmpTestDir(t, "search")
+	setYakShearsDir(t)
 
 	cli := initTestCli()
 	subcommands.AttachSearch(cli)

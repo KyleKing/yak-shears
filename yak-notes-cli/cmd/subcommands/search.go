@@ -1,7 +1,10 @@
 package subcommands
 
 import (
+	"github.com/KyleKing/yak-shears/geese-migrations/library"
+
 	_ "embed" // Required for compiler
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -21,8 +24,6 @@ import (
 //  https://www.digitalocean.com/community/tutorials/how-to-make-http-requests-in-go
 
 var (
-	//go:embed sql/initStmt.sql
-	initStmt string
 	//go:embed sql/insertNotesStmt.sql
 	insertNotesStmt string
 	//go:embed sql/insertEmbeddingsStmt.sql
@@ -118,7 +119,6 @@ func ingestSubdir(db *sqlx.DB, syncDir, subDir string) (err error) {
 
 // Purge data
 func purgeData(db *sqlx.DB) (err error) {
-	// PLANNED: DROP IF EXISTS _ CASCADE should require only dropping the note table, right?
 	_, err = db.Exec("DELETE FROM embedding")
 	if err != nil {
 		return fmt.Errorf("failed to purge embedding table: %w", err)
@@ -132,10 +132,6 @@ func purgeData(db *sqlx.DB) (err error) {
 
 // Ingest ALL Notes
 func ingestAllNotes(db *sqlx.DB, syncDir string) (err error) {
-	if err = purgeData(db); err != nil {
-		return err
-	}
-
 	folderNames, err := ListsubDirs(syncDir)
 	if err != nil {
 		return fmt.Errorf("failed to list subdirectories in %s: %w", syncDir, err)
@@ -152,6 +148,7 @@ func ingestAllNotes(db *sqlx.DB, syncDir string) (err error) {
 // Search for note in database (TODO: currently only a PoC without WHERE/'query')
 func search(db *sqlx.DB, query string) (err error) {
 	fmt.Printf("Warning: does not yet use query='%s'", query)
+
 	notes := []Note{}
 	nstmt, err := db.PrepareNamed(searchQueryStmt)
 	if err != nil {
@@ -174,17 +171,12 @@ func search(db *sqlx.DB, query string) (err error) {
 	return nil
 }
 
-// Connect to the database and non-destructively initialize the schema, if not already found
+// Connect to the database
 func connectDB(dir string) (db *sqlx.DB, err error) {
 	path := filepath.Join(dir, "yak-shears.db?access_mode=READ_WRITE")
 	db, err = sqlx.Open("duckdb", path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database at %s: %w", path, err)
-	}
-
-	_, err = db.Exec(initStmt)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize database schema: %w", err)
 	}
 	return db, nil
 }
@@ -205,9 +197,15 @@ func AttachSearch(cli *clir.Cli) {
 	searchCmd.StringFlag("sync-dir", "Sync Directory", &syncDir)
 
 	searchCmd.Action(func() (err error) {
-		// HACK: if the schema changes, the current workaround is to remove the file
-		if err := os.Remove(filepath.Join(syncDir, "yak-shears.db")); err != nil && !os.IsNotExist(err) {
-			return fmt.Errorf("failed to remove database file: %w", err)
+		yakShearsDir := os.Getenv("YAK_SHEARS_DIR")
+		if yakShearsDir == "" {
+			return errors.New("YAK_SHEARS_DIR is not set")
+		}
+		dirPath := filepath.Join(yakShearsDir, filepath.Join("yak-notes-cli", "migrations"))
+		dbFile := filepath.Join(syncDir, "yak-shears.db?access_mode=READ_WRITE")
+		err = library.AutoUpgrade("root", dirPath, "duckdb", dbFile)
+		if err != nil {
+			return fmt.Errorf("processMigrations failed: %w", err)
 		}
 
 		db, err := connectDB(syncDir)
@@ -216,10 +214,14 @@ func AttachSearch(cli *clir.Cli) {
 		}
 		defer db.Close()
 
-		// HACK: replace with conditional and incremental ingestion
+		// HACK: replace with incremental ingestion
+		if err = purgeData(db); err != nil {
+			return err
+		}
 		if err := ingestAllNotes(db, syncDir); err != nil {
 			return err
 		}
+
 		if err := search(db, searchQuery.Query); err != nil {
 			return err
 		}

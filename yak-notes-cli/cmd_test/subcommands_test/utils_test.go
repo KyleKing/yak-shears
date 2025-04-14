@@ -16,6 +16,16 @@ func initTestCli() *clir.Cli {
 	return clir.NewCli("_", "test cli", "v0.0.1")
 }
 
+// Sets environment variable for migrations
+func setYakShearsDir(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("could not get cwd: %v", err)
+	}
+	// Calculate parent directory of applet (e.g. ../../../<cwd>)
+	os.Setenv("YAK_SHEARS_DIR", filepath.Dir(filepath.Dir(filepath.Dir(cwd))))
+}
+
 // Empty the subDir used for testing
 func resetTmpTestDir(t *testing.T, subDir string) string {
 	tmpTestSubDir := filepath.Join("tmpTestData", subDir)
