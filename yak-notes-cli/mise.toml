@@ -1,9 +1,11 @@
+# Symlink to `./yak-notes-cli/mise.toml`
+
 [env]
 MISE_ENV = 'subproject'
 
 [tasks.format]
 description = "Format code"
-run = ["golangci-lint run --fix ./..."]
+run = ["golangci-lint run --fix ./...", "golines ./..."]
 
 [tasks.test]
 description = "Run test"

@@ -2,8 +2,13 @@
 experimental = true # required for go for now
 
 [tasks.ci]
-depends = ["ci:notes-cli", "ci:web"]
+depends = ["ci:geese-migrations", "ci:notes-cli", "ci:web"]
 description = "Used in GitHub Actions"
+
+[tasks."ci:geese-migrations"]
+dir = "../geese-migrations"
+hide = true
+run = "mise run test"
 
 [tasks."ci:notes-cli"]
 dir = "../yak-notes-cli"
