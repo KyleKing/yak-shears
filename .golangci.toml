@@ -9,7 +9,7 @@
 [linters] # Find the whole list here https://golangci-lint.run/usage/linters/
 default = "standard"
 disabled = [
-  "forbidigo", # forbids identifiers	matched by reg exps # PLANNED: restore when fmt.Print is not necessary
+  "forbidigo", # forbids identifiers matched by reg exps # PLANNED: restore when fmt.Print is not necessary
 ]
 enable = [
   "asciicheck", # simple linter to check that your code does not contain non-ASCII identifiers
@@ -18,7 +18,7 @@ enable = [
   "cyclop", # Checks function and package cyclomatic complexity
   "durationcheck", # check for two durations multiplied together
   "errcheck", # checking for unchecked errors in go programs
-  "errorlint", # errorlint is a linter for that can be used to find code that will cause problems with the error wrapping scheme introduced in Go 1.13.
+  "errorlint", # errorlint is a linter for that can be used to find code that will cause problems with the error wrapping scheme introduced in Go 1.13
   "fatcontext", # Detects nested contexts in loops and function literals
   "gocritic", # Provides diagnostics that check for bugs, performance and style issues
   "goimports", # Goimports does everything that gofmt does. Additionally it checks unused imports
@@ -32,7 +32,7 @@ enable = [
   "intrange", # Intrange is a linter to find places where for loops could make use of an integer range
   "misspell", # finds commonly misspelled English words in comments
   "nakedret", # finds naked returns in functions greater than a specified function length
-  "nilerr", # finds the code that returns nil even if it checks that the error is not nil.
+  "nilerr", # finds the code that returns nil even if it checks that the error is not nil
   "noctx", # noctx finds sending http request without context.Context
   "nolintlint", # reports ill-formed or insufficient nolint directives
   "perfsprint", # Checks that fmt.Sprintf can be replaced with a faster alternative
@@ -47,9 +47,11 @@ enable = [
   "typecheck", # Like the front-end of a Go compiler, parses and type-checks Go code
   "unconvert", # Remove unnecessary type conversions
   "unused", # checks Go code for unused constants, variables, functions and types
-  "wastedassign", # wastedassign finds wasted assignment statements.
-  "wrapcheck", # Checks that errors returned from external packages are wrapped.
+  "wastedassign", # wastedassign finds wasted assignment statements
+  "wrapcheck", # Checks that errors returned from external packages are wrapped
+  "wsl", # Add or remove empty lines
 ]
+relative-path-mode = "gomod"
 
 [linters.settings] # See all configuration here: https://golangci-lint.run/usage/linters
 

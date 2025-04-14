@@ -1,3 +1,4 @@
+-- sqlfluff:dialect:duckdb
 -- +geese up
 CREATE TABLE note (
     sub_dir VARCHAR NOT NULL,

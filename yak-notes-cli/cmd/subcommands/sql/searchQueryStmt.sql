@@ -1,3 +1,5 @@
+-- sqlfluff:dialect:duckdb
+-- sqlfluff:templater:placeholder:param_style:colon
 SELECT
     note.sub_dir,
     note.filename,

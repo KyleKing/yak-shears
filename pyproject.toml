@@ -1,6 +1,8 @@
+# Dialect and template are set per-file
+# templater docs: https://docs.sqlfluff.com/en/stable/configuration/templating/placeholder.html
+
 [tool.sqlfluff.core]
-# Docs: https://duckdb.org/docs/sql/statements/overview
-dialect = "duckdb"
+dialect = "sqlite" # Required even when set per-file (https://github.com/sqlfluff/sqlfluff/issues/3559#issuecomment-2491931050)
 templater = "placeholder"
 
 [tool.sqlfluff.indentation]

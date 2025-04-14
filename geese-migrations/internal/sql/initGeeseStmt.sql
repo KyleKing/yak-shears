@@ -1,3 +1,4 @@
+-- sqlfluff:dialect:sqlite
 CREATE TABLE IF NOT EXISTS geese (
     migration_id INTEGER NOT NULL,
     namespace VARCHAR NOT NULL,

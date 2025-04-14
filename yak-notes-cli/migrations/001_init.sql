@@ -1,3 +1,4 @@
+-- sqlfluff:dialect:duckdb
 -- Note: indices are created automatically by DuckDB
 
 -- +geese up
@@ -15,5 +16,5 @@ CREATE TABLE IF NOT EXISTS embedding (
 );
 
 -- +geese down
-DROP TABLE IF EXISTS embedding
-DROP TABLE IF EXISTS note
+DROP TABLE IF EXISTS embedding;
+DROP TABLE IF EXISTS note;
