@@ -31,25 +31,30 @@ func ExtractSQL(content string) (string, string, error) {
 
 	sqlUp := strings.TrimSpace(content[idxUp+len(startMarker) : idxDown])
 	sqlDown := strings.TrimSpace(content[idxDown+len(endMarker) : idxEnd])
+
 	return sqlUp, sqlDown, nil
 }
 
 func parseMigrationFile(filename, migrationDir string) (MigrationFileInfo, error) {
 	re := regexp.MustCompile(`^(\d{3})_[^.]+\.sql$`)
+
 	matches := re.FindStringSubmatch(filename)
 	if len(matches) != 2 { // Includes full string
 		return MigrationFileInfo{}, fmt.Errorf("file `%q` did match the required format (%s)", filename, matches)
 	}
+
 	number, err := strconv.Atoi(matches[1])
 	if err != nil {
 		return MigrationFileInfo{}, fmt.Errorf("invalid number in filename: %w", err)
 	}
 
 	path := filepath.Join(migrationDir, filename)
+
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return MigrationFileInfo{}, fmt.Errorf("failed to read file %s: %w", filename, err)
 	}
+
 	sqlUp, sqlDown, err := ExtractSQL(string(content))
 	if err != nil {
 		return MigrationFileInfo{}, fmt.Errorf("failed to extract SQL from %s: %w", filename, err)
@@ -69,16 +74,20 @@ func ReadMigrationDir(migrationDir string) ([]MigrationFileInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read migration directory: %w", err)
 	}
+
 	var migrationFiles []MigrationFileInfo
+
 	for _, file := range files {
 		if !file.IsDir() {
 			migrationFileInfo, err := parseMigrationFile(file.Name(), migrationDir)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse migration file: %w", err)
 			}
+
 			migrationFiles = append(migrationFiles, migrationFileInfo)
 		}
 	}
+
 	return migrationFiles, nil
 }
 

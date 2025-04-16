@@ -28,6 +28,7 @@ func OpenDB(dbType, dsn string) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
+
 	return db, nil
 }
 
@@ -36,6 +37,7 @@ func InitGeeseTable(db *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("failed to create geese table: %w", err)
 	}
+
 	return nil
 }
 
@@ -50,6 +52,7 @@ func ExecMigrationUp(db *sql.DB, namespace string, fileInfo MigrationFileInfo) e
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
 			return fmt.Errorf("failed to rollback transaction: %w after upgrade: %w", rollbackErr, err)
 		}
+
 		return fmt.Errorf("failed to execute upgrade SQL: %w", err)
 	}
 
@@ -58,11 +61,13 @@ func ExecMigrationUp(db *sql.DB, namespace string, fileInfo MigrationFileInfo) e
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
 			return fmt.Errorf("failed to rollback transaction: %w after inserting metadata: %w", rollbackErr, err)
 		}
+
 		return fmt.Errorf("failed to insert metadata: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
+
 	return nil
 }

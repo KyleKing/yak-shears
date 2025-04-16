@@ -39,9 +39,11 @@ INSERT INTO test (id) VALUES(1), (2);`, ""},
 			if sqlUp != param.expectedUp {
 				t.Logf("incorrect sqlUp returned: %s (expected %s)", sqlUp, param.expectedUp)
 			}
+
 			if sqlDown != param.expectedDown {
 				t.Logf("incorrect sqlDown returned: %s (expected %s)", sqlDown, param.expectedDown)
 			}
+
 			if sqlUp != param.expectedUp || sqlDown != param.expectedDown {
 				t.Fail()
 			}

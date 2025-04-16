@@ -27,5 +27,6 @@ func AutoUpgrade(namespace, dirPath, dbType, dsn string) error {
 			return fmt.Errorf("failed to execute transaction for %s: %w", fileInfo.Path, err)
 		}
 	}
+
 	return nil
 }
