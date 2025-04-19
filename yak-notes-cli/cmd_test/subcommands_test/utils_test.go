@@ -38,6 +38,7 @@ func resetTmpTestDir(t *testing.T, subDir string) string {
 
 	fullpath, err := filepath.Abs(tmpTestSubDir)
 	require.NoError(t, err)
+
 	return fullpath
 }
 

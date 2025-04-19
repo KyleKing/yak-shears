@@ -40,7 +40,11 @@ func parseMigrationFile(filename, migrationDir string) (MigrationFileInfo, error
 
 	matches := re.FindStringSubmatch(filename)
 	if len(matches) != 2 { // Includes full string
-		return MigrationFileInfo{}, fmt.Errorf("file `%q` did match the required format (%s)", filename, matches)
+		return MigrationFileInfo{}, fmt.Errorf(
+			"file `%q` did match the required format (%s)",
+			filename,
+			matches,
+		)
 	}
 
 	number, err := strconv.Atoi(matches[1])

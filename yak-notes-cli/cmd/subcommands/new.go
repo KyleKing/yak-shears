@@ -24,11 +24,12 @@ func ToTimeName(t time.Time) string {
 func FromTimeName(name string) (time.Time, error) {
 	parsedName := strings.Replace(name, "_", ":", 2)
 	time, err := time.Parse(time.RFC3339, parsedName)
+
 	if err != nil {
 		return time, fmt.Errorf("failed to parse time %s (%s): %w", name, parsedName, err)
 	}
-	return time, nil
 
+	return time, nil
 }
 
 func CreateFile(path string) (err error) {
@@ -36,7 +37,9 @@ func CreateFile(path string) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
+
 	defer file.Close()
+
 	return
 }
 
@@ -57,27 +60,44 @@ func AttachNew(cli *clir.Cli) {
 		if err != nil {
 			return err
 		}
+
 		if !slices.Contains(folderNames, subDir) {
-			return fmt.Errorf("'%s' is not one of %v subDirs in '%s'. Create the folder if intended", subDir, folderNames, syncDir)
+			return fmt.Errorf(
+				"'%s' is not one of %v subDirs in '%s'. Create the folder if intended",
+				subDir,
+				folderNames,
+				syncDir,
+			)
 		}
 
 		name := ToTimeName(time.Now()) + ".dj"
+
 		path := filepath.Join(syncDir, subDir, name)
 		if err := CreateFile(path); err != nil {
 			return err
 		}
+
 		if open {
 			visual := os.Getenv("VISUAL")
 			if visual == "" {
 				return errors.New("no value is set for shell environment 'VISUAL'")
 			}
+
 			cmd := exec.Command("open", "-a", visual, path)
 			out, err := cmd.Output()
+
 			if err != nil {
-				return fmt.Errorf("failed to run '%v' with error '%w' and output '%v'", cmd, err, out)
+				return fmt.Errorf(
+					"failed to run '%v' with error '%w' and output '%v'",
+					cmd,
+					err,
+					out,
+				)
 			}
 		}
+
 		fmt.Println(path)
+
 		return nil
 	})
 }

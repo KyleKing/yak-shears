@@ -24,11 +24,13 @@ func ListsubDirs(dir string) (folderNames []string, err error) {
 	if err != nil {
 		return
 	}
+
 	for _, file := range files {
 		if file.IsDir() && !(strings.HasPrefix(file.Name(), ".")) {
 			folderNames = append(folderNames, file.Name())
 		}
 	}
+
 	return
 }
 
@@ -69,16 +71,19 @@ func summarize(summaries []FileSummary) string {
 
 	t := table.NewWriter()
 	t.AppendHeader(table.Row{"subDir", "File Name", modTimeCol, "Header"})
+
 	for _, summary := range summaries {
 		stat := summary.stat
 		t.AppendRow([]interface{}{
 			stat.subDir, stat.file.Name(), stat.fileInfo.ModTime(), summary.header,
 		})
 	}
+
 	t.SetColumnConfigs([]table.ColumnConfig{{
 		Name:        modTimeCol,
 		Transformer: text.NewTimeTransformer(time.RFC822, nil), // "02 Jan 06 15:04 MST"
 	}})
+
 	return t.Render()
 }
 
@@ -96,9 +101,11 @@ func readMeta(path string) (string, error) {
 		line := scanner.Text()
 		return line, nil
 	}
+
 	if err := scanner.Err(); err != nil {
 		return "", fmt.Errorf("error reading file %s: %w", path, err)
 	}
+
 	return "", nil
 }
 
@@ -107,8 +114,10 @@ func enrich(stat FileStat) (fs FileSummary, err error) {
 	if err != nil {
 		return
 	}
+
 	fs.stat = stat
 	fs.header = header
+
 	return
 }
 
@@ -116,6 +125,7 @@ func enrich(stat FileStat) (fs FileSummary, err error) {
 
 func calculateStats(syncDir, subDir string) (stats []FileStat, err error) {
 	dir := filepath.Join(syncDir, subDir)
+
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return
@@ -127,10 +137,17 @@ func calculateStats(syncDir, subDir string) (stats []FileStat, err error) {
 			if err != nil {
 				return stats, fmt.Errorf("error with specified file (`%v`): %w", file, err)
 			}
-			stat := FileStat{file: file, fileInfo: fi, subDir: subDir, path: filepath.Join(dir, file.Name())}
+
+			stat := FileStat{
+				file:     file,
+				fileInfo: fi,
+				subDir:   subDir,
+				path:     filepath.Join(dir, file.Name()),
+			}
 			stats = append(stats, stat)
 		}
 	}
+
 	return
 }
 
@@ -139,13 +156,16 @@ func getStats(syncDir string) (stats []FileStat, err error) {
 	if err != nil {
 		return
 	}
+
 	for _, subDir := range folderNames {
 		subStats, err := calculateStats(syncDir, subDir)
 		if err != nil {
 			return stats, err
 		}
+
 		stats = append(stats, subStats...)
 	}
+
 	return
 }
 
@@ -172,19 +192,26 @@ func AttachList(cli *clir.Cli) {
 		if err != nil {
 			return
 		}
+
 		sortMethod(stats)
+
 		if sortAsc {
 			slices.Reverse(stats)
 		}
+
 		summaries := []FileSummary{}
+
 		for _, s := range stats {
 			summary, err := enrich(s)
 			if err != nil {
 				return err
 			}
+
 			summaries = append(summaries, summary)
 		}
+
 		fmt.Println(output(summaries))
+
 		return
 	})
 }

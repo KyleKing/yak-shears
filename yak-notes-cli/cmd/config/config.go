@@ -14,6 +14,7 @@ func GetSyncDir() string {
 	if err != nil {
 		panic(err)
 	}
+
 	return filepath.Join(home, "Sync", "yak-shears")
 }
 

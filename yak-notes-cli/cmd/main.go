@@ -13,5 +13,6 @@ func InitCli() (cli *clir.Cli) {
 	subcommands.AttachNew(cli)
 	subcommands.AttachRename(cli)
 	subcommands.AttachSearch(cli)
+
 	return
 }

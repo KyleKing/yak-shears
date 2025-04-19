@@ -50,16 +50,32 @@ func ExecMigrationUp(db *sql.DB, namespace string, fileInfo MigrationFileInfo) e
 	_, err = tx.Exec(fileInfo.MigrationUp)
 	if err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			return fmt.Errorf("failed to rollback transaction: %w after upgrade: %w", rollbackErr, err)
+			return fmt.Errorf(
+				"failed to rollback transaction: %w after upgrade: %w",
+				rollbackErr,
+				err,
+			)
 		}
 
 		return fmt.Errorf("failed to execute upgrade SQL: %w", err)
 	}
 
-	_, err = tx.Exec(insertGeeseStmt, fileInfo.Number, namespace, fileInfo.Filename, fileInfo.MigrationUp, fileInfo.MigrationDown, time.Now())
+	_, err = tx.Exec(
+		insertGeeseStmt,
+		fileInfo.Number,
+		namespace,
+		fileInfo.Filename,
+		fileInfo.MigrationUp,
+		fileInfo.MigrationDown,
+		time.Now(),
+	)
 	if err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			return fmt.Errorf("failed to rollback transaction: %w after inserting metadata: %w", rollbackErr, err)
+			return fmt.Errorf(
+				"failed to rollback transaction: %w after inserting metadata: %w",
+				rollbackErr,
+				err,
+			)
 		}
 
 		return fmt.Errorf("failed to insert metadata: %w", err)

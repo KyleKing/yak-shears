@@ -5,7 +5,7 @@ MISE_ENV = 'subproject'
 
 [tasks.format]
 description = "Format code"
-run = ["golangci-lint run --fix ./...", "golines ./..."]
+run = ["golangci-lint run --fix ./...", "golines . --write-output"]
 
 [tasks.test]
 description = "Run test"

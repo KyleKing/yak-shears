@@ -36,18 +36,28 @@ func TestAutoUpgrade(t *testing.T) {
 
 	// Verify the table exists
 	insertedFilename := "test.md"
-	_, err = db.Exec("INSERT INTO note (sub_dir, filename, content, modified_at) VALUES (?, ?, ?, ?)", "migrations", insertedFilename, "...content...", "2025-04-09")
+
+	_, err = db.Exec(
+		"INSERT INTO note (sub_dir, filename, content, modified_at) VALUES (?, ?, ?, ?)",
+		"migrations",
+		insertedFilename,
+		"...content...",
+		"2025-04-09",
+	)
 	if err != nil {
 		t.Fatalf("Failed to insert into note table: %v", err)
 	}
 
 	// Verify the table and data
 	row := db.QueryRow("SELECT filename FROM note WHERE filename = ?", insertedFilename)
+
 	var filename string
+
 	err = row.Scan(&filename)
 	if err != nil {
 		t.Fatalf("Failed to query note table: %v", err)
 	}
+
 	if filename != insertedFilename {
 		t.Errorf("Unexpected data in note table: got (%s) want (%s)", filename, insertedFilename)
 	}
@@ -79,15 +89,17 @@ func TestProcessDowngrades(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error querying new table: %v", err)
 	}
-
 	// // TODO: Needs to be implemented
 	// err = library.Downgrade(dirPath, "sqlite3", dbFile)
-	// if err != nil {
-	// 	t.Fatalf("Downgrade failed: %v", err)
-	// }
+	//
+	//	if err != nil {
+	//		t.Fatalf("Downgrade failed: %v", err)
+	//	}
+	//
 	// // Verify the table is dropped by downgrade
 	// _, err = db.Exec("SELECT * FROM note")
-	// if err == nil {
-	// 	t.Fatalf("expected error querying dropped table, but got none")
-	// }
+	//
+	//	if err == nil {
+	//		t.Fatalf("expected error querying dropped table, but got none")
+	//	}
 }
