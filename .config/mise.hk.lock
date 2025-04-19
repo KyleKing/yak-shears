@@ -23,7 +23,7 @@ version = "5.0.0"
 backend = "pipx:pre-commit-hooks"
 
 [tools."pipx:sqlfluff"]
-version = "3.3.1"
+version = "3.4.0"
 backend = "pipx:sqlfluff"
 
 [tools."pipx:toml-sort"]

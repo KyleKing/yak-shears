@@ -11,6 +11,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Override 'hk' used locally
+  MISE_ENV: ci
+
 jobs:
   ci:
     runs-on: ubuntu-latest

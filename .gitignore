@@ -71,6 +71,3 @@ Temporary Items
 
 # Build binary
 ^yak-notes-cli$
-
-# Local configuration
-mise.local.toml
