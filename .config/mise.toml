@@ -1,5 +1,5 @@
 [env]
-MISE_ENV = 'hk'
+MISE_ENV = "hk"
 
 [settings]
 experimental = true # required for go for now
