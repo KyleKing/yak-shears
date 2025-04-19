@@ -4,4 +4,7 @@ run = "SHEARS_SUBDIR=test go run . new -o"
 
 [tasks."system:install"]
 description = "Install latest code system-wide"
-run = "go install ."
+run = [
+  "go install .",
+  "gsa \"${GOBIN}/yak-notes-cli\"",
+]
