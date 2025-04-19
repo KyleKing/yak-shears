@@ -1,19 +1,19 @@
 // Install with `hk install --mise` to ensure local tools are available
 
-amends "package://github.com/jdx/hk/releases/download/v0.7.5/hk@0.7.5#/Config.pkl"
-import "package://github.com/jdx/hk/releases/download/v0.7.5/hk@0.7.5#/builtins.pkl"
+amends "package://github.com/jdx/hk/releases/download/v0.8.2/hk@0.8.2#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v0.8.2/hk@0.8.2#/Builtins.pkl"
 
-min_hk_version = "0.7.0"
+min_hk_version = "0.8.2"
 
 // FYI: see file extension mappings used by pre-commit: https://github.com/pre-commit/identify/blob/dc20df20bda102dc74ca8531465bfcd20a7f26bf/identify/extensions.py
 
 // PLANNED: I'm not sure how to filter for only files. Created with: `cloc . --vcs=git`
 local file_list = List("**/*.{gitignore,go,md,pkl,py,sql,toml,yaml,yml}")
 
-local linters = new Mapping<String, LinterStep> {
-    ["actionlint"] = builtins.actionlint
+local linters = new Mapping<String, Step> {
+    ["actionlint"] = Builtins.actionlint
     // TODO: can't use `{{ files }}` because of error: `typechecking error: named files must all be in one directory; have cmd/config and cmd`
-    // ["golangci_lint"] = builtins.golangci_lint
+    // ["golangci_lint"] = Builtins.golangci_lint
     ["golangci_lint"] {
         glob = List("**/*.go")
         check = "golangci-lint run {{ files }}"
@@ -63,7 +63,7 @@ local linters = new Mapping<String, LinterStep> {
         check_first = false
         fix = "trailing-whitespace-fixer {{ files }}"
     }
-    ["sql_fluff"] = builtins.sql_fluff
+    ["sql_fluff"] = Builtins.sql_fluff
     ["toml-sort"] {
         glob = List("**/*.toml")
         check = "toml-sort --check {{ files }}"
@@ -73,12 +73,12 @@ local linters = new Mapping<String, LinterStep> {
 
 
 
-local commit_msg_checks = new Mapping<String, LinterStep> {
+local commit_msg_checks = new Mapping<String, Step> {
     ["commitizen"] {
         check = "cz check --allow-abort --commit-msg-file={{commit_msg_file}}"
     }
 }
-local pre_push_checks = new Mapping<String, LinterStep> {
+local pre_push_checks = new Mapping<String, Step> {
     ["ci"] {
         check = "mise run ci"
     }
@@ -91,10 +91,8 @@ local pre_push_checks = new Mapping<String, LinterStep> {
 hooks = new {
     ["pre-commit"] {
         fix = true
-        steps = new {
-            ["stash"] = new StashStep {}
-            ...linters
-        }
+        stash = "patch-file" // stashes unstaged changes while running fix steps
+        steps = linters
     }
     ["pre-push"] {
         steps = new {
