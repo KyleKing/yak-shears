@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -31,6 +32,14 @@ var (
 	searchQueryStmt string
 )
 
+// Remove SQLFluff comments, which include colons and cause issues
+func removeSQLFluffComments(sql string) string {
+	re := regexp.MustCompile(`(?m)^-- .+$`)
+	sql = re.ReplaceAllString(sql, "")
+
+	return strings.TrimSpace(sql)
+}
+
 type Note struct {
 	SubDir     string `db:"sub_dir"`
 	Filename   string `db:"filename"`
@@ -44,7 +53,7 @@ func storeNotes(db *sqlx.DB, notes []Note, chunkingFunc func(string) []string) (
 		return nil
 	}
 
-	if _, err = db.NamedExec(insertNotesStmt, notes); err != nil {
+	if _, err = db.NamedExec(removeSQLFluffComments(insertNotesStmt), notes); err != nil {
 		return fmt.Errorf("failed to execute batch insertNotes: %w", err)
 	}
 
@@ -166,7 +175,7 @@ func search(db *sqlx.DB, query string) (err error) {
 	// TODO: Implement an actual WHERE query against the index
 	fmt.Printf("Warning: does not yet use query='%s'", query)
 
-	nstmt, err := db.PrepareNamed(searchQueryStmt)
+	nstmt, err := db.PrepareNamed(removeSQLFluffComments(searchQueryStmt))
 	if err != nil {
 		return fmt.Errorf("failed to prepare search query: %w", err)
 	}
