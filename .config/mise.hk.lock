@@ -1,3 +1,7 @@
+[tools.actionlint]
+version = "1.7.7"
+backend = "aqua:rhysd/actionlint"
+
 [tools."go:github.com/Zxilly/go-size-analyzer/cmd/gsa"]
 version = "1.8.0"
 backend = "go:github.com/Zxilly/go-size-analyzer/cmd/gsa"
@@ -5,10 +9,6 @@ backend = "go:github.com/Zxilly/go-size-analyzer/cmd/gsa"
 [tools."go:github.com/golangci/golangci-lint/cmd/golangci-lint"]
 version = "1.64.8"
 backend = "go:github.com/golangci/golangci-lint/cmd/golangci-lint"
-
-[tools."go:github.com/rhysd/actionlint/cmd/actionlint"]
-version = "1.7.7"
-backend = "go:github.com/rhysd/actionlint/cmd/actionlint"
 
 [tools."go:github.com/segmentio/golines"]
 version = "0.12.2"

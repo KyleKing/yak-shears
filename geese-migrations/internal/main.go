@@ -54,6 +54,10 @@ func MigrateToRevision(namespace, dirPath, dbType, dsn string, targetRevision in
 	}
 	defer db.Close()
 
+	if err = InitGeeseTable(db); err != nil {
+		return err
+	}
+
 	lastMigrationID, err := SelectLastGeeseMigrationID(db, namespace)
 	if err != nil {
 		return err

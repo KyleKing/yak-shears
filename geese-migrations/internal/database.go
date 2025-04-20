@@ -58,44 +58,60 @@ func SelectLastGeeseMigrationID(db *sql.DB, namespace string) (int, error) {
 	return lastMigrationID, nil
 }
 
-func ExecMigrationUp(db *sql.DB, namespace string, fileInfo MigrationFileInfo) error {
+func execMigration(db *sql.DB, namespace string, fileInfo MigrationFileInfo, isUpgrade bool) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
-	_, err = tx.Exec(fileInfo.MigrationUp)
-	if err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			return fmt.Errorf(
-				"failed to rollback transaction: %w after upgrade: %w",
-				rollbackErr,
-				err,
-			)
-		}
-
-		return fmt.Errorf("failed to execute upgrade SQL: %w", err)
+	var execSQL string
+	if isUpgrade {
+		execSQL = fileInfo.MigrationUp
+	} else {
+		execSQL = fileInfo.MigrationDown
 	}
 
-	_, err = tx.Exec(
-		insertGeeseStmt,
-		fileInfo.Number,
-		namespace,
-		fileInfo.Filename,
-		fileInfo.MigrationUp,
-		fileInfo.MigrationDown,
-		time.Now(),
-	)
+	_, err = tx.Exec(execSQL)
 	if err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
 			return fmt.Errorf(
-				"failed to rollback transaction: %w after inserting metadata: %w",
+				"failed to rollback transaction: %w after executing migration: %w",
 				rollbackErr,
 				err,
 			)
 		}
 
-		return fmt.Errorf("failed to insert metadata: %w", err)
+		return fmt.Errorf("failed to execute migration SQL: %w", err)
+	}
+
+	if isUpgrade {
+		_, err = tx.Exec(
+			insertGeeseStmt,
+			fileInfo.Number,
+			namespace,
+			fileInfo.Filename,
+			fileInfo.MigrationUp,
+			fileInfo.MigrationDown,
+			time.Now(),
+		)
+	} else {
+		_, err = tx.Exec(
+			"DELETE FROM geese_migrations WHERE migration_id = ? AND namespace = ?",
+			fileInfo.Number,
+			namespace,
+		)
+	}
+
+	if err != nil {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			return fmt.Errorf(
+				"failed to rollback transaction: %w after modifying metadata: %w",
+				rollbackErr,
+				err,
+			)
+		}
+
+		return fmt.Errorf("failed to modify metadata: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -105,45 +121,10 @@ func ExecMigrationUp(db *sql.DB, namespace string, fileInfo MigrationFileInfo) e
 	return nil
 }
 
+func ExecMigrationUp(db *sql.DB, namespace string, fileInfo MigrationFileInfo) error {
+	return execMigration(db, namespace, fileInfo, true)
+}
+
 func ExecMigrationDown(db *sql.DB, namespace string, fileInfo MigrationFileInfo) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-
-	_, err = tx.Exec(fileInfo.MigrationDown)
-	if err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			return fmt.Errorf(
-				"failed to rollback transaction: %w after downgrade: %w",
-				rollbackErr,
-				err,
-			)
-		}
-
-		return fmt.Errorf("failed to execute downgrade SQL: %w", err)
-	}
-
-	_, err = tx.Exec(
-		"DELETE FROM geese_migrations WHERE migration_id = ? AND namespace = ?",
-		fileInfo.Number,
-		namespace,
-	)
-	if err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			return fmt.Errorf(
-				"failed to rollback transaction: %w after deleting metadata: %w",
-				rollbackErr,
-				err,
-			)
-		}
-
-		return fmt.Errorf("failed to delete metadata: %w", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	return nil
+	return execMigration(db, namespace, fileInfo, false)
 }

@@ -1,6 +1,6 @@
 -- sqlfluff:dialect:sqlite
 -- sqlfluff:templater:placeholder:param_style:question_mark
-INSERT INTO geese (
+INSERT INTO geese_migrations (
     migration_id,
     namespace,
     filename,

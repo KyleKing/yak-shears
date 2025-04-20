@@ -1,5 +1,5 @@
 -- sqlfluff:dialect:sqlite
-CREATE TABLE IF NOT EXISTS geese (
+CREATE TABLE IF NOT EXISTS geese_migrations (
     migration_id INTEGER NOT NULL,
     namespace VARCHAR NOT NULL,
     filename VARCHAR NOT NULL,

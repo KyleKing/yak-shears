@@ -1,7 +1,7 @@
 [tools]
+actionlint = "latest"
 "go:github.com/Zxilly/go-size-analyzer/cmd/gsa" = "latest"
 "go:github.com/golangci/golangci-lint/cmd/golangci-lint" = "latest"
-"go:github.com/rhysd/actionlint/cmd/actionlint" = "latest"
 "go:github.com/segmentio/golines" = "latest"
 ls-lint = "latest"
 "pipx:commitizen" = "latest"
