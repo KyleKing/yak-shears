@@ -32,10 +32,10 @@ var (
 )
 
 type Note struct {
-	SubDir     string    `db:"sub_dir"`
-	Filename   string    `db:"filename"`
-	Content    string    `db:"content"`
-	ModifiedAt time.Time `db:"modified_at"`
+	SubDir     string `db:"sub_dir"`
+	Filename   string `db:"filename"`
+	Content    string `db:"content"`
+	ModifiedAt string `db:"modified_at"`
 }
 
 // Batch insert modified notes
@@ -44,24 +44,7 @@ func storeNotes(db *sqlx.DB, notes []Note, chunkingFunc func(string) []string) (
 		return nil
 	}
 
-	// Prevent "unexpected `:` while reading named param at 19" error by reformatting the time.Time value with "::"
-	type NoteDB struct {
-		SubDir     string `db:"sub_dir"`
-		Filename   string `db:"filename"`
-		Content    string `db:"content"`
-		ModifiedAt string `db:"modified_at"` // Store as string for SQLx
-	}
-
-	notesDB := make([]NoteDB, len(notes))
-	for i, note := range notes {
-		notesDB[i] = NoteDB{
-			SubDir:     "abc",
-			Filename:   "tbd.txt",
-			Content:    "...",
-			ModifiedAt: strings.ReplaceAll(note.ModifiedAt.Format(time.RFC3339), ":", "::")}
-	}
-
-	if _, err = db.NamedExec(insertNotesStmt, notesDB); err != nil {
+	if _, err = db.NamedExec(insertNotesStmt, notes); err != nil {
 		return fmt.Errorf("failed to execute batch insertNotes: %w", err)
 	}
 
@@ -133,7 +116,7 @@ func ingestSubdir(db *sqlx.DB, syncDir, subDir string) (err error) {
 				SubDir:     subDir,
 				Filename:   file.Name(),
 				Content:    string(content),
-				ModifiedAt: fi.ModTime(),
+				ModifiedAt: fi.ModTime().Format(time.RFC3339),
 			}
 			notes = append(notes, note)
 		}
@@ -178,18 +161,18 @@ func ingestAllNotes(db *sqlx.DB, syncDir string) (err error) {
 	return nil
 }
 
-// Search for note in database (TODO: currently only a PoC without WHERE/'query')
+// Search for note in database
 func search(db *sqlx.DB, query string) (err error) {
+	// TODO: Implement an actual WHERE query against the index
 	fmt.Printf("Warning: does not yet use query='%s'", query)
-
-	notes := []Note{}
 
 	nstmt, err := db.PrepareNamed(searchQueryStmt)
 	if err != nil {
 		return fmt.Errorf("failed to prepare search query: %w", err)
 	}
-
 	defer nstmt.Close()
+
+	notes := []Note{}
 
 	err = nstmt.Select(&notes, map[string]interface{}{
 		"limit_":  2,
@@ -201,14 +184,9 @@ func search(db *sqlx.DB, query string) (err error) {
 
 	log.Println("\n\n==============\n ")
 
+	div := "\n\n--------------\n\n%s | %s | %v\n%s"
 	for _, n := range notes {
-		log.Printf(
-			"\n\n--------------\n\n%s | %s | %v\n%s",
-			n.SubDir,
-			n.Filename,
-			n.ModifiedAt.Format(time.RFC3339),
-			n.Content,
-		)
+		log.Printf(div, n.SubDir, n.Filename, n.ModifiedAt, n.Content)
 	}
 
 	log.Println("\n\n==============\n ")
