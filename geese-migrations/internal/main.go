@@ -13,18 +13,25 @@ func AutoUpgrade(namespace, dirPath, dbType, dsn string) error {
 
 	db, err := OpenDB(dbType, dsn)
 	if err != nil {
-		return fmt.Errorf("failed to open database: %w", err)
+		return err
 	}
 	defer db.Close()
 
 	if err = InitGeeseTable(db); err != nil {
-		return fmt.Errorf("failed to initialize geese table: %w", err)
+		return err
+	}
+
+	lastMigrationID, err := SelectLastGeeseMigrationID(db, namespace)
+	if err != nil {
+		return err
 	}
 
 	for _, fileInfo := range migrationFiles {
-		err = ExecMigrationUp(db, namespace, fileInfo)
-		if err != nil {
-			return fmt.Errorf("failed to execute transaction for %s: %w", fileInfo.Path, err)
+		if fileInfo.Number > lastMigrationID {
+			err = ExecMigrationUp(db, namespace, fileInfo)
+			if err != nil {
+				return fmt.Errorf("failed to execute transaction for %s: %w", fileInfo.Path, err)
+			}
 		}
 	}
 

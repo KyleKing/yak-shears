@@ -44,8 +44,7 @@ func storeNotes(db *sqlx.DB, notes []Note, chunkingFunc func(string) []string) (
 		return nil
 	}
 
-	_, err = db.NamedExec(insertNotesStmt, notes)
-	if err != nil {
+	if _, err = db.NamedExec(insertNotesStmt, notes); err != nil {
 		return fmt.Errorf("failed to execute batch insertNotes: %w", err)
 	}
 
@@ -66,8 +65,7 @@ func storeNotes(db *sqlx.DB, notes []Note, chunkingFunc func(string) []string) (
 
 	// Batch insert embeddings
 	if len(embeddings) > 0 {
-		_, err = db.NamedExec(insertEmbeddingsStmt, embeddings)
-		if err != nil {
+		if _, err = db.NamedExec(insertEmbeddingsStmt, embeddings); err != nil {
 			return fmt.Errorf("failed to execute batch insertEmbeddings: %w", err)
 		}
 	}

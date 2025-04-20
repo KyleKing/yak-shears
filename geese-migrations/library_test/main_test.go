@@ -89,17 +89,15 @@ func TestProcessDowngrades(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error querying new table: %v", err)
 	}
-	// // TODO: Needs to be implemented
-	// err = library.Downgrade(dirPath, "sqlite3", dbFile)
-	//
-	//	if err != nil {
-	//		t.Fatalf("Downgrade failed: %v", err)
-	//	}
-	//
-	// // Verify the table is dropped by downgrade
-	// _, err = db.Exec("SELECT * FROM note")
-	//
-	//	if err == nil {
-	//		t.Fatalf("expected error querying dropped table, but got none")
-	//	}
+
+	err = library.MigrateToRevision("test", dirPath, "sqlite3", dbFile, 0)
+	if err != nil {
+		t.Fatalf("Downgrade failed: %v", err)
+	}
+
+	// Verify the table is dropped by downgrade
+	_, err = db.Exec("SELECT * FROM note")
+	if err == nil {
+		t.Fatalf("expected error querying dropped table, but got none")
+	}
 }

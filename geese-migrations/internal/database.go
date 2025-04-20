@@ -1,12 +1,12 @@
 package internal
 
 import (
-	_ "embed" // Required for compiler
-
 	"database/sql"
 	"fmt"
 	"path/filepath"
 	"time"
+
+	_ "embed" // Required for compiler
 
 	_ "github.com/marcboeker/go-duckdb" // DuckDB driver
 	_ "github.com/mattn/go-sqlite3"     // SQLite driver
@@ -17,6 +17,8 @@ var (
 	initGeeseStmt string
 	//go:embed sql/insertGeeseStmt.sql
 	insertGeeseStmt string
+	//go:embed sql/selectLastGeeseMigrationIDStmt.sql
+	selectLastGeeseMigrationIDStmt string
 )
 
 func OpenDB(dbType, dsn string) (*sql.DB, error) {
@@ -39,6 +41,21 @@ func InitGeeseTable(db *sql.DB) error {
 	}
 
 	return nil
+}
+
+func SelectLastGeeseMigrationID(db *sql.DB, namespace string) (int, error) {
+	var lastMigrationID int
+
+	err := db.QueryRow(selectLastGeeseMigrationIDStmt, namespace).Scan(&lastMigrationID)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return 0, fmt.Errorf("failed to identify last migration_id: %w", err)
+		}
+
+		return 0, nil
+	}
+
+	return lastMigrationID, nil
 }
 
 func ExecMigrationUp(db *sql.DB, namespace string, fileInfo MigrationFileInfo) error {
