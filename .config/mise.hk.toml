@@ -1,5 +1,6 @@
 [tools]
 actionlint = "latest"
+go = "latest"
 "go:github.com/Zxilly/go-size-analyzer/cmd/gsa" = "latest"
 "go:github.com/golangci/golangci-lint/cmd/golangci-lint" = "latest"
 "go:github.com/segmentio/golines" = "latest"

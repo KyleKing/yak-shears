@@ -17,10 +17,15 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
       - uses: jdx/mise-action@v2
         with:
           mise_toml: |
             [env]
             MISE_ENV = "ci"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.work'
 
       - run: mise run ci --jobs=1

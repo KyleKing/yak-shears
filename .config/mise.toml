@@ -27,6 +27,3 @@ run = "mise run test"
 description = "Run git hooks"
 dir = "./../" # FYI: required because the default is otherwise `.config/` where these files are located
 run = ["hk fix --quiet"]
-
-[tools]
-go = "latest"
