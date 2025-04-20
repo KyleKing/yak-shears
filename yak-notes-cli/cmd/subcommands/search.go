@@ -44,6 +44,15 @@ func storeNotes(db *sqlx.DB, notes []Note, chunkingFunc func(string) []string) (
 		return nil
 	}
 
+	// Prevent "unexpected `:` while reading named param at 19" error by reformatting the time.Time value with "::"
+	for i := range notes {
+		formattedTime, err := time.Parse(time.RFC3339, notes[i].ModifiedAt.Format(time.RFC3339))
+		if err != nil {
+			return fmt.Errorf("failed to parse formatted time: %w", err)
+		}
+		notes[i].ModifiedAt = formattedTime
+	}
+
 	if _, err = db.NamedExec(insertNotesStmt, notes); err != nil {
 		return fmt.Errorf("failed to execute batch insertNotes: %w", err)
 	}
