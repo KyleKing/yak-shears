@@ -14,6 +14,10 @@ backend = "go:github.com/golangci/golangci-lint/cmd/golangci-lint"
 version = "0.12.2"
 backend = "go:github.com/segmentio/golines"
 
+[tools.hk]
+version = "0.8.2"
+backend = "aqua:jdx/hk"
+
 [tools.ls-lint]
 version = "2.3.0"
 backend = "aqua:loeffel-io/ls-lint"

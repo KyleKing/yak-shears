@@ -45,9 +45,8 @@ My personal note taking app, but you probably want to use one of these primarily
 
 ## Installation
 
-1. Run `echo '[env]\nMISE_ENV = "hk"' > mise.local.toml`
-1. Then run `mise install` and `hk` (`brew install mise hk`)
-2. Validate with `mise run format ::: test`
+1. Then run `mise install` and `hk install --mise` (`brew install mise`)
+2. Validate with `mise run ci`
 
 ## Goals
 
