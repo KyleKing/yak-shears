@@ -77,8 +77,8 @@ func storeNotes(db *sqlx.DB, notes []Note, chunkingFunc func(string) []string) (
 func defaultChunkingLogic(content string) []string {
 	var chunks []string
 
-	paragraphs := strings.Split(content, "\n\n")
-	for _, paragraph := range paragraphs {
+	paragraphs := strings.SplitSeq(content, "\n\n")
+	for paragraph := range paragraphs {
 		if len(paragraph) > 500 { // Example threshold for large chunks
 			sentences := strings.Split(paragraph, ". ")
 			chunks = append(chunks, sentences...)
