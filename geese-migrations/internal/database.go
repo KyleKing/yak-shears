@@ -104,3 +104,46 @@ func ExecMigrationUp(db *sql.DB, namespace string, fileInfo MigrationFileInfo) e
 
 	return nil
 }
+
+func ExecMigrationDown(db *sql.DB, namespace string, fileInfo MigrationFileInfo) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	_, err = tx.Exec(fileInfo.MigrationDown)
+	if err != nil {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			return fmt.Errorf(
+				"failed to rollback transaction: %w after downgrade: %w",
+				rollbackErr,
+				err,
+			)
+		}
+
+		return fmt.Errorf("failed to execute downgrade SQL: %w", err)
+	}
+
+	_, err = tx.Exec(
+		"DELETE FROM geese_migrations WHERE migration_id = ? AND namespace = ?",
+		fileInfo.Number,
+		namespace,
+	)
+	if err != nil {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			return fmt.Errorf(
+				"failed to rollback transaction: %w after deleting metadata: %w",
+				rollbackErr,
+				err,
+			)
+		}
+
+		return fmt.Errorf("failed to delete metadata: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}

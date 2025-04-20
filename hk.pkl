@@ -14,12 +14,12 @@ local linters = new Mapping<String, Step> {
     ["actionlint"] = Builtins.actionlint
     // TODO: can't use `{{ files }}` because of error: `typechecking error: named files must all be in one directory; have cmd/config and cmd`
     // ["golangci_lint"] = Builtins.golangci_lint
-    ["golangci_lint"] {
-        glob = List("**/*.go")
-        check = "golangci-lint run {{ files }}"
-        fix = "golangci-lint run --fix {{ files }}"
-        workspace_indicator = "go.mod"
-    }
+    // ["golangci_lint"] {
+    //     glob = List("**/*.go")
+    //     check = "golangci-lint run {{ files }}"
+    //     fix = "golangci-lint run --fix {{ files }}"
+    //     workspace_indicator = "go.mod"
+    // }
     ["ls-lint"] {
         check = "ls-lint"
     }

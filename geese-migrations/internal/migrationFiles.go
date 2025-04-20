@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -69,14 +70,14 @@ func parseMigrationFile(filename, migrationDir string) (MigrationFileInfo, error
 	}, nil
 }
 
-func ReadMigrationDir(migrationDir string) ([]MigrationFileInfo, error) {
+func ReadMigrationDir(migrationDir string) ([]MigrationFileInfo, int, error) {
 	if !filepath.IsAbs(migrationDir) {
-		return nil, fmt.Errorf("migrationDir is not an absolute path: %s", migrationDir)
+		return nil, 0, fmt.Errorf("migrationDir is not an absolute path: %s", migrationDir)
 	}
 
 	files, err := os.ReadDir(migrationDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read migration directory: %w", err)
+		return nil, 0, fmt.Errorf("failed to read migration directory: %w", err)
 	}
 
 	var migrationFiles []MigrationFileInfo
@@ -85,18 +86,22 @@ func ReadMigrationDir(migrationDir string) ([]MigrationFileInfo, error) {
 		if !file.IsDir() {
 			migrationFileInfo, err := parseMigrationFile(file.Name(), migrationDir)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse migration file: %w", err)
+				return nil, 0, fmt.Errorf("failed to parse migration file: %w", err)
 			}
 
 			migrationFiles = append(migrationFiles, migrationFileInfo)
 		}
 	}
 
-	return migrationFiles, nil
-}
+	highestID := 0
 
-// func sortMigrations(migrations []MigrationFileInfo) {
-// 	// PLANNED: See if reverse can be applied after?
-// 	// 	sort.Sort(sort.Reverse(
-// 	sort.Slice(migrations, func(i, j int) bool { return migrations[i].Number < migrations[j].Number })
-// }
+	if len(migrationFiles) > 0 {
+		sort.Slice(migrationFiles, func(i, j int) bool {
+			return migrationFiles[i].Number < migrationFiles[j].Number
+		})
+
+		highestID = migrationFiles[len(migrationFiles)-1].Number
+	}
+
+	return migrationFiles, highestID, nil
+}
