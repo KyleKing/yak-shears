@@ -17,10 +17,6 @@ env = Environment(
     autoescape=True,  # Important for security to escape HTML by default
 )
 
-# Add custom filters if needed
-env.filters["tojson"] = lambda obj: env.jinja_options["extensions"][0].filter_json(obj)
-env.add_extension("jinja2.ext.do")
-
 
 def render_template(template_name: str, **context: Any) -> HTMLResponse:
     """Render a template and return an HTMLResponse.

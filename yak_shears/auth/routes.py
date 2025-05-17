@@ -15,6 +15,7 @@ from yak_shears.auth.webauthn import (
     verify_registration,
 )
 from yak_shears.template import render_error, render_template
+from webauthn import options_to_json
 
 
 async def login_handler(request: Request) -> Response:
@@ -151,32 +152,32 @@ async def register_handler(request: Request) -> Response:
         # Convert challenge to base64 for JSON
         challenge_b64 = base64.b64encode(options.challenge).decode()
 
-        # Prepare options for the client
-        client_options = {
-            "challenge": challenge_b64,
-            "rp": {"name": options.rp_name, "id": options.rp_id},
-            "user": {
-                "id": base64.b64encode(options.user_id).decode(),
-                "name": options.user_name,
-                "displayName": options.user_display_name,
-            },
-            "pubKeyCredParams": [{"type": "public-key", "alg": alg} for alg in options.supported_pub_key_algs],
-            "timeout": options.timeout,
-            "attestation": options.attestation,
-            "authenticatorSelection": {
-                "authenticatorAttachment": options.authenticator_selection.authenticator_attachment,
-                "requireResidentKey": options.authenticator_selection.require_resident_key,
-                "residentKey": options.authenticator_selection.resident_key,
-                "userVerification": options.authenticator_selection.user_verification,
-            },
-        }
+        # # Prepare options for the client
+        # client_options = {
+        #     "challenge": challenge_b64,
+        #     "rp": {"name": options.rp_name, "id": options.rp_id},
+        #     "user": {
+        #         "id": base64.b64encode(options.user_id).decode(),
+        #         "name": options.user_name,
+        #         "displayName": options.user_display_name,
+        #     },
+        #     "pubKeyCredParams": [{"type": "public-key", "alg": alg} for alg in options.supported_pub_key_algs],
+        #     "timeout": options.timeout,
+        #     "attestation": options.attestation,
+        #     "authenticatorSelection": {
+        #         "authenticatorAttachment": options.authenticator_selection.authenticator_attachment,
+        #         "requireResidentKey": options.authenticator_selection.require_resident_key,
+        #         "residentKey": options.authenticator_selection.resident_key,
+        #         "userVerification": options.authenticator_selection.user_verification,
+        #     },
+        # }
 
         # Render registration form with WebAuthn options
         return render_template(
             "auth/register_webauthn.html.jinja",
             username=username,
             display_name=display_name,
-            client_options=client_options,
+            client_options=options_to_json(options),# client_options,
         )
 
     # Display registration form

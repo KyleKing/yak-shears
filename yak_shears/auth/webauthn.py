@@ -166,30 +166,14 @@ def generate_registration_options_for_user(username: str, display_name: str) -> 
     # Generate a user ID for the registration
     user_id = secrets.token_bytes(16)
 
-    # Generate a challenge
-    challenge = secrets.token_bytes(32)
-
     # Create registration options
-    options = generate_registration_options(
+    return generate_registration_options(
         rp_id=_RP_ID,
         rp_name=_RP_NAME,
         user_id=user_id,
         user_name=username,
         user_display_name=display_name,
-        attestation="direct",
-        challenge=challenge,
-        authenticator_selection=AuthenticatorSelectionCriteria(
-            resident_key=ResidentKeyRequirement.PREFERRED,
-            user_verification=UserVerificationRequirement.PREFERRED,
-        ),
-        supported_pub_key_algs=[
-            COSEAlgorithmIdentifier.ECDSA_SHA_256,
-            COSEAlgorithmIdentifier.EDDSA,
-            COSEAlgorithmIdentifier.RS256,
-        ],
     )
-
-    return options
 
 
 def verify_registration(credential_data: dict[str, Any], username: str, display_name: str, challenge: bytes) -> bool:
