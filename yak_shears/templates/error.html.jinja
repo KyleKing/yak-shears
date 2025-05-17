@@ -1,0 +1,9 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}Error{% endblock %}
+{% block header %}Error{% endblock %}
+
+{% block content %}
+<div class="error">{{ message }}</div>
+<a href="{{ back_url }}" class="back-link">Go Back</a>
+{% endblock %}

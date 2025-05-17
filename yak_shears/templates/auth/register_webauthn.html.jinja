@@ -1,0 +1,112 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}Register{% endblock %}
+{% block header %}Register{% endblock %}
+
+{% block content %}
+<div class="form-field">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" value="{{ username }}" disabled>
+</div>
+<div class="form-field">
+    <label for="display_name">Display Name</label>
+    <input type="text" id="display_name" name="display_name" value="{{ display_name }}" disabled>
+</div>
+<div class="form-field">
+    <button id="register-button">Register with WebAuthn</button>
+</div>
+<div id="error-message" class="error"></div>
+<a href="/home" class="back-link">Back to Home</a>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Store WebAuthn options
+    const webAuthnOptions = {{ client_options|tojson }};
+
+    document.getElementById('register-button').addEventListener('click', async () => {
+        try {
+            // Get options for WebAuthn
+            const publicKeyOptions = {
+                challenge: base64ToArrayBuffer(webAuthnOptions.challenge),
+                rp: webAuthnOptions.rp,
+                user: {
+                    id: base64ToArrayBuffer(webAuthnOptions.user.id),
+                    name: webAuthnOptions.user.name,
+                    displayName: webAuthnOptions.user.displayName,
+                },
+                pubKeyCredParams: webAuthnOptions.pubKeyCredParams,
+                timeout: webAuthnOptions.timeout,
+                attestation: webAuthnOptions.attestation,
+                authenticatorSelection: webAuthnOptions.authenticatorSelection,
+            };
+
+            // Create credential with authenticator
+            const credential = await navigator.credentials.create({
+                publicKey: publicKeyOptions
+            });
+
+            // Prepare credential for server
+            const credentialForServer = {
+                id: arrayBufferToBase64(credential.rawId),
+                rawId: arrayBufferToBase64(credential.rawId),
+                type: credential.type,
+                response: {
+                    attestationObject: arrayBufferToBase64(
+                        credential.response.attestationObject),
+                    clientDataJSON: arrayBufferToBase64(
+                        credential.response.clientDataJSON),
+                },
+                transports: credential.response.getTransports ?
+                    credential.response.getTransports() : null,
+            };
+
+            // Send credential to server for verification
+            const response = await fetch('/auth/verify_register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: '{{ username }}',
+                    display_name: '{{ display_name }}',
+                    credential: credentialForServer,
+                    challenge: webAuthnOptions.challenge,
+                }),
+            });
+
+            if (response.ok) {
+                // Redirect to login page on success
+                window.location.href = '/auth/login';
+            } else {
+                const data = await response.json();
+                document.getElementById('error-message').textContent =
+                    data.error || 'Registration failed';
+            }
+        } catch (error) {
+            console.error('WebAuthn error:', error);
+            document.getElementById('error-message').textContent =
+                'WebAuthn error: ' + error.message;
+        }
+    });
+
+    // Base64 utility functions
+    function base64ToArrayBuffer(base64) {
+        const binaryString = atob(base64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes;
+    }
+
+    function arrayBufferToBase64(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    }
+</script>
+{% endblock %}

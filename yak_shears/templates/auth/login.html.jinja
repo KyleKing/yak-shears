@@ -1,0 +1,17 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}Login{% endblock %}
+{% block header %}Login{% endblock %}
+
+{% block content %}
+<form method="post">
+    <div class="form-field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required>
+    </div>
+    <div class="form-field">
+        <button type="submit">Continue</button>
+    </div>
+</form>
+<a href="/home" class="back-link">Back to Home</a>
+{% endblock %}

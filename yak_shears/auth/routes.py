@@ -1,10 +1,9 @@
 """Authentication routes for the Yak Shears application."""
 
 import base64
-import json
 
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from starlette.responses import JSONResponse, RedirectResponse, Response
 from starlette.routing import Route
 
 from yak_shears.auth.storage import create_session, delete_session
@@ -15,6 +14,7 @@ from yak_shears.auth.webauthn import (
     verify_authentication,
     verify_registration,
 )
+from yak_shears.template import render_error, render_template
 
 
 async def login_handler(request: Request) -> Response:
@@ -34,12 +34,12 @@ async def login_handler(request: Request) -> Response:
     # Handle form submission
     if request.method == "POST":
         form_data = await request.form()
-        username = form_data.get("username", "")
+        username = str(form_data.get("username", ""))
 
         # Generate WebAuthn options
         options, user = generate_auth_options_for_user(username)
         if not options or not user:
-            return HTMLResponse("Invalid username", status_code=400)
+            return render_error(message="Invalid username", back_url="/auth/login")
 
         # Convert challenge to base64 for JSON
         challenge_b64 = base64.b64encode(options.challenge).decode()
@@ -60,166 +60,11 @@ async def login_handler(request: Request) -> Response:
             ],
         }
 
-        # Create login form with WebAuthn options
-        return HTMLResponse(
-            f"""
-            <html>
-            <head>
-                <title>Login</title>
-                <style>
-                    body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                    .form-container {{ max-width: 400px; margin: 0 auto; padding: 20px;
-                                     border: 1px solid #ccc; border-radius: 5px; }}
-                    .form-field {{ margin-bottom: 15px; }}
-                    label {{ display: block; margin-bottom: 5px; }}
-                    input {{ width: 100%; padding: 8px; box-sizing: border-box; }}
-                    button {{ padding: 10px 15px; background-color: #4CAF50; color: white;
-                           border: none; border-radius: 4px; cursor: pointer; }}
-                    button:hover {{ background-color: #45a049; }}
-                    .error {{ color: red; margin-top: 10px; }}
-                    .back-link {{ margin-top: 20px; display: block; }}
-                </style>
-            </head>
-            <body>
-                <div class="form-container">
-                    <h2>Login</h2>
-                    <div class="form-field">
-                        <label for="username">Username</label>
-                        <input type="text" id="username" name="username" value="{username}" disabled>
-                    </div>
-                    <div class="form-field">
-                        <button id="login-button">Login with WebAuthn</button>
-                    </div>
-                    <div id="error-message" class="error"></div>
-                    <a href="/home" class="back-link">Back to Home</a>
-                </div>
-
-                <script>
-                    // Store WebAuthn options
-                    const webAuthnOptions = "{json.dumps(client_options)}";
-
-                    document.getElementById('login-button').addEventListener('click', async () => {{
-                        try {{
-                            // Get options for WebAuthn
-                            const publicKeyOptions = {{
-                                challenge: base64ToArrayBuffer(webAuthnOptions.challenge),
-                                timeout: webAuthnOptions.timeout,
-                                rpId: webAuthnOptions.rpId,
-                                userVerification: webAuthnOptions.userVerification,
-                                allowCredentials: webAuthnOptions.allowCredentials.map(cred => ({{
-                                    id: base64ToArrayBuffer(cred.id),
-                                    type: cred.type,
-                                    transports: cred.transports,
-                                }})),
-                            }};
-
-                            // Request credential from authenticator
-                            const credential = await navigator.credentials.get({{
-                                publicKey: publicKeyOptions
-                            }});
-
-                            // Prepare credential for server
-                            const credentialForServer = {{
-                                id: arrayBufferToBase64(credential.rawId),
-                                rawId: arrayBufferToBase64(credential.rawId),
-                                type: credential.type,
-                                response: {{
-                                    authenticatorData: arrayBufferToBase64(credential.response.authenticatorData),
-                                    clientDataJSON: arrayBufferToBase64(credential.response.clientDataJSON),
-                                    signature: arrayBufferToBase64(credential.response.signature),
-                                    userHandle: credential.response.userHandle ?
-                                        arrayBufferToBase64(credential.response.userHandle) : null,
-                                }},
-                            }};
-
-                            // Send credential to server for verification
-                            const response = await fetch('/auth/verify_login', {{
-                                method: 'POST',
-                                headers: {{
-                                    'Content-Type': 'application/json',
-                                }},
-                                body: JSON.stringify({{
-                                    username: '{username}',
-                                    credential: credentialForServer,
-                                }}),
-                            }});
-
-                            if (response.ok) {{
-                                // Redirect to home page on success
-                                window.location.href = '/home';
-                            }} else {{
-                                const data = await response.json();
-                                document.getElementById('error-message').textContent =
-                                    data.error || 'Authentication failed';
-                            }}
-                        }} catch (error) {{
-                            console.error('WebAuthn error:', error);
-                            document.getElementById('error-message').textContent =
-                                'WebAuthn error: ' + error.message;
-                        }}
-                    }});
-
-                    // Base64 utility functions
-                    function base64ToArrayBuffer(base64) {{
-                        const binaryString = atob(base64);
-                        const bytes = new Uint8Array(binaryString.length);
-                        for (let i = 0; i < binaryString.length; i++) {{
-                            bytes[i] = binaryString.charCodeAt(i);
-                        }}
-                        return bytes;
-                    }}
-
-                    function arrayBufferToBase64(buffer) {{
-                        const bytes = new Uint8Array(buffer);
-                        let binary = '';
-                        for (let i = 0; i < bytes.byteLength; i++) {{
-                            binary += String.fromCharCode(bytes[i]);
-                        }}
-                        return btoa(binary);
-                    }}
-                </script>
-            </body>
-            </html>
-            """
-        )
+        # Render login form with WebAuthn options
+        return render_template("auth/login_webauthn.html.jinja", username=username, client_options=client_options)
 
     # Display login form
-    return HTMLResponse(
-        """
-        <html>
-        <head>
-            <title>Login</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .form-container { max-width: 400px; margin: 0 auto; padding: 20px;
-                                 border: 1px solid #ccc; border-radius: 5px; }
-                .form-field { margin-bottom: 15px; }
-                label { display: block; margin-bottom: 5px; }
-                input { width: 100%; padding: 8px; box-sizing: border-box; }
-                button { padding: 10px 15px; background-color: #4CAF50; color: white;
-                       border: none; border-radius: 4px; cursor: pointer; }
-                button:hover { background-color: #45a049; }
-                .back-link { margin-top: 20px; display: block; }
-            </style>
-        </head>
-        <body>
-            <div class="form-container">
-                <h2>Login</h2>
-                <form method="post">
-                    <div class="form-field">
-                        <label for="username">Username</label>
-                        <input type="text" id="username" name="username" required>
-                    </div>
-                    <div class="form-field">
-                        <button type="submit">Continue</button>
-                    </div>
-                </form>
-                <a href="/home" class="back-link">Back to Home</a>
-            </div>
-        </body>
-        </html>
-        """
-    )
+    return render_template("auth/login.html.jinja")
 
 
 async def verify_login_handler(request: Request) -> Response:
@@ -287,18 +132,18 @@ async def register_handler(request: Request) -> Response:
     # Handle form submission
     if request.method == "POST":
         form_data = await request.form()
-        username = form_data.get("username", "")
-        display_name = form_data.get("display_name", "")
+        username = str(form_data.get("username", ""))
+        display_name = str(form_data.get("display_name", ""))
 
         if not username or not display_name:
-            return HTMLResponse("Username and display name are required", status_code=400)
+            return render_error(message="Username and display name are required", back_url="/auth/register")
 
         # Check if username is already taken
         from yak_shears.auth.storage import get_user_by_name
 
         existing_user = get_user_by_name(username)
         if existing_user:
-            return HTMLResponse("Username already taken", status_code=400)
+            return render_error(message="Username already taken", back_url="/auth/register")
 
         # Generate registration options
         options = generate_registration_options_for_user(username, display_name)
@@ -326,180 +171,16 @@ async def register_handler(request: Request) -> Response:
             },
         }
 
-        # Create registration form with WebAuthn options
-        return HTMLResponse(
-            f"""
-            <html>
-            <head>
-                <title>Register</title>
-                <style>
-                    body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                    .form-container {{ max-width: 400px; margin: 0 auto; padding: 20px;
-                                     border: 1px solid #ccc; border-radius: 5px; }}
-                    .form-field {{ margin-bottom: 15px; }}
-                    label {{ display: block; margin-bottom: 5px; }}
-                    input {{ width: 100%; padding: 8px; box-sizing: border-box; }}
-                    button {{ padding: 10px 15px; background-color: #4CAF50; color: white;
-                           border: none; border-radius: 4px; cursor: pointer; }}
-                    button:hover {{ background-color: #45a049; }}
-                    .error {{ color: red; margin-top: 10px; }}
-                    .back-link {{ margin-top: 20px; display: block; }}
-                </style>
-            </head>
-            <body>
-                <div class="form-container">
-                    <h2>Register</h2>
-                    <div class="form-field">
-                        <label for="username">Username</label>
-                        <input type="text" id="username" name="username" value="{username}" disabled>
-                    </div>
-                    <div class="form-field">
-                        <label for="display_name">Display Name</label>
-                        <input type="text" id="display_name" name="display_name"
-                               value="{display_name}" disabled>
-                    </div>
-                    <div class="form-field">
-                        <button id="register-button">Register with WebAuthn</button>
-                    </div>
-                    <div id="error-message" class="error"></div>
-                    <a href="/home" class="back-link">Back to Home</a>
-                </div>
-
-                <script>
-                    // Store WebAuthn options
-                    const webAuthnOptions = "{json.dumps(client_options)}";
-
-                    document.getElementById('register-button').addEventListener('click', async () => {{
-                        try {{
-                            // Get options for WebAuthn
-                            const publicKeyOptions = {{
-                                challenge: base64ToArrayBuffer(webAuthnOptions.challenge),
-                                rp: webAuthnOptions.rp,
-                                user: {{
-                                    id: base64ToArrayBuffer(webAuthnOptions.user.id),
-                                    name: webAuthnOptions.user.name,
-                                    displayName: webAuthnOptions.user.displayName,
-                                }},
-                                pubKeyCredParams: webAuthnOptions.pubKeyCredParams,
-                                timeout: webAuthnOptions.timeout,
-                                attestation: webAuthnOptions.attestation,
-                                authenticatorSelection: webAuthnOptions.authenticatorSelection,
-                            }};
-
-                            // Create credential with authenticator
-                            const credential = await navigator.credentials.create({{
-                                publicKey: publicKeyOptions
-                            }});
-
-                            // Prepare credential for server
-                            const credentialForServer = {{
-                                id: arrayBufferToBase64(credential.rawId),
-                                rawId: arrayBufferToBase64(credential.rawId),
-                                type: credential.type,
-                                response: {{
-                                    attestationObject: arrayBufferToBase64(
-                                        credential.response.attestationObject),
-                                    clientDataJSON: arrayBufferToBase64(
-                                        credential.response.clientDataJSON),
-                                }},
-                                transports: credential.response.getTransports ?
-                                    credential.response.getTransports() : null,
-                            }};
-
-                            // Send credential to server for verification
-                            const response = await fetch('/auth/verify_register', {{
-                                method: 'POST',
-                                headers: {{
-                                    'Content-Type': 'application/json',
-                                }},
-                                body: JSON.stringify({{
-                                    username: '{username}',
-                                    display_name: '{display_name}',
-                                    credential: credentialForServer,
-                                    challenge: webAuthnOptions.challenge,
-                                }}),
-                            }});
-
-                            if (response.ok) {{
-                                // Redirect to login page on success
-                                window.location.href = '/auth/login';
-                            }} else {{
-                                const data = await response.json();
-                                document.getElementById('error-message').textContent =
-                                    data.error || 'Registration failed';
-                            }}
-                        }} catch (error) {{
-                            console.error('WebAuthn error:', error);
-                            document.getElementById('error-message').textContent =
-                                'WebAuthn error: ' + error.message;
-                        }}
-                    }});
-
-                    // Base64 utility functions
-                    function base64ToArrayBuffer(base64) {{
-                        const binaryString = atob(base64);
-                        const bytes = new Uint8Array(binaryString.length);
-                        for (let i = 0; i < binaryString.length; i++) {{
-                            bytes[i] = binaryString.charCodeAt(i);
-                        }}
-                        return bytes;
-                    }}
-
-                    function arrayBufferToBase64(buffer) {{
-                        const bytes = new Uint8Array(buffer);
-                        let binary = '';
-                        for (let i = 0; i < bytes.byteLength; i++) {{
-                            binary += String.fromCharCode(bytes[i]);
-                        }}
-                        return btoa(binary);
-                    }}
-                </script>
-            </body>
-            </html>
-            """
+        # Render registration form with WebAuthn options
+        return render_template(
+            "auth/register_webauthn.html.jinja",
+            username=username,
+            display_name=display_name,
+            client_options=client_options,
         )
 
     # Display registration form
-    return HTMLResponse(
-        """
-        <html>
-        <head>
-            <title>Register</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .form-container { max-width: 400px; margin: 0 auto; padding: 20px;
-                                 border: 1px solid #ccc; border-radius: 5px; }
-                .form-field { margin-bottom: 15px; }
-                label { display: block; margin-bottom: 5px; }
-                input { width: 100%; padding: 8px; box-sizing: border-box; }
-                button { padding: 10px 15px; background-color: #4CAF50; color: white;
-                       border: none; border-radius: 4px; cursor: pointer; }
-                button:hover { background-color: #45a049; }
-                .back-link { margin-top: 20px; display: block; }
-            </style>
-        </head>
-        <body>
-            <div class="form-container">
-                <h2>Register</h2>
-                <form method="post">
-                    <div class="form-field">
-                        <label for="username">Username</label>
-                        <input type="text" id="username" name="username" required>
-                    </div>
-                    <div class="form-field">
-                        <label for="display_name">Display Name</label>
-                        <input type="text" id="display_name" name="display_name" required>
-                    </div>
-                    <div class="form-field">
-                        <button type="submit">Continue</button>
-                    </div>
-                </form>
-                <a href="/home" class="back-link">Back to Home</a>
-            </div>
-        </body>
-        </html>
-        """
-    )
+    return render_template("auth/register.html.jinja")
 
 
 async def verify_register_handler(request: Request) -> Response:
