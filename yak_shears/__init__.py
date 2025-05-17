@@ -6,4 +6,3 @@ configure_runtime_type_checking_mode()
 
 
 # == Above code must always be first ==
-
