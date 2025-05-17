@@ -1,5 +1,6 @@
 """Server routes for Yak Shears."""
 
+import argparse
 import os
 
 import uvicorn
@@ -47,19 +48,12 @@ routes = [
 routes.extend(auth.auth_routes)
 
 
-def start(host: str = "localhost", port: int = 8080) -> None:
-    """Run the ASGI server with uvicorn.
+def create_app() -> Starlette:
+    """Create and configure the Starlette application.
 
-    Args:
-        host: The hostname to bind to
-        port: The port to bind to
+    Returns:
+        Starlette: The configured Starlette application
     """
-    print(f"Server running at http://{host}:{port}")  # noqa: T201
-
-    # Set WebAuthn environment variables
-    os.environ.setdefault("WEBAUTHN_RP_ID", host)
-    os.environ.setdefault("WEBAUTHN_ORIGIN", f"http://{host}:{port}")
-
     # Create app with auth middleware
     app = Starlette(
         routes=routes,
@@ -71,8 +65,47 @@ def start(host: str = "localhost", port: int = 8080) -> None:
     public_paths = ["/", "/home", "/auth/login", "/auth/register", "/auth/status"]
     app.add_middleware(auth.AuthMiddleware, public_paths=public_paths)
 
-    uvicorn.run(app, host=host, port=port)
+    return app
+
+
+def start(host: str = "localhost", port: int = 8080, reload: bool = False) -> None:
+    """Run the ASGI server with uvicorn.
+
+    Args:
+        host: The hostname to bind to
+        port: The port to bind to
+        reload: Whether to reload the server on code changes
+    """
+    print(f"Server running at http://{host}:{port}")  # noqa: T201
+
+    # Set WebAuthn environment variables
+    os.environ.setdefault("WEBAUTHN_RP_ID", host)
+    os.environ.setdefault("WEBAUTHN_ORIGIN", f"http://{host}:{port}")
+
+    if reload:
+        print("Auto-reload enabled: Server will restart on code changes")  # noqa: T201
+        uvicorn.run(
+            "yak_shears.server.routes:create_app",
+            host=host,
+            port=port,
+            reload=True,
+            reload_dirs=["yak_shears"],
+        )
+    else:
+        uvicorn.run(create_app(), host=host, port=port)
+
+
+def cli() -> None:
+    """Run the development server with auto-reload."""
+    parser = argparse.ArgumentParser(description="Run the Yak Shears development server")
+    parser.add_argument("--host", default="localhost", help="Host to bind to")
+    parser.add_argument("--port", type=int, default=8080, help="Port to bind to")
+    parser.add_argument("--reload", action="store_true", help="Utilize auto-reload")
+
+    args = parser.parse_args()
+
+    start(host=args.host, port=args.port, reload=args.reload)
 
 
 if __name__ == "__main__":
-    start()
+    cli()

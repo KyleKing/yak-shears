@@ -25,7 +25,7 @@ requires-python = ">=3.12.9"
 version = "0.0.0"
 
 [project.scripts] # Docs: https://setuptools.pypa.io/en/latest/userguide/entry_point.html#console-scripts
-serve = "yak_shears.server:start"
+serve = "yak_shears.server:cli"
 
 [tool.mypy]
 check_untyped_defs = true
