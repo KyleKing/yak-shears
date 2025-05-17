@@ -1,0 +1,62 @@
+---
+name: CI Pipeline
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - .github/workflows/ci_pipeline.yml
+      - calcipy/**
+      - tests/**
+      - uv.lock
+      - pyproject.toml
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run static linters
+        run: uv run calcipy-lint lint.check
+
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+        python-version: ["3.10"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run test
+        run: uv run calcipy-test test.pytest
+
+  typecheck:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run typecheck
+        run: uv run calcipy-types types.mypy
+
+      # https://github.com/jakebailey/pyright-action/blob/ea37d1c67b7fc90ab9ab4571114e203b313152a2/README.md#use-with-a-virtualenv
+      - name: Add Virtual Environment to Path for pyright
+        run: echo "$PWD/.venv/bin" >> $GITHUB_PATH
+      - uses: jakebailey/pyright-action@v2

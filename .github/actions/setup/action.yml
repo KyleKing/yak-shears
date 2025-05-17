@@ -1,0 +1,36 @@
+---
+name: Setup Action
+description: Install requested uvx dependencies, configure the system python, and install uv and the package dependencies
+
+inputs:
+  python-tools:
+    description: List of Python packages installed as CLI tools by uv
+    default: ""
+  uv-version:
+    description: Astral/uv version. Defers to `[tool.uv].required-version` in `pyproject.toml`
+    default: ""
+  python-version:
+    description: Python version
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install 'uv==%{{ inputs.uv-version }}'
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+        python-version: ${{ inputs.python-version }}
+        version: ${{ inputs.uv-version }}
+
+    - name: Install '${{ inputs.python-tools }}'
+      if: ${{ inputs.python-tools }}
+      run: |
+        for tool in ${{ inputs.python-tools }}; do
+          uv tool install $tool
+        done
+      shell: bash
+
+    - name: Install Project and Minimum Subset of Dependencies
+      run: uv sync --all-extras
+      shell: bash
