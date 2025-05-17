@@ -80,8 +80,8 @@ async def time_handler(request: Request) -> HTMLResponse:  # noqa: ARG001,RUF029
     return HTMLResponse(f"<h1>Current Time</h1><p>{now.strftime('%Y-%m-%d %H:%M:%S')}</p>")
 
 
-def get_files_from_directory(directory_path: str, page: int = 1, page_size: int = 10) -> tuple[list[Path], int, int]:
-    """Get a paginated list of files from the specified directory.
+def get_djot_files(directory_path: str, page: int = 1, page_size: int = 50) -> tuple[list[Path], int, int]:
+    """Get a paginated list of Djot files from the specified directory.
 
     Args:
         directory_path: Path to the directory to list files from
@@ -91,13 +91,14 @@ def get_files_from_directory(directory_path: str, page: int = 1, page_size: int 
     Returns:
         Tuple containing (list of file paths, total number of files, total pages)
     """
-    path = Path(directory_path).expanduser()
-    if not path.exists() or not path.is_dir():
+    pth = Path(directory_path).expanduser()
+    if not pth.exists() or not pth.is_dir():
         return [], 0, 0
 
-    all_files = sorted([f for f in path.iterdir() if f.is_file()], key=lambda x: x.name.lower())
+    # TODO: Also need to include the parent directory folder
+    all_files = sorted([f for f in pth.rglob("*.dj") if f.is_file()], key=lambda x: x.name.lower())
     total_files = len(all_files)
-    total_pages = (total_files + page_size - 1) // page_size  # Ceiling division
+    total_pages = (total_files + page_size - 1) // page_size
 
     start_idx = (page - 1) * page_size
     end_idx = min(start_idx + page_size, total_files)
@@ -207,7 +208,7 @@ async def files_handler(request: Request) -> Response:  # noqa: RUF029
     Returns:
         Response with paginated file listing
     """
-    directory_path = "~/Sync/yak_shears"
+    directory_path = "~/Sync/yak-shears"
 
     # Get page from query parameters, default to 1
     try:
@@ -217,7 +218,7 @@ async def files_handler(request: Request) -> Response:  # noqa: RUF029
         page = 1
 
     # Get files with pagination
-    files, total_files, total_pages = get_files_from_directory(directory_path, page)
+    files, total_files, total_pages = get_djot_files(directory_path, page)
 
     # Generate HTML
     html_content = generate_file_table_html(files, page, total_pages, total_files, directory_path)
@@ -307,8 +308,8 @@ routes = [
 ]
 
 
-def start(host: str = "localhost", port: int = 8000) -> None:
-    """Run the ASGI server with Uvicorn.
+def start(host: str = "localhost", port: int = 8080) -> None:
+    """Run the ASGI server with uvicorn.
 
     Args:
         host: The hostname to bind to
