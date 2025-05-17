@@ -1,21 +1,14 @@
 """Minimal Web Server using Starlette."""
 
 import json
-import os
 from datetime import UTC, datetime
 from pathlib import Path
 
 import uvicorn
-from itsdangerous import URLSafeSerializer
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 from starlette.routing import Route
-
-# Create a serializer with a secret key for signing file paths
-# In production, use a proper secret key from environment variables
-SECRET_KEY = os.environ.get("SECRET_KEY", "yak-shears-secure-key")
-path_serializer = URLSafeSerializer(SECRET_KEY)
 
 
 async def home_handler(request: Request) -> HTMLResponse:  # noqa: ARG001,RUF029
@@ -167,12 +160,9 @@ def generate_file_table_html(
         size_kb = file_stats.st_size / 1024
         last_modified = datetime.fromtimestamp(file_stats.st_mtime, tz=UTC).strftime("%Y-%m-%d %H:%M:%S")
 
-        # Sign the file path to prevent tampering
-        signed_path = path_serializer.dumps(str(file_path))
-
         html += f"""
             <tr>
-                <td><a href="/edit?file={signed_path}">{file_path.name}</a></td>
+                <td><a href="/edit?file={file_path!s}">{file_path.name}</a></td>
                 <td>{size_kb:.2f} KB</td>
                 <td>{last_modified}</td>
             </tr>
@@ -245,16 +235,13 @@ async def edit_file_handler(request: Request) -> Response:
     Returns:
         Response with file editor or redirect
     """
-    signed_path = request.query_params.get("file")
+    file_path_str = request.query_params.get("file")
 
-    if not signed_path:
+    if not file_path_str:
         return HTMLResponse("<h1>Error</h1><p>No file specified</p>", status_code=400)
 
     try:
-        # Verify and decode the signed file path
-        file_path_str = path_serializer.loads(signed_path)
         file_path = Path(file_path_str)
-
         if not file_path.exists() or not file_path.is_file():
             return HTMLResponse(f"<h1>Error</h1><p>File not found: {file_path}</p>", status_code=404)
 
@@ -263,7 +250,7 @@ async def edit_file_handler(request: Request) -> Response:
             form_data = await request.form()
             content = str(form_data.get("content", ""))
             file_path.write_text(content)
-            return RedirectResponse(url=f"/edit?file={signed_path}", status_code=303)
+            return RedirectResponse(url=f"/edit?file={file_path_str}", status_code=303)
 
         # Generate HTML editor
         content = file_path.read_text()
