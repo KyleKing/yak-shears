@@ -29,25 +29,7 @@ from webauthn.helpers.structs import (
     UserVerificationRequirement,
 )
 
-__all__ = [
-    "AuthMiddleware",
-    "CredentialEntry",
-    "User",
-    "add_credential_to_user",
-    "auth_routes",
-    "create_session",
-    "create_user",
-    "delete_session",
-    "generate_auth_options_for_user",
-    "get_user_by_id",
-    "get_user_by_name",
-    "get_user_from_session",
-    "initialize",
-    "update_credential_sign_count"
-]
 
-
-# Simple in-memory user storage - in a production app, use a database
 class User(TypedDict):
     """User data structure."""
 
@@ -73,7 +55,7 @@ _username_to_user_id: dict[str, str] = {}
 _session_store: dict[str, str] = {}  # session_id -> user_id
 
 # Path to save user data
-_USER_DATA_PATH = Path("~/.yak-shears-users.json").expanduser()
+_USER_DATA_PATH = Path(__file__).parent / ".yak-shears-users.json"
 
 
 def _generate_user_id() -> str:

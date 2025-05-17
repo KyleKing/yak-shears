@@ -111,6 +111,8 @@ trailing_comma_inline_array = true
 
 [tool.uv]
 dev-dependencies = [
+  "httpx>=0.28.1",
+  "pytest>=8.3.5",
   "ruff>=0.11.10",
 ]
 required-version = ">=0.7.3"
