@@ -13,6 +13,7 @@ dependencies = [
   "beartype >=0.19.0",
   "starlette>=0.46.2",
   "uvicorn>=0.34.2",
+  "webauthn>=2.5.2",
 ]
 description = "Yak Shears Web App"
 license = "MIT"

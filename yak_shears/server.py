@@ -1,6 +1,7 @@
 """Minimal Web Server using Starlette."""
 
 import json
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -10,8 +11,10 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 from starlette.routing import Route
 
+from yak_shears import auth
 
-async def home_handler(request: Request) -> HTMLResponse:  # noqa: ARG001,RUF029
+
+async def home_handler(request: Request) -> HTMLResponse:
     """Handle requests to /home.
 
     Args:
@@ -20,13 +23,47 @@ async def home_handler(request: Request) -> HTMLResponse:  # noqa: ARG001,RUF029
     Returns:
         HTMLResponse with navigation index
     """
-    return HTMLResponse("""
-    <h1>Yak Shears Server</h1>
-    <ul>
-        <li><a href="/files">Browse Files</a></li>
-        <li><a href="/echo">Echo Endpoint</a></li>
-        <li><a href="/time">Current Time</a></li>
-    </ul>
+    user = auth.get_user_from_session(request)
+    auth_status = ""
+
+    if user:
+        auth_status = f"""
+        <div style="margin-bottom: 20px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
+            <p>Logged in as: <strong>{user["display_name"]}</strong></p>
+            <a href="/auth/logout" style="color: #d9534f;">Logout</a>
+        </div>
+        """
+    else:
+        auth_status = """
+        <div style="margin-bottom: 20px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
+            <p>Not logged in</p>
+            <a href="/auth/login" style="margin-right: 10px;">Login</a>
+            <a href="/auth/register">Register</a>
+        </div>
+        """
+
+    return HTMLResponse(f"""
+    <html>
+    <head>
+        <title>Yak Shears Server</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 20px; }}
+            ul {{ padding-left: 20px; }}
+            li {{ margin-bottom: 10px; }}
+            a {{ color: #337ab7; text-decoration: none; }}
+            a:hover {{ text-decoration: underline; }}
+        </style>
+    </head>
+    <body>
+        <h1>Yak Shears Server</h1>
+        {auth_status}
+        <ul>
+            <li><a href="/files">Browse Files</a></li>
+            <li><a href="/echo">Echo Endpoint</a></li>
+            <li><a href="/time">Current Time</a></li>
+        </ul>
+    </body>
+    </html>
     """)
 
 
@@ -297,8 +334,21 @@ async def not_found(request: Request, exc: Exception) -> HTMLResponse:  # noqa: 
     return HTMLResponse("<h1>404 Not Found</h1>", status_code=404)
 
 
+async def root_handler(request: Request) -> Response:  # noqa: ARG001
+    """Redirect root to home page.
+
+    Args:
+        request: The incoming request
+
+    Returns:
+        Redirect to home page
+    """
+    return RedirectResponse(url="/home")
+
+
 # Define routes for the application
 routes = [
+    Route("/", endpoint=root_handler),
     Route("/home", endpoint=home_handler),
     Route("/echo", endpoint=echo_handler, methods=["GET"]),
     Route("/echo", endpoint=echo_handler, methods=["POST"]),
@@ -306,6 +356,9 @@ routes = [
     Route("/files", endpoint=files_handler),
     Route("/edit", endpoint=edit_file_handler, methods=["GET", "POST"]),
 ]
+
+# Add auth routes
+routes.extend(auth.auth_routes)
 
 
 def start(host: str = "localhost", port: int = 8080) -> None:
@@ -316,11 +369,25 @@ def start(host: str = "localhost", port: int = 8080) -> None:
         port: The port to bind to
     """
     print(f"Server running at http://{host}:{port}")  # noqa: T201
+
+    # Initialize auth system
+    auth.initialize()
+
+    # Set WebAuthn environment variables
+    os.environ.setdefault("WEBAUTHN_RP_ID", host)
+    os.environ.setdefault("WEBAUTHN_ORIGIN", f"http://{host}:{port}")
+
+    # Create app with auth middleware
     app = Starlette(
         routes=routes,
         debug=True,
         exception_handlers={404: not_found},
     )
+
+    # Wrap app with auth middleware
+    public_paths = ["/", "/home", "/auth/login", "/auth/register", "/auth/status"]
+    app.add_middleware(auth.AuthMiddleware, public_paths=public_paths)
+
     uvicorn.run(app, host=host, port=port)
 
 
