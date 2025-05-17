@@ -7,15 +7,15 @@ from os import getenv
 from warnings import filterwarnings
 from typing import Self
 
-NAME = 'yak_shears'.upper()
+NAME = "yak_shears".upper()
 """Package name to allow more targeted usage."""
 
 
 class _RuntimeTypeCheckingModes(Enum):
     """Supported global runtime type checking modes."""
 
-    ERROR = 'ERROR'
-    WARNING = 'WARNING'
+    ERROR = "ERROR"
+    WARNING = "WARNING"
     OFF = None
 
     @classmethod
@@ -26,7 +26,7 @@ class _RuntimeTypeCheckingModes(Enum):
             ValueError: if environment variable is configured incorrectly
 
         """
-        rtc_mode = getenv('RUNTIME_TYPE_CHECKING_MODE') or getenv(f"RUNTIME_TYPE_CHECKING_MODE_{NAME}") or None
+        rtc_mode = getenv("RUNTIME_TYPE_CHECKING_MODE") or getenv(f"RUNTIME_TYPE_CHECKING_MODE_{NAME}") or None
         try:
             return cls(rtc_mode)
         except ValueError:
@@ -61,6 +61,6 @@ if datetime.now(tz=timezone.utc).year <= _PEP585_DATE:  # pragma: no cover
         from beartype.roar import BeartypeDecorHintPep585DeprecationWarning
 
         filterwarnings(
-            'ignore',
+            "ignore",
             category=BeartypeDecorHintPep585DeprecationWarning,
         )

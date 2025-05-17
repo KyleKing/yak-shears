@@ -31,7 +31,7 @@ files = ["tests", "yak_shears"]
 no_implicit_reexport = true
 plugins = [
 ]
-python_version = "3.9"
+python_version = "3.12"
 show_column_numbers = true
 show_error_codes = true
 strict_equality = true
@@ -43,13 +43,13 @@ warn_unused_ignores = true
 
 [tool.pyright]
 include = ["tests", "yak_shears"]
-pythonVersion = "3.9"
+pythonVersion = "3.12"
 
 [tool.ruff]
 # Docs: https://github.com/charliermarsh/ruff
 # Tip: uv run ruff rule RUF100
 line-length = 120
-target-version = 'py39'
+target-version = 'py312'
 
 [tool.ruff.lint]
 ignore = [
