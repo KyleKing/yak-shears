@@ -196,6 +196,7 @@ def test_files_endpoint(client: TestClient, mock_djot_files: list[Path]) -> None
 
         # Mock Path.stat for each file
         with patch("pathlib.Path.stat") as mock_stat:
+
             class MockStat:
                 st_size = 1024
                 st_mtime = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC).timestamp()

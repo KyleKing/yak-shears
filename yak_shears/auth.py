@@ -59,12 +59,20 @@ _USER_DATA_PATH = Path(__file__).parent / ".yak-shears-users.json"
 
 
 def _generate_user_id() -> str:
-    """Generate a random user ID."""
+    """Generate a random user ID.
+
+    Returns:
+        str: A randomly generated user ID as a hex string
+    """
     return secrets.token_hex(16)
 
 
 def _generate_session_id() -> str:
-    """Generate a random session ID."""
+    """Generate a random session ID.
+
+    Returns:
+        str: A randomly generated session ID as a hex string
+    """
     return secrets.token_hex(32)
 
 
@@ -100,7 +108,14 @@ def initialize() -> None:
 
 
 def get_user_by_name(username: str) -> User | None:
-    """Get a user by username."""
+    """Get a user by username.
+
+    Args:
+        username: The username to look up
+
+    Returns:
+        User | None: The user object if found, None otherwise
+    """
     user_id = _username_to_user_id.get(username)
     if not user_id:
         return None
@@ -108,12 +123,26 @@ def get_user_by_name(username: str) -> User | None:
 
 
 def get_user_by_id(user_id: str) -> User | None:
-    """Get a user by ID."""
+    """Get a user by ID.
+
+    Args:
+        user_id: The user ID to look up
+
+    Returns:
+        User | None: The user object if found, None otherwise
+    """
     return _users.get(user_id)
 
 
 def get_user_from_session(request: Request) -> User | None:
-    """Get the user from the session cookie."""
+    """Get the user from the session cookie.
+
+    Args:
+        request: The incoming request
+
+    Returns:
+        User | None: The user object if found, None otherwise
+    """
     session_id = request.cookies.get("session_id")
     if not session_id:
         return None
@@ -126,7 +155,15 @@ def get_user_from_session(request: Request) -> User | None:
 
 
 def create_user(username: str, display_name: str) -> User:
-    """Create a new user."""
+    """Create a new user.
+
+    Args:
+        username: The username for the new user
+        display_name: The display name for the new user
+
+    Returns:
+        User: The newly created user object
+    """
     user_id = _generate_user_id()
     user: User = {
         "id": user_id,
@@ -144,7 +181,7 @@ def create_user(username: str, display_name: str) -> User:
 def add_credential_to_user(user_id: str, credential: CredentialEntry) -> None:
     """Add a credential to a user."""
     if user_id in _users:
-        _users[user_id]["credentials"].append(credential)  # type: ignore
+        _users[user_id]["credentials"].append(credential)  # type: ignore[index]
         _save_users()
 
 
@@ -153,7 +190,7 @@ def update_credential_sign_count(user_id: str, credential_id: str, sign_count: i
     if user_id not in _users:
         return
 
-    for cred in _users[user_id]["credentials"]:  # type: ignore
+    for cred in _users[user_id]["credentials"]:  # type: ignore[index]
         if cred["id"] == credential_id:
             cred["sign_count"] = sign_count
             break
@@ -162,7 +199,14 @@ def update_credential_sign_count(user_id: str, credential_id: str, sign_count: i
 
 
 def create_session(user_id: str) -> str:
-    """Create a new session for a user."""
+    """Create a new session for a user.
+
+    Args:
+        user_id: The ID of the user to create a session for
+
+    Returns:
+        str: The newly created session ID
+    """
     session_id = _generate_session_id()
     _session_store[session_id] = user_id
     return session_id
@@ -174,7 +218,14 @@ def delete_session(session_id: str) -> None:
 
 
 def generate_auth_options_for_user(username: str) -> tuple[PublicKeyCredentialRequestOptions | None, User | None]:
-    """Generate authentication options for a user."""
+    """Generate authentication options for a user.
+
+    Args:
+        username: The username to generate auth options for
+
+    Returns:
+        tuple: A tuple containing authentication options and the user object, or (None, None) if not found
+    """
     user = get_user_by_name(username)
     if not user:
         return None, None
@@ -202,8 +253,15 @@ def generate_auth_options_for_user(username: str) -> tuple[PublicKeyCredentialRe
 
 
 # WebAuthn handlers
-async def register_begin_handler(request: Request) -> Response:
-    """Begin WebAuthn registration process."""
+def register_begin_handler(request: Request) -> Response:
+    """Begin WebAuthn registration process.
+
+    Args:
+        request: The incoming request
+
+    Returns:
+        Response: HTML page for registration or error
+    """
     if request.method == "GET":
         return HTMLResponse(r"""
         <html>
@@ -342,7 +400,14 @@ async def register_begin_handler(request: Request) -> Response:
 
 
 async def register_options_handler(request: Request) -> Response:
-    """Generate WebAuthn registration options."""
+    """Generate WebAuthn registration options.
+
+    Args:
+        request: The incoming request
+
+    Returns:
+        Response: JSON response with registration options or error
+    """
     try:
         data = await request.json()
         username = data.get("username")
@@ -388,7 +453,14 @@ async def register_options_handler(request: Request) -> Response:
 
 
 async def register_verify_handler(request: Request) -> Response:
-    """Verify WebAuthn registration."""
+    """Verify WebAuthn registration.
+
+    Args:
+        request: The incoming request
+
+    Returns:
+        Response: JSON response with verification result or error
+    """
     try:
         data = await request.json()
         username = data.get("username")
@@ -405,15 +477,17 @@ async def register_verify_handler(request: Request) -> Response:
             return JSONResponse({"error": "No active challenge for user"}, status_code=400)
 
         # Parse credential from request
-        registration_credential = RegistrationCredential.model_validate({
-            "id": credential_data["id"],
-            "raw_id": credential_data["rawId"],
-            "response": {
-                "attestation_object": credential_data["response"]["attestationObject"],
-                "client_data_json": credential_data["response"]["clientDataJSON"],
-            },
-            "type": credential_data["type"],
-        })
+        registration_credential = RegistrationCredential.model_validate(
+            {
+                "id": credential_data["id"],
+                "raw_id": credential_data["rawId"],
+                "response": {
+                    "attestation_object": credential_data["response"]["attestationObject"],
+                    "client_data_json": credential_data["response"]["clientDataJSON"],
+                },
+                "type": credential_data["type"],
+            }
+        )
 
         expected_challenge = base64.b64decode(user["current_challenge"])
 
@@ -457,8 +531,15 @@ async def register_verify_handler(request: Request) -> Response:
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
-async def login_begin_handler(request: Request) -> Response:
-    """Begin WebAuthn login process."""
+def login_begin_handler(request: Request) -> Response:
+    """Begin WebAuthn login process.
+
+    Args:
+        request: The incoming request
+
+    Returns:
+        Response: HTML page for login or error
+    """
     if request.method == "GET":
         return HTMLResponse(r"""
         <html>
@@ -531,7 +612,9 @@ async def login_begin_handler(request: Request) -> Response:
                                 clientDataJSON: arrayBufferToBase64URL(credential.response.clientDataJSON),
                                 authenticatorData: arrayBufferToBase64URL(credential.response.authenticatorData),
                                 signature: arrayBufferToBase64URL(credential.response.signature),
-                                userHandle: credential.response.userHandle ? arrayBufferToBase64URL(credential.response.userHandle) : null,
+                                userHandle: credential.response.userHandle
+                                    ? arrayBufferToBase64URL(credential.response.userHandle)
+                                    : null,
                             }
                         };
 
@@ -595,7 +678,14 @@ async def login_begin_handler(request: Request) -> Response:
 
 
 async def login_options_handler(request: Request) -> Response:
-    """Generate WebAuthn login options."""
+    """Generate WebAuthn login options.
+
+    Args:
+        request: The incoming request
+
+    Returns:
+        Response: JSON response with login options or error
+    """
     try:
         data = await request.json()
         username = data.get("username")
@@ -614,7 +704,14 @@ async def login_options_handler(request: Request) -> Response:
 
 
 async def login_verify_handler(request: Request) -> Response:
-    """Verify WebAuthn login."""
+    """Verify WebAuthn login.
+
+    Args:
+        request: The incoming request
+
+    Returns:
+        Response: JSON response with verification result or error
+    """
     try:
         data = await request.json()
         username = data.get("username")
@@ -631,7 +728,7 @@ async def login_verify_handler(request: Request) -> Response:
             return JSONResponse({"error": "No active challenge for user"}, status_code=400)
 
         # Find the credential
-        credential_id_b64 = credential_data["id"]
+        # Skip credential_id to directly search through stored credentials
         stored_credential = None
 
         for cred in user["credentials"]:
@@ -643,17 +740,19 @@ async def login_verify_handler(request: Request) -> Response:
             return JSONResponse({"error": "Credential not found"}, status_code=404)
 
         # Parse credential from request
-        authentication_credential = AuthenticationCredential.model_validate({
-            "id": credential_data["id"],
-            "raw_id": credential_data["rawId"],
-            "response": {
-                "authenticator_data": credential_data["response"]["authenticatorData"],
-                "client_data_json": credential_data["response"]["clientDataJSON"],
-                "signature": credential_data["response"]["signature"],
-                "user_handle": credential_data["response"].get("userHandle"),
-            },
-            "type": credential_data["type"],
-        })
+        authentication_credential = AuthenticationCredential.model_validate(
+            {
+                "id": credential_data["id"],
+                "raw_id": credential_data["rawId"],
+                "response": {
+                    "authenticator_data": credential_data["response"]["authenticatorData"],
+                    "client_data_json": credential_data["response"]["clientDataJSON"],
+                    "signature": credential_data["response"]["signature"],
+                    "user_handle": credential_data["response"].get("userHandle"),
+                },
+                "type": credential_data["type"],
+            }
+        )
 
         expected_challenge = base64.b64decode(user["current_challenge"])
 
@@ -692,8 +791,15 @@ async def login_verify_handler(request: Request) -> Response:
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
-async def logout_handler(request: Request) -> Response:
-    """Log out the current user."""
+def logout_handler(request: Request) -> Response:
+    """Log out the current user.
+
+    Args:
+        request: The incoming request
+
+    Returns:
+        Response: Redirect to home page
+    """
     session_id = request.cookies.get("session_id")
 
     if session_id:
@@ -705,16 +811,25 @@ async def logout_handler(request: Request) -> Response:
     return response
 
 
-async def auth_status_handler(request: Request) -> Response:
-    """Return the current authentication status."""
+def auth_status_handler(request: Request) -> Response:
+    """Return the current authentication status.
+
+    Args:
+        request: The incoming request
+
+    Returns:
+        Response: JSON with authentication status
+    """
     user = get_user_from_session(request)
 
     if user:
-        return JSONResponse({
-            "authenticated": True,
-            "username": user["name"],
-            "displayName": user["display_name"],
-        })
+        return JSONResponse(
+            {
+                "authenticated": True,
+                "username": user["name"],
+                "displayName": user["display_name"],
+            }
+        )
 
     return JSONResponse({"authenticated": False})
 
@@ -723,7 +838,7 @@ async def auth_status_handler(request: Request) -> Response:
 class AuthMiddleware(BaseHTTPMiddleware):
     """Authentication middleware for Starlette."""
 
-    def __init__(self, app: Any, public_paths: list[str] = None) -> None:
+    def __init__(self, app: Any, public_paths: list[str] | None = None) -> None:
         """Initialize the middleware.
 
         Args:
@@ -734,7 +849,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
         self.public_paths = public_paths or []
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        """Process the request."""
+        """Process the request.
+
+        Args:
+            request: The incoming request
+            call_next: The next request handler
+
+        Returns:
+            Response: The response from the next handler or a redirect
+        """
         # Skip auth for public paths
         path = request.url.path
 

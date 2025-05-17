@@ -13,6 +13,18 @@ from starlette.testclient import TestClient
 
 from yak_shears import auth
 
+# HTTP status codes
+HTTP_OK = 200
+HTTP_SEE_OTHER = 303
+HTTP_TEMPORARY_REDIRECT = 307
+HTTP_BAD_REQUEST = 400
+HTTP_NOT_FOUND = 404
+
+# Constants for test values
+USER_ID_LENGTH = 32  # 16 bytes as hex = 32 chars
+SESSION_ID_LENGTH = 64  # 32 bytes as hex = 64 chars
+TEST_SIGN_COUNT = 5
+
 
 @pytest.fixture
 def mock_user() -> auth.User:
@@ -44,17 +56,19 @@ def auth_app() -> Starlette:
     Returns:
         Starlette: A test Starlette application
     """
-    async def protected_handler(request: Request) -> Response:
+
+    def protected_handler(request: Request) -> Response:
         return JSONResponse({"message": "This is a protected endpoint"})
 
-    async def public_handler(request: Request) -> Response:
+    def public_handler(request: Request) -> Response:
         return JSONResponse({"message": "This is a public endpoint"})
 
     app = Starlette(
         routes=[
             Route("/protected", endpoint=protected_handler),
             Route("/public", endpoint=public_handler),
-        ] + auth.auth_routes,
+            *auth.auth_routes,
+        ],
         debug=True,
     )
 
@@ -80,18 +94,18 @@ def auth_client(auth_app: Starlette) -> TestClient:
 
 def test_generate_user_id() -> None:
     """Test _generate_user_id creates a valid hex string."""
-    user_id = auth._generate_user_id()
+    user_id = auth._generate_user_id()  # noqa: SLF001
     assert isinstance(user_id, str)
-    assert len(user_id) == 32  # 16 bytes as hex = 32 chars
+    assert len(user_id) == USER_ID_LENGTH  # 16 bytes as hex = 32 chars
     # Ensure it's a valid hex string
     int(user_id, 16)
 
 
 def test_generate_session_id() -> None:
     """Test _generate_session_id creates a valid hex string."""
-    session_id = auth._generate_session_id()
+    session_id = auth._generate_session_id()  # noqa: SLF001
     assert isinstance(session_id, str)
-    assert len(session_id) == 64  # 32 bytes as hex = 64 chars
+    assert len(session_id) == SESSION_ID_LENGTH  # 32 bytes as hex = 64 chars
     # Ensure it's a valid hex string
     int(session_id, 16)
 
@@ -111,8 +125,8 @@ def test_create_user() -> None:
         assert isinstance(user["id"], str)
 
         # Check that the user was added to the _users dict
-        assert auth._users[user["id"]] == user
-        assert auth._username_to_user_id[username] == user["id"]
+        assert auth._users[user["id"]] == user  # noqa: SLF001
+        assert auth._username_to_user_id[username] == user["id"]  # noqa: SLF001
 
 
 def test_get_user_by_name() -> None:
@@ -158,7 +172,7 @@ def test_add_credential_to_user(mock_user: auth.User) -> None:
     # Patch _save_users to avoid writing to disk during tests
     with patch.object(auth, "_save_users"):
         # Add the mock user to _users
-        auth._users[mock_user["id"]] = mock_user
+        auth._users[mock_user["id"]] = mock_user  # noqa: SLF001
 
         # Create a new credential
         new_credential: auth.CredentialEntry = {
@@ -172,7 +186,7 @@ def test_add_credential_to_user(mock_user: auth.User) -> None:
         auth.add_credential_to_user(mock_user["id"], new_credential)
 
         # Check that the credential was added
-        assert new_credential in auth._users[mock_user["id"]]["credentials"]
+        assert new_credential in auth._users[mock_user["id"]]["credentials"]  # noqa: SLF001
 
 
 def test_update_credential_sign_count(mock_user: auth.User) -> None:
@@ -187,12 +201,12 @@ def test_update_credential_sign_count(mock_user: auth.User) -> None:
         auth._users[mock_user["id"]] = mock_user
 
         # Update the sign count
-        auth.update_credential_sign_count(mock_user["id"], "test_credential_id", 5)
+        auth.update_credential_sign_count(mock_user["id"], "test_credential_id", TEST_SIGN_COUNT)
 
         # Check that the sign count was updated
-        for cred in auth._users[mock_user["id"]]["credentials"]:
+        for cred in auth._users[mock_user["id"]]["credentials"]:  # noqa: SLF001
             if cred["id"] == "test_credential_id":
-                assert cred["sign_count"] == 5
+                assert cred["sign_count"] == TEST_SIGN_COUNT
                 break
 
 
@@ -202,7 +216,7 @@ def test_create_session() -> None:
     session_id = auth.create_session(user_id)
 
     assert isinstance(session_id, str)
-    assert auth._session_store[session_id] == user_id
+    assert auth._session_store[session_id] == user_id  # noqa: SLF001
 
 
 def test_delete_session() -> None:
@@ -215,7 +229,7 @@ def test_delete_session() -> None:
     auth.delete_session(session_id)
 
     # Check that the session was removed
-    assert session_id not in auth._session_store
+    assert session_id not in auth._session_store  # noqa: SLF001
 
 
 def test_get_user_from_session() -> None:
@@ -257,17 +271,17 @@ def test_generate_auth_options_for_user(mock_user: auth.User) -> None:
         mock_user: A mock user for testing
     """
     # Patch _save_users to avoid writing to disk during tests
-    with patch.object(auth, "_save_users"):
-        # Patch get_user_by_name to return the mock user
-        with patch.object(auth, "get_user_by_name", return_value=mock_user):
-            # Patch secrets.token_bytes to return a fixed challenge
-            with patch.object(secrets, "token_bytes", return_value=b"test_challenge"):
-                options, user = auth.generate_auth_options_for_user(mock_user["name"])
+    with (
+        patch.object(auth, "_save_users"),
+        patch.object(auth, "get_user_by_name", return_value=mock_user),
+        patch.object(secrets, "token_bytes", return_value=b"test_challenge"),
+    ):
+        options, user = auth.generate_auth_options_for_user(mock_user["name"])
 
-                assert user == mock_user
-                assert options is not None
-                assert options.challenge == b"test_challenge"
-                assert mock_user["current_challenge"] == base64.b64encode(b"test_challenge").decode()
+        assert user == mock_user
+        assert options is not None
+        assert options.challenge == b"test_challenge"
+        assert mock_user["current_challenge"] == base64.b64encode(b"test_challenge").decode()
 
 
 def test_auth_middleware_public_path(auth_client: TestClient) -> None:
@@ -280,7 +294,7 @@ def test_auth_middleware_public_path(auth_client: TestClient) -> None:
     with patch.object(auth, "get_user_from_session", return_value=None):
         # Public paths should be accessible
         response = auth_client.get("/public")
-        assert response.status_code == 200
+        assert response.status_code == HTTP_OK
         assert response.json() == {"message": "This is a public endpoint"}
 
 
@@ -294,7 +308,7 @@ def test_auth_middleware_protected_path(auth_client: TestClient) -> None:
     with patch.object(auth, "get_user_from_session", return_value=None):
         # Protected paths should redirect to login
         response = auth_client.get("/protected")
-        assert response.status_code == 303
+        assert response.status_code == HTTP_SEE_OTHER
         assert response.headers["location"] == "/auth/login"
 
 
@@ -309,5 +323,5 @@ def test_auth_middleware_authenticated(auth_client: TestClient, mock_user: auth.
     with patch.object(auth, "get_user_from_session", return_value=mock_user):
         # Protected paths should be accessible
         response = auth_client.get("/protected")
-        assert response.status_code == 200
+        assert response.status_code == HTTP_OK
         assert response.json() == {"message": "This is a protected endpoint"}
