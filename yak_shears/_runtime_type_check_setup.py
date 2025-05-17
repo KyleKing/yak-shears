@@ -1,11 +1,11 @@
 """Conditionally configure runtime typechecking."""
 
 from contextlib import suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from os import getenv
-from warnings import filterwarnings
 from typing import Self
+from warnings import filterwarnings
 
 NAME = "yak_shears".upper()
 """Package name to allow more targeted usage."""
@@ -56,7 +56,7 @@ def configure_runtime_type_checking_mode() -> None:  # pragma: no cover
 
 
 _PEP585_DATE = 2025
-if datetime.now(tz=timezone.utc).year <= _PEP585_DATE:  # pragma: no cover
+if datetime.now(tz=UTC).year <= _PEP585_DATE:  # pragma: no cover
     with suppress(ImportError, ModuleNotFoundError):
         from beartype.roar import BeartypeDecorHintPep585DeprecationWarning
 

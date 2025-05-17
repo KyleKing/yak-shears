@@ -1,11 +1,8 @@
 """Minimal Web Server using Starlette."""
 
 import json
-import os
-import pathlib
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
 
 import uvicorn
 from starlette.applications import Starlette
@@ -14,14 +11,14 @@ from starlette.responses import HTMLResponse, RedirectResponse, Response
 from starlette.routing import Route
 
 
-async def home_handler(request: Request) -> HTMLResponse:
+async def home_handler(request: Request) -> HTMLResponse:  # noqa: ARG001,RUF029
     """Handle requests to /home.
 
     Args:
         request: The incoming request
 
     Returns:
-        HTMLResponse with hello world message
+        HTMLResponse with navigation index
     """
     return HTMLResponse("""
     <h1>Yak Shears Server</h1>
@@ -70,7 +67,7 @@ async def echo_handler(request: Request) -> HTMLResponse:
     return HTMLResponse(response)
 
 
-async def time_handler(request: Request) -> HTMLResponse:
+async def time_handler(request: Request) -> HTMLResponse:  # noqa: ARG001,RUF029
     """Handle requests to /time.
 
     Args:
@@ -79,11 +76,11 @@ async def time_handler(request: Request) -> HTMLResponse:
     Returns:
         HTMLResponse with current time
     """
-    now = datetime.now()
+    now = datetime.now(tz=UTC)
     return HTMLResponse(f"<h1>Current Time</h1><p>{now.strftime('%Y-%m-%d %H:%M:%S')}</p>")
 
 
-def get_files_from_directory(directory_path: str, page: int = 1, page_size: int = 10) -> Tuple[List[Path], int, int]:
+def get_files_from_directory(directory_path: str, page: int = 1, page_size: int = 10) -> tuple[list[Path], int, int]:
     """Get a paginated list of files from the specified directory.
 
     Args:
@@ -94,7 +91,7 @@ def get_files_from_directory(directory_path: str, page: int = 1, page_size: int 
     Returns:
         Tuple containing (list of file paths, total number of files, total pages)
     """
-    path = Path(os.path.expanduser(directory_path))
+    path = Path(directory_path).expanduser()
     if not path.exists() or not path.is_dir():
         return [], 0, 0
 
@@ -109,7 +106,11 @@ def get_files_from_directory(directory_path: str, page: int = 1, page_size: int 
 
 
 def generate_file_table_html(
-    files: List[Path], current_page: int, total_pages: int, total_files: int, directory_path: str
+    files: list[Path],
+    current_page: int,
+    total_pages: int,
+    total_files: int,
+    directory_path: str,
 ) -> str:
     """Generate HTML for displaying files in a table with pagination.
 
@@ -156,11 +157,11 @@ def generate_file_table_html(
     for file_path in files:
         file_stats = file_path.stat()
         size_kb = file_stats.st_size / 1024
-        last_modified = datetime.fromtimestamp(file_stats.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        last_modified = datetime.fromtimestamp(file_stats.st_mtime, tz=UTC).strftime("%Y-%m-%d %H:%M:%S")
 
         html += f"""
             <tr>
-                <td><a href="/edit?file={str(file_path)}">{file_path.name}</a></td>
+                <td><a href="/edit?file={file_path!s}">{file_path.name}</a></td>
                 <td>{size_kb:.2f} KB</td>
                 <td>{last_modified}</td>
             </tr>
@@ -197,7 +198,7 @@ def generate_file_table_html(
     return html
 
 
-async def files_handler(request: Request) -> Response:
+async def files_handler(request: Request) -> Response:  # noqa: RUF029
     """Handle requests to /files.
 
     Args:
@@ -211,8 +212,7 @@ async def files_handler(request: Request) -> Response:
     # Get page from query parameters, default to 1
     try:
         page = int(request.query_params.get("page", "1"))
-        if page < 1:
-            page = 1
+        page = max(page, 1)
     except ValueError:
         page = 1
 
@@ -248,17 +248,11 @@ async def edit_file_handler(request: Request) -> Response:
         if request.method == "POST":
             form_data = await request.form()
             content = str(form_data.get("content", ""))
-
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(content)
-
+            file_path.write_text(content)
             return RedirectResponse(url=f"/edit?file={file_path_str}", status_code=303)
 
-        # Read the file content
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
-
         # Generate HTML editor
+        content = file_path.read_text()
         html = f"""
         <html>
         <head>
@@ -284,14 +278,12 @@ async def edit_file_handler(request: Request) -> Response:
         </body>
         </html>
         """
-
         return HTMLResponse(html)
-
     except Exception as e:
-        return HTMLResponse(f"<h1>Error</h1><p>An error occurred: {str(e)}</p>", status_code=500)
+        return HTMLResponse(f"<h1>Error</h1><p>An error occurred: {e!s}</p>", status_code=500)
 
 
-async def not_found(request: Request, exc: Exception) -> HTMLResponse:
+async def not_found(request: Request, exc: Exception) -> HTMLResponse:  # noqa: ARG001,RUF029
     """Handle 404 errors with a custom page.
 
     Args:
@@ -315,14 +307,14 @@ routes = [
 ]
 
 
-def run_server(host: str = "localhost", port: int = 8000) -> None:
+def start(host: str = "localhost", port: int = 8000) -> None:
     """Run the ASGI server with Uvicorn.
 
     Args:
         host: The hostname to bind to
         port: The port to bind to
     """
-    print(f"Server running at http://{host}:{port}")
+    print(f"Server running at http://{host}:{port}")  # noqa: T201
     app = Starlette(
         routes=routes,
         debug=True,
@@ -332,4 +324,4 @@ def run_server(host: str = "localhost", port: int = 8000) -> None:
 
 
 if __name__ == "__main__":
-    run_server()
+    start()
