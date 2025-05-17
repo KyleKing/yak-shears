@@ -5,10 +5,9 @@ from datetime import datetime, timezone
 from enum import Enum
 from os import getenv
 from warnings import filterwarnings
+from typing import Self
 
-from typing_extensions import Self
-
-NAME = 'calcipy'.upper()
+NAME = 'yak_shears'.upper()
 """Package name to allow more targeted usage."""
 
 
@@ -27,7 +26,7 @@ class _RuntimeTypeCheckingModes(Enum):
             ValueError: if environment variable is configured incorrectly
 
         """
-        rtc_mode = getenv('RUNTIME_TYPE_CHECKING_MODE') or getenv(f'RUNTIME_TYPE_CHECKING_MODE_{NAME}') or None
+        rtc_mode = getenv('RUNTIME_TYPE_CHECKING_MODE') or getenv(f"RUNTIME_TYPE_CHECKING_MODE_{NAME}") or None
         try:
             return cls(rtc_mode)
         except ValueError:
