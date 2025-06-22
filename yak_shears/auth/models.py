@@ -1,22 +1,19 @@
-"""Authentication data models."""
+"""Authentication models for Yak Shears."""
 
-from typing import Any, TypedDict
+from typing import NewType, TypedDict
+
+Password = NewType("Password", str)
+HashedPassword = NewType("HashedPassword", str)
+SessionId = NewType("SessionId", str)
 
 
 class User(TypedDict):
-    """User data structure."""
+    """User model for password authentication."""
 
     id: str
-    name: str
+    email: str
     display_name: str
-    credentials: list[dict[str, Any]]
-    current_challenge: str | None
-
-
-class CredentialEntry(TypedDict):
-    """Credential data structure."""
-
-    id: str
-    public_key: str
-    sign_count: int
-    transports: list[str] | None
+    password_hash: HashedPassword
+    salt: str
+    created_at: str
+    last_login: str | None

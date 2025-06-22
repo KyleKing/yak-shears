@@ -7,7 +7,7 @@ from pathlib import Path
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 
-from yak_shears import auth
+from yak_shears.auth.routes import get_user_from_session
 
 
 async def home_handler(request: Request) -> HTMLResponse:
@@ -19,7 +19,7 @@ async def home_handler(request: Request) -> HTMLResponse:
     Returns:
         HTMLResponse with navigation index
     """
-    user = auth.get_user_from_session(request)
+    user = get_user_from_session(request)
     auth_status = ""
 
     if user:
@@ -33,8 +33,10 @@ async def home_handler(request: Request) -> HTMLResponse:
         auth_status = """
         <div style="margin-bottom: 20px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
             <p>Not logged in</p>
-            <a href="/auth/login" style="margin-right: 10px;">Login</a>
-            <a href="/auth/register">Register</a>
+            <a href="/auth/login">Login</a>
+            <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                Note: Users must be created by an administrator using the CLI tool.
+            </p>
         </div>
         """
 

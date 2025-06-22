@@ -1,101 +1,131 @@
-"""User storage and session management."""
+"""User storage and session management.
+
+Implemented in-memory with persistence to a local JSON file
+
+"""
 
 import json
 import secrets
+from datetime import UTC, datetime
 from pathlib import Path
 
-from yak_shears.auth.models import User
+from .models import HashedPassword, Password, SessionId, User
+from .password import create_password_hash, verify_password
 
-# In-memory user storage - would be a database in production
-_users: dict[str, User] = {}
-_username_to_user_id: dict[str, str] = {}
-_session_store: dict[str, str] = {}  # session_id -> user_id
+# -----------------------------------------------------------------------------
+# State
+
+_USERS: dict[str, User] = {}
+_EMAIL_TO_USER_ID: dict[str, str] = {}
+_SESSION_STORE: dict[str, str] = {}  # session_id -> user_id
 
 # Path to save user data
-_USER_DATA_PATH = Path(__file__).parent.parent / ".yak-shears-users.json"
-
-
-def _generate_user_id() -> str:
-    """Generate a random user ID.
-
-    Returns:
-        str: A randomly generated user ID as a hex string
-    """
-    return secrets.token_hex(16)
-
-
-def _generate_session_id() -> str:
-    """Generate a random session ID.
-
-    Returns:
-        str: A randomly generated session ID as a hex string
-    """
-    return secrets.token_hex(32)
+_USER_DATA_PATH = Path(__file__).parents[1] / ".yak-shears-users.json"
 
 
 def _save_users() -> None:
     """Save users to disk."""
     data = {
-        "users": _users,
-        "username_to_user_id": _username_to_user_id,
+        "users": _USERS,
+        "email_to_user_id": _EMAIL_TO_USER_ID,
     }
     _USER_DATA_PATH.write_text(json.dumps(data, indent=2))
 
 
 def _load_users() -> None:
     """Load users from disk."""
-    global _users, _username_to_user_id
+    global _USERS, _EMAIL_TO_USER_ID
 
     if not _USER_DATA_PATH.exists():
         return
 
     try:
         data = json.loads(_USER_DATA_PATH.read_text())
-        _users = data.get("users", {})
-        _username_to_user_id = data.get("username_to_user_id", {})
+        _USERS = data.get("users", {})
+        _EMAIL_TO_USER_ID = data.get("email_to_user_id", {})
     except (OSError, json.JSONDecodeError):
-        # Start fresh if file is corrupt
-        _users = {}
-        _username_to_user_id = {}
+        _USERS = {}
+        _EMAIL_TO_USER_ID = {}
 
 
-def create_user(username: str, display_name: str) -> User:
-    """Create a new user.
+_load_users()
+
+# -----------------------------------------------------------------------------
+# User Management
+
+
+def create_user(email: str, display_name: str, password: Password) -> User:
+    """Create a new user with email and password.
 
     Args:
-        username: The username of the new user
+        email: The email address of the new user
         display_name: The display name of the new user
+        password: The plain text password
 
     Returns:
         User: The newly created user
+
+    Raises:
+        ValueError: If the email is already taken
     """
-    user_id = _generate_user_id()
+    if email in _EMAIL_TO_USER_ID:
+        raise ValueError(f"Email {email} is already taken")
+
+    user_id = secrets.token_hex(16)
+    salt, password_hash = create_password_hash(password)
+    now = datetime.now(tz=UTC).isoformat()
+
     user: User = {
         "id": user_id,
-        "name": username,
+        "email": email,
         "display_name": display_name,
-        "credentials": [],
-        "current_challenge": None,
+        "password_hash": password_hash,
+        "salt": salt,
+        "created_at": now,
+        "last_login": None,
     }
-    _users[user_id] = user
-    _username_to_user_id[username] = user_id
+
+    _USERS[user_id] = user
+    _EMAIL_TO_USER_ID[email] = user_id
     _save_users()
     return user
 
 
-def get_user_by_name(username: str) -> User | None:
-    """Get a user by username.
+def authenticate_user(email: str, password: Password) -> User | None:
+    """Authenticate a user with email and password.
 
     Args:
-        username: The username to look up
+        email: The email address to authenticate
+        password: The plain text password
+
+    Returns:
+        User | None: The user if authentication successful, None otherwise
+    """
+    user = get_user_by_email(email)
+    if not user:
+        return None
+
+    if verify_password(password, user["salt"], HashedPassword(user["password_hash"])):
+        user["last_login"] = datetime.now(tz=UTC).isoformat()
+        _save_users()
+        return user
+
+    return None
+
+
+def get_user_by_email(email: str) -> User | None:
+    """Get a user by email address.
+
+    Args:
+        email: The email address to look up
 
     Returns:
         User | None: The user if found, None otherwise
     """
-    if username not in _username_to_user_id:
+    if email not in _EMAIL_TO_USER_ID:
         return None
-    user_id = _username_to_user_id[username]
-    return _users.get(user_id)
+    user_id = _EMAIL_TO_USER_ID[email]
+    return _USERS.get(user_id)
 
 
 def get_user_by_id(user_id: str) -> User | None:
@@ -107,48 +137,57 @@ def get_user_by_id(user_id: str) -> User | None:
     Returns:
         User | None: The user if found, None otherwise
     """
-    return _users.get(user_id)
+    return _USERS.get(user_id)
 
 
-def add_credential_to_user(user_id: str, credential_entry: dict) -> None:
-    """Add a credential to a user.
+def list_all_users() -> list[User]:
+    """Get a list of all users.
+
+    Returns:
+        list[User]: List of all users
+    """
+    return list(_USERS.values())
+
+
+def delete_user(email: str) -> bool:
+    """Delete a user by email.
 
     Args:
-        user_id: The ID of the user to add the credential to
-        credential_entry: The credential to add
+        email: The email address of the user to delete
+
+    Returns:
+        bool: True if user was deleted, False if not found
     """
-    if user_id in _users:
-        _users[user_id]["credentials"].append(credential_entry)
-        _save_users()
+    if email not in _EMAIL_TO_USER_ID:
+        return False
+
+    user_id = _EMAIL_TO_USER_ID[email]
+
+    del _USERS[user_id]
+    del _EMAIL_TO_USER_ID[email]
+    _save_users()
+
+    sessions_to_remove = [sid for sid, uid in _SESSION_STORE.items() if uid == user_id]
+    for session_id in sessions_to_remove:
+        del _SESSION_STORE[session_id]
+
+    return True
+
+# -----------------------------------------------------------------------------
+# Session Management
 
 
-def update_credential_sign_count(user_id: str, credential_id: str, sign_count: int) -> None:
-    """Update the sign count for a credential.
-
-    Args:
-        user_id: The ID of the user
-        credential_id: The ID of the credential
-        sign_count: The new sign count
-    """
-    if user_id in _users:
-        for cred in _users[user_id]["credentials"]:
-            if cred["id"] == credential_id:
-                cred["sign_count"] = sign_count
-                _save_users()
-                break
-
-
-def create_session(user_id: str) -> str:
+def create_session(user_id: str) -> SessionId:
     """Create a session for a user.
 
     Args:
         user_id: The ID of the user to create a session for
 
     Returns:
-        str: The session ID
+        SessionId: The session ID
     """
-    session_id = _generate_session_id()
-    _session_store[session_id] = user_id
+    session_id = SessionId(secrets.token_hex(32))
+    _SESSION_STORE[session_id] = user_id
     return session_id
 
 
@@ -158,7 +197,7 @@ def delete_session(session_id: str) -> None:
     Args:
         session_id: The ID of the session to delete
     """
-    _session_store.pop(session_id, None)
+    _SESSION_STORE.pop(session_id, None)
 
 
 def get_user_id_from_session(session_id: str) -> str | None:
@@ -170,8 +209,4 @@ def get_user_id_from_session(session_id: str) -> str | None:
     Returns:
         str | None: The user ID if found, None otherwise
     """
-    return _session_store.get(session_id)
-
-
-# Load users on module import
-_load_users()
+    return _SESSION_STORE.get(session_id)

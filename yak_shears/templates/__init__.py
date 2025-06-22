@@ -1,4 +1,4 @@
-"""Template rendering utilities for Yak Shears."""
+"""Template rendering utilities."""
 
 from pathlib import Path
 from typing import Any
@@ -6,20 +6,16 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader
 from starlette.responses import HTMLResponse
 
-# Get the parent directory of this file (yak_shears package directory)
-package_dir = Path(__file__).parent
-# Template directory is relative to the package directory
-template_dir = package_dir / "templates"
+TEMPLATE_DIR = Path(__file__).parent
 
-# Create Jinja2 environment
-env = Environment(
-    loader=FileSystemLoader(str(template_dir)),
-    autoescape=True,  # Important for security to escape HTML by default
+ENV = Environment(
+    loader=FileSystemLoader(str(TEMPLATE_DIR)),
+    autoescape=True,
 )
 
 
 def render_template(template_name: str, **context: Any) -> HTMLResponse:
-    """Render a template and return an HTMLResponse.
+    """Render template by name.
 
     Args:
         template_name: The name of the template to render
@@ -28,7 +24,7 @@ def render_template(template_name: str, **context: Any) -> HTMLResponse:
     Returns:
         HTMLResponse with the rendered template
     """
-    template = env.get_template(template_name)
+    template = ENV.get_template(template_name)
     content = template.render(**context)
     return HTMLResponse(content)
 
@@ -44,6 +40,6 @@ def render_error(message: str, back_url: str = "/home", status_code: int = 400) 
     Returns:
         HTMLResponse with the error template
     """
-    template = env.get_template("error.html.jinja")
+    template = ENV.get_template("error.html.jinja")
     content = template.render(message=message, back_url=back_url)
     return HTMLResponse(content, status_code=status_code)

@@ -10,12 +10,11 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
 ] # https://pypi.org/classifiers/
 dependencies = [
-  "beartype >=0.19.0",
+  "beartype >=0.21.0",
   "jinja2>=3.1.4",
   "python-multipart>=0.0.20",
-  "starlette>=0.46.2",
+  "starlette>=0.47.0",
   "uvicorn>=0.34.2",
-  "webauthn>=2.5.2",
 ]
 description = "Yak Shears Web App"
 license = "MIT"
@@ -27,6 +26,7 @@ version = "0.0.0"
 
 [project.scripts] # Docs: https://setuptools.pypa.io/en/latest/userguide/entry_point.html#console-scripts
 serve = "yak_shears.server:cli"
+yak-shears-users = "yak_shears.cli:main"
 
 [tool.mypy]
 check_untyped_defs = true
@@ -59,6 +59,15 @@ target-version = 'py312'
 
 [tool.ruff.lint]
 ignore = [
+  'EM102',
+  'FBT001',
+  'FBT002',
+  'PLR2004',
+  'PLR6301',
+  'PLW0603',
+  'RUF001',
+  'T201',
+  # Above are temporary
   'ANN002', # Missing type annotation for `*args`
   'ANN003', # Missing type annotation for `**kwargs`
   'ANN401', # Dynamically typed expressions (typing.Any) are disallowed in `pop_key`

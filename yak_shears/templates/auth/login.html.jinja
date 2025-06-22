@@ -6,11 +6,18 @@
 {% block content %}
 <form method="post">
     <div class="form-field">
-        <label for="username">Username</label>
-        <input type="text" id="username" name="username" required>
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
     </div>
     <div class="form-field">
-        <button type="submit">Continue</button>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+    </div>
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+    <div class="form-field">
+        <button type="submit">Login</button>
     </div>
 </form>
 <a href="/home" class="back-link">Back to Home</a>
