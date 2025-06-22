@@ -9,11 +9,9 @@ import pytest
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
-from yak_shears import auth
-from yak_shears.server import (
-    not_found,
-    routes,
-)
+from yak_shears.auth import storage
+from yak_shears.auth.middleware import AuthMiddleware
+from yak_shears.server.routes import ROUTES, not_found
 
 
 @pytest.fixture
@@ -23,17 +21,14 @@ def app() -> Starlette:
     Returns:
         Starlette: A test Starlette application
     """
-    # Create app with auth middleware
+    # TODO: merge with regular app definition?
     app = Starlette(
-        routes=routes,
+        routes=ROUTES,
         debug=True,
         exception_handlers={404: not_found},
     )
-
-    # Wrap app with auth middleware
-    public_paths = ["/", "/home", "/auth/login", "/auth/register", "/auth/status"]
-    app.add_middleware(auth.AuthMiddleware, public_paths=public_paths)
-
+    public_paths = {"/", "/home", "/auth/login", "/auth/register", "/auth/status"}
+    app.add_middleware(AuthMiddleware, public_paths=public_paths)
     return app
 
 
@@ -81,7 +76,7 @@ def test_home_endpoint_logged_in(client: TestClient) -> None:
         client: The test client
     """
     # Create a mock user and session
-    with patch.object(auth, "get_user_from_session") as mock_get_user:
+    with patch.object(storage, "get_user_from_session") as mock_get_user:
         mock_user = {
             "id": "test_user_id",
             "name": "test_user",
@@ -337,7 +332,7 @@ def test_auth_status_logged_in(client: TestClient) -> None:
         client: The test client
     """
     # Create a mock user and session
-    with patch.object(auth, "get_user_from_session") as mock_get_user:
+    with patch.object(storage, "get_user_from_session") as mock_get_user:
         mock_user = {
             "id": "test_user_id",
             "name": "test_user",
@@ -362,7 +357,7 @@ def test_auth_middleware_public_path(client: TestClient) -> None:
         client: The test client
     """
     # Ensure get_user_from_session returns None (not logged in)
-    with patch.object(auth, "get_user_from_session") as mock_get_user:
+    with patch.object(storage, "get_user_from_session") as mock_get_user:
         mock_get_user.return_value = None
 
         # Public paths should be accessible
@@ -377,7 +372,7 @@ def test_auth_middleware_protected_path(client: TestClient) -> None:
         client: The test client
     """
     # Ensure get_user_from_session returns None (not logged in)
-    with patch.object(auth, "get_user_from_session") as mock_get_user:
+    with patch.object(storage, "get_user_from_session") as mock_get_user:
         mock_get_user.return_value = None
 
         # Protected paths should redirect to login

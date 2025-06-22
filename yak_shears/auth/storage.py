@@ -2,6 +2,8 @@
 
 Implemented in-memory with persistence to a local JSON file
 
+FIXME: Should likely be single user and not worry about multiple accounts
+
 """
 
 import json

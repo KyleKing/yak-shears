@@ -6,6 +6,15 @@ import secrets
 from .models import HashedPassword, Password
 
 
+def generate_salt() -> str:
+    """Generate a random salt for password hashing.
+
+    Returns:
+        str: A randomly generated salt as a hex string
+    """
+    return secrets.token_hex(32)
+
+
 def hash_password(password: Password, salt: str) -> HashedPassword:
     """Hash a password with a salt using PBKDF2.
 
@@ -47,6 +56,6 @@ def create_password_hash(password: Password) -> tuple[str, HashedPassword]:
     Returns:
         Tuple[str, HashedPassword]: A tuple of (salt, hash) both as hex strings
     """
-    salt = secrets.token_hex(32)
+    salt = generate_salt()
     password_hash = hash_password(password, salt)
     return salt, password_hash

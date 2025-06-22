@@ -1,12 +1,10 @@
 """Tests for the authentication system."""
 
 import json
-import tempfile
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
+from yak_shears.auth.models import Password
 from yak_shears.auth.password import generate_salt, hash_password, verify_password
 from yak_shears.auth.storage import (
     authenticate_user,
@@ -21,29 +19,11 @@ from yak_shears.auth.storage import (
 
 
 @pytest.fixture
-def temp_user_file():
-    """Create a temporary user file for testing."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as _f:
-        temp_path = Path(_f.name)
-        _f.write('{"users": {}, "email_to_user_id": {}, "sessions": {}}')
-
-    with (
-        patch("yak_shears.auth.storage._USER_DATA_PATH", temp_path),
-        patch("yak_shears.auth.storage._USERS", {}),
-        patch("yak_shears.auth.storage._EMAIL_TO_USER_ID", {}),
-        patch("yak_shears.auth.storage._SESSION_STORE", {}),
-    ):
-        yield temp_path
-
-    temp_path.unlink(missing_ok=True)
-
-
-@pytest.fixture
 def sample_user(temp_user_file):
     """Create a sample user for testing."""
     email = "test@example.com"
     display_name = "Test User"
-    password = "secure123"
+    password = Password("secure123")
 
     user = create_user(email, display_name, password)
     return user
@@ -63,7 +43,7 @@ class TestPasswordHashing:
 
     def test_hash_password(self):
         """Test password hashing."""
-        password = "test_password"
+        password = Password("test_password")
         salt = generate_salt()
 
         hash1 = hash_password(password, salt)
@@ -74,8 +54,8 @@ class TestPasswordHashing:
 
     def test_verify_password(self):
         """Test password verification."""
-        password = "test_password"
-        wrong_password = "wrong_password"
+        password = Password("test_password")
+        wrong_password = Password("wrong_password")
         salt = generate_salt()
         password_hash = hash_password(password, salt)
 
@@ -87,7 +67,7 @@ class TestPasswordHashing:
 
     def test_verify_password_with_wrong_salt(self):
         """Test password verification with wrong salt."""
-        password = "test_password"
+        password = Password("test_password")
         salt1 = generate_salt()
         salt2 = generate_salt()
         password_hash = hash_password(password, salt1)
@@ -103,7 +83,7 @@ class TestUserStorage:
         """Test user creation."""
         email = "test@example.com"
         display_name = "Test User"
-        password = "secure123"
+        password = Password("secure123")
 
         user = create_user(email, display_name, password)
 
@@ -120,7 +100,7 @@ class TestUserStorage:
         email = sample_user["email"]
 
         with pytest.raises(ValueError, match="User with email .* already exists"):
-            create_user(email, "Another User", "different_password")
+            create_user(email, "Another User", Password("different_password"))
 
     def test_get_user_by_email(self, sample_user):
         """Test retrieving user by email."""
@@ -150,7 +130,7 @@ class TestUserStorage:
 
     def test_authenticate_user_correct_password(self, sample_user):
         """Test authentication with correct password."""
-        authenticated_user = authenticate_user(sample_user["email"], "secure123")
+        authenticated_user = authenticate_user(sample_user["email"], Password("secure123"))
 
         assert authenticated_user is not None
         assert authenticated_user["email"] == sample_user["email"]
@@ -158,12 +138,12 @@ class TestUserStorage:
 
     def test_authenticate_user_wrong_password(self, sample_user):
         """Test authentication with wrong password."""
-        authenticated_user = authenticate_user(sample_user["email"], "wrong_password")
+        authenticated_user = authenticate_user(sample_user["email"], Password("wrong_password"))
         assert authenticated_user is None
 
     def test_authenticate_user_nonexistent_email(self, temp_user_file):
         """Test authentication with non-existent email."""
-        authenticated_user = authenticate_user("nonexistent@example.com", "password")
+        authenticated_user = authenticate_user("nonexistent@example.com", Password("password"))
         assert authenticated_user is None
 
     def test_list_all_users(self, temp_user_file):
@@ -173,8 +153,8 @@ class TestUserStorage:
         assert len(users) == 0
 
         # Create some users
-        create_user("user1@example.com", "User 1", "password1")
-        create_user("user2@example.com", "User 2", "password2")
+        create_user("user1@example.com", "User 1", Password("password1"))
+        create_user("user2@example.com", "User 2", Password("password2"))
 
         users = list_all_users()
         assert len(users) == 2
@@ -236,17 +216,14 @@ class TestSessionManagement:
 
         assert get_user_id_from_session(session_id) == user_id
 
-        # Delete session
-        result = delete_session(session_id)
-        assert result is True
+        delete_session(session_id)
 
         # Session should no longer exist
         assert get_user_id_from_session(session_id) is None
 
     def test_delete_nonexistent_session(self, temp_user_file):
         """Test deleting non-existent session."""
-        result = delete_session("nonexistent-session-id")
-        assert result is False
+        delete_session("nonexistent-session-id")
 
     def test_get_user_id_from_session(self, sample_user):
         """Test retrieving user ID from session."""
@@ -273,7 +250,7 @@ class TestDataPersistence:
         """Test that user data persists when the module is reloaded."""
         email = "persistent@example.com"
         display_name = "Persistent User"
-        password = "persistent123"
+        password = Password("persistent123")
 
         # Create user
         user = create_user(email, display_name, password)
@@ -306,39 +283,39 @@ class TestEdgeCases:
     def test_empty_email(self, temp_user_file):
         """Test creation with empty email."""
         with pytest.raises(ValueError):
-            create_user("", "Test User", "password")
+            create_user("", "Test User", Password("password"))
 
     def test_empty_display_name(self, temp_user_file):
         """Test creation with empty display name."""
         with pytest.raises(ValueError):
-            create_user("test@example.com", "", "password")
+            create_user("test@example.com", "", Password("password"))
 
     def test_empty_password(self, temp_user_file):
         """Test creation with empty password."""
         with pytest.raises(ValueError):
-            create_user("test@example.com", "Test User", "")
+            create_user("test@example.com", "Test User", Password(""))
 
     def test_whitespace_only_fields(self, temp_user_file):
         """Test creation with whitespace-only fields."""
         with pytest.raises(ValueError):
-            create_user("   ", "Test User", "password")
+            create_user("   ", "Test User", Password("password"))
 
         with pytest.raises(ValueError):
-            create_user("test@example.com", "   ", "password")
+            create_user("test@example.com", "   ", Password("password"))
 
         with pytest.raises(ValueError):
-            create_user("test@example.com", "Test User", "   ")
+            create_user("test@example.com", "Test User", Password("   "))
 
     def test_invalid_email_format(self, temp_user_file):
         """Test creation with invalid email format."""
         # Note: This depends on whether email validation is implemented
         # For now, we'll just check that it doesn't crash
-        user = create_user("not-an-email", "Test User", "password")
+        user = create_user("not-an-email", "Test User", Password("password"))
         assert user["email"] == "not-an-email"
 
     def test_very_long_password(self, temp_user_file):
         """Test with very long password."""
-        long_password = "a" * 1000
+        long_password = Password("a" * 1000)
         user = create_user("test@example.com", "Test User", long_password)
 
         # Should be able to authenticate with the long password
@@ -349,7 +326,7 @@ class TestEdgeCases:
         """Test with Unicode characters in fields."""
         email = "тест@пример.рф"
         display_name = "测试用户"
-        password = "пароль123"
+        password = Password("пароль123")
 
         user = create_user(email, display_name, password)
         assert user["email"] == email

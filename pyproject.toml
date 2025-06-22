@@ -59,15 +59,6 @@ target-version = 'py312'
 
 [tool.ruff.lint]
 ignore = [
-  'EM102',
-  'FBT001',
-  'FBT002',
-  'PLR2004',
-  'PLR6301',
-  'PLW0603',
-  'RUF001',
-  'T201',
-  # Above are temporary
   'ANN002', # Missing type annotation for `*args`
   'ANN003', # Missing type annotation for `**kwargs`
   'ANN401', # Dynamically typed expressions (typing.Any) are disallowed in `pop_key`
@@ -78,10 +69,18 @@ ignore = [
   'D213', # "Multi-line docstring summary should start at the second line" (Conflicts with D212)
   'DOC501', # Raised exception `RuntimeError` missing from docstring
   'EM101', # Exception must not use a string literal, assign to variable first
+  'EM102', # PLANNED: Temporary
+  'FBT001', # PLANNED: Temporary
+  'FBT002', # PLANNED: Temporary
   'FIX001', # Line contains FIXME
   'FIX002', # Line contains TODO
   'FIX004', # Line contains HACK
   'PLR0913', # Too many arguments in function definition (6 > 5)
+  'PLR2004', # PLANNED: Temporary
+  'PLR6301', # PLANNED: Temporary
+  'PLW0603', # PLANNED: Temporary
+  'RUF001', # PLANNED: Temporary
+  'T201', # PLANNED: Temporary
   'TC001', # Move application import `tail_jsonl.config.Config` into a type-checking block (Conflicts with Beartype)
   'TC002', # Move third-party import `rich.console.Console` into a type-checking block (Conflicts with Beartype)
   'TC003', # Move standard library import `argparse` into a type-checking block (Conflicts with Beartype)

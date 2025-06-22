@@ -1,32 +1,12 @@
 """Tests for the CLI user management functionality."""
 
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from yak_shears import cli
+from yak_shears.auth.models import Password
 from yak_shears.cli import create_user_command, delete_user_command, list_users_command
-
-
-@pytest.fixture
-def temp_user_file():
-    """Create a temporary user file for testing."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        temp_path = Path(f.name)
-        f.write('{"users": {}, "email_to_user_id": {}, "sessions": {}}')
-
-    # Patch the storage file path
-    with patch("yak_shears.auth.storage._USER_DATA_PATH", temp_path):
-        # Reset the in-memory storage
-        with patch("yak_shears.auth.storage._users", {}):
-            with patch("yak_shears.auth.storage._email_to_user_id", {}):
-                with patch("yak_shears.auth.storage._session_store", {}):
-                    yield temp_path
-
-    # Clean up
-    temp_path.unlink(missing_ok=True)
 
 
 @pytest.fixture
@@ -136,7 +116,7 @@ class TestListCommand:
         # Create a user first
         from yak_shears.auth.storage import create_user
 
-        create_user("test@example.com", "Test User", "password")
+        create_user("test@example.com", "Test User", Password("password"))
 
         result = cli_runner.invoke(list_users_command)
 
@@ -149,9 +129,9 @@ class TestListCommand:
         # Create multiple users
         from yak_shears.auth.storage import create_user
 
-        create_user("user1@example.com", "User 1", "password1")
-        create_user("user2@example.com", "User 2", "password2")
-        create_user("user3@example.com", "User 3", "password3")
+        create_user("user1@example.com", "User 1", Password("password1"))
+        create_user("user2@example.com", "User 2", Password("password2"))
+        create_user("user3@example.com", "User 3", Password("password3"))
 
         result = cli_runner.invoke(list_users_command)
 
@@ -167,7 +147,7 @@ class TestListCommand:
         """Test that list shows creation date."""
         from yak_shears.auth.storage import create_user
 
-        create_user("test@example.com", "Test User", "password")
+        create_user("test@example.com", "Test User", Password("password"))
 
         result = cli_runner.invoke(list_users_command)
 
@@ -184,7 +164,7 @@ class TestDeleteCommand:
         # Create a user first
         from yak_shears.auth.storage import create_user
 
-        create_user("test@example.com", "Test User", "password")
+        create_user("test@example.com", "Test User", Password("password"))
 
         result = cli_runner.invoke(delete_user_command, ["test@example.com"])
 
@@ -203,7 +183,7 @@ class TestDeleteCommand:
         # Create a user first
         from yak_shears.auth.storage import create_user
 
-        create_user("test@example.com", "Test User", "password")
+        create_user("test@example.com", "Test User", Password("password"))
 
         # Mock input to confirm deletion
         result = cli_runner.invoke(delete_user_command, ["test@example.com"], input="y\n")
@@ -216,7 +196,7 @@ class TestDeleteCommand:
         # Create a user first
         from yak_shears.auth.storage import create_user
 
-        create_user("test@example.com", "Test User", "password")
+        create_user("test@example.com", "Test User", Password("password"))
 
         # Mock input to cancel deletion
         result = cli_runner.invoke(delete_user_command, ["test@example.com"], input="n\n")
@@ -229,7 +209,7 @@ class TestDeleteCommand:
         # Create a user first
         from yak_shears.auth.storage import create_user
 
-        create_user("test@example.com", "Test User", "password")
+        create_user("test@example.com", "Test User", Password("password"))
 
         result = cli_runner.invoke(delete_user_command, ["test@example.com", "--force"])
 

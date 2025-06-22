@@ -1,50 +1,27 @@
 """Tests for authentication routes and HTTP endpoints."""
 
-import tempfile
-from pathlib import Path
-from unittest.mock import patch
-
 import pytest
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
-from yak_shears.auth import AuthMiddleware, auth_routes, create_user
-from yak_shears.server import not_found
-
-
-@pytest.fixture
-def temp_user_file():
-    """Create a temporary user file for testing."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        temp_path = Path(f.name)
-        f.write('{"users": {}, "email_to_user_id": {}, "sessions": {}}')
-
-    # Patch the storage file path
-    with patch("yak_shears.auth.storage._USER_DATA_PATH", temp_path):
-        # Reset the in-memory storage
-        with patch("yak_shears.auth.storage._users", {}):
-            with patch("yak_shears.auth.storage._email_to_user_id", {}):
-                with patch("yak_shears.auth.storage._session_store", {}):
-                    yield temp_path
-
-    # Clean up
-    temp_path.unlink(missing_ok=True)
+from yak_shears.auth.middleware import AuthMiddleware
+from yak_shears.auth.models import Password
+from yak_shears.auth.routes import ROUTES as AUTH_ROUTES
+from yak_shears.auth.storage import create_user
+from yak_shears.server.routes import not_found
 
 
 @pytest.fixture
 def auth_app(temp_user_file):
     """Create a test app with authentication."""
     app = Starlette(
-        routes=auth_routes,
+        routes=AUTH_ROUTES,
         debug=True,
         exception_handlers={404: not_found},
     )
 
     # Add auth middleware with public paths
-    app.add_middleware(
-        AuthMiddleware,
-        public_paths=["/auth/login", "/auth/status"]
-    )
+    app.add_middleware(AuthMiddleware, public_paths={"/auth/login", "/auth/status"})
 
     return app
 
@@ -60,7 +37,7 @@ def sample_user(temp_user_file):
     """Create a sample user for testing."""
     email = "test@example.com"
     display_name = "Test User"
-    password = "secure123"
+    password = Password("secure123")
 
     user = create_user(email, display_name, password)
     return {"user": user, "password": password}
@@ -83,10 +60,7 @@ class TestLoginEndpoint:
         user_data = sample_user["user"]
         password = sample_user["password"]
 
-        response = auth_client.post("/auth/login", data={
-            "email": user_data["email"],
-            "password": password
-        })
+        response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": password})
 
         # Should redirect after successful login
         assert response.status_code == 303
@@ -99,10 +73,7 @@ class TestLoginEndpoint:
         """Test login with invalid credentials."""
         user_data = sample_user["user"]
 
-        response = auth_client.post("/auth/login", data={
-            "email": user_data["email"],
-            "password": "wrong_password"
-        })
+        response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": "wrong_password"})
 
         # Should show form with error
         assert response.status_code == 200
@@ -110,10 +81,7 @@ class TestLoginEndpoint:
 
     def test_login_post_nonexistent_user(self, auth_client):
         """Test login with non-existent user."""
-        response = auth_client.post("/auth/login", data={
-            "email": "nonexistent@example.com",
-            "password": "password"
-        })
+        response = auth_client.post("/auth/login", data={"email": "nonexistent@example.com", "password": "password"})
 
         # Should show form with error
         assert response.status_code == 200
@@ -121,9 +89,7 @@ class TestLoginEndpoint:
 
     def test_login_post_missing_email(self, auth_client):
         """Test login with missing email."""
-        response = auth_client.post("/auth/login", data={
-            "password": "password"
-        })
+        response = auth_client.post("/auth/login", data={"password": "password"})
 
         # Should show form with error
         assert response.status_code == 200
@@ -131,9 +97,7 @@ class TestLoginEndpoint:
 
     def test_login_post_missing_password(self, auth_client):
         """Test login with missing password."""
-        response = auth_client.post("/auth/login", data={
-            "email": "test@example.com"
-        })
+        response = auth_client.post("/auth/login", data={"email": "test@example.com"})
 
         # Should show form with error
         assert response.status_code == 200
@@ -141,10 +105,7 @@ class TestLoginEndpoint:
 
     def test_login_post_empty_email(self, auth_client):
         """Test login with empty email."""
-        response = auth_client.post("/auth/login", data={
-            "email": "",
-            "password": "password"
-        })
+        response = auth_client.post("/auth/login", data={"email": "", "password": "password"})
 
         # Should show form with error
         assert response.status_code == 200
@@ -152,10 +113,7 @@ class TestLoginEndpoint:
 
     def test_login_post_empty_password(self, auth_client):
         """Test login with empty password."""
-        response = auth_client.post("/auth/login", data={
-            "email": "test@example.com",
-            "password": ""
-        })
+        response = auth_client.post("/auth/login", data={"email": "test@example.com", "password": ""})
 
         # Should show form with error
         assert response.status_code == 200
@@ -167,10 +125,7 @@ class TestLoginEndpoint:
         password = sample_user["password"]
 
         # First, log in
-        login_response = auth_client.post("/auth/login", data={
-            "email": user_data["email"],
-            "password": password
-        })
+        login_response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": password})
         assert login_response.status_code == 303
 
         # Then try to access login page again
@@ -185,10 +140,10 @@ class TestLoginEndpoint:
         user_data = sample_user["user"]
         password = sample_user["password"]
 
-        response = auth_client.post("/auth/login", data={
-            "email": user_data["email"] + "\n",
-            "password": password + "\n"
-        })
+        response = auth_client.post(
+            "/auth/login",
+            data={"email": user_data["email"] + "\n", "password": password + "\n"},
+        )
 
         # Should still work (newlines should be stripped)
         assert response.status_code == 303
@@ -204,10 +159,7 @@ class TestLogoutEndpoint:
         password = sample_user["password"]
 
         # First, log in
-        login_response = auth_client.post("/auth/login", data={
-            "email": user_data["email"],
-            "password": password
-        })
+        login_response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": password})
         assert login_response.status_code == 303
 
         # Then log out
@@ -228,10 +180,7 @@ class TestLogoutEndpoint:
         password = sample_user["password"]
 
         # First, log in
-        login_response = auth_client.post("/auth/login", data={
-            "email": user_data["email"],
-            "password": password
-        })
+        login_response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": password})
         assert login_response.status_code == 303
 
         # Then log out via POST
@@ -269,10 +218,7 @@ class TestStatusEndpoint:
         password = sample_user["password"]
 
         # First, log in
-        login_response = auth_client.post("/auth/login", data={
-            "email": user_data["email"],
-            "password": password
-        })
+        login_response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": password})
         assert login_response.status_code == 303
 
         # Then check status
@@ -303,11 +249,8 @@ class TestAuthMiddleware:
 
     def test_middleware_allows_public_paths(self, temp_user_file):
         """Test that middleware allows access to public paths."""
-        app = Starlette(routes=auth_routes)
-        app.add_middleware(
-            AuthMiddleware,
-            public_paths=["/auth/login", "/auth/status"]
-        )
+        app = Starlette(routes=AUTH_ROUTES)
+        app.add_middleware(AuthMiddleware, public_paths={"/auth/login", "/auth/status"})
 
         client = TestClient(app)
 
@@ -326,14 +269,13 @@ class TestAuthMiddleware:
         async def protected_endpoint(request):
             return Response("Protected content")
 
-        app = Starlette(routes=[
-            Route("/protected", endpoint=protected_endpoint),
-            *auth_routes
-        ])
-        app.add_middleware(
-            AuthMiddleware,
-            public_paths=["/auth/login", "/auth/status"]
+        app = Starlette(
+            routes=[
+                Route("/protected", endpoint=protected_endpoint),
+                *AUTH_ROUTES,  # Replace auth_routes with AUTH_ROUTES
+            ]
         )
+        app.add_middleware(AuthMiddleware, public_paths={"/auth/login", "/auth/status"})
 
         client = TestClient(app)
 
@@ -348,27 +290,18 @@ class TestAuthMiddleware:
         from starlette.routing import Route
 
         # Create a user first
-        user = create_user("test@example.com", "Test User", "password123")
+        create_user("test@example.com", "Test User", Password("password123"))
 
         async def protected_endpoint(request):
             return Response("Protected content")
 
-        app = Starlette(routes=[
-            Route("/protected", endpoint=protected_endpoint),
-            *auth_routes
-        ])
-        app.add_middleware(
-            AuthMiddleware,
-            public_paths=["/auth/login", "/auth/status"]
-        )
+        app = Starlette(routes=[Route("/protected", endpoint=protected_endpoint), *AUTH_ROUTES])
+        app.add_middleware(AuthMiddleware, public_paths={"/auth/login", "/auth/status"})
 
         client = TestClient(app)
 
         # First log in
-        login_response = client.post("/auth/login", data={
-            "email": "test@example.com",
-            "password": "password123"
-        })
+        login_response = client.post("/auth/login", data={"email": "test@example.com", "password": "password123"})
         assert login_response.status_code == 303
 
         # Then access protected endpoint
@@ -386,10 +319,7 @@ class TestSessionManagement:
         password = sample_user["password"]
 
         # Log in
-        login_response = auth_client.post("/auth/login", data={
-            "email": user_data["email"],
-            "password": password
-        })
+        login_response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": password})
         assert login_response.status_code == 303
 
         # Make multiple status requests
@@ -407,10 +337,7 @@ class TestSessionManagement:
         password = sample_user["password"]
 
         # Log in
-        login_response = auth_client.post("/auth/login", data={
-            "email": user_data["email"],
-            "password": password
-        })
+        login_response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": password})
         assert login_response.status_code == 303
 
         # Verify logged in
@@ -434,9 +361,9 @@ class TestErrorHandling:
     def test_malformed_form_data(self, auth_client):
         """Test handling of malformed form data."""
         # Send invalid form data
-        response = auth_client.post("/auth/login",
-                                  headers={"content-type": "application/x-www-form-urlencoded"},
-                                  content=b"invalid\xff\xfe\xfd")
+        response = auth_client.post(
+            "/auth/login", headers={"content-type": "application/x-www-form-urlencoded"}, content=b"invalid\xff\xfe\xfd"
+        )
 
         # Should handle gracefully (not crash)
         assert response.status_code in [200, 400]  # Either show form or bad request
@@ -446,10 +373,7 @@ class TestErrorHandling:
         large_email = "a" * 10000 + "@example.com"
         large_password = "b" * 10000
 
-        response = auth_client.post("/auth/login", data={
-            "email": large_email,
-            "password": large_password
-        })
+        response = auth_client.post("/auth/login", data={"email": large_email, "password": large_password})
 
         # Should handle gracefully
         assert response.status_code == 200  # Should show error message
