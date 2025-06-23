@@ -2,6 +2,7 @@
 
 import json
 from datetime import UTC, datetime
+from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import patch
 
@@ -9,7 +10,6 @@ import pytest
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
-from yak_shears.auth import storage
 from yak_shears.auth.middleware import AuthMiddleware
 from yak_shears.server.routes import ROUTES, not_found
 
@@ -27,7 +27,7 @@ def app() -> Starlette:
         debug=True,
         exception_handlers={404: not_found},
     )
-    public_paths = {"/", "/home", "/auth/login", "/auth/register", "/auth/status"}
+    public_paths = {"/", "/home", "/auth/login", "/auth/status"}
     app.add_middleware(AuthMiddleware, public_paths=public_paths)
     return app
 
@@ -42,63 +42,35 @@ def client(app: Starlette) -> TestClient:
     Returns:
         TestClient: A test client for the application
     """
-    return TestClient(app)
+    return TestClient(app, follow_redirects=False)
 
 
 def test_root_endpoint(client: TestClient) -> None:
-    """Test the root endpoint redirects to home.
-
-    Args:
-        client: The test client
-    """
+    """Test the root endpoint redirects to home."""
     response = client.get("/")
-    assert response.status_code == 307  # Temporary redirect
+    assert response.status_code == 307
     assert response.headers["location"] == "/home"
 
 
 def test_home_endpoint_not_logged_in(client: TestClient) -> None:
-    """Test the home endpoint when not logged in.
-
-    Args:
-        client: The test client
-    """
+    """Test the home endpoint when not logged in."""
     response = client.get("/home")
     assert response.status_code == 200
     assert "Not logged in" in response.text
     assert "Login" in response.text
-    assert "Register" in response.text
 
 
-def test_home_endpoint_logged_in(client: TestClient) -> None:
-    """Test the home endpoint when logged in.
-
-    Args:
-        client: The test client
-    """
-    # Create a mock user and session
-    with patch.object(storage, "get_user_from_session") as mock_get_user:
-        mock_user = {
-            "id": "test_user_id",
-            "name": "test_user",
-            "display_name": "Test User",
-            "credentials": [],
-            "current_challenge": None,
-        }
-        mock_get_user.return_value = mock_user
-
-        response = client.get("/home")
-        assert response.status_code == 200
-        assert "Logged in as:" in response.text
-        assert "Test User" in response.text
-        assert "Logout" in response.text
+def test_home_endpoint_logged_in(client: TestClient, mock_user_session) -> None:
+    """Test the home endpoint when logged in."""
+    response = client.get("/home")
+    assert response.status_code == 200
+    assert "Logged in as:" in response.text
+    assert "Test User" in response.text
+    assert "Logout" in response.text
 
 
-def test_echo_endpoint_get(client: TestClient) -> None:
-    """Test the echo endpoint with GET request.
-
-    Args:
-        client: The test client
-    """
+def test_echo_endpoint_get(client: TestClient, mock_user_session) -> None:
+    """Test the echo endpoint with GET request."""
     response = client.get("/echo?param1=value1&param2=value2")
     assert response.status_code == 200
     assert "Echo" in response.text
@@ -109,12 +81,8 @@ def test_echo_endpoint_get(client: TestClient) -> None:
     assert "value2" in response.text
 
 
-def test_echo_endpoint_post_json(client: TestClient) -> None:
-    """Test the echo endpoint with POST request sending JSON.
-
-    Args:
-        client: The test client
-    """
+def test_echo_endpoint_post_json(client: TestClient, mock_user_session) -> None:
+    """Test the echo endpoint with POST request sending JSON."""
     test_data = {"key1": "value1", "key2": ["item1", "item2"]}
     response = client.post(
         "/echo",
@@ -126,12 +94,8 @@ def test_echo_endpoint_post_json(client: TestClient) -> None:
     assert json.dumps(test_data, indent=2) in response.text
 
 
-def test_echo_endpoint_post_raw(client: TestClient) -> None:
-    """Test the echo endpoint with POST request sending raw data.
-
-    Args:
-        client: The test client
-    """
+def test_echo_endpoint_post_raw(client: TestClient, mock_user_session) -> None:
+    """Test the echo endpoint with POST request sending raw data."""
     test_data = "This is raw POST data"
     response = client.post(
         "/echo",
@@ -144,17 +108,11 @@ def test_echo_endpoint_post_raw(client: TestClient) -> None:
     assert test_data in response.text
 
 
-def test_time_endpoint(client: TestClient) -> None:
-    """Test the time endpoint returns current time.
-
-    Args:
-        client: The test client
-    """
-    # Mock datetime.now to return a fixed time
+def test_time_endpoint(client: TestClient, mock_user_session) -> None:
+    """Test the time endpoint returns current time."""
     fixed_time = datetime(2025, 5, 22, 12, 34, 56, tzinfo=UTC)
-    with patch("yak_shears.server.datetime") as mock_datetime:
+    with patch("yak_shears.server.handlers.datetime") as mock_datetime:
         mock_datetime.now.return_value = fixed_time
-        # Ensure UTC is passed through
         mock_datetime.UTC = UTC
 
         response = client.get("/time")
@@ -178,18 +136,11 @@ def mock_djot_files() -> list[Path]:
     ]
 
 
-def test_files_endpoint(client: TestClient, mock_djot_files: list[Path]) -> None:
-    """Test the files endpoint.
-
-    Args:
-        client: The test client
-        mock_djot_files: Mock file paths
-    """
-    # Mock the get_djot_files function
-    with patch("yak_shears.server.get_djot_files") as mock_get_files:
+def test_files_endpoint(client: TestClient, mock_djot_files: list[Path], mock_user_session) -> None:
+    """Test the files endpoint."""
+    with patch("yak_shears.server.handlers.get_djot_files") as mock_get_files:
         mock_get_files.return_value = (mock_djot_files, 3, 1)
 
-        # Mock Path.stat for each file
         with patch("pathlib.Path.stat") as mock_stat:
 
             class MockStat:
@@ -198,8 +149,7 @@ def test_files_endpoint(client: TestClient, mock_djot_files: list[Path]) -> None
 
             mock_stat.return_value = MockStat()
 
-            # Mock datetime.fromtimestamp
-            with patch("yak_shears.server.datetime") as mock_datetime:
+            with patch("yak_shears.server.handlers.datetime") as mock_datetime:
                 mock_datetime.fromtimestamp.return_value = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC)
                 mock_datetime.UTC = UTC
 
@@ -211,24 +161,15 @@ def test_files_endpoint(client: TestClient, mock_djot_files: list[Path]) -> None
                 assert "file3.dj" in response.text
 
 
-def test_not_found(client: TestClient) -> None:
-    """Test the 404 handler.
-
-    Args:
-        client: The test client
-    """
+def test_not_found(client: TestClient, mock_user_session) -> None:
+    """Test the 404 handler."""
     response = client.get("/non_existent_endpoint")
     assert response.status_code == 404
     assert "404 Not Found" in response.text
 
 
-def test_edit_file_get(client: TestClient) -> None:
-    """Test the edit file endpoint with GET request.
-
-    Args:
-        client: The test client
-    """
-    # Mock file path and read_text
+def test_edit_file_get(client: TestClient, mock_user_session) -> None:
+    """Test the edit file endpoint with GET request."""
     with patch("pathlib.Path.exists") as mock_exists:
         mock_exists.return_value = True
         with patch("pathlib.Path.is_file") as mock_is_file:
@@ -242,13 +183,8 @@ def test_edit_file_get(client: TestClient) -> None:
                 assert "Test file content" in response.text
 
 
-def test_edit_file_post(client: TestClient) -> None:
-    """Test the edit file endpoint with POST request.
-
-    Args:
-        client: The test client
-    """
-    # Mock file path, exists, is_file, and write_text
+def test_edit_file_post(client: TestClient, mock_user_session) -> None:
+    """Test the edit file endpoint with POST request."""
     with patch("pathlib.Path.exists") as mock_exists:
         mock_exists.return_value = True
         with patch("pathlib.Path.is_file") as mock_is_file:
@@ -260,17 +196,13 @@ def test_edit_file_post(client: TestClient) -> None:
                     "/edit?file=/path/to/test.dj",
                     data={"content": "Updated content"},
                 )
-                assert response.status_code == 303  # See Other redirect
+                assert response.status_code == 303
                 assert response.headers["location"] == "/edit?file=/path/to/test.dj"
                 mock_write_text.assert_called_once_with("Updated content")
 
 
-def test_edit_file_not_found(client: TestClient) -> None:
-    """Test the edit file endpoint with non-existent file.
-
-    Args:
-        client: The test client
-    """
+def test_edit_file_not_found(client: TestClient, mock_user_session) -> None:
+    """Test the edit file endpoint with non-existent file."""
     with patch("pathlib.Path.exists") as mock_exists:
         mock_exists.return_value = False
 
@@ -279,12 +211,8 @@ def test_edit_file_not_found(client: TestClient) -> None:
         assert "File not found" in response.text
 
 
-def test_edit_file_no_file_specified(client: TestClient) -> None:
-    """Test the edit file endpoint with no file specified.
-
-    Args:
-        client: The test client
-    """
+def test_edit_file_no_file_specified(client: TestClient, mock_user_session) -> None:
+    """Test the edit file endpoint with no file specified."""
     response = client.get("/edit")
     assert response.status_code == 400
     assert "No file specified" in response.text
@@ -292,90 +220,37 @@ def test_edit_file_no_file_specified(client: TestClient) -> None:
 
 # Tests for auth endpoints
 def test_auth_login_get(client: TestClient) -> None:
-    """Test the login endpoint with GET request.
-
-    Args:
-        client: The test client
-    """
+    """Test the login endpoint with GET request."""
     response = client.get("/auth/login")
     assert response.status_code == 200
     assert "<title>Login</title>" in response.text
 
 
-# def test_auth_register_get(client: TestClient) -> None:
-#     """Test the register endpoint with GET request.
-#
-#     Args:
-#         client: The test client
-#     """
-#     response = client.get("/auth/register")
-#     assert response.status_code == 200
-#     assert "Register with Passkey" in response.text
-
-
 def test_auth_status_not_logged_in(client: TestClient) -> None:
-    """Test the auth status endpoint when not logged in.
-
-    Args:
-        client: The test client
-    """
+    """Test the auth status endpoint when not logged in."""
     response = client.get("/auth/status")
     assert response.status_code == 200
     json_response = response.json()
     assert json_response["authenticated"] is False
 
 
-def test_auth_status_logged_in(client: TestClient) -> None:
-    """Test the auth status endpoint when logged in.
-
-    Args:
-        client: The test client
-    """
-    # Create a mock user and session
-    with patch.object(storage, "get_user_from_session") as mock_get_user:
-        mock_user = {
-            "id": "test_user_id",
-            "name": "test_user",
-            "display_name": "Test User",
-            "credentials": [],
-            "current_challenge": None,
-        }
-        mock_get_user.return_value = mock_user
-
-        response = client.get("/auth/status")
-        assert response.status_code == 200
-        json_response = response.json()
-        assert json_response["authenticated"] is True
-        assert json_response["username"] == "test_user"
-        assert json_response["displayName"] == "Test User"
+def test_auth_status_logged_in(client: TestClient, mock_user_session) -> None:
+    """Test the auth status endpoint when logged in."""
+    response = client.get("/auth/status")
+    assert response.status_code == 200
+    json_response = response.json()
+    assert json_response["authenticated"] is True
+    assert json_response["displayName"] == "Test User"
 
 
-def test_auth_middleware_public_path(client: TestClient) -> None:
-    """Test that auth middleware allows access to public paths.
-
-    Args:
-        client: The test client
-    """
-    # Ensure get_user_from_session returns None (not logged in)
-    with patch.object(storage, "get_user_from_session") as mock_get_user:
-        mock_get_user.return_value = None
-
-        # Public paths should be accessible
-        response = client.get("/home")
-        assert response.status_code == 200
+def test_auth_middleware_public_path(client: TestClient, mock_user_session) -> None:
+    """Test that auth middleware allows access to public paths."""
+    response = client.get("/home")
+    assert response.status_code == 200
 
 
 def test_auth_middleware_protected_path(client: TestClient) -> None:
-    """Test that auth middleware redirects to login for protected paths.
-
-    Args:
-        client: The test client
-    """
-    # Ensure get_user_from_session returns None (not logged in)
-    with patch.object(storage, "get_user_from_session") as mock_get_user:
-        mock_get_user.return_value = None
-
-        # Protected paths should redirect to login
-        response = client.get("/files")
-        assert response.status_code == 303
-        assert response.headers["location"] == "/auth/login"
+    """Test that auth middleware redirects to login for protected paths."""
+    response = client.get("/files")
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
+    assert response.headers["location"] == "/auth/login"

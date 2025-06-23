@@ -6,7 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 
-from .routes import get_user_from_session
+from . import routes  # for test mocking
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
@@ -34,6 +34,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
         """
         if request.url.path in self.public_paths:
             return await call_next(request)
-        if get_user_from_session(request):
+        if routes.get_user_from_session(request):
             return await call_next(request)
         return RedirectResponse(url="/auth/login", status_code=HTTPStatus.UNAUTHORIZED)

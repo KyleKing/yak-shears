@@ -6,6 +6,9 @@ from unittest.mock import patch
 
 import pytest
 
+from yak_shears.auth import routes
+from yak_shears.auth.models import HashedPassword, User
+
 
 @pytest.fixture
 def temp_user_file():
@@ -23,3 +26,22 @@ def temp_user_file():
         yield temp_path
 
     temp_path.unlink(missing_ok=True)
+
+
+@pytest.fixture
+def mock_user_session():
+    """Fixture to patch `get_user_from_session` and provide a mock user."""
+    with patch.object(routes, "get_user_from_session") as mock_get_user:
+        mock_user = User(
+            {
+                "id": "test_user_id",
+                "email": "test@web.site",
+                "display_name": "Test User",
+                "password_hash": HashedPassword("123"),
+                "salt": "abc",
+                "created_at": "2025-05-30T19:52:12.943795+00:00",
+                "last_login": None,
+            }
+        )
+        mock_get_user.return_value = mock_user
+        yield mock_get_user

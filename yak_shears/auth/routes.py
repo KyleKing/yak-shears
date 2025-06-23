@@ -20,7 +20,7 @@ async def login_handler(request: Request) -> Response:
         Response: HTML page for login or a redirect
     """
     if request.method == "GET":
-        if not (user := get_user_from_session(request)):
+        if user := get_user_from_session(request):
             return RedirectResponse(url="/home")
         return render_template("auth/login.html.jinja")
 

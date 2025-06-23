@@ -7,7 +7,7 @@ from pathlib import Path
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 
-from yak_shears.auth.routes import get_user_from_session
+from yak_shears.auth import routes  # for test mocking
 
 
 async def home_handler(request: Request) -> HTMLResponse:
@@ -19,7 +19,7 @@ async def home_handler(request: Request) -> HTMLResponse:
     Returns:
         HTMLResponse with navigation index
     """
-    user = get_user_from_session(request)
+    user = routes.get_user_from_session(request)
     auth_status = ""
 
     if user:
