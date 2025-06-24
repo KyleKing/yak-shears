@@ -1,5 +1,8 @@
 """Authentication routes for the Yak Shears application."""
 
+from datetime import UTC, datetime, timedelta
+from os import getenv
+
 from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse, Response
 from starlette.routing import Route
@@ -8,6 +11,8 @@ from yak_shears.templates import render_template
 
 from . import storage
 from .models import Password, SessionId
+
+IN_TLS_CONTEXT = (getenv("IN_TLS_CONTEXT") or "").upper() == "TRUE"
 
 
 async def login_handler(request: Request) -> Response:
@@ -33,8 +38,17 @@ async def login_handler(request: Request) -> Response:
         if not (user := storage.authenticate_user(email, password)):
             return render_template("auth/login.html.jinja", error="Invalid email or password")
         session_id = storage.create_session(SessionId(user["id"]))
-        response = RedirectResponse(url="/home")
-        response.set_cookie("session_id", session_id, httponly=True, secure=False, samesite="lax")
+        response = Response("Login Successful", headers={"HX-Redirect": "/home"})
+        expires = datetime.now(tz=UTC) + timedelta(weeks=1)
+        response.set_cookie(
+            "session_id",
+            session_id,
+            expires=expires.strftime("%a, %d-%b-%Y %H:%M:%S Z"),
+            httponly=True,
+            secure=IN_TLS_CONTEXT,
+            samesite="strict",
+            # PLANNED: specify the domain
+        )
         return response
 
     raise NotImplementedError(f"Unsupported method {request.method}")
@@ -89,7 +103,7 @@ def get_user_from_session(request: Request):
 
 ROUTES = [
     Route("/auth/login", endpoint=login_handler, methods=["GET", "POST"]),
-    Route("/auth/logout", endpoint=logout_handler, methods=["GET", "POST"]),
+    Route("/auth/logout", endpoint=logout_handler, methods=["GET"]),
     Route("/auth/status", endpoint=status_handler, methods=["GET"]),
 ]
 PUBLIC_PATHS = {"/auth/login", "/auth/logout", "/auth/status"}

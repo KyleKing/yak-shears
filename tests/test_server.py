@@ -2,7 +2,6 @@
 
 import json
 from datetime import UTC, datetime
-from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import patch
 
