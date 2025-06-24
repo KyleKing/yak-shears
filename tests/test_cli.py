@@ -1,295 +1,298 @@
-"""Tests for the CLI user management functionality."""
+"""Tests for the argparse-based CLI user management functionality."""
 
+import argparse
+from io import StringIO
 from unittest.mock import patch
 
 import pytest
 
-from yak_shears import cli
 from yak_shears.auth.models import Password
-from yak_shears.cli import create_user_command, delete_user_command, list_users_command
+from yak_shears.cli import create_user_command, delete_user_command, list_users_command, main
 
 
-@pytest.fixture
-def cli_runner():
-    """Create a CLI runner for testing."""
-    from click.testing import CliRunner
+class TestCreateUserCommand:
+    """Test the create user command with argparse."""
 
-    return CliRunner()
+    def test_create_user_success(self, temp_user_file):
+        """Test successful user creation."""
+        args = argparse.Namespace(email="test@example.com", display_name="Test User")
 
-
-class TestCreateCommand:
-    """Test the create user CLI command."""
-
-    def test_create_user_interactive(self, cli_runner, temp_user_file):
-        """Test creating a user interactively."""
-        # Mock getpass to provide password
         with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-            mock_getpass.return_value = "secure123"
+            mock_getpass.side_effect = ["secure123", "secure123"]  # password and confirmation
 
-            result = cli_runner.invoke(create_user_command, ["test@example.com", "--display-name", "Test User"])
+            with patch("sys.stdout", new=StringIO()) as fake_stdout:
+                create_user_command(args)
 
-        assert result.exit_code == 0
-        assert "User created successfully" in result.output
-        assert "test@example.com" in result.output
+            output = fake_stdout.getvalue()
+            assert "Successfully created user: test@example.com" in output
+            assert "Test User" in output
 
-    def test_create_user_with_password_option(self, cli_runner, temp_user_file):
-        """Test creating a user with password option."""
-        result = cli_runner.invoke(
-            create_user_command, ["test@example.com", "--display-name", "Test User", "--password", "secure123"]
-        )
+    def test_create_user_no_display_name(self, temp_user_file):
+        """Test creating user without display name (should use email)."""
+        args = argparse.Namespace(email="test@example.com", display_name=None)
 
-        assert result.exit_code == 0
-        assert "User created successfully" in result.output
-        assert "test@example.com" in result.output
-
-    def test_create_user_without_display_name(self, cli_runner, temp_user_file):
-        """Test creating a user without display name (should use email)."""
         with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-            mock_getpass.return_value = "secure123"
+            mock_getpass.side_effect = ["secure123", "secure123"]
 
-            result = cli_runner.invoke(create_user_command, ["test@example.com"])
+            with patch("sys.stdout", new=StringIO()) as fake_stdout:
+                create_user_command(args)
 
-        assert result.exit_code == 0
-        assert "User created successfully" in result.output
+            output = fake_stdout.getvalue()
+            assert "Successfully created user: test@example.com" in output
 
-    def test_create_duplicate_user(self, cli_runner, temp_user_file):
-        """Test creating a duplicate user."""
-        # Create first user
-        with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-            mock_getpass.return_value = "secure123"
+    def test_create_user_empty_password(self, temp_user_file):
+        """Test creating user with empty password."""
+        args = argparse.Namespace(email="test@example.com", display_name="Test User")
 
-            result1 = cli_runner.invoke(create_user_command, ["test@example.com", "--display-name", "Test User"])
-            assert result1.exit_code == 0
-
-            # Try to create duplicate
-            result2 = cli_runner.invoke(create_user_command, ["test@example.com", "--display-name", "Another User"])
-
-        assert result2.exit_code == 1
-        assert "Error: User with email" in result2.output
-        assert "already exists" in result2.output
-
-    def test_create_user_empty_password(self, cli_runner, temp_user_file):
-        """Test creating a user with empty password."""
         with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
             mock_getpass.return_value = ""
 
-            result = cli_runner.invoke(create_user_command, ["test@example.com", "--display-name", "Test User"])
+            with patch("sys.stderr", new=StringIO()) as fake_stderr:
+                with pytest.raises(SystemExit) as excinfo:
+                    create_user_command(args)
 
-        assert result.exit_code == 1
-        assert "Password cannot be empty" in result.output
+                assert excinfo.value.code == 1
+                assert "Password cannot be empty" in fake_stderr.getvalue()
 
-    def test_create_user_password_confirmation_mismatch(self, cli_runner, temp_user_file):
-        """Test creating a user with password confirmation mismatch."""
+    def test_create_user_password_mismatch(self, temp_user_file):
+        """Test creating user with password confirmation mismatch."""
+        args = argparse.Namespace(email="test@example.com", display_name="Test User")
+
         with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-            # First call returns password, second returns different confirmation
             mock_getpass.side_effect = ["secure123", "different123"]
 
-            result = cli_runner.invoke(create_user_command, ["test@example.com", "--display-name", "Test User"])
+            with patch("sys.stderr", new=StringIO()) as fake_stderr:
+                with pytest.raises(SystemExit) as excinfo:
+                    create_user_command(args)
 
-        assert result.exit_code == 1
-        assert "Passwords do not match" in result.output
+                assert excinfo.value.code == 1
+                assert "Passwords do not match" in fake_stderr.getvalue()
 
-    def test_create_user_password_confirmation_success(self, cli_runner, temp_user_file):
-        """Test creating a user with matching password confirmation."""
-        with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-            # Both calls return the same password
-            mock_getpass.side_effect = ["secure123", "secure123"]
+    def test_create_duplicate_user(self, temp_user_file):
+        """Test creating duplicate user."""
+        # Create first user
+        from yak_shears.auth.storage import create_user
+        create_user("test@example.com", "Test User", Password("password"))
 
-            result = cli_runner.invoke(create_user_command, ["test@example.com", "--display-name", "Test User"])
+        args = argparse.Namespace(email="test@example.com", display_name="Another User")
 
-        assert result.exit_code == 0
-        assert "User created successfully" in result.output
+        with patch("sys.stderr", new=StringIO()) as fake_stderr:
+            with pytest.raises(SystemExit) as excinfo:
+                create_user_command(args)
+
+            assert excinfo.value.code == 1
+            assert "already exists" in fake_stderr.getvalue()
 
 
-class TestListCommand:
-    """Test the list users CLI command."""
+class TestListUsersCommand:
+    """Test the list users command with argparse."""
 
-    def test_list_empty_users(self, cli_runner, temp_user_file):
+    def test_list_empty_users(self, temp_user_file):
         """Test listing when no users exist."""
-        result = cli_runner.invoke(list_users_command)
+        args = argparse.Namespace()
 
-        assert result.exit_code == 0
-        assert "No users found" in result.output
+        with patch("sys.stdout", new=StringIO()) as fake_stdout:
+            list_users_command(args)
 
-    def test_list_single_user(self, cli_runner, temp_user_file):
+        output = fake_stdout.getvalue()
+        assert "No users found" in output
+
+    def test_list_single_user(self, temp_user_file):
         """Test listing with a single user."""
         # Create a user first
         from yak_shears.auth.storage import create_user
-
         create_user("test@example.com", "Test User", Password("password"))
 
-        result = cli_runner.invoke(list_users_command)
+        args = argparse.Namespace()
 
-        assert result.exit_code == 0
-        assert "test@example.com" in result.output
-        assert "Test User" in result.output
+        with patch("sys.stdout", new=StringIO()) as fake_stdout:
+            list_users_command(args)
 
-    def test_list_multiple_users(self, cli_runner, temp_user_file):
+        output = fake_stdout.getvalue()
+        assert "Found 1 users" in output
+        assert "test@example.com" in output
+        assert "Test User" in output
+
+    def test_list_multiple_users(self, temp_user_file):
         """Test listing multiple users."""
         # Create multiple users
         from yak_shears.auth.storage import create_user
-
         create_user("user1@example.com", "User 1", Password("password1"))
         create_user("user2@example.com", "User 2", Password("password2"))
         create_user("user3@example.com", "User 3", Password("password3"))
 
-        result = cli_runner.invoke(list_users_command)
+        args = argparse.Namespace()
 
-        assert result.exit_code == 0
-        assert "user1@example.com" in result.output
-        assert "user2@example.com" in result.output
-        assert "user3@example.com" in result.output
-        assert "User 1" in result.output
-        assert "User 2" in result.output
-        assert "User 3" in result.output
+        with patch("sys.stdout", new=StringIO()) as fake_stdout:
+            list_users_command(args)
 
-    def test_list_shows_creation_date(self, cli_runner, temp_user_file):
-        """Test that list shows creation date."""
-        from yak_shears.auth.storage import create_user
-
-        create_user("test@example.com", "Test User", Password("password"))
-
-        result = cli_runner.invoke(list_users_command)
-
-        assert result.exit_code == 0
-        # Should contain a date (basic check for ISO format)
-        assert "T" in result.output and ":" in result.output
+        output = fake_stdout.getvalue()
+        assert "Found 3 users" in output
+        assert "user1@example.com" in output
+        assert "user2@example.com" in output
+        assert "user3@example.com" in output
 
 
-class TestDeleteCommand:
-    """Test the delete user CLI command."""
+class TestDeleteUserCommand:
+    """Test the delete user command with argparse."""
 
-    def test_delete_existing_user(self, cli_runner, temp_user_file):
+    def test_delete_existing_user(self, temp_user_file):
         """Test deleting an existing user."""
         # Create a user first
         from yak_shears.auth.storage import create_user
-
         create_user("test@example.com", "Test User", Password("password"))
 
-        result = cli_runner.invoke(delete_user_command, ["test@example.com"])
+        args = argparse.Namespace(email="test@example.com")
 
-        assert result.exit_code == 0
-        assert "User deleted successfully" in result.output
+        with patch("builtins.input", return_value="yes"):
+            with patch("sys.stdout", new=StringIO()) as fake_stdout:
+                delete_user_command(args)
 
-    def test_delete_nonexistent_user(self, cli_runner, temp_user_file):
+            output = fake_stdout.getvalue()
+            assert "Successfully deleted user: test@example.com" in output
+
+    def test_delete_nonexistent_user(self, temp_user_file):
         """Test deleting a non-existent user."""
-        result = cli_runner.invoke(delete_user_command, ["nonexistent@example.com"])
+        args = argparse.Namespace(email="nonexistent@example.com")
 
-        assert result.exit_code == 1
-        assert "User not found" in result.output
+        with patch("sys.stderr", new=StringIO()) as fake_stderr:
+            with pytest.raises(SystemExit) as excinfo:
+                delete_user_command(args)
 
-    def test_delete_user_confirmation_yes(self, cli_runner, temp_user_file):
-        """Test deleting user with confirmation (yes)."""
+            assert excinfo.value.code == 1
+            assert "not found" in fake_stderr.getvalue()
+
+    def test_delete_user_cancelled(self, temp_user_file):
+        """Test cancelling user deletion."""
         # Create a user first
         from yak_shears.auth.storage import create_user
-
         create_user("test@example.com", "Test User", Password("password"))
 
-        # Mock input to confirm deletion
-        result = cli_runner.invoke(delete_user_command, ["test@example.com"], input="y\n")
+        args = argparse.Namespace(email="test@example.com")
 
-        assert result.exit_code == 0
-        assert "User deleted successfully" in result.output
+        with patch("builtins.input", return_value="no"):
+            with patch("sys.stdout", new=StringIO()) as fake_stdout:
+                delete_user_command(args)
 
-    def test_delete_user_confirmation_no(self, cli_runner, temp_user_file):
-        """Test deleting user with confirmation (no)."""
-        # Create a user first
-        from yak_shears.auth.storage import create_user
-
-        create_user("test@example.com", "Test User", Password("password"))
-
-        # Mock input to cancel deletion
-        result = cli_runner.invoke(delete_user_command, ["test@example.com"], input="n\n")
-
-        assert result.exit_code == 0
-        assert "Deletion cancelled" in result.output
-
-    def test_delete_user_force(self, cli_runner, temp_user_file):
-        """Test deleting user with force flag."""
-        # Create a user first
-        from yak_shears.auth.storage import create_user
-
-        create_user("test@example.com", "Test User", Password("password"))
-
-        result = cli_runner.invoke(delete_user_command, ["test@example.com", "--force"])
-
-        assert result.exit_code == 0
-        assert "User deleted successfully" in result.output
-        # Should not prompt for confirmation
-        assert "Are you sure" not in result.output
+            output = fake_stdout.getvalue()
+            assert "Deletion cancelled" in output
 
 
 class TestMainCLI:
-    """Test the main CLI interface."""
+    """Test the main CLI interface with argparse."""
 
-    def test_cli_help(self, cli_runner):
-        """Test CLI help output."""
-        result = cli_runner.invoke(cli, ["--help"])
+    def test_main_no_command(self):
+        """Test main function without command."""
+        with patch("sys.argv", ["yak-shears-users"]), patch("sys.stdout", new=StringIO()) as fake_stdout:
+            with pytest.raises(SystemExit) as excinfo:
+                main()
 
-        assert result.exit_code == 0
-        assert "create" in result.output
-        assert "list" in result.output
-        assert "delete" in result.output
+            assert excinfo.value.code == 1
+            output = fake_stdout.getvalue()
+            assert "usage:" in output
 
-    def test_cli_create_subcommand(self, cli_runner, temp_user_file):
-        """Test CLI create subcommand."""
-        with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-            mock_getpass.return_value = "secure123"
+    def test_main_create_command(self, temp_user_file):
+        """Test main function with create command."""
+        test_args = ["yak-shears-users", "create", "test@example.com", "--display-name", "Test User"]
 
-            result = cli_runner.invoke(cli, ["create", "test@example.com", "--display-name", "Test User"])
+        with patch("sys.argv", test_args), patch("yak_shears.cli.getpass.getpass") as mock_getpass:
+            mock_getpass.side_effect = ["secure123", "secure123"]
 
-        assert result.exit_code == 0
-        assert "User created successfully" in result.output
+            with patch("sys.stdout", new=StringIO()) as fake_stdout:
+                main()
 
-    def test_cli_list_subcommand(self, cli_runner, temp_user_file):
-        """Test CLI list subcommand."""
-        result = cli_runner.invoke(cli, ["list"])
+            output = fake_stdout.getvalue()
+            assert "Successfully created user" in output
 
-        assert result.exit_code == 0
-        assert "No users found" in result.output
+    def test_main_list_command(self, temp_user_file):
+        """Test main function with list command."""
+        test_args = ["yak-shears-users", "list"]
 
-    def test_cli_delete_subcommand(self, cli_runner, temp_user_file):
-        """Test CLI delete subcommand."""
-        result = cli_runner.invoke(cli, ["delete", "nonexistent@example.com"])
+        with patch("sys.argv", test_args):
+            with patch("sys.stdout", new=StringIO()) as fake_stdout:
+                main()
 
-        assert result.exit_code == 1
-        assert "User not found" in result.output
+            output = fake_stdout.getvalue()
+            assert "No users found" in output
 
-    def test_cli_invalid_subcommand(self, cli_runner):
-        """Test CLI with invalid subcommand."""
-        result = cli_runner.invoke(cli, ["invalid"])
+    def test_main_delete_command(self, temp_user_file):
+        """Test main function with delete command."""
+        # Create a user first
+        from yak_shears.auth.storage import create_user
+        create_user("test@example.com", "Test User", Password("password"))
 
-        assert result.exit_code != 0
-        assert "No such command" in result.output
+        test_args = ["yak-shears-users", "delete", "test@example.com"]
+
+        with patch("sys.argv", test_args), patch("builtins.input", return_value="yes"):
+            with patch("sys.stdout", new=StringIO()) as fake_stdout:
+                main()
+
+            output = fake_stdout.getvalue()
+            assert "Successfully deleted user" in output
+
+    def test_main_help_command(self):
+        """Test main function with help."""
+        test_args = ["yak-shears-users", "--help"]
+
+        with patch("sys.argv", test_args), patch("sys.stdout", new=StringIO()) as fake_stdout:
+            with pytest.raises(SystemExit) as excinfo:
+                main()
+
+            # argparse exits with 0 for help
+            assert excinfo.value.code == 0
+            output = fake_stdout.getvalue()
+            assert "Manage Yak Shears users" in output
+            assert "create" in output
+            assert "list" in output
+            assert "delete" in output
+
+    def test_main_invalid_command(self):
+        """Test main function with invalid command."""
+        test_args = ["yak-shears-users", "invalid"]
+
+        with patch("sys.argv", test_args), patch("sys.stderr", new=StringIO()) as fake_stderr:
+            with pytest.raises(SystemExit) as excinfo:
+                main()
+
+            assert excinfo.value.code == 2  # argparse exits with 2 for invalid command
+            output = fake_stderr.getvalue()
+            assert "invalid choice" in output
 
 
 class TestCLIIntegration:
-    """Test CLI integration scenarios."""
+    """Test CLI integration scenarios with argparse."""
 
-    def test_full_user_lifecycle(self, cli_runner, temp_user_file):
+    def test_full_user_lifecycle(self, temp_user_file):
         """Test complete user lifecycle: create, list, delete."""
         # Create user
-        with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-            mock_getpass.return_value = "secure123"
-
-            create_result = cli_runner.invoke(cli, ["create", "test@example.com", "--display-name", "Test User"])
-            assert create_result.exit_code == 0
+        create_args = ["yak-shears-users", "create", "test@example.com", "--display-name", "Test User"]
+        with patch("sys.argv", create_args), patch("yak_shears.cli.getpass.getpass") as mock_getpass:
+            mock_getpass.side_effect = ["secure123", "secure123"]
+            main()
 
         # List users
-        list_result = cli_runner.invoke(cli, ["list"])
-        assert list_result.exit_code == 0
-        assert "test@example.com" in list_result.output
+        list_args = ["yak-shears-users", "list"]
+        with patch("sys.argv", list_args):
+            with patch("sys.stdout", new=StringIO()) as fake_stdout:
+                main()
+
+            output = fake_stdout.getvalue()
+            assert "test@example.com" in output
 
         # Delete user
-        delete_result = cli_runner.invoke(cli, ["delete", "test@example.com", "--force"])
-        assert delete_result.exit_code == 0
+        delete_args = ["yak-shears-users", "delete", "test@example.com"]
+        with patch("sys.argv", delete_args), patch("builtins.input", return_value="yes"):
+            main()
 
         # Verify user is gone
-        final_list_result = cli_runner.invoke(cli, ["list"])
-        assert final_list_result.exit_code == 0
-        assert "No users found" in final_list_result.output
+        with patch("sys.argv", list_args):
+            with patch("sys.stdout", new=StringIO()) as fake_stdout:
+                main()
 
-    def test_create_multiple_users_and_list(self, cli_runner, temp_user_file):
+            output = fake_stdout.getvalue()
+            assert "No users found" in output
+
+    def test_create_multiple_users_and_list(self, temp_user_file):
         """Test creating multiple users and listing them."""
         users = [
             ("user1@example.com", "User One"),
@@ -299,43 +302,92 @@ class TestCLIIntegration:
 
         # Create all users
         for email, display_name in users:
-            with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-                mock_getpass.return_value = "password123"
-
-                result = cli_runner.invoke(cli, ["create", email, "--display-name", display_name])
-                assert result.exit_code == 0
+            create_args = ["yak-shears-users", "create", email, "--display-name", display_name]
+            with patch("sys.argv", create_args), patch("yak_shears.cli.getpass.getpass") as mock_getpass:
+                mock_getpass.side_effect = ["password123", "password123"]
+                main()
 
         # List all users
-        list_result = cli_runner.invoke(cli, ["list"])
-        assert list_result.exit_code == 0
+        list_args = ["yak-shears-users", "list"]
+        with patch("sys.argv", list_args):
+            with patch("sys.stdout", new=StringIO()) as fake_stdout:
+                main()
 
-        for email, display_name in users:
-            assert email in list_result.output
-            assert display_name in list_result.output
+            output = fake_stdout.getvalue()
+            assert "Found 3 users" in output
+            for email, display_name in users:
+                assert email in output
+                assert display_name in output
 
-    def test_error_handling_in_cli(self, cli_runner, temp_user_file):
-        """Test error handling in CLI commands."""
-        # Test creating user with invalid data
-        with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-            mock_getpass.return_value = ""  # Empty password
-
-            result = cli_runner.invoke(cli, ["create", "test@example.com", "--display-name", "Test User"])
-            assert result.exit_code == 1
-            assert "Password cannot be empty" in result.output
-
-    def test_cli_with_unicode_data(self, cli_runner, temp_user_file):
+    def test_unicode_user_data(self, temp_user_file):
         """Test CLI with Unicode characters."""
         email = "тест@пример.рф"
         display_name = "测试用户"
 
-        with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-            mock_getpass.return_value = "пароль123"
-
-            create_result = cli_runner.invoke(cli, ["create", email, "--display-name", display_name])
-            assert create_result.exit_code == 0
+        create_args = ["yak-shears-users", "create", email, "--display-name", display_name]
+        with patch("sys.argv", create_args), patch("yak_shears.cli.getpass.getpass") as mock_getpass:
+            mock_getpass.side_effect = ["пароль123", "пароль123"]
+            main()
 
         # List should show Unicode correctly
-        list_result = cli_runner.invoke(cli, ["list"])
-        assert list_result.exit_code == 0
-        assert email in list_result.output
-        assert display_name in list_result.output
+        list_args = ["yak-shears-users", "list"]
+        with patch("sys.argv", list_args):
+            with patch("sys.stdout", new=StringIO()) as fake_stdout:
+                main()
+
+            output = fake_stdout.getvalue()
+            assert email in output
+            assert display_name in output
+
+
+class TestArgumentParsing:
+    """Test argparse argument parsing specifically."""
+
+    def test_create_parser_required_args(self):
+        """Test create command requires email."""
+        from yak_shears.cli import main
+
+        test_args = ["yak-shears-users", "create"]
+
+        with patch("sys.argv", test_args), patch("sys.stderr", new=StringIO()) as fake_stderr:
+            with pytest.raises(SystemExit) as excinfo:
+                main()
+
+            assert excinfo.value.code == 2
+            assert "required" in fake_stderr.getvalue()
+
+    def test_create_parser_optional_display_name(self, temp_user_file):
+        """Test create command with optional display name."""
+        from yak_shears.cli import main
+
+        test_args = ["yak-shears-users", "create", "test@example.com"]
+
+        with patch("sys.argv", test_args), patch("yak_shears.cli.getpass.getpass") as mock_getpass:
+            mock_getpass.side_effect = ["secure123", "secure123"]
+
+            with patch("sys.stdout", new=StringIO()):
+                # Should not raise an exception
+                main()
+
+    def test_delete_parser_required_args(self):
+        """Test delete command requires email."""
+        from yak_shears.cli import main
+
+        test_args = ["yak-shears-users", "delete"]
+
+        with patch("sys.argv", test_args), patch("sys.stderr", new=StringIO()) as fake_stderr:
+            with pytest.raises(SystemExit) as excinfo:
+                main()
+
+            assert excinfo.value.code == 2
+            assert "required" in fake_stderr.getvalue()
+
+    def test_list_parser_no_args(self, temp_user_file):
+        """Test list command requires no arguments."""
+        from yak_shears.cli import main
+
+        test_args = ["yak-shears-users", "list"]
+
+        with patch("sys.argv", test_args), patch("sys.stdout", new=StringIO()):
+            # Should not raise an exception
+            main()

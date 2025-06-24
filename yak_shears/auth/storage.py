@@ -70,6 +70,15 @@ def create_user(email: str, display_name: str, password: Password) -> User:
     Raises:
         ValueError: If the email is already taken
     """
+    if not email.strip():
+        raise ValueError("Email cannot be empty or whitespace-only")
+
+    if not display_name.strip():
+        raise ValueError("Display name cannot be empty or whitespace-only")
+
+    if not password.strip():
+        raise ValueError("Password cannot be empty or whitespace-only")
+
     if email in _EMAIL_TO_USER_ID:
         raise ValueError(f"Email {email} is already taken")
 

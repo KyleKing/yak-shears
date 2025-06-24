@@ -92,3 +92,4 @@ ROUTES = [
     Route("/auth/logout", endpoint=logout_handler, methods=["GET", "POST"]),
     Route("/auth/status", endpoint=status_handler, methods=["GET"]),
 ]
+PUBLIC_PATHS = {"/auth/login", "/auth/logout", "/auth/status"}

@@ -10,6 +10,7 @@ from starlette.responses import HTMLResponse
 from starlette.routing import Route
 
 from yak_shears.auth.middleware import AuthMiddleware
+from yak_shears.auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
 from yak_shears.auth.routes import ROUTES as AUTH_ROUTES
 from yak_shears.server.handlers import (
     echo_handler,
@@ -60,7 +61,7 @@ def create_app() -> Starlette:
     )
 
     # Wrap app with auth middleware
-    public_paths = {"/", "/home", "/auth/login", "/auth/logout", "/auth/status"}
+    public_paths = {"/", "/home", *AUTH_PUBLIC_PATHS}
     app.add_middleware(AuthMiddleware, public_paths=public_paths)
 
     return app

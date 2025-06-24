@@ -1,35 +1,41 @@
 """Tests for authentication routes and HTTP endpoints."""
 
+from http import HTTPStatus
+
 import pytest
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from yak_shears.auth.middleware import AuthMiddleware
 from yak_shears.auth.models import Password
+from yak_shears.auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
 from yak_shears.auth.routes import ROUTES as AUTH_ROUTES
 from yak_shears.auth.storage import create_user
-from yak_shears.server.routes import not_found
 
 
 @pytest.fixture
-def auth_app(temp_user_file):
-    """Create a test app with authentication."""
-    app = Starlette(
-        routes=AUTH_ROUTES,
-        debug=True,
-        exception_handlers={404: not_found},
-    )
+def auth_app(temp_user_file) -> Starlette:
+    """Create a test Starlette application with authentication.
 
-    # Add auth middleware with public paths
-    app.add_middleware(AuthMiddleware, public_paths={"/auth/login", "/auth/status"})
-
+    Returns:
+        Starlette: A test Starlette application
+    """
+    app = Starlette(routes=AUTH_ROUTES, debug=True)
+    app.add_middleware(AuthMiddleware, public_paths=AUTH_PUBLIC_PATHS)
     return app
 
 
 @pytest.fixture
-def auth_client(auth_app):
-    """Create a test client for the auth app."""
-    return TestClient(auth_app)
+def auth_client(auth_app: Starlette) -> TestClient:
+    """Create a TestClient for the Starlette application.
+
+    Args:
+        app: The Starlette application
+
+    Returns:
+        TestClient: A test client for the application
+    """
+    return TestClient(auth_app, follow_redirects=False)
 
 
 @pytest.fixture
@@ -252,7 +258,7 @@ class TestAuthMiddleware:
         app = Starlette(routes=AUTH_ROUTES)
         app.add_middleware(AuthMiddleware, public_paths={"/auth/login", "/auth/status"})
 
-        client = TestClient(app)
+        client = TestClient(app, follow_redirects=False)
 
         # Should allow access to public paths
         response = client.get("/auth/login")
@@ -277,11 +283,11 @@ class TestAuthMiddleware:
         )
         app.add_middleware(AuthMiddleware, public_paths={"/auth/login", "/auth/status"})
 
-        client = TestClient(app)
+        client = TestClient(app, follow_redirects=False)
 
         # Should redirect to login
         response = client.get("/protected", follow_redirects=False)
-        assert response.status_code == 303
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
         assert response.headers["location"] == "/auth/login"
 
     def test_middleware_allows_authenticated_users(self, temp_user_file):
@@ -298,7 +304,7 @@ class TestAuthMiddleware:
         app = Starlette(routes=[Route("/protected", endpoint=protected_endpoint), *AUTH_ROUTES])
         app.add_middleware(AuthMiddleware, public_paths={"/auth/login", "/auth/status"})
 
-        client = TestClient(app)
+        client = TestClient(app, follow_redirects=False)
 
         # First log in
         login_response = client.post("/auth/login", data={"email": "test@example.com", "password": "password123"})

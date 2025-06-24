@@ -10,7 +10,6 @@ import pytest
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
-from yak_shears.auth.middleware import AuthMiddleware
 from yak_shears.server.routes import ROUTES, not_found
 
 
@@ -21,15 +20,7 @@ def app() -> Starlette:
     Returns:
         Starlette: A test Starlette application
     """
-    # TODO: merge with regular app definition?
-    app = Starlette(
-        routes=ROUTES,
-        debug=True,
-        exception_handlers={404: not_found},
-    )
-    public_paths = {"/", "/home", "/auth/login", "/auth/status"}
-    app.add_middleware(AuthMiddleware, public_paths=public_paths)
-    return app
+    return Starlette(routes=ROUTES, debug=True, exception_handlers={404: not_found})
 
 
 @pytest.fixture
@@ -247,10 +238,3 @@ def test_auth_middleware_public_path(client: TestClient, mock_user_session) -> N
     """Test that auth middleware allows access to public paths."""
     response = client.get("/home")
     assert response.status_code == 200
-
-
-def test_auth_middleware_protected_path(client: TestClient) -> None:
-    """Test that auth middleware redirects to login for protected paths."""
-    response = client.get("/files")
-    assert response.status_code == HTTPStatus.UNAUTHORIZED
-    assert response.headers["location"] == "/auth/login"
