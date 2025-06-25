@@ -2,12 +2,14 @@
 
 import tempfile
 from pathlib import Path
+from typing import Literal
 from unittest.mock import patch
 
 import pytest
 
 from yak_shears.auth import routes
-from yak_shears.auth.models import HashedPassword, User
+from yak_shears.auth.models import HashedPassword, Password, User
+from yak_shears.auth.storage import create_user
 
 
 @pytest.fixture
@@ -26,6 +28,18 @@ def temp_user_file():
         yield temp_path
 
     temp_path.unlink(missing_ok=True)
+
+
+SAMPLE_USER_EMAIL = "test@example.com"
+SAMPLE_USER_PASSWORD = Password("secure123")
+
+
+@pytest.fixture
+def sample_user(temp_user_file) -> dict[Literal["id"], str]:
+    """Create the sample user for testing."""
+    display_name = "Test User"
+    user = create_user(SAMPLE_USER_EMAIL, display_name, SAMPLE_USER_PASSWORD)
+    return {"id": user["id"]}
 
 
 @pytest.fixture

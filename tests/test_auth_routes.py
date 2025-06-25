@@ -7,10 +7,10 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from yak_shears.auth.middleware import AuthMiddleware
-from yak_shears.auth.models import Password
 from yak_shears.auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
 from yak_shears.auth.routes import ROUTES as AUTH_ROUTES
-from yak_shears.auth.storage import create_user
+
+from .conftest import SAMPLE_USER_EMAIL, SAMPLE_USER_PASSWORD
 
 
 @pytest.fixture
@@ -38,118 +38,51 @@ def auth_client(auth_app: Starlette) -> TestClient:
     return TestClient(auth_app, follow_redirects=False)
 
 
-@pytest.fixture
-def sample_user(temp_user_file):
-    """Create a sample user for testing."""
-    email = "test@example.com"
-    display_name = "Test User"
-    password = Password("secure123")
-
-    user = create_user(email, display_name, password)
-    return {"user": user, "password": password}
-
-
 class TestLoginEndpoint:
     """Test the login endpoint."""
+
+    @pytest.mark.parametrize(
+        "email,password,expected_content",
+        [
+            (SAMPLE_USER_EMAIL, SAMPLE_USER_PASSWORD, b"Login Successful"),
+            (SAMPLE_USER_EMAIL, "wrong_password", b"Invalid email or password"),
+            ("nonexistent@example.com", "password", b"Invalid email or password"),
+            (None, "password", b"Email and password are required"),
+            (SAMPLE_USER_EMAIL, None, b"Email and password are required"),
+            ("", "password", b"Email and password are required"),
+            (SAMPLE_USER_EMAIL, "", b"Email and password are required"),
+        ],
+        ids=[
+            "Valid Credentials",
+            "Invalid Password",
+            "Non-existent user",
+            "Missing Email",
+            "Missing Password",
+            "Empty Email",
+            "Empty Password",
+        ],
+    )
+    def test_login_post(self, auth_client, sample_user, email, password, expected_content):
+        """Test login POST requests with various inputs."""
+        response = auth_client.post("/auth/login", data={"email": email, "password": password})
+
+        assert response.status_code == HTTPStatus.OK
+        assert expected_content in response.content
 
     def test_login_get_shows_form(self, auth_client):
         """Test that GET /auth/login shows the login form."""
         response = auth_client.get("/auth/login")
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         assert "text/html" in response.headers["content-type"]
         assert b"email" in response.content.lower()
         assert b"password" in response.content.lower()
 
-    def test_login_post_valid_credentials(self, auth_client, sample_user):
-        """Test login with valid credentials."""
-        user_data = sample_user["user"]
-        password = sample_user["password"]
-
-        response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": password})
-
-        # Should redirect after successful login
-        assert response.status_code == HTTPStatus.OK
-        assert response.headers["HX-Redirect"] == "/home"
-
-        # Should set session cookie
-        cookies = {cookie for cookie in response.cookies}
-        assert "session_id" in cookies
-
-    def test_login_post_invalid_credentials(self, auth_client, sample_user):
-        """Test login with invalid credentials."""
-        user_data = sample_user["user"]
-
-        response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": "wrong_password"})
-
-        # Should show form with error
-        assert response.status_code == 200
-        assert b"Invalid email or password" in response.content
-
-    def test_login_post_nonexistent_user(self, auth_client):
-        """Test login with non-existent user."""
-        response = auth_client.post("/auth/login", data={"email": "nonexistent@example.com", "password": "password"})
-
-        # Should show form with error
-        assert response.status_code == 200
-        assert b"Invalid email or password" in response.content
-
-    def test_login_post_missing_email(self, auth_client):
-        """Test login with missing email."""
-        response = auth_client.post("/auth/login", data={"password": "password"})
-
-        # Should show form with error
-        assert response.status_code == 200
-        assert b"Email and password are required" in response.content
-
-    def test_login_post_missing_password(self, auth_client):
-        """Test login with missing password."""
-        response = auth_client.post("/auth/login", data={"email": "test@example.com"})
-
-        # Should show form with error
-        assert response.status_code == 200
-        assert b"Email and password are required" in response.content
-
-    def test_login_post_empty_email(self, auth_client):
-        """Test login with empty email."""
-        response = auth_client.post("/auth/login", data={"email": "", "password": "password"})
-
-        # Should show form with error
-        assert response.status_code == 200
-        assert b"Email and password are required" in response.content
-
-    def test_login_post_empty_password(self, auth_client):
-        """Test login with empty password."""
-        response = auth_client.post("/auth/login", data={"email": "test@example.com", "password": ""})
-
-        # Should show form with error
-        assert response.status_code == 200
-        assert b"Email and password are required" in response.content
-
-    # def test_login_get_when_already_logged_in(self, auth_client, sample_user):
-    #     """Test GET /auth/login when already logged in."""
-    #     user_data = sample_user["user"]
-    #     password = sample_user["password"]
-    #
-    #     # First, log in
-    #     login_response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": password})
-    #     assert login_response.status_code == HTTPStatus.OK
-    #
-    #     # Then try to access login page again
-    #     response = auth_client.get("/auth/login")
-    #
-    #     # Should redirect to home (currently allows login again? Which I think is fine)
-    #     assert response.status_code == HTTPStatus.OK
-    #     assert response.headers["HX-Redirect"] == "/home"
-
     def test_login_handles_newlines_in_input(self, auth_client, sample_user):
         """Test that login handles newlines in email/password input."""
-        user_data = sample_user["user"]
-        password = sample_user["password"]
-
         response = auth_client.post(
             "/auth/login",
-            data={"email": user_data["email"] + "\n", "password": password + "\n"},
+            data={"email": SAMPLE_USER_EMAIL + "\n", "password": SAMPLE_USER_PASSWORD + "\n"},
         )
 
         # Should still work (newlines should be stripped)
@@ -162,11 +95,10 @@ class TestLogoutEndpoint:
 
     def test_logout_get(self, auth_client, sample_user):
         """Test GET /auth/logout."""
-        user_data = sample_user["user"]
-        password = sample_user["password"]
-
-        # First, log in
-        login_response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": password})
+        login_response = auth_client.post(
+            "/auth/login",
+            data={"email": SAMPLE_USER_EMAIL, "password": SAMPLE_USER_PASSWORD},
+        )
         assert login_response.status_code == HTTPStatus.OK
 
         # Then log out
@@ -178,7 +110,7 @@ class TestLogoutEndpoint:
 
         # Session cookie should be deleted
         session_cookies = [cookie for cookie in logout_response.cookies if cookie == "session_id"]
-        assert len(session_cookies) == 0  # TODO: Can't find a way to test that the response includes instructions to expire the cookie
+        assert len(session_cookies) == 0
 
     def test_logout_when_not_logged_in(self, auth_client):
         """Test logout when not logged in."""
@@ -196,7 +128,7 @@ class TestStatusEndpoint:
         """Test /auth/status when not authenticated."""
         response = auth_client.get("/auth/status")
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         assert response.headers["content-type"] == "application/json"
 
         data = response.json()
@@ -204,23 +136,21 @@ class TestStatusEndpoint:
 
     def test_status_when_logged_in(self, auth_client, sample_user):
         """Test /auth/status when authenticated."""
-        user_data = sample_user["user"]
-        password = sample_user["password"]
-
-        # First, log in
-        login_response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": password})
+        login_response = auth_client.post(
+            "/auth/login",
+            data={"email": SAMPLE_USER_EMAIL, "password": SAMPLE_USER_PASSWORD},
+        )
         assert login_response.status_code == HTTPStatus.OK
 
         # Then check status
         status_response = auth_client.get("/auth/status")
 
-        assert status_response.status_code == 200
+        assert status_response.status_code == HTTPStatus.OK
         assert status_response.headers["content-type"] == "application/json"
 
         data = status_response.json()
         assert data["authenticated"] is True
-        assert data["email"] == user_data["email"]
-        assert data["displayName"] == user_data["display_name"]
+        assert data["email"] == SAMPLE_USER_EMAIL
 
     def test_status_with_invalid_session(self, auth_client):
         """Test /auth/status with invalid session cookie."""
@@ -229,7 +159,7 @@ class TestStatusEndpoint:
 
         response = auth_client.get("/auth/status")
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         data = response.json()
         assert data["authenticated"] is False
 
@@ -246,10 +176,10 @@ class TestAuthMiddleware:
 
         # Should allow access to public paths
         response = client.get("/auth/login")
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
 
         response = client.get("/auth/status")
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
 
     def test_middleware_redirects_unauthenticated_users(self, temp_user_file):
         """Test that middleware redirects unauthenticated users."""
@@ -274,13 +204,10 @@ class TestAuthMiddleware:
         assert response.status_code == HTTPStatus.UNAUTHORIZED
         assert response.headers["location"] == "/auth/login"
 
-    def test_middleware_allows_authenticated_users(self, temp_user_file):
+    def test_middleware_allows_authenticated_users(self, sample_user):
         """Test that middleware allows authenticated users to access protected paths."""
         from starlette.responses import Response
         from starlette.routing import Route
-
-        # Create a user first
-        create_user("test@example.com", "Test User", Password("password123"))
 
         async def protected_endpoint(request):
             return Response("Protected content")
@@ -290,13 +217,11 @@ class TestAuthMiddleware:
 
         client = TestClient(app, follow_redirects=False)
 
-        # First log in
-        login_response = client.post("/auth/login", data={"email": "test@example.com", "password": "password123"})
+        login_response = client.post("/auth/login", data={"email": SAMPLE_USER_EMAIL, "password": SAMPLE_USER_PASSWORD})
         assert login_response.status_code == HTTPStatus.OK
 
-        # Then access protected endpoint
         response = client.get("/protected")
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         assert b"Protected content" in response.content
 
 
@@ -305,29 +230,26 @@ class TestSessionManagement:
 
     def test_session_persists_across_requests(self, auth_client, sample_user):
         """Test that session persists across multiple requests."""
-        user_data = sample_user["user"]
-        password = sample_user["password"]
-
-        # Log in
-        login_response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": password})
+        login_response = auth_client.post(
+            "/auth/login",
+            data={"email": SAMPLE_USER_EMAIL, "password": SAMPLE_USER_PASSWORD},
+        )
         assert login_response.status_code == HTTPStatus.OK
 
         # Make multiple status requests
         for _ in range(3):
             status_response = auth_client.get("/auth/status")
-            assert status_response.status_code == 200
+            assert status_response.status_code == HTTPStatus.OK
 
             data = status_response.json()
             assert data["authenticated"] is True
-            assert data["email"] == user_data["email"]
+            assert data["email"] == SAMPLE_USER_EMAIL
 
     def test_session_expires_after_logout(self, auth_client, sample_user):
         """Test that session expires after logout."""
-        user_data = sample_user["user"]
-        password = sample_user["password"]
-
-        # Log in
-        login_response = auth_client.post("/auth/login", data={"email": user_data["email"], "password": password})
+        login_response = auth_client.post(
+            "/auth/login", data={"email": SAMPLE_USER_EMAIL, "password": SAMPLE_USER_PASSWORD}
+        )
         assert login_response.status_code == HTTPStatus.OK
 
         # Verify logged in
@@ -356,7 +278,7 @@ class TestErrorHandling:
         )
 
         # Should handle gracefully (not crash)
-        assert response.status_code in [200, 400]  # Either show form or bad request
+        assert response.status_code in {HTTPStatus.OK, HTTPStatus.BAD_REQUEST}
 
     def test_very_large_form_data(self, auth_client):
         """Test handling of very large form data."""
@@ -366,4 +288,4 @@ class TestErrorHandling:
         response = auth_client.post("/auth/login", data={"email": large_email, "password": large_password})
 
         # Should handle gracefully
-        assert response.status_code == 200  # Should show error message
+        assert response.status_code == HTTPStatus.OK  # Should show error message

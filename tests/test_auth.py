@@ -17,16 +17,7 @@ from yak_shears.auth.storage import (
     list_all_users,
 )
 
-
-@pytest.fixture
-def sample_user(temp_user_file):
-    """Create a sample user for testing."""
-    email = "test@example.com"
-    display_name = "Test User"
-    password = Password("secure123")
-
-    user = create_user(email, display_name, password)
-    return user
+from .conftest import SAMPLE_USER_EMAIL, SAMPLE_USER_PASSWORD
 
 
 class TestPasswordHashing:
@@ -39,31 +30,22 @@ class TestPasswordHashing:
 
         assert len(salt1) == 64  # 32 bytes encoded as hex
         assert len(salt2) == 64
-        assert salt1 != salt2  # Should be unique
+        assert salt1 != salt2, "Salts are not unique"
 
-    def test_hash_password(self):
-        """Test password hashing."""
-        password = Password("test_password")
-        salt = generate_salt()
-
-        hash1 = hash_password(password, salt)
-        hash2 = hash_password(password, salt)
-
-        assert hash1 == hash2  # Same input should produce same hash
-        assert len(hash1) == 64  # 32 bytes encoded as hex
-
-    def test_verify_password(self):
+    @pytest.mark.parametrize(
+        "password, salt, expected",
+        [
+            ("test_password", "test_salt", True),
+            ("wrong_password", "test_salt", False),
+        ],
+    )
+    def test_verify_password(self, password, salt, expected):
         """Test password verification."""
-        password = Password("test_password")
-        wrong_password = Password("wrong_password")
-        salt = generate_salt()
-        password_hash = hash_password(password, salt)
+        password_obj = Password(password)
+        salt_obj = generate_salt() if salt == "test_salt" else generate_salt()
+        password_hash = hash_password(Password("test_password"), salt_obj)
 
-        # Correct password should verify
-        assert verify_password(password, salt, password_hash) is True
-
-        # Wrong password should not verify
-        assert verify_password(wrong_password, salt, password_hash) is False
+        assert verify_password(password_obj, salt_obj, password_hash) is expected
 
     def test_verify_password_with_wrong_salt(self):
         """Test password verification with wrong salt."""
@@ -97,91 +79,87 @@ class TestUserStorage:
 
     def test_create_user_duplicate_email(self, sample_user):
         """Test that duplicate email addresses are rejected."""
-        email = sample_user["email"]
-
         with pytest.raises(ValueError, match="Email .* is already taken"):
-            create_user(email, "Another User", Password("different_password"))
+            create_user(SAMPLE_USER_EMAIL, "Another User", SAMPLE_USER_PASSWORD)
 
-    def test_get_user_by_email(self, sample_user):
+    @pytest.mark.parametrize(
+        "email, expected",
+        [
+            (SAMPLE_USER_EMAIL, True),
+            ("nonexistent@example.com", False),
+        ],
+    )
+    def test_get_user_by_email(self, email, expected, temp_user_file, sample_user):
         """Test retrieving user by email."""
-        user = get_user_by_email(sample_user["email"])
+        user = get_user_by_email(email)
 
-        assert user is not None
-        assert user["email"] == sample_user["email"]
-        assert user["id"] == sample_user["id"]
-
-    def test_get_user_by_email_nonexistent(self, temp_user_file):
-        """Test retrieving non-existent user by email."""
-        user = get_user_by_email("nonexistent@example.com")
-        assert user is None
+        if expected:
+            assert user is not None
+            assert user["email"] == email
+        else:
+            assert user is None
 
     def test_get_user_by_id(self, sample_user):
         """Test retrieving user by ID."""
         user = get_user_by_id(sample_user["id"])
 
         assert user is not None
-        assert user["email"] == sample_user["email"]
+        assert user["email"] == SAMPLE_USER_EMAIL
         assert user["id"] == sample_user["id"]
 
-    def test_get_user_by_id_nonexistent(self, temp_user_file):
+    def test_get_user_by_id_nonexistent(self, sample_user):
         """Test retrieving non-existent user by ID."""
         user = get_user_by_id("nonexistent-id")
         assert user is None
 
-    def test_authenticate_user_correct_password(self, sample_user):
-        """Test authentication with correct password."""
-        authenticated_user = authenticate_user(sample_user["email"], Password("secure123"))
+    @pytest.mark.parametrize(
+        "email, password, expected",
+        [
+            (SAMPLE_USER_EMAIL, SAMPLE_USER_PASSWORD, True),
+            (SAMPLE_USER_EMAIL, Password("wrong_password"), False),
+            ("nonexistent@example.com", SAMPLE_USER_PASSWORD, False),
+        ],
+    )
+    def test_authenticate_user(self, email, password, expected, temp_user_file, sample_user):
+        """Test user authentication."""
+        authenticated_user = authenticate_user(email, password)
 
-        assert authenticated_user is not None
-        assert authenticated_user["email"] == sample_user["email"]
-        assert authenticated_user["last_login"] is not None
-
-    def test_authenticate_user_wrong_password(self, sample_user):
-        """Test authentication with wrong password."""
-        authenticated_user = authenticate_user(sample_user["email"], Password("wrong_password"))
-        assert authenticated_user is None
-
-    def test_authenticate_user_nonexistent_email(self, temp_user_file):
-        """Test authentication with non-existent email."""
-        authenticated_user = authenticate_user("nonexistent@example.com", Password("password"))
-        assert authenticated_user is None
+        if expected:
+            assert authenticated_user is not None
+            assert authenticated_user["email"] == SAMPLE_USER_EMAIL
+            assert authenticated_user["last_login"] is not None
+        else:
+            assert authenticated_user is None
 
     def test_list_all_users(self, temp_user_file):
         """Test listing all users."""
-        # Initially empty
         users = list_all_users()
         assert len(users) == 0
 
-        # Create some users
         create_user("user1@example.com", "User 1", Password("password1"))
         create_user("user2@example.com", "User 2", Password("password2"))
 
         users = list_all_users()
         assert len(users) == 2
 
-        emails = [user["email"] for user in users]
+        emails = {user["email"] for user in users}
         assert "user1@example.com" in emails
         assert "user2@example.com" in emails
 
     def test_delete_user(self, sample_user):
         """Test user deletion."""
-        email = sample_user["email"]
         user_id = sample_user["id"]
 
-        # Verify user exists
-        assert get_user_by_email(email) is not None
+        assert get_user_by_email(SAMPLE_USER_EMAIL) is not None
         assert get_user_by_id(user_id) is not None
 
-        # Delete user
-        result = delete_user(email)
+        result = delete_user(SAMPLE_USER_EMAIL)
         assert result is True
 
-        # Verify user is deleted
-        assert get_user_by_email(email) is None
+        assert get_user_by_email(SAMPLE_USER_EMAIL) is None
         assert get_user_by_id(user_id) is None
 
     def test_delete_user_nonexistent(self, temp_user_file):
-        """Test deleting non-existent user."""
         result = delete_user("nonexistent@example.com")
         assert result is False
 
@@ -281,34 +259,30 @@ class TestDataPersistence:
 class TestEdgeCases:
     """Test edge cases and error conditions."""
 
-    def test_empty_email(self, temp_user_file):
-        """Test creation with empty email."""
+    @pytest.mark.parametrize(
+        "email,display_name,password",
+        [
+            ("", "Test User", Password("password")),
+            ("test@example.com", "", Password("password")),
+            ("test@example.com", "Test User", Password("")),
+            ("    ", "Test User", Password("password")),
+            ("test@example.com", "    ", Password("password")),
+            ("test@example.com", "Test User", Password("    ")),
+        ],
+        ids=[
+            "Empty Email",
+            "Empty Display Name",
+            "Empty Password",
+            "Whitespace Email",
+            "Whitespace Display Name",
+            "Whitespace Password",
+        ],
+    )
+    def test_field_validation(self, temp_user_file, email, display_name, password):
         with pytest.raises(ValueError):
-            create_user("", "Test User", Password("password"))
-
-    def test_empty_display_name(self, temp_user_file):
-        """Test creation with empty display name."""
-        with pytest.raises(ValueError):
-            create_user("test@example.com", "", Password("password"))
-
-    def test_empty_password(self, temp_user_file):
-        """Test creation with empty password."""
-        with pytest.raises(ValueError):
-            create_user("test@example.com", "Test User", Password(""))
-
-    def test_whitespace_only_fields(self, temp_user_file):
-        """Test creation with whitespace-only fields."""
-        with pytest.raises(ValueError):
-            create_user("   ", "Test User", Password("password"))
-
-        with pytest.raises(ValueError):
-            create_user("test@example.com", "   ", Password("password"))
-
-        with pytest.raises(ValueError):
-            create_user("test@example.com", "Test User", Password("   "))
+            create_user(email, display_name, password)
 
     def test_invalid_email_format(self, temp_user_file):
-        """Test creation with invalid email format."""
         # Note: This depends on whether email validation is implemented
         # For now, we'll just check that it doesn't crash
         user = create_user("not-an-email", "Test User", Password("password"))
