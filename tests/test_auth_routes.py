@@ -1,9 +1,9 @@
-"""Tests for authentication routes and HTTP endpoints."""
-
 from http import HTTPStatus
 
 import pytest
 from starlette.applications import Starlette
+from starlette.responses import Response
+from starlette.routing import Route
 from starlette.testclient import TestClient
 
 from yak_shears.auth.middleware import AuthMiddleware
@@ -30,7 +30,7 @@ def auth_client(auth_app: Starlette) -> TestClient:
     """Create a TestClient for the Starlette application.
 
     Args:
-        app: The Starlette application
+        auth_app: The Starlette application
 
     Returns:
         TestClient: A test client for the application
@@ -42,7 +42,7 @@ class TestLoginEndpoint:
     """Test the login endpoint."""
 
     @pytest.mark.parametrize(
-        "email,password,expected_content",
+        ("email", "password", "expected_content"),
         [
             (SAMPLE_USER_EMAIL, SAMPLE_USER_PASSWORD, b"Login Successful"),
             (SAMPLE_USER_EMAIL, "wrong_password", b"Invalid email or password"),
@@ -183,10 +183,8 @@ class TestAuthMiddleware:
 
     def test_middleware_redirects_unauthenticated_users(self, temp_user_file):
         """Test that middleware redirects unauthenticated users."""
-        from starlette.responses import Response
-        from starlette.routing import Route
 
-        async def protected_endpoint(request):
+        async def protected_endpoint(request):  # noqa: RUF029
             return Response("Protected content")
 
         app = Starlette(
@@ -206,10 +204,8 @@ class TestAuthMiddleware:
 
     def test_middleware_allows_authenticated_users(self, sample_user):
         """Test that middleware allows authenticated users to access protected paths."""
-        from starlette.responses import Response
-        from starlette.routing import Route
 
-        async def protected_endpoint(request):
+        async def protected_endpoint(request):  # noqa: RUF029
             return Response("Protected content")
 
         app = Starlette(routes=[Route("/protected", endpoint=protected_endpoint), *AUTH_ROUTES])

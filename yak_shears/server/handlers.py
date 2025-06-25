@@ -10,7 +10,7 @@ from starlette.responses import HTMLResponse, RedirectResponse, Response
 from yak_shears.auth import routes  # for test mocking
 
 
-async def home_handler(request: Request) -> HTMLResponse:
+async def home_handler(request: Request) -> HTMLResponse:  # noqa: RUF029
     """Handle requests to /home.
 
     Args:
@@ -319,7 +319,7 @@ async def edit_file_handler(request: Request) -> Response:
         return HTMLResponse(f"<h1>Error</h1><p>An error occurred: {e!s}</p>", status_code=500)
 
 
-async def root_handler(request: Request) -> Response:  # noqa: ARG001
+async def root_handler(request: Request) -> Response:  # noqa: ARG001, RUF029
     """Redirect root to home page.
 
     Args:

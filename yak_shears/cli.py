@@ -15,6 +15,7 @@ from datetime import datetime
 
 from yak_shears.auth.models import Password
 from yak_shears.auth.storage import create_user, delete_user, get_user_by_email, list_all_users
+from yak_shears.log_utils import log
 
 
 def create_user_command(args: argparse.Namespace) -> None:
@@ -27,24 +28,24 @@ def create_user_command(args: argparse.Namespace) -> None:
     display_name = args.display_name or email
 
     if get_user_by_email(email):
-        print(f"Error: User with email '{email}' already exists", file=sys.stderr)
+        log(f"Error: User with email '{email}' already exists", file=sys.stderr)
         sys.exit(1)
 
     if not (password := Password(getpass.getpass("Enter password: "))):
-        print("Error: Password cannot be empty", file=sys.stderr)
+        log("Error: Password cannot be empty", file=sys.stderr)
         sys.exit(1)
 
     password_confirm = getpass.getpass("Confirm password: ")
     if password != password_confirm:
-        print("Error: Passwords do not match", file=sys.stderr)
+        log("Error: Passwords do not match", file=sys.stderr)
         sys.exit(1)
 
     try:
         user = create_user(email, display_name, password)
-        print(f"Successfully created user: {user['email']} ({user['display_name']})")
-        print(f"User ID: {user['id']}")
+        log(f"Successfully created user: {user['email']} ({user['display_name']})")
+        log(f"User ID: {user['id']}")
     except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
+        log(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -57,10 +58,10 @@ def list_users_command(_args: argparse.Namespace) -> None:
     users = list_all_users()
 
     if not users:
-        print("No users found.")
+        log("No users found.")
         return
 
-    print(f"Found {len(users)} users")
+    log(f"Found {len(users)} users")
     fmt = "%Y-%m-%d %H:%M:%S"
     for user in users:
         last_login = datetime.fromisoformat(user["last_login"]).strftime(fmt) if user["last_login"] else "Never"
@@ -73,7 +74,7 @@ Display Name: {user["display_name"]}
   Last Login: {last_login}
      User ID: {user["id"]}
 """
-        print(f"{'-' * 40}\n{summary.strip()}")
+        log(f"{'-' * 40}\n{summary.strip()}")
 
 
 def delete_user_command(args: argparse.Namespace) -> None:
@@ -85,20 +86,20 @@ def delete_user_command(args: argparse.Namespace) -> None:
     email = args.email
 
     if not (user := get_user_by_email(email)):
-        print(f"Error: User with email '{email}' not found", file=sys.stderr)
+        log(f"Error: User with email '{email}' not found", file=sys.stderr)
         sys.exit(1)
 
-    print(f"About to delete user: {user['email']} ({user['display_name']})")
+    log(f"About to delete user: {user['email']} ({user['display_name']})")
     confirm = input("Are you sure? Type 'yes' to confirm: ")
 
     if confirm.lower() != "yes":
-        print("Deletion cancelled.")
+        log("Deletion cancelled.")
         return
 
     if delete_user(email):
-        print(f"Successfully deleted user: {email}")
+        log(f"Successfully deleted user: {email}")
     else:
-        print(f"Error: Failed to delete user: {email}", file=sys.stderr)
+        log(f"Error: Failed to delete user: {email}", file=sys.stderr)
         sys.exit(1)
 
 

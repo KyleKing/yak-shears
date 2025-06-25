@@ -1,3 +1,4 @@
+# ruff: noqa: PLW0603
 """User storage and session management.
 
 Implemented in-memory with persistence to a local JSON file
@@ -80,7 +81,8 @@ def create_user(email: str, display_name: str, password: Password) -> User:
         raise ValueError("Password cannot be empty or whitespace-only")
 
     if email in _EMAIL_TO_USER_ID:
-        raise ValueError(f"Email {email} is already taken")
+        error = f"Email {email} is already taken"
+        raise ValueError(error)
 
     user_id = secrets.token_hex(16)
     salt, password_hash = create_password_hash(password)
@@ -183,6 +185,7 @@ def delete_user(email: str) -> bool:
         del _SESSION_STORE[session_id]
 
     return True
+
 
 # -----------------------------------------------------------------------------
 # Session Management

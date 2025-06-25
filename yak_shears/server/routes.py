@@ -12,6 +12,7 @@ from starlette.routing import Route
 from yak_shears.auth.middleware import AuthMiddleware
 from yak_shears.auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
 from yak_shears.auth.routes import ROUTES as AUTH_ROUTES
+from yak_shears.log_utils import log
 from yak_shears.server.handlers import (
     echo_handler,
     edit_file_handler,
@@ -67,7 +68,7 @@ def create_app() -> Starlette:
     return app
 
 
-def start(host: str = "localhost", port: int = 8080, reload: bool = False) -> None:
+def start(host: str = "localhost", port: int = 8080, *, reload: bool = False) -> None:
     """Run the ASGI server with uvicorn.
 
     Args:
@@ -75,10 +76,10 @@ def start(host: str = "localhost", port: int = 8080, reload: bool = False) -> No
         port: The port to bind to
         reload: Whether to reload the server on code changes
     """
-    print(f"Server running at http://{host}:{port}")
+    log(f"Server running at http://{host}:{port}")
 
     if reload:
-        print("Auto-reload enabled: Server will restart on code changes")
+        log("Auto-reload enabled: Server will restart on code changes")
         uvicorn.run(
             "yak_shears.server.routes:create_app",
             host=host,

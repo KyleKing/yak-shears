@@ -10,7 +10,7 @@ from starlette.routing import Route
 from yak_shears.templates import render_template
 
 from . import storage
-from .models import Password, SessionId
+from .models import Password, SessionId, User
 
 IN_TLS_CONTEXT = (getenv("IN_TLS_CONTEXT") or "").upper() == "TRUE"
 
@@ -51,10 +51,11 @@ async def login_handler(request: Request) -> Response:
         )
         return response
 
-    raise NotImplementedError(f"Unsupported method {request.method}")
+    error = f"Unsupported method {request.method}"
+    raise NotImplementedError(error)
 
 
-async def logout_handler(request: Request) -> Response:
+async def logout_handler(request: Request) -> Response:  # noqa: RUF029
     """Handle logout requests.
 
     Args:
@@ -72,7 +73,7 @@ async def logout_handler(request: Request) -> Response:
     return response
 
 
-async def status_handler(request: Request) -> JSONResponse:
+async def status_handler(request: Request) -> JSONResponse:  # noqa: RUF029
     """Handle auth status requests.
 
     Args:
@@ -86,7 +87,7 @@ async def status_handler(request: Request) -> JSONResponse:
     return JSONResponse({"authenticated": False})
 
 
-def get_user_from_session(request: Request):
+def get_user_from_session(request: Request) -> User | None:
     """Get user from session cookie.
 
     Args:
@@ -95,9 +96,8 @@ def get_user_from_session(request: Request):
     Returns:
         User | None: The authenticated user or None
     """
-    if session_id := request.cookies.get("session_id"):
-        if user_id := storage.get_user_id_from_session(session_id):
-            return storage.get_user_by_id(user_id)
+    if (session_id := request.cookies.get("session_id")) and (user_id := storage.get_user_id_from_session(session_id)):
+        return storage.get_user_by_id(user_id)
     return None
 
 

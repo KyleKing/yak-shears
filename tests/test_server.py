@@ -1,7 +1,6 @@
-"""Tests for the API endpoints using Starlette TestClient."""
-
 import json
 from datetime import UTC, datetime
+from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import patch
 
@@ -38,14 +37,14 @@ def client(app: Starlette) -> TestClient:
 def test_root_endpoint(client: TestClient) -> None:
     """Test the root endpoint redirects to home."""
     response = client.get("/")
-    assert response.status_code == 307
+    assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
     assert response.headers["location"] == "/home"
 
 
 def test_home_endpoint_not_logged_in(client: TestClient) -> None:
     """Test the home endpoint when not logged in."""
     response = client.get("/home")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert "Not logged in" in response.text
     assert "Login" in response.text
 
@@ -53,7 +52,7 @@ def test_home_endpoint_not_logged_in(client: TestClient) -> None:
 def test_home_endpoint_logged_in(client: TestClient, mock_user_session) -> None:
     """Test the home endpoint when logged in."""
     response = client.get("/home")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert "Logged in as:" in response.text
     assert "Test User" in response.text
     assert "Logout" in response.text
@@ -62,7 +61,7 @@ def test_home_endpoint_logged_in(client: TestClient, mock_user_session) -> None:
 def test_echo_endpoint_get(client: TestClient, mock_user_session) -> None:
     """Test the echo endpoint with GET request."""
     response = client.get("/echo?param1=value1&param2=value2")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert "Echo" in response.text
     assert "URL Parameters" in response.text
     assert "param1" in response.text
@@ -78,7 +77,7 @@ def test_echo_endpoint_post_json(client: TestClient, mock_user_session) -> None:
         "/echo",
         json=test_data,
     )
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert "Echo" in response.text
     assert "JSON Payload" in response.text
     assert json.dumps(test_data, indent=2) in response.text
@@ -92,7 +91,7 @@ def test_echo_endpoint_post_raw(client: TestClient, mock_user_session) -> None:
         content=test_data,
         headers={"Content-Type": "text/plain"},
     )
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert "Echo" in response.text
     assert "Raw POST Data" in response.text
     assert test_data in response.text
@@ -106,7 +105,7 @@ def test_time_endpoint(client: TestClient, mock_user_session) -> None:
         mock_datetime.UTC = UTC
 
         response = client.get("/time")
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         assert "Current Time" in response.text
         assert "2025-05-22 12:34:56" in response.text
 
@@ -144,7 +143,7 @@ def test_files_endpoint(client: TestClient, mock_djot_files: list[Path], mock_us
                 mock_datetime.UTC = UTC
 
                 response = client.get("/files")
-                assert response.status_code == 200
+                assert response.status_code == HTTPStatus.OK
                 assert "Files in" in response.text
                 assert "file1.dj" in response.text
                 assert "file2.dj" in response.text
@@ -154,7 +153,7 @@ def test_files_endpoint(client: TestClient, mock_djot_files: list[Path], mock_us
 def test_not_found(client: TestClient, mock_user_session) -> None:
     """Test the 404 handler."""
     response = client.get("/non_existent_endpoint")
-    assert response.status_code == 404
+    assert response.status_code == HTTPStatus.NOT_FOUND
     assert "404 Not Found" in response.text
 
 
@@ -168,7 +167,7 @@ def test_edit_file_get(client: TestClient, mock_user_session) -> None:
                 mock_read_text.return_value = "Test file content"
 
                 response = client.get("/edit?file=/path/to/test.dj")
-                assert response.status_code == 200
+                assert response.status_code == HTTPStatus.OK
                 assert "Editing test.dj" in response.text
                 assert "Test file content" in response.text
 
@@ -186,7 +185,7 @@ def test_edit_file_post(client: TestClient, mock_user_session) -> None:
                     "/edit?file=/path/to/test.dj",
                     data={"content": "Updated content"},
                 )
-                assert response.status_code == 303
+                assert response.status_code == HTTPStatus.SEE_OTHER
                 assert response.headers["location"] == "/edit?file=/path/to/test.dj"
                 mock_write_text.assert_called_once_with("Updated content")
 
@@ -197,14 +196,14 @@ def test_edit_file_not_found(client: TestClient, mock_user_session) -> None:
         mock_exists.return_value = False
 
         response = client.get("/edit?file=/path/to/nonexistent.dj")
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND
         assert "File not found" in response.text
 
 
 def test_edit_file_no_file_specified(client: TestClient, mock_user_session) -> None:
     """Test the edit file endpoint with no file specified."""
     response = client.get("/edit")
-    assert response.status_code == 400
+    assert response.status_code == HTTPStatus.BAD_REQUEST
     assert "No file specified" in response.text
 
 
@@ -212,14 +211,14 @@ def test_edit_file_no_file_specified(client: TestClient, mock_user_session) -> N
 def test_auth_login_get(client: TestClient) -> None:
     """Test the login endpoint with GET request."""
     response = client.get("/auth/login")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert "<title>Login</title>" in response.text
 
 
 def test_auth_status_not_logged_in(client: TestClient) -> None:
     """Test the auth status endpoint when not logged in."""
     response = client.get("/auth/status")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     json_response = response.json()
     assert json_response["authenticated"] is False
 
@@ -227,7 +226,7 @@ def test_auth_status_not_logged_in(client: TestClient) -> None:
 def test_auth_status_logged_in(client: TestClient, mock_user_session) -> None:
     """Test the auth status endpoint when logged in."""
     response = client.get("/auth/status")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     json_response = response.json()
     assert json_response["authenticated"] is True
     assert json_response["displayName"] == "Test User"
@@ -236,4 +235,4 @@ def test_auth_status_logged_in(client: TestClient, mock_user_session) -> None:
 def test_auth_middleware_public_path(client: TestClient, mock_user_session) -> None:
     """Test that auth middleware allows access to public paths."""
     response = client.get("/home")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK

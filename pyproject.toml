@@ -69,18 +69,10 @@ ignore = [
   'D213', # "Multi-line docstring summary should start at the second line" (Conflicts with D212)
   'DOC501', # Raised exception `RuntimeError` missing from docstring
   'EM101', # Exception must not use a string literal, assign to variable first
-  'EM102', # PLANNED: Temporary
-  'FBT001', # PLANNED: Temporary
-  'FBT002', # PLANNED: Temporary
   'FIX001', # Line contains FIXME
   'FIX002', # Line contains TODO
   'FIX004', # Line contains HACK
   'PLR0913', # Too many arguments in function definition (6 > 5)
-  'PLR2004', # PLANNED: Temporary
-  'PLR6301', # PLANNED: Temporary
-  'PLW0603', # PLANNED: Temporary
-  'RUF001', # PLANNED: Temporary
-  'T201', # PLANNED: Temporary
   'TC001', # Move application import `tail_jsonl.config.Config` into a type-checking block (Conflicts with Beartype)
   'TC002', # Move third-party import `rich.console.Console` into a type-checking block (Conflicts with Beartype)
   'TC003', # Move standard library import `argparse` into a type-checking block (Conflicts with Beartype)
@@ -104,9 +96,13 @@ known-first-party = ['yak_shears']
   'ANN201', # Missing return type annotation for public function
   'ANN202', # Missing return type annotation for private function `test_make_diffable`
   'ARG001', # Unused function argument: `line`
+  'ARG002', # Unused method argument: `temp_user_file`
   'D100', # Missing docstring in public module
+  'D101', # Missing docstring in public class
+  'D102', # Missing docstring in public method
   'D103', # Missing docstring in public function
   'PLC2701', # Private name import `_<>` from external module
+  'PLR6301', # Method `test_main_no_command` could be a function, class method, or static method
   'PT004', # flake8-pytest-style: fixture does not return
   'S101', # Use of `assert` detected
 ]

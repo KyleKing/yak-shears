@@ -1,5 +1,3 @@
-"""Tests for the authentication system."""
-
 import json
 
 import pytest
@@ -14,10 +12,14 @@ from yak_shears.auth.storage import (
     delete_user,
     get_user_by_email,
     get_user_by_id,
+    get_user_id_from_session,
     list_all_users,
 )
 
 from .conftest import SAMPLE_USER_EMAIL, SAMPLE_USER_PASSWORD
+
+SALT_LENGTH = 64
+"""32 bytes encoded as hex."""
 
 
 class TestPasswordHashing:
@@ -28,33 +30,30 @@ class TestPasswordHashing:
         salt1 = generate_salt()
         salt2 = generate_salt()
 
-        assert len(salt1) == 64  # 32 bytes encoded as hex
-        assert len(salt2) == 64
+        assert len(salt1) == SALT_LENGTH
+        assert len(salt2) == SALT_LENGTH
         assert salt1 != salt2, "Salts are not unique"
 
     @pytest.mark.parametrize(
-        "password, salt, expected",
+        ("password", "expected"),
         [
-            ("test_password", "test_salt", True),
-            ("wrong_password", "test_salt", False),
+            (Password("test_password"), True),
+            (Password("wrong_password"), False),
         ],
     )
-    def test_verify_password(self, password, salt, expected):
-        """Test password verification."""
-        password_obj = Password(password)
-        salt_obj = generate_salt() if salt == "test_salt" else generate_salt()
-        password_hash = hash_password(Password("test_password"), salt_obj)
+    def test_verify_password(self, password, expected):
+        salt = generate_salt()
+        password_hash = hash_password(Password("test_password"), salt)
 
-        assert verify_password(password_obj, salt_obj, password_hash) is expected
+        assert verify_password(password, salt, password_hash) is expected
 
     def test_verify_password_with_wrong_salt(self):
         """Test password verification with wrong salt."""
         password = Password("test_password")
         salt1 = generate_salt()
-        salt2 = generate_salt()
         password_hash = hash_password(password, salt1)
 
-        # Wrong salt should not verify
+        salt2 = generate_salt()
         assert verify_password(password, salt2, password_hash) is False
 
 
@@ -79,11 +78,11 @@ class TestUserStorage:
 
     def test_create_user_duplicate_email(self, sample_user):
         """Test that duplicate email addresses are rejected."""
-        with pytest.raises(ValueError, match="Email .* is already taken"):
+        with pytest.raises(ValueError, match=r"Email .+ is already taken"):
             create_user(SAMPLE_USER_EMAIL, "Another User", SAMPLE_USER_PASSWORD)
 
     @pytest.mark.parametrize(
-        "email, expected",
+        ("email", "expected"),
         [
             (SAMPLE_USER_EMAIL, True),
             ("nonexistent@example.com", False),
@@ -113,7 +112,7 @@ class TestUserStorage:
         assert user is None
 
     @pytest.mark.parametrize(
-        "email, password, expected",
+        ("email", "password", "expected"),
         [
             (SAMPLE_USER_EMAIL, SAMPLE_USER_PASSWORD, True),
             (SAMPLE_USER_EMAIL, Password("wrong_password"), False),
@@ -140,7 +139,7 @@ class TestUserStorage:
         create_user("user2@example.com", "User 2", Password("password2"))
 
         users = list_all_users()
-        assert len(users) == 2
+        assert len(users) == 2  # noqa: PLR2004
 
         emails = {user["email"] for user in users}
         assert "user1@example.com" in emails
@@ -173,7 +172,7 @@ class TestSessionManagement:
         session_id = create_session(user_id)
 
         assert session_id is not None
-        assert len(session_id) == 64  # 32 bytes encoded as hex
+        assert len(session_id) == SALT_LENGTH
 
     def test_create_multiple_sessions_for_same_user(self, sample_user):
         """Test creating multiple sessions for the same user."""
@@ -188,15 +187,9 @@ class TestSessionManagement:
         """Test session deletion."""
         user_id = sample_user["id"]
         session_id = create_session(user_id)
-
-        # Session should exist
-        from yak_shears.auth.storage import get_user_id_from_session
-
         assert get_user_id_from_session(session_id) == user_id
 
         delete_session(session_id)
-
-        # Session should no longer exist
         assert get_user_id_from_session(session_id) is None
 
     def test_delete_nonexistent_session(self, temp_user_file):
@@ -208,15 +201,11 @@ class TestSessionManagement:
         user_id = sample_user["id"]
         session_id = create_session(user_id)
 
-        from yak_shears.auth.storage import get_user_id_from_session
-
         retrieved_user_id = get_user_id_from_session(session_id)
         assert retrieved_user_id == user_id
 
     def test_get_user_id_from_nonexistent_session(self, temp_user_file):
         """Test retrieving user ID from non-existent session."""
-        from yak_shears.auth.storage import get_user_id_from_session
-
         user_id = get_user_id_from_session("nonexistent-session-id")
         assert user_id is None
 
@@ -230,37 +219,22 @@ class TestDataPersistence:
         display_name = "Persistent User"
         password = Password("persistent123")
 
-        # Create user
         user = create_user(email, display_name, password)
         user_id = user["id"]
 
-        # Verify the file was written
-        with open(temp_user_file) as f:
+        with temp_user_file.open(encoding="utf-8") as f:
             data = json.load(f)
 
         assert user_id in data["users"]
         assert email in data["email_to_user_id"]
         assert data["email_to_user_id"][email] == user_id
 
-    # FYI: sessions are on in-memory
-    # def test_session_persists_to_file(self, sample_user, temp_user_file):
-    #     """Test that session data persists to file."""
-    #     user_id = sample_user["id"]
-    #     session_id = create_session(user_id)
-    #
-    #     # Verify the session was written to file
-    #     with open(temp_user_file) as _f:
-    #         data = json.load(_f)
-    #
-    #     assert session_id in data["sessions"]
-    #     assert data["sessions"][session_id] == user_id
-
 
 class TestEdgeCases:
     """Test edge cases and error conditions."""
 
     @pytest.mark.parametrize(
-        "email,display_name,password",
+        ("email", "display_name", "password"),
         [
             ("", "Test User", Password("password")),
             ("test@example.com", "", Password("password")),
@@ -279,7 +253,7 @@ class TestEdgeCases:
         ],
     )
     def test_field_validation(self, temp_user_file, email, display_name, password):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=r".+ cannot be empty or whitespace-only"):
             create_user(email, display_name, password)
 
     def test_invalid_email_format(self, temp_user_file):
@@ -301,7 +275,7 @@ class TestEdgeCases:
         """Test with Unicode characters in fields."""
         email = "тест@пример.рф"
         display_name = "测试用户"
-        password = Password("пароль123")
+        password = Password("пароль123")  # noqa: RUF001
 
         user = create_user(email, display_name, password)
         assert user["email"] == email

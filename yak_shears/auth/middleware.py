@@ -5,6 +5,7 @@ from http import HTTPStatus
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
+from starlette.types import ASGIApp
 
 from . import routes  # for test mocking
 
@@ -12,7 +13,7 @@ from . import routes  # for test mocking
 class AuthMiddleware(BaseHTTPMiddleware):
     """Middleware for handling authentication."""
 
-    def __init__(self, app, public_paths: set[str]) -> None:
+    def __init__(self, app: ASGIApp, public_paths: set[str]) -> None:
         """Initialize the middleware.
 
         Args:

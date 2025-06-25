@@ -14,8 +14,12 @@ from yak_shears.auth.storage import create_user
 
 @pytest.fixture
 def temp_user_file():
-    """Create a temporary user file for testing."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as _f:
+    """Create a temporary user file for testing.
+
+    Yields:
+        Path: The path to the temporary user file
+    """
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as _f:
         temp_path = Path(_f.name)
         _f.write('{"users": {}, "email_to_user_id": {}, "sessions": {}}')
 
@@ -36,7 +40,11 @@ SAMPLE_USER_PASSWORD = Password("secure123")
 
 @pytest.fixture
 def sample_user(temp_user_file) -> dict[Literal["id"], str]:
-    """Create the sample user for testing."""
+    """Create the sample user for testing.
+
+    Returns:
+        dict[Literal["id"], str]: A dictionary containing the user ID
+    """
     display_name = "Test User"
     user = create_user(SAMPLE_USER_EMAIL, display_name, SAMPLE_USER_PASSWORD)
     return {"id": user["id"]}
@@ -44,7 +52,11 @@ def sample_user(temp_user_file) -> dict[Literal["id"], str]:
 
 @pytest.fixture
 def mock_user_session():
-    """Fixture to patch `get_user_from_session` and provide a mock user."""
+    """Fixture to patch `get_user_from_session` and provide a mock user.
+
+    Yields:
+        User: A mock user object
+    """
     with patch.object(routes, "get_user_from_session") as mock_get_user:
         mock_user = User(
             {
