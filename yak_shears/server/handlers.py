@@ -284,11 +284,11 @@ async def edit_file_handler(request: Request) -> Response:
         if request.method == "POST":
             form_data = await request.form()
             content = str(form_data.get("content", ""))
-            file_path.write_text(content)
+            file_path.write_text(content, encoding="utf-8")
             return RedirectResponse(url=f"/edit?file={file_path_str}", status_code=303)
 
         # Generate HTML editor
-        content = file_path.read_text()
+        content = file_path.read_text(encoding="utf-8")
         html = f"""
         <html>
         <head>

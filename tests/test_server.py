@@ -187,7 +187,7 @@ def test_edit_file_post(client: TestClient, mock_user_session) -> None:
                 )
                 assert response.status_code == HTTPStatus.SEE_OTHER
                 assert response.headers["location"] == "/edit?file=/path/to/test.dj"
-                mock_write_text.assert_called_once_with("Updated content")
+                mock_write_text.assert_called_once_with("Updated content", encoding="utf-8")
 
 
 def test_edit_file_not_found(client: TestClient, mock_user_session) -> None:
