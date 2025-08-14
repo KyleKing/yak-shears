@@ -115,7 +115,12 @@ async def time_handler(request: Request) -> HTMLResponse:  # noqa: ARG001,RUF029
     return HTMLResponse(f"<h1>Current Time</h1><p>{now.strftime('%Y-%m-%d %H:%M:%S')}</p>")
 
 
-def get_djot_files(directory_path: str, page: int = 1, page_size: int = 50) -> tuple[list[Path], int, int]:
+def get_djot_files(
+    directory_path: str,
+    page: int = 1,
+    page_size: int = 30,
+    sort_by: str = "name",
+) -> tuple[list[Path], int, int]:
     """Get a paginated list of Djot files from the specified directory.
 
     Args:
@@ -131,7 +136,12 @@ def get_djot_files(directory_path: str, page: int = 1, page_size: int = 50) -> t
         return [], 0, 0
 
     # TODO: Also need to include the parent directory folder
-    all_files = sorted([f for f in pth.rglob("*.dj") if f.is_file()], key=lambda x: x.name.lower())
+    all_files = [f for f in pth.rglob("*.dj") if f.is_file()]
+    # sort files by name or date
+    if sort_by == "date":
+        all_files = sorted(all_files, key=lambda x: x.stat().st_mtime, reverse=True)
+    else:
+        all_files = sorted(all_files, key=lambda x: x.name.lower())
     total_files = len(all_files)
     total_pages = (total_files + page_size - 1) // page_size
 
@@ -147,6 +157,7 @@ def generate_file_table_html(
     total_pages: int,
     total_files: int,
     directory_path: str,
+    sort_by: str,
 ) -> str:
     """Generate HTML for displaying files in a table with pagination.
 
@@ -163,48 +174,49 @@ def generate_file_table_html(
     html = f"""
     <html>
     <head>
-        <title>Files in {directory_path}</title>
+        <title>Notes in {directory_path}</title>
         <style>
             body {{ font-family: Arial, sans-serif; margin: 20px; }}
-            table {{ border-collapse: collapse; width: 100%; }}
-            th, td {{ padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }}
-            th {{ background-color: #f2f2f2; }}
-            tr:hover {{ background-color: #f5f5f5; }}
+            .cards-container {{ display: flex; flex-wrap: wrap; gap: 20px; }}
+            .card {{ border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: calc(33% - 20px); box-sizing: border-box; }}
+            .card h2 {{ margin: 0 0 10px 0; font-size: 1.2em; }}
+            .card p.preview {{ margin: 0 0 10px 0; color: #555; }}
             .pagination {{ display: flex; margin-top: 20px; }}
             .pagination a {{ color: black; padding: 8px 16px; text-decoration: none; }}
             .pagination a.active {{ background-color: #4CAF50; color: white; }}
             .pagination a:hover:not(.active) {{ background-color: #ddd; }}
-            .file-info {{ display: flex; justify-content: space-between; }}
             .status-bar {{ margin-top: 10px; }}
+                .sort-controls {{ margin-bottom: 10px; }}
+                .sort-controls a.active {{ font-weight: bold; text-decoration: underline; }}
         </style>
     </head>
     <body>
-        <h1>Files in {directory_path}</h1>
-        <p class="status-bar">Showing {len(files)} of {total_files} files (Page {current_page} of {total_pages})</p>
-        <table>
-            <tr>
-                <th>Filename</th>
-                <th>Size</th>
-                <th>Last Modified</th>
-            </tr>
+        <h1>Notes in {directory_path}</h1>
+        <p class="status-bar">Showing {len(files)} of {total_files} notes (Page {current_page} of {total_pages})</p>
+        <div class="sort-controls">
+            Sort by:
+            <a href="/files?page=1&sort_by=name" class="{'active' if sort_by == 'name' else ''}">Name</a> |
+            <a href="/files?page=1&sort_by=date" class="{'active' if sort_by == 'date' else ''}">Date</a>
+        </div>
+        <div class="cards-container">
     """
 
-    # Add file rows
+    # Add note cards with preview
     for file_path in files:
         file_stats = file_path.stat()
-        size_kb = file_stats.st_size / 1024
         last_modified = datetime.fromtimestamp(file_stats.st_mtime, tz=UTC).strftime("%Y-%m-%d %H:%M:%S")
-
+        content = file_path.read_text(encoding="utf-8")
+        preview = content[:200].replace("\n", " ")
         html += f"""
-            <tr>
-                <td><a href="/edit?file={file_path!s}">{file_path.name}</a></td>
-                <td>{size_kb:.2f} KB</td>
-                <td>{last_modified}</td>
-            </tr>
+            <div class="card">
+                <h2><a href="/edit?file={file_path!s}">{file_path.name}</a></h2>
+                <p class="preview">{preview}{'...' if len(content) > 200 else ''}</p>
+                <p><small>Last modified: {last_modified}</small></p>
+            </div>
         """
 
     html += """
-        </table>
+        </div>
     """
 
     # Add pagination
@@ -213,16 +225,16 @@ def generate_file_table_html(
 
         # Previous page
         if current_page > 1:
-            html += f'<a href="/files?page={current_page - 1}">&laquo; Previous</a>'
+            html += f'<a href="/files?page={current_page - 1}&sort_by={sort_by}">&laquo; Previous</a>'
 
         # Page numbers
         for page_num in range(max(1, current_page - 2), min(total_pages + 1, current_page + 3)):
             active_class = "active" if page_num == current_page else ""
-            html += f'<a class="{active_class}" href="/files?page={page_num}">{page_num}</a>'
+            html += f'<a class="{active_class}" href="/files?page={page_num}&sort_by={sort_by}">{page_num}</a>'
 
         # Next page
         if current_page < total_pages:
-            html += f'<a href="/files?page={current_page + 1}">Next &raquo;</a>'
+            html += f'<a href="/files?page={current_page + 1}&sort_by={sort_by}">Next &raquo;</a>'
 
         html += "</div>"
 
@@ -245,18 +257,19 @@ async def files_handler(request: Request) -> Response:  # noqa: RUF029
     """
     directory_path = "~/Sync/yak-shears"
 
-    # Get page from query parameters, default to 1
+    # Get page and sort order from query parameters
     try:
         page = int(request.query_params.get("page", "1"))
         page = max(page, 1)
     except ValueError:
         page = 1
+    sort_by = request.query_params.get("sort_by", "name").lower()
 
     # Get files with pagination
-    files, total_files, total_pages = get_djot_files(directory_path, page)
+    files, total_files, total_pages = get_djot_files(directory_path, page, sort_by=sort_by)
 
     # Generate HTML
-    html_content = generate_file_table_html(files, page, total_pages, total_files, directory_path)
+    html_content = generate_file_table_html(files, page, total_pages, total_files, directory_path, sort_by)
 
     return HTMLResponse(html_content)
 
