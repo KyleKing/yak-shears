@@ -15,5 +15,5 @@ mise run format
 uv run pytest -v --ff -x
 
 uv run yak-shears-users list
-uv run serve
+uv run serve --reload
 ```

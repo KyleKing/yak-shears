@@ -7,12 +7,11 @@ Visual Vibe
 
 Code
 
-- Use Python 3.14 and best practices
-- Be concise
-- No comments
-- No one letter variables
+- Use Python 3.13
+- Use pytest and liberally use `pytest.parameterize`. Test with `uv run pytest -v --ff`
+- Write easy to read code, with no comments, no one letter variables, and follow DRY
+- Update docstrings when making changes and check `mise run format ::: typecheck` after making changes
 - Do not add dependencies unless absolutely necessary
-- Follow YAGNI
 - Prefer implementing features in server side Python when possible. Use Alpine.js and Alpine-Ajax for interactivity
 - Keep CSS minimal and scoped to component. Use default styling whenever possible
 - The whole page should not be larger than 14Kb
@@ -22,7 +21,7 @@ Component: Note Editor
 
 - Indicates spelling and grammar mistakes
 - Pasted links are auto-formatted as markdown
-- When editing a bulleted or numbered list, there is logic to intellegently indent the current item right or left. On Desktop this is with Tab and Shift+Tab and on mobile, there are buttons added to the keyboard. The indentation is in increments of four spaces, can't be deeper than the parent item, and (TBD - adds a new line above when indenting and removes when out denting)
+- When editing a bulleted or numbered list, there is logic to intelligently indent the current item right or left. On Desktop this is with Tab and Shift+Tab and on mobile, there are buttons added to the keyboard. The indentation is in increments of four spaces, can't be deeper than the parent item, and (TBD - adds a new line above when indenting and removes when out denting)
 - When typing enter from a bulleted or numbered list, the next line is automatically started with a continuation with matching indentation
 - Supports toggling italic and bold on the selected text. On mobile, the keyboard is extended with buttons to apply bullet or italic to highlighted text
 

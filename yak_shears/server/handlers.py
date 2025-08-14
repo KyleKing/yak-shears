@@ -9,6 +9,8 @@ from starlette.responses import HTMLResponse, RedirectResponse, Response
 
 from yak_shears.auth import routes  # for test mocking
 
+PREVIEW_LENGTH = 200  # Number of characters for content preview
+
 
 async def home_handler(request: Request) -> HTMLResponse:  # noqa: RUF029
     """Handle requests to /home.
@@ -127,6 +129,7 @@ def get_djot_files(
         directory_path: Path to the directory to list files from
         page: Current page number (1-indexed)
         page_size: Number of files per page
+        sort_by: Criteria to sort files, either 'name' or 'date'
 
     Returns:
         Tuple containing (list of file paths, total number of files, total pages)
@@ -157,6 +160,7 @@ def generate_file_table_html(
     total_pages: int,
     total_files: int,
     directory_path: str,
+    *,
     sort_by: str,
 ) -> str:
     """Generate HTML for displaying files in a table with pagination.
@@ -167,6 +171,7 @@ def generate_file_table_html(
         total_pages: Total number of pages
         total_files: Total number of files
         directory_path: Path to the directory being listed
+        sort_by: Criteria to sort files, either 'name' or 'date'
 
     Returns:
         HTML string for the file table and pagination
@@ -177,8 +182,20 @@ def generate_file_table_html(
         <title>Notes in {directory_path}</title>
         <style>
             body {{ font-family: Arial, sans-serif; margin: 20px; }}
-            .cards-container {{ display: flex; flex-wrap: wrap; gap: 20px; }}
-            .card {{ border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: calc(33% - 20px); box-sizing: border-box; }}
+            .cards-container {{
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                gap: 20px;
+                max-width: 1100px;
+                margin: 0 auto;
+            }}
+            .card {{
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                padding: 10px;
+                box-sizing: border-box;
+                width: 100%;
+            }}
             .card h2 {{ margin: 0 0 10px 0; font-size: 1.2em; }}
             .card p.preview {{ margin: 0 0 10px 0; color: #555; }}
             .pagination {{ display: flex; margin-top: 20px; }}
@@ -195,8 +212,8 @@ def generate_file_table_html(
         <p class="status-bar">Showing {len(files)} of {total_files} notes (Page {current_page} of {total_pages})</p>
         <div class="sort-controls">
             Sort by:
-            <a href="/files?page=1&sort_by=name" class="{'active' if sort_by == 'name' else ''}">Name</a> |
-            <a href="/files?page=1&sort_by=date" class="{'active' if sort_by == 'date' else ''}">Date</a>
+            <a href="/files?page=1&sort_by=name" class="{"active" if sort_by == "name" else ""}">Name</a> |
+            <a href="/files?page=1&sort_by=date" class="{"active" if sort_by == "date" else ""}">Date</a>
         </div>
         <div class="cards-container">
     """
@@ -206,11 +223,11 @@ def generate_file_table_html(
         file_stats = file_path.stat()
         last_modified = datetime.fromtimestamp(file_stats.st_mtime, tz=UTC).strftime("%Y-%m-%d %H:%M:%S")
         content = file_path.read_text(encoding="utf-8")
-        preview = content[:200].replace("\n", " ")
+        preview = content[:PREVIEW_LENGTH].replace("\n", " ")
         html += f"""
             <div class="card">
                 <h2><a href="/edit?file={file_path!s}">{file_path.name}</a></h2>
-                <p class="preview">{preview}{'...' if len(content) > 200 else ''}</p>
+                <p class="preview">{preview}{"..." if len(content) > PREVIEW_LENGTH else ""}</p>
                 <p><small>Last modified: {last_modified}</small></p>
             </div>
         """
@@ -269,7 +286,7 @@ async def files_handler(request: Request) -> Response:  # noqa: RUF029
     files, total_files, total_pages = get_djot_files(directory_path, page, sort_by=sort_by)
 
     # Generate HTML
-    html_content = generate_file_table_html(files, page, total_pages, total_files, directory_path, sort_by)
+    html_content = generate_file_table_html(files, page, total_pages, total_files, directory_path, sort_by=sort_by)
 
     return HTMLResponse(html_content)
 
