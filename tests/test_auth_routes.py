@@ -199,8 +199,8 @@ class TestAuthMiddleware:
 
         # Should redirect to login
         response = client.get("/protected", follow_redirects=False)
-        assert response.status_code == HTTPStatus.UNAUTHORIZED
-        assert response.headers["location"] == "/auth/login"
+        assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
+        assert response.headers["location"] == "/auth/login?redirect=/protected"
 
     def test_middleware_allows_authenticated_users(self, sample_user):
         """Test that middleware allows authenticated users to access protected paths."""

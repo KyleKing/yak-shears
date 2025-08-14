@@ -1,7 +1,5 @@
 """Authentication middleware for Starlette applications."""
 
-from http import HTTPStatus
-
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
@@ -37,4 +35,4 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         if routes.get_user_from_session(request):
             return await call_next(request)
-        return RedirectResponse(url="/auth/login", status_code=HTTPStatus.UNAUTHORIZED)
+        return RedirectResponse(url=f"/auth/login?redirect={request.url.path}")

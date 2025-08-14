@@ -5,6 +5,9 @@
 
 {% block content %}
 <form hx-post="/auth/login">
+    {% if redirect %}
+    <input type="hidden" name="redirect" value="{{ redirect }}">
+    {% endif %}
     <div class="form-field">
         <label for="email">Email</label>
         <input type="email" id="email" name="email" required>

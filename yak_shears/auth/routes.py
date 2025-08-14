@@ -27,18 +27,28 @@ async def login_handler(request: Request) -> Response:
     if request.method == "GET":
         if user := get_user_from_session(request):
             return RedirectResponse(url="/home")
-        return render_template("auth/login.html.jinja")
+        redirect_path = request.query_params.get("redirect")
+        return render_template("auth/login.html.jinja", redirect=redirect_path)
 
     if request.method == "POST":
         form_data = await request.form()
         email = str(form_data.get("email", "")).rstrip("\n")
         password = Password(str(form_data.get("password", "")).rstrip("\n"))
         if not email or not password:
-            return render_template("auth/login.html.jinja", error="Email and password are required")
+            return render_template(
+                "auth/login.html.jinja",
+                error="Email and password are required",
+                redirect=form_data.get("redirect"),
+            )
         if not (user := storage.authenticate_user(email, password)):
-            return render_template("auth/login.html.jinja", error="Invalid email or password")
+            return render_template(
+                "auth/login.html.jinja",
+                error="Invalid email or password",
+                redirect=form_data.get("redirect"),
+            )
+        redirect_path = form_data.get("redirect") or "/home"
+        response = Response("Login Successful", headers={"HX-Redirect": redirect_path})
         session_id = storage.create_session(SessionId(user["id"]))
-        response = Response("Login Successful", headers={"HX-Redirect": "/home"})
         expires = datetime.now(tz=UTC) + timedelta(weeks=1)
         response.set_cookie(
             "session_id",
