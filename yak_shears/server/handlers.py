@@ -8,6 +8,7 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 
 from yak_shears.auth import routes  # for test mocking
+from yak_shears.templates import render_error
 
 PREVIEW_LENGTH = 200  # Number of characters for content preview
 
@@ -303,7 +304,7 @@ async def edit_file_handler(request: Request) -> Response:
     file_path_str = request.query_params.get("file")
 
     if not file_path_str:
-        return HTMLResponse("<h1>Error</h1><p>No file specified</p>", status_code=400)
+        return render_error("No file specified")
 
     try:
         file_path = Path(file_path_str)
