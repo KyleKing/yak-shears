@@ -1,27 +1,40 @@
 {% extends "base.html.jinja" %}
 
+{% block extra_styles %}
+.form-container { max-width: 400px; margin: 0 auto; padding: 20px;
+                 border: 1px solid #ccc; border-radius: 5px; }
+.form-field { margin-bottom: 15px; }
+label { display: block; margin-bottom: 5px; }
+input { width: 100%; padding: 8px; box-sizing: border-box; }
+button { padding: 10px 15px; background-color: #4CAF50; color: white;
+       border: none; border-radius: 4px; cursor: pointer; }
+button:hover { background-color: #45a049; }
+{% endblock %}
+
 {% block title %}Login{% endblock %}
-{% block header %}Login{% endblock %}
 
 {% block content %}
-<form hx-post="/auth/login">
-    {% if redirect %}
-    <input type="hidden" name="redirect" value="{{ redirect }}">
-    {% endif %}
-    <div class="form-field">
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" required>
-    </div>
-    <div class="form-field">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" required>
-    </div>
-    {% if error %}
-    <p class="error">{{ error }}</p>
-    {% endif %}
-    <div class="form-field">
-        <button type="submit">Login</button>
-    </div>
-</form>
-<a href="/home" class="back-link">Back to Home</a>
+<div class="form-container">
+    <h2>Login</h2>
+    <form x-target="login" id="login" method="post" action="/auth/login">
+        {% if redirect %}
+        <input type="hidden" name="redirect" value="{{ redirect }}">
+        {% endif %}
+        <div class="form-field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-field">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        {% if error %}
+        <p class="error">{{ error }}</p>
+        {% endif %}
+        <div class="form-field">
+            <button type="submit">Login</button>
+        </div>
+    </form>
+    <a href="/home" class="back-link">Back to Home</a>
+</div>
 {% endblock %}

@@ -1,5 +1,6 @@
 """Template rendering utilities."""
 
+from http import HTTPStatus
 from pathlib import Path
 from typing import Any
 
@@ -14,11 +15,12 @@ ENV = Environment(
 )
 
 
-def render_template(template_name: str, **context: Any) -> HTMLResponse:
+def render_template(template_name: str, status_code: HTTPStatus = HTTPStatus.OK, **context: Any) -> HTMLResponse:
     """Render template by name.
 
     Args:
         template_name: The name of the template to render
+        status_code: The HTTP status code to return
         **context: The context variables to pass to the template
 
     Returns:
@@ -26,10 +28,14 @@ def render_template(template_name: str, **context: Any) -> HTMLResponse:
     """
     template = ENV.get_template(template_name)
     content = template.render(**context)
-    return HTMLResponse(content)
+    return HTMLResponse(content, status_code=status_code)
 
 
-def render_error(message: str, back_url: str = "/home", status_code: int = 400) -> HTMLResponse:
+def render_error(
+    message: str,
+    back_url: str = "",
+    status_code: HTTPStatus = HTTPStatus.BAD_REQUEST,
+) -> HTMLResponse:
     """Render an error page.
 
     Args:

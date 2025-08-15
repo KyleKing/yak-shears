@@ -4,26 +4,14 @@
     <title>{% block title %}Yak Shears{% endblock %}</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
-        .form-container { max-width: 400px; margin: 0 auto; padding: 20px;
-                         border: 1px solid #ccc; border-radius: 5px; }
-        .form-field { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; }
-        input { width: 100%; padding: 8px; box-sizing: border-box; }
-        button { padding: 10px 15px; background-color: #4CAF50; color: white;
-               border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #45a049; }
-        .error { color: red; margin-top: 10px; }
-        .back-link { margin-top: 20px; display: block; }
         {% block extra_styles %}{% endblock %}
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <div class="form-container">
-        <h2>{% block header %}{% endblock %}</h2>
-        {% block content %}{% endblock %}
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.5/dist/htmx.min.js" integrity="sha384-t4DxZSyQK+0Uv4jzy5B0QyHyWQD2GFURUmxKMBVww9+e2EJ0ei/vCvv7+79z0fkr" crossorigin="anonymous"></script>
+    {% block content %}{% endblock %}
+    <script defer src="https://cdn.jsdelivr.net/npm/@imacrayon/alpine-ajax@0.12.4/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

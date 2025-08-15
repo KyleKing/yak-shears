@@ -1,9 +1,16 @@
 {% extends "base.html.jinja" %}
 
+{% block extra_styles %}
+.error { color: red }
+{% endblock %}
+
 {% block title %}Error{% endblock %}
-{% block header %}Error{% endblock %}
 
 {% block content %}
-<div class="error">{{ message }}</div>
-<a href="{{ back_url }}" class="back-link">Go Back</a>
+<h2>Error</h2>
+<p class="error">{{ message }}</p>
+{% if back_url %}
+<p><a href="{{ back_url }}">Go Back</a></p>
+{% endif %}
+<p><a href="/home">Back to Home</a></p>
 {% endblock %}
