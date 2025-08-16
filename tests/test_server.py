@@ -8,7 +8,8 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from yak_shears.constants import DEFAULT_REDIRECT
-from yak_shears.server.routes import ROUTES, not_found
+from yak_shears.server.handlers import not_found
+from yak_shears.server.routes import ROUTES
 
 
 @pytest.fixture
@@ -59,7 +60,7 @@ def mock_djot_files() -> list[Path]:
 
 def test_files_endpoint(client: TestClient, mock_djot_files: list[Path], mock_user_session) -> None:
     """Test the files endpoint."""
-    with patch("yak_shears.server.handlers.get_djot_files") as mock_get_files:
+    with patch("yak_shears.file.handlers.get_djot_files") as mock_get_files:
         mock_get_files.return_value = (mock_djot_files, 3, 1)
 
         with patch("pathlib.Path.stat") as mock_stat:
@@ -70,7 +71,7 @@ def test_files_endpoint(client: TestClient, mock_djot_files: list[Path], mock_us
 
             mock_stat.return_value = MockStat()
 
-            with patch("yak_shears.server.handlers.datetime") as mock_datetime:
+            with patch("yak_shears.file.handlers.datetime") as mock_datetime:
                 mock_datetime.fromtimestamp.return_value = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC)
                 mock_datetime.UTC = UTC
 

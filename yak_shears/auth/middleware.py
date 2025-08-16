@@ -5,7 +5,7 @@ from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 from starlette.types import ASGIApp
 
-from . import routes  # for test mocking
+from . import handlers  # for test mocking
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
@@ -33,6 +33,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
         """
         if request.url.path in self.public_paths:
             return await call_next(request)
-        if routes.get_user_from_session(request):
+        if handlers.get_user_from_session(request):
             return await call_next(request)
         return RedirectResponse(url=f"/auth/login?redirect={request.url.path}")

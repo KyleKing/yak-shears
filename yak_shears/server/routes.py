@@ -1,41 +1,22 @@
 """Server routes for Yak Shears."""
 
 import argparse
-from http import HTTPStatus
 
 import uvicorn
 from starlette.applications import Starlette
-from starlette.requests import Request
-from starlette.responses import HTMLResponse
 from starlette.routing import Route
 
 from yak_shears.auth.middleware import AuthMiddleware
 from yak_shears.auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
 from yak_shears.auth.routes import ROUTES as AUTH_ROUTES
+from yak_shears.file.routes import ROUTES as FILE_ROUTES
 from yak_shears.log_utils import log
-from yak_shears.server.handlers import edit_file_handler, favicon_handler, files_handler, root_handler
-from yak_shears.templates import render_error
-
-
-async def not_found(request: Request, exc: Exception) -> HTMLResponse:  # noqa: ARG001,RUF029
-    """Handle 404 errors with a custom page.
-
-    Args:
-        request: The incoming request
-        exc: The exception that occurred
-
-    Returns:
-        HTMLResponse with 404 message
-    """
-    return render_error("Not Found", status_code=HTTPStatus.NOT_FOUND)
-
+from yak_shears.server.handlers import favicon_handler, not_found, root_handler
 
 ROUTES = [
     Route("/", endpoint=root_handler),
     Route("/favicon.ico", endpoint=favicon_handler),
-    # TODO: Consider moving to separate directory
-    Route("/files", endpoint=files_handler),
-    Route("/edit", endpoint=edit_file_handler, methods=["GET", "POST"]),
+    *FILE_ROUTES,
     *AUTH_ROUTES,
 ]
 

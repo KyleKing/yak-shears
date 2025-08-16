@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from yak_shears.auth import routes
+from yak_shears.auth import handlers
 from yak_shears.auth.models import HashedPassword, Password, User
 from yak_shears.auth.storage import create_user
 
@@ -57,7 +57,7 @@ def mock_user_session():
     Yields:
         User: A mock user object
     """
-    with patch.object(routes, "get_user_from_session") as mock_get_user:
+    with patch.object(handlers, "get_user_from_session") as mock_get_user:
         mock_user = User(
             {
                 "id": "test_user_id",
