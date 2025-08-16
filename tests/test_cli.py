@@ -324,5 +324,4 @@ class TestArgumentParsing:
         test_args = ["yak-shears-users", "list"]
 
         with patch("sys.argv", test_args), patch("yak_shears.cli.log"):
-            # Should not raise an exception
-            main()
+            main()  # Should not raise an exception

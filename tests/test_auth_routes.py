@@ -86,6 +86,16 @@ class TestLoginEndpoint:
         assert response.status_code == HTTPStatus.BAD_REQUEST
         assert expected_content in response.content
 
+    def test_displayed_error(self, auth_client, snapshot: SnapshotAssertion):
+        """Test that the error message is displayed in the login form."""
+        expected_content = b"Invalid email or password"
+
+        response = auth_client.post("/auth/login", data={"email": "...", "password": "..."})
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        assert expected_content in response.content
+        assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
+
     def test_login_get_shows_form(self, auth_client, snapshot: SnapshotAssertion):
         """Test that GET /auth/login shows the login form."""
         response = auth_client.get("/auth/login")
@@ -97,10 +107,10 @@ class TestLoginEndpoint:
         """Test that login handles newlines in email/password input."""
         response = auth_client.post(
             "/auth/login",
+            # Should still work (newlines should be stripped)
             data={"email": SAMPLE_USER_EMAIL + "\n", "password": SAMPLE_USER_PASSWORD + "\n"},
         )
 
-        # Should still work (newlines should be stripped)
         assert response.status_code == HTTPStatus.SEE_OTHER
         assert response.headers["location"] == DEFAULT_REDIRECT
 
@@ -126,15 +136,13 @@ class TestLogoutEndpoint:
 
         assert logout_response.status_code == HTTPStatus.TEMPORARY_REDIRECT
         assert logout_response.headers["location"] == "/home"
-        # Session cookie should be deleted
         session_cookies = [cookie for cookie in logout_response.cookies if cookie == "session_id"]
-        assert len(session_cookies) == 0
+        assert len(session_cookies) == 0, "Expected session cookie to be deleted"
 
     def test_logout_when_not_logged_in(self, auth_client):
         """Test logout when not logged in."""
         response = auth_client.get("/auth/logout")
 
-        # Should still redirect (graceful handling)
         assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
         assert response.headers["location"] == "/home"
 
@@ -144,13 +152,11 @@ class TestStatusEndpoint:
 
     def test_status_when_not_logged_in(self, auth_client):
         """Test /auth/status when not authenticated."""
-        response = auth_client.get("/auth/status")
+        status_response = auth_client.get("/auth/status")
 
-        assert response.status_code == HTTPStatus.OK
-        assert response.headers["content-type"] == "application/json"
-
-        data = response.json()
-        assert data["authenticated"] is False
+        assert status_response.status_code == HTTPStatus.OK
+        assert status_response.headers["content-type"] == "application/json"
+        assert status_response.json() == {"authenticated": False}
 
     def test_status_when_logged_in(self, auth_client, sample_user):
         """Test /auth/status when authenticated."""
@@ -168,11 +174,10 @@ class TestStatusEndpoint:
         """Test /auth/status with invalid session cookie."""
         auth_client.cookies.set("session_id", "invalid-session-id")
 
-        response = auth_client.get("/auth/status")
+        status_response = auth_client.get("/auth/status")
 
-        assert response.status_code == HTTPStatus.OK
-        data = response.json()
-        assert data["authenticated"] is False
+        assert status_response.status_code == HTTPStatus.OK
+        assert status_response.json() == {"authenticated": False}
 
 
 class TestAuthMiddleware:
@@ -198,17 +203,11 @@ class TestAuthMiddleware:
         async def protected_endpoint(request):  # noqa: RUF029
             return Response("Protected content")
 
-        app = Starlette(
-            routes=[
-                Route("/protected", endpoint=protected_endpoint),
-                *AUTH_ROUTES,  # Replace auth_routes with AUTH_ROUTES
-            ]
-        )
+        app = Starlette(routes=[Route("/protected", endpoint=protected_endpoint), *AUTH_ROUTES])
         app.add_middleware(AuthMiddleware, public_paths={"/auth/login", "/auth/status"})
 
         client = TestClient(app, follow_redirects=False)
 
-        # Should redirect to login
         response = client.get("/protected", follow_redirects=False)
         assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
         assert response.headers["location"] == "/auth/login?redirect=/protected"
@@ -221,7 +220,6 @@ class TestAuthMiddleware:
 
         app = Starlette(routes=[Route("/protected", endpoint=protected_endpoint), *AUTH_ROUTES])
         app.add_middleware(AuthMiddleware, public_paths={"/auth/login", "/auth/status"})
-
         client = TestClient(app, follow_redirects=False)
 
         post_login(client)
@@ -236,16 +234,18 @@ class TestSessionManagement:
 
     def test_session_persists_across_requests(self, auth_client, sample_user):
         """Test that session persists across multiple requests."""
+        repetitions = 3
+
         post_login(auth_client)
 
-        # Make multiple status requests
-        for _ in range(3):
+        for _ in range(repetitions):
             status_response = auth_client.get("/auth/status")
             assert status_response.status_code == HTTPStatus.OK
-
-            data = status_response.json()
-            assert data["authenticated"] is True
-            assert data["email"] == SAMPLE_USER_EMAIL
+            assert status_response.json() == {
+                "authenticated": True,
+                "displayName": "Test User",
+                "email": SAMPLE_USER_EMAIL,
+            }
 
     def test_session_expires_after_logout(self, auth_client, sample_user):
         """Test that session expires after logout."""
@@ -258,25 +258,21 @@ class TestSessionManagement:
         # Verify logout works as expected
         logout_response = auth_client.get("/auth/logout")
         assert logout_response.status_code == HTTPStatus.TEMPORARY_REDIRECT
-
         status_response = auth_client.get("/auth/status")
-        data = status_response.json()
-        assert data["authenticated"] is False
+        assert status_response.json() == {"authenticated": False}
 
 
 class TestErrorHandling:
     """Test error handling in authentication routes."""
 
     def test_malformed_form_data(self, auth_client):
-        """Test handling of malformed form data."""
-        # Send invalid form data
+        """Test handling of malformed form data and graceful error handling."""
         response = auth_client.post(
             "/auth/login",
             headers={"content-type": "application/x-www-form-urlencoded"},
             content=b"invalid\xff\xfe\xfd",
         )
 
-        # Should handle gracefully (not crash)
         assert response.status_code == HTTPStatus.BAD_REQUEST
 
     def test_very_large_form_data(self, auth_client):

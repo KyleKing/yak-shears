@@ -1,4 +1,65 @@
 # serializer version: 1
+# name: TestLoginEndpoint.test_displayed_error
+  '''
+  <!DOCTYPE html>
+  <html>
+   <head>
+    <title>
+     Login
+    </title>
+    <style>
+     body { font-family: Arial, sans-serif; margin: 20px; }
+  
+  .form-container { max-width: 400px; margin: 10% auto 0 auto; padding: 20px;
+                    border: 1px solid #ccc; border-radius: 5px; }
+  .form-field { margin-bottom: 15px; }
+  label { display: block; margin-bottom: 5px; }
+  input { width: 100%; padding: 8px; box-sizing: border-box; }
+  button { padding: 10px 15px; background-color: #4CAF50; color: white;
+         border: none; border-radius: 4px; cursor: pointer; }
+  button:hover { background-color: #45a049; }
+    </style>
+   </head>
+   <body>
+    <div class="form-container">
+     <h2>
+      Login
+     </h2>
+     <form action="/auth/login" id="login" method="post" x-target="login">
+      <div class="form-field">
+       <label for="email">
+        Email
+       </label>
+       <input id="email" name="email" required="" type="email"/>
+      </div>
+      <div class="form-field">
+       <label for="password">
+        Password
+       </label>
+       <input id="password" name="password" required="" type="password"/>
+      </div>
+      <p class="error">
+       Invalid email or password
+      </p>
+      <div class="form-field">
+       <button type="submit">
+        Login
+       </button>
+      </div>
+     </form>
+     <a class="back-link" href="/home">
+      Back to Home
+     </a>
+    </div>
+    <script defer="" src="https://cdn.jsdelivr.net/npm/@imacrayon/alpine-ajax@0.12.4/dist/cdn.min.js">
+    </script>
+    <script defer="" src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js">
+    </script>
+   </body>
+  </html>
+  
+  '''
+# ---
 # name: TestLoginEndpoint.test_login_get_shows_form
   '''
   <!DOCTYPE html>
@@ -10,8 +71,8 @@
     <style>
      body { font-family: Arial, sans-serif; margin: 20px; }
   
-  .form-container { max-width: 400px; margin: 0 auto; padding: 20px;
-                   border: 1px solid #ccc; border-radius: 5px; }
+  .form-container { max-width: 400px; margin: 10% auto 0 auto; padding: 20px;
+                    border: 1px solid #ccc; border-radius: 5px; }
   .form-field { margin-bottom: 15px; }
   label { display: block; margin-bottom: 5px; }
   input { width: 100%; padding: 8px; box-sizing: border-box; }
