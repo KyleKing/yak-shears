@@ -53,7 +53,7 @@ def create_app() -> Starlette:
     )
 
     # Wrap app with auth middleware
-    public_paths = {"/", "/home", *AUTH_PUBLIC_PATHS}
+    public_paths = {"/", *AUTH_PUBLIC_PATHS}
     app.add_middleware(AuthMiddleware, public_paths=public_paths)
 
     return app
