@@ -1,6 +1,7 @@
 """Request handlers for the Yak Shears server."""
 
 from datetime import UTC, datetime
+from http import HTTPStatus
 from pathlib import Path
 
 from starlette.requests import Request
@@ -180,7 +181,7 @@ async def files_handler(request: Request) -> Response:  # noqa: RUF029
     # Get files with pagination
     files, total_files, total_pages = get_djot_files(directory_path, page, sort_by=sort_by)
 
-    # Generate HTML
+    # Generate HTML (TODO: move to template)
     html_content = generate_file_table_html(files, page, total_pages, total_files, directory_path, sort_by=sort_by)
 
     return HTMLResponse(html_content)
@@ -203,7 +204,7 @@ async def edit_file_handler(request: Request) -> Response:
     try:
         file_path = Path(file_path_str)
         if not file_path.exists() or not file_path.is_file():
-            return HTMLResponse(f"<h1>Error</h1><p>File not found: {file_path}</p>", status_code=404)
+            return render_error(f"File not found: {file_path}", status_code=HTTPStatus.NOT_FOUND)
 
         # If the request includes content, save the changes
         if request.method == "POST":
@@ -212,6 +213,7 @@ async def edit_file_handler(request: Request) -> Response:
             file_path.write_text(content, encoding="utf-8")
             return RedirectResponse(url=f"/edit?file={file_path_str}", status_code=303)
 
+        # TODO: Move to template
         # Generate HTML editor
         content = file_path.read_text(encoding="utf-8")
         html = f"""
@@ -241,7 +243,7 @@ async def edit_file_handler(request: Request) -> Response:
         """
         return HTMLResponse(html)
     except Exception as e:
-        return HTMLResponse(f"<h1>Error</h1><p>An error occurred: {e!s}</p>", status_code=500)
+        return render_error(f"An error occurred: {e!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 async def root_handler(request: Request) -> Response:  # noqa: ARG001, RUF029

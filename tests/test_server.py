@@ -84,8 +84,9 @@ def test_files_endpoint(client: TestClient, mock_djot_files: list[Path], mock_us
 def test_not_found(client: TestClient, mock_user_session) -> None:
     """Test the 404 handler."""
     response = client.get("/non_existent_endpoint")
+
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert "404 Not Found" in response.text
+    assert "Not Found" in response.text
 
 
 def test_edit_file_get(client: TestClient, mock_user_session) -> None:
@@ -99,6 +100,7 @@ def test_edit_file_get(client: TestClient, mock_user_session) -> None:
 
                 response = client.get("/edit?file=/path/to/test.dj")
                 assert response.status_code == HTTPStatus.OK
+
                 assert "Editing test.dj" in response.text
                 assert "Test file content" in response.text
 
@@ -128,7 +130,7 @@ def test_edit_file_not_found(client: TestClient, mock_user_session) -> None:
 
         response = client.get("/edit?file=/path/to/nonexistent.dj")
         assert response.status_code == HTTPStatus.NOT_FOUND
-        assert "File not found" in response.text
+        assert "File not found: " in response.text
 
 
 def test_edit_file_no_file_specified(client: TestClient, mock_user_session) -> None:

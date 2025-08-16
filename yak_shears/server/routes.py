@@ -14,6 +14,7 @@ from yak_shears.auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
 from yak_shears.auth.routes import ROUTES as AUTH_ROUTES
 from yak_shears.log_utils import log
 from yak_shears.server.handlers import edit_file_handler, files_handler, root_handler
+from yak_shears.templates import render_error
 
 
 async def not_found(request: Request, exc: Exception) -> HTMLResponse:  # noqa: ARG001,RUF029
@@ -26,11 +27,12 @@ async def not_found(request: Request, exc: Exception) -> HTMLResponse:  # noqa: 
     Returns:
         HTMLResponse with 404 message
     """
-    return HTMLResponse("<h2>404 Not Found</h2>", status_code=HTTPStatus.NOT_FOUND)
+    return render_error("Not Found", status_code=HTTPStatus.NOT_FOUND)
 
 
 ROUTES = [
     Route("/", endpoint=root_handler),
+    # TODO: Consider moving to separate directory
     Route("/files", endpoint=files_handler),
     Route("/edit", endpoint=edit_file_handler, methods=["GET", "POST"]),
     *AUTH_ROUTES,
