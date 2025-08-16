@@ -16,6 +16,7 @@ mise run format ::: typecheck
 
 # Testing
 uv run pytest -v --ff -x
+uv run pytest --snapshot-update
 uv run ptw .
 
 # Local Development
