@@ -1,4 +1,3 @@
-import json
 from datetime import UTC, datetime
 from http import HTTPStatus
 from pathlib import Path
@@ -59,50 +58,6 @@ def test_home_endpoint_logged_in(client: TestClient, mock_user_session) -> None:
     assert "Logged in as:" in response.text
     assert "Test User" in response.text
     assert "Logout" in response.text
-
-
-def test_echo_endpoint_get(client: TestClient, mock_user_session) -> None:
-    """Test the echo endpoint with GET request."""
-    response = client.get("/echo?param1=value1&param2=value2")
-
-    assert response.status_code == HTTPStatus.OK
-    assert "Echo" in response.text
-    assert "URL Parameters" in response.text
-    assert "param1" in response.text
-    assert "value1" in response.text
-    assert "param2" in response.text
-    assert "value2" in response.text
-
-
-def test_echo_endpoint_post_json(client: TestClient, mock_user_session) -> None:
-    """Test the echo endpoint with POST request sending JSON."""
-    test_data = {"key1": "value1", "key2": ["item1", "item2"]}
-
-    response = client.post(
-        "/echo",
-        json=test_data,
-    )
-
-    assert response.status_code == HTTPStatus.OK
-    assert "Echo" in response.text
-    assert "JSON Payload" in response.text
-    assert json.dumps(test_data, indent=2) in response.text
-
-
-def test_echo_endpoint_post_raw(client: TestClient, mock_user_session) -> None:
-    """Test the echo endpoint with POST request sending raw data."""
-    test_data = "This is raw POST data"
-
-    response = client.post(
-        "/echo",
-        content=test_data,
-        headers={"Content-Type": "text/plain"},
-    )
-
-    assert response.status_code == HTTPStatus.OK
-    assert "Echo" in response.text
-    assert "Raw POST Data" in response.text
-    assert test_data in response.text
 
 
 @pytest.fixture

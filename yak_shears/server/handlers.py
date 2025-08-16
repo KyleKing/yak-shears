@@ -1,6 +1,5 @@
 """Request handlers for the Yak Shears server."""
 
-import json
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -60,48 +59,10 @@ async def home_handler(request: Request) -> HTMLResponse:  # noqa: RUF029
         {auth_status}
         <ul>
             <li><a href="/files">Browse Files</a></li>
-            <li><a href="/echo">Echo Endpoint</a></li>
         </ul>
     </body>
     </html>
     """)
-
-
-async def echo_handler(request: Request) -> HTMLResponse:
-    """Handle both GET and POST requests to /echo.
-
-    Args:
-        request: The incoming request
-
-    Returns:
-        HTMLResponse with echoed data
-    """
-    # Build HTML response
-    response = "<h1>Echo</h1>"
-
-    # Add URL parameters to response if they exist
-    query_params = dict(request.query_params)
-    if query_params:
-        response += "<h2>URL Parameters</h2>"
-        response += "<ul>"
-        for key, value in query_params.items():
-            response += f"<li><strong>{key}</strong>: {value}</li>"
-        response += "</ul>"
-
-    # Add JSON data for POST requests
-    if request.method == "POST":
-        try:
-            json_data = await request.json()
-            response += "<h2>JSON Payload</h2>"
-            response += f"<pre>{json.dumps(json_data, indent=2)}</pre>"
-        except json.JSONDecodeError:
-            # Handle case where body is not valid JSON
-            body = await request.body()
-            if body:
-                response += "<h2>Raw POST Data</h2>"
-                response += f"<pre>{body.decode('utf-8')}</pre>"
-
-    return HTMLResponse(response)
 
 
 def get_djot_files(
