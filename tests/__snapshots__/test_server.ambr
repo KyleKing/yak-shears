@@ -1,0 +1,137 @@
+# serializer version: 1
+# name: test_edit_file_get
+  '''
+  <html>
+   <head>
+    <title>
+     Editing test.dj
+    </title>
+    <style>
+     body { font-family: Arial, sans-serif; margin: 20px; }
+                  textarea { width: 100%; height: 70vh; font-family: monospace; padding: 10px; }
+                  .header { display: flex; justify-content: space-between; align-items: center; }
+                  .actions { margin: 10px 0; }
+    </style>
+   </head>
+   <body>
+    <div class="header">
+     <h1>
+      Editing test.dj
+     </h1>
+     <a href="/files">
+      Back to Files
+     </a>
+    </div>
+    <form method="post">
+     <textarea name="content">Test file content</textarea>
+     <div class="actions">
+      <button type="submit">
+       Save Changes
+      </button>
+     </div>
+    </form>
+   </body>
+  </html>
+  
+  '''
+# ---
+# name: test_files_endpoint
+  '''
+  <html>
+   <head>
+    <title>
+     Notes in ~/Sync/yak-shears
+    </title>
+    <style>
+     body { font-family: Arial, sans-serif; margin: 20px; }
+              .cards-container {
+                  display: grid;
+                  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                  gap: 20px;
+                  max-width: 1100px;
+                  margin: 0 auto;
+              }
+              .card {
+                  border: 1px solid #ddd;
+                  border-radius: 5px;
+                  padding: 10px;
+                  box-sizing: border-box;
+                  width: 100%;
+              }
+              .card h2 { margin: 0 0 10px 0; font-size: 1.2em; }
+              .card p.preview { margin: 0 0 10px 0; color: #555; }
+              .pagination { display: flex; margin-top: 20px; }
+              .pagination a { color: black; padding: 8px 16px; text-decoration: none; }
+              .pagination a.active { background-color: #4CAF50; color: white; }
+              .pagination a:hover:not(.active) { background-color: #ddd; }
+              .status-bar { margin-top: 10px; }
+                  .sort-controls { margin-bottom: 10px; }
+                  .sort-controls a.active { font-weight: bold; text-decoration: underline; }
+    </style>
+   </head>
+   <body>
+    <h1>
+     Notes in ~/Sync/yak-shears
+    </h1>
+    <p class="status-bar">
+     Showing 3 of 3 notes (Page 1 of 1)
+    </p>
+    <div class="sort-controls">
+     Sort by:
+     <a class="active" href="/files?page=1&amp;sort_by=name">
+      Name
+     </a>
+     |
+     <a class="" href="/files?page=1&amp;sort_by=date">
+      Date
+     </a>
+    </div>
+    <div class="cards-container">
+     <div class="card">
+      <h2>
+       <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file1.dj">
+        file1.dj
+       </a>
+      </h2>
+      <p class="preview">
+      </p>
+      <p>
+       <small>
+        Last modified: 2025-05-01 10:00:00
+       </small>
+      </p>
+     </div>
+     <div class="card">
+      <h2>
+       <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file2.dj">
+        file2.dj
+       </a>
+      </h2>
+      <p class="preview">
+      </p>
+      <p>
+       <small>
+        Last modified: 2025-05-01 10:00:00
+       </small>
+      </p>
+     </div>
+     <div class="card">
+      <h2>
+       <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory/file3.dj">
+        file3.dj
+       </a>
+      </h2>
+      <p class="preview">
+      </p>
+      <p>
+       <small>
+        Last modified: 2025-05-01 10:00:00
+       </small>
+      </p>
+     </div>
+    </div>
+   </body>
+  </html>
+  
+  '''
+# ---

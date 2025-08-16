@@ -1,9 +1,13 @@
+# TODO: Split up into file/routes
+
+
 from datetime import UTC, datetime
 from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from bs4 import BeautifulSoup
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
@@ -58,7 +62,7 @@ def mock_djot_files() -> list[Path]:
     ]
 
 
-def test_files_endpoint(client: TestClient, mock_djot_files: list[Path], mock_user_session) -> None:
+def test_files_endpoint(client: TestClient, mock_djot_files: list[Path], mock_user_session, snapshot) -> None:
     """Test the files endpoint."""
     with patch("yak_shears.file.handlers.get_djot_files") as mock_get_files:
         mock_get_files.return_value = (mock_djot_files, 3, 1)
@@ -80,6 +84,7 @@ def test_files_endpoint(client: TestClient, mock_djot_files: list[Path], mock_us
                 assert "file1.dj" in response.text
                 assert "file2.dj" in response.text
                 assert "file3.dj" in response.text
+                assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
 
 
 def test_not_found(client: TestClient, mock_user_session) -> None:
@@ -90,7 +95,7 @@ def test_not_found(client: TestClient, mock_user_session) -> None:
     assert "Not Found" in response.text
 
 
-def test_edit_file_get(client: TestClient, mock_user_session) -> None:
+def test_edit_file_get(client: TestClient, mock_user_session, snapshot) -> None:
     """Test the edit file endpoint with GET request."""
     with patch("pathlib.Path.exists") as mock_exists:
         mock_exists.return_value = True
@@ -101,9 +106,9 @@ def test_edit_file_get(client: TestClient, mock_user_session) -> None:
 
                 response = client.get("/edit?file=/path/to/test.dj")
                 assert response.status_code == HTTPStatus.OK
-
                 assert "Editing test.dj" in response.text
                 assert "Test file content" in response.text
+                assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
 
 
 def test_edit_file_post(client: TestClient, mock_user_session) -> None:
