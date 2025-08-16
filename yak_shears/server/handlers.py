@@ -61,7 +61,6 @@ async def home_handler(request: Request) -> HTMLResponse:  # noqa: RUF029
         <ul>
             <li><a href="/files">Browse Files</a></li>
             <li><a href="/echo">Echo Endpoint</a></li>
-            <li><a href="/time">Current Time</a></li>
         </ul>
     </body>
     </html>
@@ -103,19 +102,6 @@ async def echo_handler(request: Request) -> HTMLResponse:
                 response += f"<pre>{body.decode('utf-8')}</pre>"
 
     return HTMLResponse(response)
-
-
-async def time_handler(request: Request) -> HTMLResponse:  # noqa: ARG001,RUF029
-    """Handle requests to /time.
-
-    Args:
-        request: The incoming request
-
-    Returns:
-        HTMLResponse with current time
-    """
-    now = datetime.now(tz=UTC)
-    return HTMLResponse(f"<h1>Current Time</h1><p>{now.strftime('%Y-%m-%d %H:%M:%S')}</p>")
 
 
 def get_djot_files(

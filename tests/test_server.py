@@ -105,19 +105,6 @@ def test_echo_endpoint_post_raw(client: TestClient, mock_user_session) -> None:
     assert test_data in response.text
 
 
-def test_time_endpoint(client: TestClient, mock_user_session) -> None:
-    """Test the time endpoint returns current time."""
-    fixed_time = datetime(2025, 5, 22, 12, 34, 56, tzinfo=UTC)
-    with patch("yak_shears.server.handlers.datetime") as mock_datetime:
-        mock_datetime.now.return_value = fixed_time
-        mock_datetime.UTC = UTC
-
-        response = client.get("/time")
-        assert response.status_code == HTTPStatus.OK
-        assert "Current Time" in response.text
-        assert "2025-05-22 12:34:56" in response.text
-
-
 @pytest.fixture
 def mock_djot_files() -> list[Path]:
     """Create mock Djot files for testing.

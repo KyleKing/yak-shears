@@ -19,7 +19,6 @@ from yak_shears.server.handlers import (
     files_handler,
     home_handler,
     root_handler,
-    time_handler,
 )
 
 
@@ -41,7 +40,6 @@ ROUTES = [
     Route("/home", endpoint=home_handler),
     Route("/echo", endpoint=echo_handler, methods=["GET"]),
     Route("/echo", endpoint=echo_handler, methods=["POST"]),
-    Route("/time", endpoint=time_handler),
     Route("/files", endpoint=files_handler),
     Route("/edit", endpoint=edit_file_handler, methods=["GET", "POST"]),
     *AUTH_ROUTES,
