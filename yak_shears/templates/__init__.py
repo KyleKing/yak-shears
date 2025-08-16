@@ -15,8 +15,8 @@ ENV = Environment(
 )
 
 
-def render_template(template_name: str, status_code: HTTPStatus = HTTPStatus.OK, **context: Any) -> HTMLResponse:
-    """Render template by name.
+def _render_template(template_name: str, *, status_code: HTTPStatus = HTTPStatus.OK, **context: Any) -> HTMLResponse:
+    """Private render template by name.
 
     Args:
         template_name: The name of the template to render
@@ -39,12 +39,23 @@ def render_error(
 
     Args:
         message: The error message to display
-        back_url: The URL to redirect back to
         status_code: The HTTP status code to return
 
     Returns:
         HTMLResponse with the error template
     """
-    template = ENV.get_template("error.html.jinja")
-    content = template.render(message=message)
-    return HTMLResponse(content, status_code=status_code)
+    return _render_template("error.html.jinja", status_code=status_code, message=message)
+
+
+def render_auth_login(redirect: str | None = None, error: str = "") -> HTMLResponse:
+    """Render an error page.
+
+    Args:
+        error: optional error to display
+        redirect: optional redirect path
+
+    Returns:
+        HTMLResponse with the error template
+    """
+    status_code = HTTPStatus.BAD_REQUEST if error else HTTPStatus.OK
+    return _render_template("auth/login.html.jinja", redirect=redirect, error=error, status_code=status_code)

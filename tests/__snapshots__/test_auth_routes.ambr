@@ -5,7 +5,7 @@
   <html>
    <head>
     <title>
-     Login
+     Login to Yak-Shears
     </title>
     <style>
      body { font-family: Arial, sans-serif; margin: 20px; }
@@ -26,6 +26,7 @@
       Login
      </h2>
      <form action="/auth/login" id="login" method="post" x-target="login">
+      <input name="redirect" type="hidden" value="/files"/>
       <div class="form-field">
        <label for="email">
         Email
@@ -69,7 +70,7 @@
   <html>
    <head>
     <title>
-     Login
+     Login to Yak-Shears
     </title>
     <style>
      body { font-family: Arial, sans-serif; margin: 20px; }

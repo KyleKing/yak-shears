@@ -1,0 +1,23 @@
+{% extends "base.html.jinja" %}
+
+{% block extra_styles %}
+body { font-family: Arial, sans-serif; margin: 20px; }
+textarea { width: 100%; height: 70vh; font-family: monospace; padding: 10px; }
+.header { display: flex; justify-content: space-between; align-items: center; }
+.actions { margin: 10px 0; }
+{% endblock %}
+
+{% block title %}Editing {{ filename }}{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>Editing {{ filename }}</h1>
+    <a href="/files">Back to Files</a>
+</div>
+<form method="post">
+    <textarea name="content">{{ content }}</textarea>
+    <div class="actions">
+        <button type="submit">Save Changes</button>
+    </div>
+</form>
+{% endblock %}

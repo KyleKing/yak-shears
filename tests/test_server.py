@@ -136,34 +136,3 @@ def test_edit_file_no_file_specified(client: TestClient, mock_user_session) -> N
     response = client.get("/edit")
     assert response.status_code == HTTPStatus.BAD_REQUEST
     assert "No file specified" in response.text
-
-
-# Tests for auth endpoints
-def test_auth_login_get(client: TestClient) -> None:
-    """Test the login endpoint with GET request."""
-    response = client.get("/auth/login")
-    assert response.status_code == HTTPStatus.OK
-    assert "<title>Login</title>" in response.text
-
-
-def test_auth_status_not_logged_in(client: TestClient) -> None:
-    """Test the auth status endpoint when not logged in."""
-    response = client.get("/auth/status")
-    assert response.status_code == HTTPStatus.OK
-    json_response = response.json()
-    assert json_response["authenticated"] is False
-
-
-def test_auth_status_logged_in(client: TestClient, mock_user_session) -> None:
-    """Test the auth status endpoint when logged in."""
-    response = client.get("/auth/status")
-    assert response.status_code == HTTPStatus.OK
-    json_response = response.json()
-    assert json_response["authenticated"] is True
-    assert json_response["displayName"] == "Test User"
-
-
-def test_auth_middleware_public_path(client: TestClient, mock_user_session) -> None:
-    """Test that auth middleware allows access to public paths."""
-    response = client.get("/auth/status")
-    assert response.status_code == HTTPStatus.OK

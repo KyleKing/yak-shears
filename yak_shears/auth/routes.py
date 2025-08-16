@@ -9,7 +9,7 @@ from starlette.responses import JSONResponse, RedirectResponse, Response
 from starlette.routing import Route
 
 from yak_shears.constants import DEFAULT_REDIRECT
-from yak_shears.templates import render_template
+from yak_shears.templates import render_auth_login
 
 from . import storage
 from .models import Password, SessionId, User
@@ -30,28 +30,24 @@ async def login_handler(request: Request) -> Response:
         if user := get_user_from_session(request):
             return RedirectResponse(url=DEFAULT_REDIRECT)
         redirect_path = request.query_params.get("redirect")
-        return render_template("auth/login.html.jinja", redirect=redirect_path)
+        return render_auth_login(redirect=redirect_path)
 
     if request.method == "POST":
         form_data = await request.form()
         email = str(form_data.get("email", "")).strip()
         # Allow trailing spaces
         password = Password(str(form_data.get("password", "")).rstrip("\n"))
+        redirect_path = str(form_data.get("redirect") or DEFAULT_REDIRECT).rstrip()
         if not email or not password:
-            return render_template(
-                "auth/login.html.jinja",
-                HTTPStatus.BAD_REQUEST,
+            return render_auth_login(
+                redirect=redirect_path,
                 error="Email and password are required",
-                redirect=form_data.get("redirect"),
             )
         if not (user := storage.authenticate_user(email, password)):
-            return render_template(
-                "auth/login.html.jinja",
-                HTTPStatus.BAD_REQUEST,
+            return render_auth_login(
+                redirect=redirect_path,
                 error="Invalid email or password",
-                redirect=form_data.get("redirect"),
             )
-        redirect_path = str(form_data.get("redirect") or DEFAULT_REDIRECT).rstrip()
         response = RedirectResponse(url=redirect_path, status_code=HTTPStatus.SEE_OTHER)
         session_id = storage.create_session(SessionId(user["id"]))
         expires = datetime.now(tz=UTC) + timedelta(weeks=1)
