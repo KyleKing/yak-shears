@@ -47,6 +47,9 @@
        </button>
       </div>
      </form>
+     <p>
+      Note: Users must be created by an administrator using the CLI tool.
+     </p>
      <a class="back-link" href="/home">
       Back to Home
      </a>
@@ -105,6 +108,9 @@
        </button>
       </div>
      </form>
+     <p>
+      Note: Users must be created by an administrator using the CLI tool.
+     </p>
      <a class="back-link" href="/home">
       Back to Home
      </a>
