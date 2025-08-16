@@ -13,6 +13,18 @@ from yak_shears.templates import render_error
 PREVIEW_LENGTH = 200  # Number of characters for content preview
 
 
+async def favicon_handler(request: Request) -> Response:  # noqa: ARG001, RUF029
+    """Handle favicon.ico requests to prevent 404 errors.
+
+    Args:
+        request: The incoming request
+
+    Returns:
+        Empty response with 204 No Content status
+    """
+    return Response(status_code=HTTPStatus.NO_CONTENT)
+
+
 def get_djot_files(
     directory_path: str,
     page: int = 1,

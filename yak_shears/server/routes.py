@@ -13,7 +13,7 @@ from yak_shears.auth.middleware import AuthMiddleware
 from yak_shears.auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
 from yak_shears.auth.routes import ROUTES as AUTH_ROUTES
 from yak_shears.log_utils import log
-from yak_shears.server.handlers import edit_file_handler, files_handler, root_handler
+from yak_shears.server.handlers import edit_file_handler, favicon_handler, files_handler, root_handler
 from yak_shears.templates import render_error
 
 
@@ -32,6 +32,7 @@ async def not_found(request: Request, exc: Exception) -> HTMLResponse:  # noqa: 
 
 ROUTES = [
     Route("/", endpoint=root_handler),
+    Route("/favicon.ico", endpoint=favicon_handler),
     # TODO: Consider moving to separate directory
     Route("/files", endpoint=files_handler),
     Route("/edit", endpoint=edit_file_handler, methods=["GET", "POST"]),
@@ -53,7 +54,7 @@ def create_app() -> Starlette:
     )
 
     # Wrap app with auth middleware
-    public_paths = {"/", *AUTH_PUBLIC_PATHS}
+    public_paths = {"/", "/favicon.ico", *AUTH_PUBLIC_PATHS}
     app.add_middleware(AuthMiddleware, public_paths=public_paths)
 
     return app
