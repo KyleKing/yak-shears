@@ -13,12 +13,7 @@ from yak_shears.auth.middleware import AuthMiddleware
 from yak_shears.auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
 from yak_shears.auth.routes import ROUTES as AUTH_ROUTES
 from yak_shears.log_utils import log
-from yak_shears.server.handlers import (
-    edit_file_handler,
-    files_handler,
-    home_handler,
-    root_handler,
-)
+from yak_shears.server.handlers import edit_file_handler, files_handler, root_handler
 
 
 async def not_found(request: Request, exc: Exception) -> HTMLResponse:  # noqa: ARG001,RUF029
@@ -36,7 +31,6 @@ async def not_found(request: Request, exc: Exception) -> HTMLResponse:  # noqa: 
 
 ROUTES = [
     Route("/", endpoint=root_handler),
-    Route("/home", endpoint=home_handler),
     Route("/files", endpoint=files_handler),
     Route("/edit", endpoint=edit_file_handler, methods=["GET", "POST"]),
     *AUTH_ROUTES,

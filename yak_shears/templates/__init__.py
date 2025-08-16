@@ -33,7 +33,6 @@ def render_template(template_name: str, status_code: HTTPStatus = HTTPStatus.OK,
 
 def render_error(
     message: str,
-    back_url: str = "",
     status_code: HTTPStatus = HTTPStatus.BAD_REQUEST,
 ) -> HTMLResponse:
     """Render an error page.
@@ -47,5 +46,5 @@ def render_error(
         HTMLResponse with the error template
     """
     template = ENV.get_template("error.html.jinja")
-    content = template.render(message=message, back_url=back_url)
+    content = template.render(message=message)
     return HTMLResponse(content, status_code=status_code)

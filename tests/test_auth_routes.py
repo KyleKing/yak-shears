@@ -9,9 +9,9 @@ from starlette.testclient import TestClient
 from syrupy.assertion import SnapshotAssertion
 
 from yak_shears.auth.middleware import AuthMiddleware
-from yak_shears.auth.routes import DEFAULT_REDIRECT
 from yak_shears.auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
 from yak_shears.auth.routes import ROUTES as AUTH_ROUTES
+from yak_shears.constants import DEFAULT_REDIRECT
 
 from .conftest import SAMPLE_USER_EMAIL, SAMPLE_USER_PASSWORD
 
@@ -135,7 +135,7 @@ class TestLogoutEndpoint:
         logout_response = auth_client.get("/auth/logout")
 
         assert logout_response.status_code == HTTPStatus.TEMPORARY_REDIRECT
-        assert logout_response.headers["location"] == "/home"
+        assert logout_response.headers["location"] == "/auth/login"
         session_cookies = [cookie for cookie in logout_response.cookies if cookie == "session_id"]
         assert len(session_cookies) == 0, "Expected session cookie to be deleted"
 
@@ -144,7 +144,7 @@ class TestLogoutEndpoint:
         response = auth_client.get("/auth/logout")
 
         assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
-        assert response.headers["location"] == "/home"
+        assert response.headers["location"] == "/auth/login"
 
 
 class TestStatusEndpoint:

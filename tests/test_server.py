@@ -7,6 +7,7 @@ import pytest
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
+from yak_shears.constants import DEFAULT_REDIRECT
 from yak_shears.server.routes import ROUTES, not_found
 
 
@@ -38,26 +39,7 @@ def test_root_endpoint(client: TestClient) -> None:
     response = client.get("/")
 
     assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
-    assert response.headers["location"] == "/home"
-
-
-def test_home_endpoint_not_logged_in(client: TestClient) -> None:
-    """Test the home endpoint when not logged in."""
-    response = client.get("/home")
-
-    assert response.status_code == HTTPStatus.OK
-    assert "Not logged in" in response.text
-    assert "Login" in response.text
-
-
-def test_home_endpoint_logged_in(client: TestClient, mock_user_session) -> None:
-    """Test the home endpoint when logged in."""
-    response = client.get("/home")
-
-    assert response.status_code == HTTPStatus.OK
-    assert "Logged in as:" in response.text
-    assert "Test User" in response.text
-    assert "Logout" in response.text
+    assert response.headers["location"] == DEFAULT_REDIRECT
 
 
 @pytest.fixture
@@ -183,5 +165,5 @@ def test_auth_status_logged_in(client: TestClient, mock_user_session) -> None:
 
 def test_auth_middleware_public_path(client: TestClient, mock_user_session) -> None:
     """Test that auth middleware allows access to public paths."""
-    response = client.get("/home")
+    response = client.get("/auth/status")
     assert response.status_code == HTTPStatus.OK

@@ -8,13 +8,13 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse, Response
 from starlette.routing import Route
 
+from yak_shears.constants import DEFAULT_REDIRECT
 from yak_shears.templates import render_template
 
 from . import storage
 from .models import Password, SessionId, User
 
 IN_TLS_CONTEXT = (getenv("IN_TLS_CONTEXT") or "").upper() == "TRUE"
-DEFAULT_REDIRECT = "/files"
 
 
 async def login_handler(request: Request) -> Response:
@@ -28,7 +28,7 @@ async def login_handler(request: Request) -> Response:
     """
     if request.method == "GET":
         if user := get_user_from_session(request):
-            return RedirectResponse(url="/home")
+            return RedirectResponse(url=DEFAULT_REDIRECT)
         redirect_path = request.query_params.get("redirect")
         return render_template("auth/login.html.jinja", redirect=redirect_path)
 
@@ -83,7 +83,7 @@ async def logout_handler(request: Request) -> Response:  # noqa: RUF029
     if session_id:
         storage.delete_session(session_id)
 
-    response = RedirectResponse(url="/home")
+    response = RedirectResponse(url="/auth/login")
     response.delete_cookie("session_id")
     return response
 

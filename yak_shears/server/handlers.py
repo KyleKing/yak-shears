@@ -6,63 +6,10 @@ from pathlib import Path
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 
-from yak_shears.auth import routes  # for test mocking
+from yak_shears.constants import DEFAULT_REDIRECT
 from yak_shears.templates import render_error
 
 PREVIEW_LENGTH = 200  # Number of characters for content preview
-
-
-async def home_handler(request: Request) -> HTMLResponse:  # noqa: RUF029
-    """Handle requests to /home.
-
-    Args:
-        request: The incoming request
-
-    Returns:
-        HTMLResponse with navigation index
-    """
-    user = routes.get_user_from_session(request)
-    auth_status = ""
-
-    if user:
-        auth_status = f"""
-        <div style="margin-bottom: 20px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
-            <p>Logged in as: <strong>{user["display_name"]}</strong></p>
-            <a href="/auth/logout" style="color: #d9534f;">Logout</a>
-        </div>
-        """
-    else:
-        auth_status = """
-        <div style="margin-bottom: 20px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
-            <p>Not logged in</p>
-            <a href="/auth/login">Login</a>
-            <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
-                Note: Users must be created by an administrator using the CLI tool.
-            </p>
-        </div>
-        """
-
-    return HTMLResponse(f"""
-    <html>
-    <head>
-        <title>Yak Shears Server</title>
-        <style>
-            body {{ font-family: Arial, sans-serif; margin: 20px; }}
-            ul {{ padding-left: 20px; }}
-            li {{ margin-bottom: 10px; }}
-            a {{ color: #337ab7; text-decoration: none; }}
-            a:hover {{ text-decoration: underline; }}
-        </style>
-    </head>
-    <body>
-        <h1>Yak Shears Server</h1>
-        {auth_status}
-        <ul>
-            <li><a href="/files">Browse Files</a></li>
-        </ul>
-    </body>
-    </html>
-    """)
 
 
 def get_djot_files(
@@ -306,4 +253,4 @@ async def root_handler(request: Request) -> Response:  # noqa: ARG001, RUF029
     Returns:
         Redirect to home page
     """
-    return RedirectResponse(url="/home")
+    return RedirectResponse(url=DEFAULT_REDIRECT)
