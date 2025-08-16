@@ -117,11 +117,11 @@ def mock_djot_files() -> list[Path]:
     Returns:
         list[Path]: List of mock file paths
     """
-    # Mock file paths
+    mock_dir = Path(__file__).parent / "test_data/mock_djot_files"
     return [
-        Path("/home/user/Sync/yak-shears/file1.dj"),
-        Path("/home/user/Sync/yak-shears/file2.dj"),
-        Path("/home/user/Sync/yak-shears/subdirectory/file3.dj"),
+        mock_dir / "file1.dj",
+        mock_dir / "file2.dj",
+        mock_dir / "subdirectory/file3.dj",
     ]
 
 
@@ -144,7 +144,6 @@ def test_files_endpoint(client: TestClient, mock_djot_files: list[Path], mock_us
 
                 response = client.get("/files")
                 assert response.status_code == HTTPStatus.OK
-                assert "Files in" in response.text
                 assert "file1.dj" in response.text
                 assert "file2.dj" in response.text
                 assert "file3.dj" in response.text

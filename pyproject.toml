@@ -51,6 +51,17 @@ warn_unused_ignores = true
 include = ["tests", "yak_shears"]
 pythonVersion = "3.12"
 
+[tool.pytest.ini_options]
+addopts = "./tests --cov=yak_shears --cov-fail-under=80 --cov-report=html:.cover"
+
+[tool.pytest-watcher]
+clear = true
+ignore_patterns = []
+now = true
+patterns = ["*.jinja", "*.json", "*.py"]
+runner = "pytest"
+runner_args = ["--exitfirst", "--last-failed", "--new-first", "--no-cov", "-vv"]
+
 [tool.ruff]
 # Docs: https://github.com/charliermarsh/ruff
 # Tip: uv run ruff rule RUF100
@@ -119,7 +130,8 @@ trailing_comma_inline_array = true
 dev-dependencies = [
   "httpx>=0.28.1",
   "mypy>=1.15.0",
-  "pytest>=8.3.5",
+  "pytest-cov>=6.2.1",
+  "pytest-watcher>=0.4.3",
   "ruff>=0.11.10",
 ]
 required-version = ">=0.7.3"

@@ -7,6 +7,7 @@ from starlette.routing import Route
 from starlette.testclient import TestClient
 
 from yak_shears.auth.middleware import AuthMiddleware
+from yak_shears.auth.routes import DEFAULT_REDIRECT
 from yak_shears.auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
 from yak_shears.auth.routes import ROUTES as AUTH_ROUTES
 
@@ -44,7 +45,6 @@ class TestLoginEndpoint:
     @pytest.mark.parametrize(
         ("email", "password", "expected_content"),
         [
-            (SAMPLE_USER_EMAIL, SAMPLE_USER_PASSWORD, b"Login Successful"),
             (SAMPLE_USER_EMAIL, "wrong_password", b"Invalid email or password"),
             ("nonexistent@example.com", "password", b"Invalid email or password"),
             (None, "password", b"Email and password are required"),
@@ -53,7 +53,6 @@ class TestLoginEndpoint:
             (SAMPLE_USER_EMAIL, "", b"Email and password are required"),
         ],
         ids=[
-            "Valid Credentials",
             "Invalid Password",
             "Non-existent user",
             "Missing Email",
@@ -62,11 +61,11 @@ class TestLoginEndpoint:
             "Empty Password",
         ],
     )
-    def test_login_post(self, auth_client, sample_user, email, password, expected_content):
-        """Test login POST requests with various inputs."""
+    def test_login_errors(self, auth_client, sample_user, email, password, expected_content):
+        """Test login POST requests with various input errors."""
         response = auth_client.post("/auth/login", data={"email": email, "password": password})
 
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.BAD_REQUEST
         assert expected_content in response.content
 
     def test_login_get_shows_form(self, auth_client):
@@ -86,8 +85,18 @@ class TestLoginEndpoint:
         )
 
         # Should still work (newlines should be stripped)
-        assert response.status_code == HTTPStatus.OK
-        assert response.headers["HX-Redirect"] == "/home"
+        assert response.status_code == HTTPStatus.SEE_OTHER
+        assert response.headers["location"] == DEFAULT_REDIRECT
+
+    def test_login_keeps_redirect(self, auth_client, sample_user):
+        """Test that login keeps the redirect."""
+        response = auth_client.post(
+            "/auth/login",
+            data={"redirect": "/page/abc", "email": SAMPLE_USER_EMAIL, "password": SAMPLE_USER_PASSWORD},
+        )
+
+        assert response.status_code == HTTPStatus.SEE_OTHER
+        assert response.headers["location"] == "/page/abc"
 
 
 class TestLogoutEndpoint:
@@ -99,7 +108,7 @@ class TestLogoutEndpoint:
             "/auth/login",
             data={"email": SAMPLE_USER_EMAIL, "password": SAMPLE_USER_PASSWORD},
         )
-        assert login_response.status_code == HTTPStatus.OK
+        assert login_response.status_code == HTTPStatus.SEE_OTHER
 
         # Then log out
         logout_response = auth_client.get("/auth/logout")
@@ -140,7 +149,7 @@ class TestStatusEndpoint:
             "/auth/login",
             data={"email": SAMPLE_USER_EMAIL, "password": SAMPLE_USER_PASSWORD},
         )
-        assert login_response.status_code == HTTPStatus.OK
+        assert login_response.status_code == HTTPStatus.SEE_OTHER
 
         # Then check status
         status_response = auth_client.get("/auth/status")
@@ -214,7 +223,7 @@ class TestAuthMiddleware:
         client = TestClient(app, follow_redirects=False)
 
         login_response = client.post("/auth/login", data={"email": SAMPLE_USER_EMAIL, "password": SAMPLE_USER_PASSWORD})
-        assert login_response.status_code == HTTPStatus.OK
+        assert login_response.status_code == HTTPStatus.SEE_OTHER
 
         response = client.get("/protected")
         assert response.status_code == HTTPStatus.OK
@@ -230,7 +239,7 @@ class TestSessionManagement:
             "/auth/login",
             data={"email": SAMPLE_USER_EMAIL, "password": SAMPLE_USER_PASSWORD},
         )
-        assert login_response.status_code == HTTPStatus.OK
+        assert login_response.status_code == HTTPStatus.SEE_OTHER
 
         # Make multiple status requests
         for _ in range(3):
@@ -246,7 +255,7 @@ class TestSessionManagement:
         login_response = auth_client.post(
             "/auth/login", data={"email": SAMPLE_USER_EMAIL, "password": SAMPLE_USER_PASSWORD}
         )
-        assert login_response.status_code == HTTPStatus.OK
+        assert login_response.status_code == HTTPStatus.SEE_OTHER
 
         # Verify logged in
         status_response = auth_client.get("/auth/status")
@@ -284,4 +293,4 @@ class TestErrorHandling:
         response = auth_client.post("/auth/login", data={"email": large_email, "password": large_password})
 
         # Should handle gracefully
-        assert response.status_code == HTTPStatus.OK  # Should show error message
+        assert response.status_code == HTTPStatus.BAD_REQUEST

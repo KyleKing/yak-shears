@@ -1,6 +1,7 @@
 """Authentication routes for the Yak Shears application."""
 
 from datetime import UTC, datetime, timedelta
+from http import HTTPStatus
 from os import getenv
 
 from starlette.requests import Request
@@ -13,6 +14,7 @@ from . import storage
 from .models import Password, SessionId, User
 
 IN_TLS_CONTEXT = (getenv("IN_TLS_CONTEXT") or "").upper() == "TRUE"
+DEFAULT_REDIRECT = "/files"
 
 
 async def login_handler(request: Request) -> Response:
@@ -32,22 +34,25 @@ async def login_handler(request: Request) -> Response:
 
     if request.method == "POST":
         form_data = await request.form()
-        email = str(form_data.get("email", "")).rstrip("\n")
+        email = str(form_data.get("email", "")).strip()
+        # Allow trailing spaces
         password = Password(str(form_data.get("password", "")).rstrip("\n"))
         if not email or not password:
             return render_template(
                 "auth/login.html.jinja",
+                HTTPStatus.BAD_REQUEST,
                 error="Email and password are required",
                 redirect=form_data.get("redirect"),
             )
         if not (user := storage.authenticate_user(email, password)):
             return render_template(
                 "auth/login.html.jinja",
+                HTTPStatus.BAD_REQUEST,
                 error="Invalid email or password",
                 redirect=form_data.get("redirect"),
             )
-        redirect_path = form_data.get("redirect") or "/home"
-        response = Response("Login Successful", headers={"HX-Redirect": redirect_path})
+        redirect_path = str(form_data.get("redirect") or DEFAULT_REDIRECT).rstrip()
+        response = RedirectResponse(url=redirect_path, status_code=HTTPStatus.SEE_OTHER)
         session_id = storage.create_session(SessionId(user["id"]))
         expires = datetime.now(tz=UTC) + timedelta(weeks=1)
         response.set_cookie(
