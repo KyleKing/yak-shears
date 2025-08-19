@@ -14,6 +14,8 @@ dependencies = [
   "jinja2>=3.1.4",
   "python-multipart>=0.0.20",
   "starlette>=0.47.0",
+  "torch>=2.8.0",
+  "transformers>=4.55.2",
   "uvicorn>=0.34.2",
 ]
 description = "Yak Shears Web App"
@@ -52,7 +54,7 @@ include = ["tests", "yak_shears"]
 pythonVersion = "3.12"
 
 [tool.pytest.ini_options]
-addopts = "./tests --cov=yak_shears --cov-fail-under=80 --cov-report=html:.cover"
+addopts = "./tests --cov=yak_shears --cov-fail-under=90 --cov-report=html:.cover"
 
 [tool.pytest-watcher]
 clear = true
@@ -130,6 +132,7 @@ trailing_comma_inline_array = true
 dev-dependencies = [
   "beautifulsoup4>=4.13.4",
   "httpx>=0.28.1",
+  "huggingface-hub[cli]>=0.34.4",
   "mypy>=1.15.0",
   "pytest-cov>=6.2.1",
   "pytest-watcher>=0.4.3",
@@ -137,3 +140,20 @@ dev-dependencies = [
   "syrupy>=4.9.1",
 ]
 required-version = ">=0.7.3"
+
+# pytorch-uv guide: https://docs.astral.sh/uv/guides/integration/pytorch/#using-a-pytorch-index
+[[tool.uv.index]]
+explicit = true
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+
+[[tool.uv.index]]
+explicit = true
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+
+[tool.uv.sources]
+torch = [
+  {index = "pytorch-cpu", marker = "sys_platform != 'linux'"},
+  {index = "pytorch-cu128", marker = "sys_platform == 'linux'"},
+]
