@@ -2,7 +2,7 @@
 _.python.venv = {path = ".venv"}
 
 [tasks.format]
-run = ["uv run ruff check --fix", "uv run ruff format"]
+run = ['uv run ruff check --fix {{option(name="unsafe_fixes")}}', "uv run ruff format"]
 
 [tasks.typecheck]
 run = ["uv run mypy"]

@@ -73,5 +73,5 @@ repos:
     rev: v0.24.2
     hooks:
       - id: toml-sort-fix
-        exclude: uv\.lock
+        exclude: uv\.lock|mise\.toml
         stages: ["pre-commit"]

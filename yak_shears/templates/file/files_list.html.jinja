@@ -1,0 +1,64 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}Notes in {{ directory_path }}{% endblock %}
+
+{% block extra_styles %}
+.cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+.card {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    box-sizing: border-box;
+    width: 100%;
+}
+.card h2 { margin: 0 0 10px 0; font-size: 1.2em; }
+.card p.preview { margin: 0 0 10px 0; color: #555; }
+.pagination { display: flex; margin-top: 20px; }
+.pagination a { color: black; padding: 8px 16px; text-decoration: none; }
+.pagination a.active { background-color: #4CAF50; color: white; }
+.pagination a:hover:not(.active) { background-color: #ddd; }
+.status-bar { margin-top: 10px; }
+.sort-controls { margin-bottom: 10px; }
+.sort-controls a.active { font-weight: bold; text-decoration: underline; }
+{% endblock %}
+
+{% block content %}
+<h1>Notes in {{ directory_path }}</h1>
+<p class="status-bar">Showing {{ files|length }} of {{ total_files }} notes (Page {{ current_page }} of {{ total_pages }})</p>
+<div class="sort-controls">
+    Sort by:
+    <a href="/files?page=1&sort_by=name" class="{% if sort_by == 'name' %}active{% endif %}">Name</a> |
+    <a href="/files?page=1&sort_by=date" class="{% if sort_by == 'date' %}active{% endif %}">Date</a>
+</div>
+<div class="cards-container">
+    {% for file_info in files %}
+    <div class="card">
+        <h2><a href="/edit?file={{ file_info.path }}">{{ file_info.name }}</a></h2>
+        <p class="preview">{{ file_info.preview }}{% if file_info.truncated %}...{% endif %}</p>
+        <p><small>Last modified: {{ file_info.last_modified }}</small></p>
+    </div>
+    {% endfor %}
+</div>
+
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if current_page > 1 %}
+    <a href="/files?page={{ current_page - 1 }}&sort_by={{ sort_by }}">&laquo; Previous</a>
+    {% endif %}
+
+    {% for page_num in range([1, current_page - 2]|max, [total_pages + 1, current_page + 3]|min) %}
+    <a class="{% if page_num == current_page %}active{% endif %}" href="/files?page={{ page_num }}&sort_by={{ sort_by }}">{{ page_num }}</a>
+    {% endfor %}
+
+    {% if current_page < total_pages %}
+    <a href="/files?page={{ current_page + 1 }}&sort_by={{ sort_by }}">Next &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

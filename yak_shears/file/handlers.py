@@ -5,9 +5,9 @@ from http import HTTPStatus
 from pathlib import Path
 
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, RedirectResponse, Response
+from starlette.responses import RedirectResponse, Response
 
-from yak_shears.templates import render_error
+from yak_shears.templates import render_error, render_file_edit, render_files_list
 
 PREVIEW_LENGTH = 200
 """Number of characters for content preview."""
@@ -50,113 +50,32 @@ def get_djot_files(
     return all_files[start_idx:end_idx], total_files, total_pages
 
 
-def generate_file_table_html(
-    files: list[Path],
-    current_page: int,
-    total_pages: int,
-    total_files: int,
-    directory_path: str,
-    *,
-    sort_by: str,
-) -> str:
-    """Generate HTML for displaying files in a table with pagination.
+def prepare_file_data(files: list[Path]) -> list[dict[str, str | bool]]:
+    """Prepare file data for template rendering.
 
     Args:
-        files: List of file paths to display
-        current_page: Current page number
-        total_pages: Total number of pages
-        total_files: Total number of files
-        directory_path: Path to the directory being listed
-        sort_by: Criteria to sort files, either 'name' or 'date'
+        files: List of file paths to process
 
     Returns:
-        HTML string for the file table and pagination
+        List of dictionaries containing file information for template
     """
-    html = f"""
-    <html>
-    <head>
-        <title>Notes in {directory_path}</title>
-        <style>
-            body {{ font-family: Arial, sans-serif; margin: 20px; }}
-            .cards-container {{
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-                gap: 20px;
-                max-width: 1100px;
-                margin: 0 auto;
-            }}
-            .card {{
-                border: 1px solid #ddd;
-                border-radius: 5px;
-                padding: 10px;
-                box-sizing: border-box;
-                width: 100%;
-            }}
-            .card h2 {{ margin: 0 0 10px 0; font-size: 1.2em; }}
-            .card p.preview {{ margin: 0 0 10px 0; color: #555; }}
-            .pagination {{ display: flex; margin-top: 20px; }}
-            .pagination a {{ color: black; padding: 8px 16px; text-decoration: none; }}
-            .pagination a.active {{ background-color: #4CAF50; color: white; }}
-            .pagination a:hover:not(.active) {{ background-color: #ddd; }}
-            .status-bar {{ margin-top: 10px; }}
-                .sort-controls {{ margin-bottom: 10px; }}
-                .sort-controls a.active {{ font-weight: bold; text-decoration: underline; }}
-        </style>
-    </head>
-    <body>
-        <h1>Notes in {directory_path}</h1>
-        <p class="status-bar">Showing {len(files)} of {total_files} notes (Page {current_page} of {total_pages})</p>
-        <div class="sort-controls">
-            Sort by:
-            <a href="/files?page=1&sort_by=name" class="{"active" if sort_by == "name" else ""}">Name</a> |
-            <a href="/files?page=1&sort_by=date" class="{"active" if sort_by == "date" else ""}">Date</a>
-        </div>
-        <div class="cards-container">
-    """
-
-    # Add note cards with preview
+    file_data = []
     for file_path in files:
         file_stats = file_path.stat()
         last_modified = datetime.fromtimestamp(file_stats.st_mtime, tz=UTC).strftime("%Y-%m-%d %H:%M:%S")
         content = file_path.read_text(encoding="utf-8")
         preview = content[:PREVIEW_LENGTH].replace("\n", " ")
-        html += f"""
-            <div class="card">
-                <h2><a href="/edit?file={file_path!s}">{file_path.name}</a></h2>
-                <p class="preview">{preview}{"..." if len(content) > PREVIEW_LENGTH else ""}</p>
-                <p><small>Last modified: {last_modified}</small></p>
-            </div>
-        """
 
-    html += """
-        </div>
-    """
+        data: dict[str, str | bool] = {
+            "path": str(file_path),
+            "name": file_path.name,
+            "preview": preview,
+            "truncated": len(content) > PREVIEW_LENGTH,
+            "last_modified": last_modified,
+        }
+        file_data.append(data)
 
-    # Add pagination
-    if total_pages > 1:
-        html += '<div class="pagination">'
-
-        # Previous page
-        if current_page > 1:
-            html += f'<a href="/files?page={current_page - 1}&sort_by={sort_by}">&laquo; Previous</a>'
-
-        # Page numbers
-        for page_num in range(max(1, current_page - 2), min(total_pages + 1, current_page + 3)):
-            active_class = "active" if page_num == current_page else ""
-            html += f'<a class="{active_class}" href="/files?page={page_num}&sort_by={sort_by}">{page_num}</a>'
-
-        # Next page
-        if current_page < total_pages:
-            html += f'<a href="/files?page={current_page + 1}&sort_by={sort_by}">Next &raquo;</a>'
-
-        html += "</div>"
-
-    html += """
-    </body>
-    </html>
-    """
-
-    return html
+    return file_data
 
 
 async def files_handler(request: Request) -> Response:  # noqa: RUF029
@@ -181,10 +100,11 @@ async def files_handler(request: Request) -> Response:  # noqa: RUF029
     # Get files with pagination
     files, total_files, total_pages = get_djot_files(directory_path, page, sort_by=sort_by)
 
-    # Generate HTML (TODO: move to template)
-    html_content = generate_file_table_html(files, page, total_pages, total_files, directory_path, sort_by=sort_by)
+    # Prepare file data for template
+    file_data = prepare_file_data(files)
 
-    return HTMLResponse(html_content)
+    # Render template
+    return render_files_list(file_data, page, total_pages, total_files, directory_path, sort_by)
 
 
 async def edit_file_handler(request: Request) -> Response:
@@ -213,34 +133,8 @@ async def edit_file_handler(request: Request) -> Response:
             file_path.write_text(content, encoding="utf-8")
             return RedirectResponse(url=f"/edit?file={file_path_str}", status_code=303)
 
-        # TODO: Move to template
         # Generate HTML editor
         content = file_path.read_text(encoding="utf-8")
-        html = f"""
-        <html>
-        <head>
-            <title>Editing {file_path.name}</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                textarea {{ width: 100%; height: 70vh; font-family: monospace; padding: 10px; }}
-                .header {{ display: flex; justify-content: space-between; align-items: center; }}
-                .actions {{ margin: 10px 0; }}
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>Editing {file_path.name}</h1>
-                <a href="/files">Back to Files</a>
-            </div>
-            <form method="post">
-                <textarea name="content">{content}</textarea>
-                <div class="actions">
-                    <button type="submit">Save Changes</button>
-                </div>
-            </form>
-        </body>
-        </html>
-        """
-        return HTMLResponse(html)
+        return render_file_edit(file_path.name, content)
     except Exception as e:
         return render_error(f"An error occurred: {e!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
