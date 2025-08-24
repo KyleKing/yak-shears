@@ -14,8 +14,6 @@ dependencies = [
   "jinja2>=3.1.4",
   "python-multipart>=0.0.20",
   "starlette>=0.47.0",
-  "torch>=2.8.0",
-  "transformers>=4.55.2",
   "uvicorn>=0.34.2",
 ]
 description = "Yak Shears Web App"
@@ -132,7 +130,6 @@ trailing_comma_inline_array = true
 dev-dependencies = [
   "beautifulsoup4>=4.13.4",
   "httpx>=0.28.1",
-  "huggingface-hub[cli]>=0.34.4",
   "mypy>=1.15.0",
   "pytest-cov>=6.2.1",
   "pytest-watcher>=0.4.3",
