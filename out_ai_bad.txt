@@ -1,0 +1,110 @@
+[{'model': 'sshleifer/distilbart-cnn-12-6',
+  'result': [{'summary_text': ' Research shows that frequent use of AI erodes '
+                              'critical thinking skills . Using AI a lot '
+                              'weakens the very skill that’s necessary for '
+                              'working with it well . We’re generally better '
+                              'off treating AI as a thinking partner rather '
+                              'than a tool we delegate tasks to . The main '
+                              'problem causing this is called “cognitive '
+                              'offloading” – delegating your thinking to AI '
+                              '.'}]},
+ {'model': 'google-t5/t5-base',
+  'result': [{'summary_text': 'research shows that frequent use of AI actually '
+                              'erodes critical thinking skills . a change in '
+                              'how you approach AI can help you get more out '
+                              'of it without compromising your thinking '
+                              'abilities .'}]},
+ {'model': 'facebook/bart-large-cnn',
+  'result': [{'summary_text': 'Research shows that frequent use of AI actually '
+                              'erodes critical thinking skills. Using AI a lot '
+                              'weakens the very skill that’s necessary for '
+                              'working with it well. How to work with AI as a '
+                              'thinking partner can help you get more out of '
+                              'it without compromising your thinking '
+                              'abilities.'}]},
+ {'model': 'pszemraj/led-large-book-summary (minimal modification)',
+  'results': [{'summary_text': 'Adam from Untools. Why AI is making us worse '
+                               'thinkers and how to avoid it. Exploring how AI '
+                               'usage erodes our critical thinking, Adam '
+                               'argues that we should treat it as a thinking '
+                               'partner rather than a tool we delegate tasks '
+                               'to. In this post, he explores the "AI thinking '
+                               'paradox" and discusses how to work with AI '
+                               'more collaboratively. With the advent of '
+                               "artificial intelligence, it's easy to see how "
+                               'many of us are becoming worse thinkers. '
+                               "However, according to Adam, the problem isn't "
+                               'just that AI is getting things wrong but that '
+                               "we're using it too often, which makes us lose "
+                               'confidence in our own judgment. He recommends '
+                               'working with AI as a collaborating partner '
+                               'instead of an end-to-end system where we take '
+                               'its outputs as if they were final decisions. '
+                               'Adam gives several examples of how to interact '
+                               'with and improve upon an AI solution and '
+                               'explains how to build your own framework for '
+                               "each specific problem you're solving. Next, he "
+                               'describes how to use his new tools to engage '
+                               'with and advise on AI.'}]},
+ {'model': 'pszemraj/led-large-book-summary',
+  'results': [{'summary_text': 'Adam discusses the paradox of artificial '
+                               'intelligence, or, how it makes us "even worse '
+                               'thinkers" in a weekly newsletter. In general, '
+                               'he says, we should treat AI more like a '
+                               'partner and less like a tool. That said, there '
+                               'are some drawbacks to this approach: first, it '
+                               'tends to erode our critical faculties; second, '
+                               'it can be dangerous to trust its outputs '
+                               'blindly; and third, you end up missing out on '
+                               'the subtler nuances and context that go into '
+                               "any given decision. Adam's goal in this "
+                               'newsletter is to explore these issues and to '
+                               'recommend ways to avoid becoming worse '
+                               'thinkers. In this introductory post, he '
+                               'addresses the "AI thinking paradox" and '
+                               "explains why it's so important to think "
+                               'clearly about how we use and think about AI. '
+                               'He begins by introducing himself and giving a '
+                               'history of his work with the company. His '
+                               'background as a cryptographer and draftsman '
+                               'helped him to write this piece of code. Now '
+                               "he's co-inventing new ways to think using "
+                               'artificial intelligence. From there, he '
+                               'describes a variety of techniques for dealing '
+                               'with and refining their own thinking tools. '
+                               'Next, he gives examples of how to build a '
+                               'framework around an AI solution and then run '
+                               'it through a combination of machine learning '
+                               'and real-time analysis. The overall goal is to '
+                               'make your thinking better rather than '
+                               'worse.'}]},
+ {'model': 'distilbert/distilbert-base-cased-distilled-squad',
+  'result': {'answer': 'it can hallucinate and sometimes doesn’t produce very '
+                       'accurate outputs',
+             'end': 1125,
+             'score': 0.02331135980784893,
+             'start': 1055}},
+ {'model': 'deepset/roberta-base-squad2',
+  'result': {'answer': 'we ask AI to argue against our position instead of '
+                       'doing our work for us',
+             'end': 5640,
+             'score': 0.0060449764132499695,
+             'start': 5568}},
+ {'model': 'google-bert/bert-large-uncased-whole-word-masking-finetuned-squad',
+  'result': {'answer': 'to use it in a way that makes you think better, not '
+                       'less',
+             'end': 8782,
+             'score': 0.15094909071922302,
+             'start': 8726}},
+ {'model': 'MoritzLaurer/mDeBERTa-v3-base-mnli-xnli',
+  'result': {'': 0.8701289296150208,
+             'alerting': 0.9292880892753601,
+             'publishing': 0.9518855810165405,
+             'running': 0.8738217353820801,
+             'tools': 0.8786530494689941}},
+ {'model': 'facebook/bart-large-mnli',
+  'result': {'alerting': 0.9800794720649719,
+             'ansible': 0.9758882522583008,
+             'monitoring': 0.9753522872924805,
+             'practical-c++-overview': 0.9746882319450378,
+             'practical-c++-patterns': 0.9728866219520569}}]
