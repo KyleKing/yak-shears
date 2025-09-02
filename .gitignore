@@ -238,4 +238,4 @@ coverage.json
 # Custom Rules
 
 .yak-shears-users.json
-yak_shears/static/**/*.*
+yak_shears/static/**/*.min.*

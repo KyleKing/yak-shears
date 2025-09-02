@@ -7,26 +7,20 @@
     <title>
      Editing test.dj
     </title>
-    <style>
-     body { font-family: Arial, sans-serif; margin: 20px; }
-  
-  textarea { width: 100%; height: 70vh; font-family: monospace; padding: 10px; }
-  .header { display: flex; justify-content: space-between; align-items: center; }
-  .actions { margin: 10px 0; }
-    </style>
+    <link href="/static/css/main.css" rel="stylesheet"/>
    </head>
    <body>
-    <div class="header">
+    <div class="editor__header">
      <h1>
       Editing test.dj
      </h1>
-     <a href="/files">
+     <a class="editor__back-link" href="/files">
       Back to Files
      </a>
     </div>
     <form method="post">
-     <textarea name="content">Test file content</textarea>
-     <div class="actions">
+     <textarea class="editor__textarea" name="content">Test file content</textarea>
+     <div class="editor__actions">
       <button type="submit">
        Save Changes
       </button>
@@ -49,144 +43,92 @@
     <title>
      Notes in ./test_data/mock_djot_files
     </title>
-    <style>
-     body { font-family: Arial, sans-serif; margin: 20px; }
-  
-  .cards-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 20px;
-      max-width: 1100px;
-      margin: 0 auto;
-  }
-  .card {
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      padding: 10px;
-      box-sizing: border-box;
-      width: 100%;
-  }
-  .card h2 { margin: 0 0 10px 0; font-size: 1.2em; }
-  .card p.preview { margin: 0 0 10px 0; color: #555; }
-  .pills {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-  }
-  .pill {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-size: 0.8em;
-      font-weight: 500;
-      background-color: #f0f0f0;
-      color: #666;
-  }
-  .pill.recent {
-      background-color: #4CAF50;
-      color: white;
-  }
-  .pagination { display: flex; margin-top: 20px; }
-  .pagination a { color: black; padding: 8px 16px; text-decoration: none; }
-  .pagination a.active { background-color: #4CAF50; color: white; }
-  .pagination a:hover:not(.active) { background-color: #ddd; }
-  .status-bar { margin-top: 10px; }
-  .sort-controls { margin-bottom: 10px; }
-  .sort-controls a.active { font-weight: bold; text-decoration: underline; }
-  .cards-container a {
-      text-decoration: none;
-      color: inherit;
-      display: block;
-      transition: box-shadow 0.2s ease;
-  }
-  .cards-container a:hover .card {
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      transform: translateY(-2px);
-  }
-    </style>
+    <link href="/static/css/main.css" rel="stylesheet"/>
+    <link href="/static/css/files-list.css" rel="stylesheet"/>
    </head>
    <body>
-    <h1>
-     Notes in ./test_data/mock_djot_files
-    </h1>
-    <p class="status-bar">
-     Showing 3 of 3 notes (Page 1 of 1)
-    </p>
-    <div class="sort-controls">
-     Sort by:
-     <a class="active" href="/files?sort_by=name">
-      Name (Created At)
-     </a>
-     |
-     <a class="" href="/files?sort_by=modified_date">
-      Modified Date
-     </a>
-    </div>
-    <div class="filter-controls" style="margin-bottom: 10px;">
-     Filter by category:
-     <a class="active" href="/files?sort_by=name">
-      All
-     </a>
-     |
-     <a class="" href="/files?sort_by=name&amp;category=mock_djot_files">
-      mock_djot_files
-     </a>
-     |
-     <a class="" href="/files?sort_by=name&amp;category=subdirectory-2">
-      subdirectory-2
-     </a>
-     |
-     <a class="" href="/files?sort_by=name&amp;category=subdirectory-3">
-      subdirectory-3
-     </a>
-    </div>
-    <div class="cards-container">
-     <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file1.dj">
-      <div class="card">
-       <p class="preview">
-        # File 1  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 1
-       </p>
-       <div class="pills">
-        <span class="pill recent">
-         2025-05-01
-        </span>
-        <span class="pill">
-         mock_djot_files
-        </span>
+    <div class="files-list">
+     <h1>
+      Notes in ./test_data/mock_djot_files
+     </h1>
+     <p class="files-list__status-bar">
+      Showing 3 of 3 notes (Page 1 of 1)
+     </p>
+     <div class="files-list__sort-controls">
+      Sort by:
+      <a class="active" href="/files?sort_by=name">
+       Name (Created At)
+      </a>
+      |
+      <a class="" href="/files?sort_by=modified_date">
+       Modified Date
+      </a>
+     </div>
+     <div class="files-list__filter-controls">
+      Filter by category:
+      <a class="active" href="/files?sort_by=name">
+       All
+      </a>
+      |
+      <a class="" href="/files?sort_by=name&amp;category=mock_djot_files">
+       mock_djot_files
+      </a>
+      |
+      <a class="" href="/files?sort_by=name&amp;category=subdirectory-2">
+       subdirectory-2
+      </a>
+      |
+      <a class="" href="/files?sort_by=name&amp;category=subdirectory-3">
+       subdirectory-3
+      </a>
+     </div>
+     <div class="files-list__cards-container">
+      <a class="files-list__card-link" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file1.dj">
+       <div class="files-list__card">
+        <p class="files-list__card-preview">
+         # File 1  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 1
+        </p>
+        <div class="files-list__pills">
+         <span class="files-list__pill files-list__pill--recent">
+          2025-05-01
+         </span>
+         <span class="files-list__pill">
+          mock_djot_files
+         </span>
+        </div>
        </div>
-      </div>
-     </a>
-     <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-2/file2.dj">
-      <div class="card">
-       <p class="preview">
-        # File 2  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 2
-       </p>
-       <div class="pills">
-        <span class="pill recent">
-         2025-05-01
-        </span>
-        <span class="pill">
-         subdirectory-2
-        </span>
+      </a>
+      <a class="files-list__card-link" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-2/file2.dj">
+       <div class="files-list__card">
+        <p class="files-list__card-preview">
+         # File 2  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 2
+        </p>
+        <div class="files-list__pills">
+         <span class="files-list__pill files-list__pill--recent">
+          2025-05-01
+         </span>
+         <span class="files-list__pill">
+          subdirectory-2
+         </span>
+        </div>
        </div>
-      </div>
-     </a>
-     <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-3/file3.dj">
-      <div class="card">
-       <p class="preview">
-        # File 3  This is a test file number 3  Unrelated to file 1 or file 2
-       </p>
-       <div class="pills">
-        <span class="pill recent">
-         2025-05-01
-        </span>
-        <span class="pill">
-         subdirectory-3
-        </span>
+      </a>
+      <a class="files-list__card-link" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-3/file3.dj">
+       <div class="files-list__card">
+        <p class="files-list__card-preview">
+         # File 3  This is a test file number 3  Unrelated to file 1 or file 2
+        </p>
+        <div class="files-list__pills">
+         <span class="files-list__pill files-list__pill--recent">
+          2025-05-01
+         </span>
+         <span class="files-list__pill">
+          subdirectory-3
+         </span>
+        </div>
        </div>
-      </div>
-     </a>
+      </a>
+     </div>
     </div>
     <script defer="" src="/static/js/alpine-ajax.min.js">
     </script>

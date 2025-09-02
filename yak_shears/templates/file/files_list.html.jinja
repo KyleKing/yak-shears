@@ -1,107 +1,57 @@
 {% extends "base.html.jinja" %}
 
-{% block title %}Notes in {{ yak_dir_label }}{% endblock %}
-
-{# TODO: Move these CSS rules to a shared file #}
-{% block extra_styles %}
-.cards-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 20px;
-    max-width: 1100px;
-    margin: 0 auto;
-}
-.card {
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 10px;
-    box-sizing: border-box;
-    width: 100%;
-}
-.card h2 { margin: 0 0 10px 0; font-size: 1.2em; }
-.card p.preview { margin: 0 0 10px 0; color: #555; }
-.pills {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 10px;
-}
-.pill {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.8em;
-    font-weight: 500;
-    background-color: #f0f0f0;
-    color: #666;
-}
-.pill.recent {
-    background-color: #4CAF50;
-    color: white;
-}
-.pagination { display: flex; margin-top: 20px; }
-.pagination a { color: black; padding: 8px 16px; text-decoration: none; }
-.pagination a.active { background-color: #4CAF50; color: white; }
-.pagination a:hover:not(.active) { background-color: #ddd; }
-.status-bar { margin-top: 10px; }
-.sort-controls { margin-bottom: 10px; }
-.sort-controls a.active { font-weight: bold; text-decoration: underline; }
-.cards-container a {
-    text-decoration: none;
-    color: inherit;
-    display: block;
-    transition: box-shadow 0.2s ease;
-}
-.cards-container a:hover .card {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
-}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/files-list.css">
 {% endblock %}
 
+{% block title %}Notes in {{ yak_dir_label }}{% endblock %}
+
 {% block content %}
-<h1>Notes in {{ yak_dir_label }}</h1>
-<p class="status-bar">Showing {{ files|length }} of {{ total_files }} notes (Page {{ current_page }} of {{ total_pages }})</p>
-<div class="sort-controls">
-    Sort by:
-    <a href="/files?sort_by=name{% if current_category %}&category={{ current_category }}{% endif %}" class="{% if sort_by == 'name' %}active{% endif %}">Name (Created At)</a> |
-    <a href="/files?sort_by=modified_date{% if current_category %}&category={{ current_category }}{% endif %}" class="{% if sort_by == 'modified_date' %}active{% endif %}">Modified Date</a>
-</div>
-{% if categories %}
-<div class="filter-controls" style="margin-bottom: 10px;">
-    Filter by category:
-    <a href="/files?sort_by={{ sort_by }}" class="{% if not current_category %}active{% endif %}">All</a>
-    {% for cat in categories|sort %} |
-    <a href="/files?sort_by={{ sort_by }}&category={{ cat }}" class="{% if current_category == cat %}active{% endif %}">{{ cat }}</a>
-    {% endfor %}
-</div>
-{% endif %}
-<div class="cards-container">
-    {% for info in files %}
-    <a href="/edit?file={{ info.path }}">
-        <div class="card">
-            <p class="preview">{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
-            <div class="pills">
-                <span class="pill{% if info.last_modified[:4] == '2025' %} recent{% endif %}">{{ info.last_modified[:10] }}</span>
-                <span class="pill">{{ info.category }}</span>
+<div class="files-list">
+    <h1>Notes in {{ yak_dir_label }}</h1>
+    <p class="files-list__status-bar">Showing {{ files|length }} of {{ total_files }} notes (Page {{ current_page }} of {{ total_pages }})</p>
+    <div class="files-list__sort-controls">
+        Sort by:
+        <a href="/files?sort_by=name{% if current_category %}&category={{ current_category }}{% endif %}" class="{% if sort_by == 'name' %}active{% endif %}">Name (Created At)</a> |
+        <a href="/files?sort_by=modified_date{% if current_category %}&category={{ current_category }}{% endif %}" class="{% if sort_by == 'modified_date' %}active{% endif %}">Modified Date</a>
+    </div>
+    {% if categories %}
+    <div class="files-list__filter-controls">
+        Filter by category:
+        <a href="/files?sort_by={{ sort_by }}" class="{% if not current_category %}active{% endif %}">All</a>
+        {% for cat in categories|sort %} |
+        <a href="/files?sort_by={{ sort_by }}&category={{ cat }}" class="{% if current_category == cat %}active{% endif %}">{{ cat }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div class="files-list__cards-container">
+        {% for info in files %}
+        <a href="/edit?file={{ info.path }}" class="files-list__card-link">
+            <div class="files-list__card">
+                <p class="files-list__card-preview">{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
+                <div class="files-list__pills">
+                    <span class="files-list__pill{% if info.last_modified[:4] == '2025' %} files-list__pill--recent{% endif %}">{{ info.last_modified[:10] }}</span>
+                    <span class="files-list__pill">{{ info.category }}</span>
+                </div>
             </div>
-        </div>
-    </a>
-    {% endfor %}
-</div>
+        </a>
+        {% endfor %}
+    </div>
 
-{% if total_pages > 1 %}
-<div class="pagination">
-    {% if current_page > 1 %}
-    <a href="/files?page={{ current_page - 1 }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}">&laquo; Previous</a>
+    {% if total_pages > 1 %}
+    <div class="files-list__pagination">
+        {% if current_page > 1 %}
+        <a href="/files?page={{ current_page - 1 }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}" class="files-list__pagination-link">&laquo; Previous</a>
+        {% endif %}
+
+        {% for page_num in range([1, current_page - 2]|max, [total_pages + 1, current_page + 3]|min) %}
+        <a class="{% if page_num == current_page %}files-list__pagination-link--active{% endif %} files-list__pagination-link" href="/files?page={{ page_num }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}">{{ page_num }}</a>
+        {% endfor %}
+
+        {% if current_page < total_pages %}
+        <a href="/files?page={{ current_page + 1 }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}" class="files-list__pagination-link">Next &raquo;</a>
+        {% endif %}
+    </div>
     {% endif %}
-
-    {% for page_num in range([1, current_page - 2]|max, [total_pages + 1, current_page + 3]|min) %}
-    <a class="{% if page_num == current_page %}active{% endif %}" href="/files?page={{ page_num }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}">{{ page_num }}</a>
-    {% endfor %}
-
-    {% if current_page < total_pages %}
-    <a href="/files?page={{ current_page + 1 }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}">Next &raquo;</a>
-    {% endif %}
 </div>
-{% endif %}
 {% endblock %}

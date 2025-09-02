@@ -2,20 +2,14 @@
 
 {% block title %}Editing {{ file_name }}{% endblock %}
 
-{% block extra_styles %}
-textarea { width: 100%; height: 70vh; font-family: monospace; padding: 10px; }
-.header { display: flex; justify-content: space-between; align-items: center; }
-.actions { margin: 10px 0; }
-{% endblock %}
-
 {% block content %}
-<div class="header">
+<div class="editor__header">
     <h1>Editing {{ file_name }}</h1>
-    <a href="/files">Back to Files</a>
+    <a href="/files" class="editor__back-link">Back to Files</a>
 </div>
 <form method="post">
-    <textarea name="content">{{ content }}</textarea>
-    <div class="actions">
+    <textarea name="content" class="editor__textarea">{{ content }}</textarea>
+    <div class="editor__actions">
         <button type="submit">Save Changes</button>
     </div>
 </form>
