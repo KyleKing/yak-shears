@@ -119,7 +119,7 @@
       Name (Created At)
      </a>
      |
-     <a class="" href="/files?sort_by=date">
+     <a class="" href="/files?sort_by=modified_date">
       Modified Date
      </a>
     </div>

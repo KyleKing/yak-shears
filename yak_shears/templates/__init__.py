@@ -80,7 +80,7 @@ def render_files_list(
         total_pages: Total number of pages
         total_files: Total number of files
         yak_dir_label: name of the `YAK_SHEARS_DIR`
-        sort_by: Criteria to sort files, either 'name' or 'date'
+        sort_by: Criteria to sort files
         current_category: active category filter currently applied
         categories: set of available categories for filtering
 

@@ -2,9 +2,11 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from enum import Enum
 from http import HTTPStatus
 from os import getenv
 from pathlib import Path
+from typing import Self
 
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
@@ -15,17 +17,24 @@ PREVIEW_LENGTH = 200
 """Number of characters for content preview."""
 
 
+class SortBy(Enum):
+    """Enum for file sorting options."""
+
+    NAME = "name"
+    MODIFIED_DATE = "modified_date"
+
+
 @dataclass(frozen=True)
 class FilesQueryParams:
     """Query parameters for files listing endpoint."""
 
     page: int
-    sort_by: str
+    sort_by: SortBy
     category: str | None
-    page_size: int = 30
+    page_size: int = 30  # Currently not configurable
 
     @classmethod
-    def from_request(cls, request: Request) -> "FilesQueryParams":
+    def from_request(cls, request: Request) -> Self:
         """Parse query parameters from request.
 
         Returns:
@@ -36,9 +45,13 @@ class FilesQueryParams:
         except ValueError:
             page = 1
 
-        # TODO: Validate against an enum rather than hardcoded string
-        sort_by = request.query_params.get("sort_by", "name").lower()
-        category = request.query_params.get("category")
+        sort_by_str = request.query_params.get("sort_by", "").lower()
+        try:
+            sort_by = SortBy(sort_by_str)
+        except ValueError:
+            sort_by = SortBy.NAME
+
+        category = request.query_params.get("category") or None
 
         return cls(page=page, sort_by=sort_by, category=category)
 
@@ -83,7 +96,7 @@ def get_djot_files(
     if query_params.category:
         paths = [f for f in paths if f.parent.name == query_params.category]
 
-    if query_params.sort_by == "date":
+    if query_params.sort_by == SortBy.MODIFIED_DATE:
         paths = sorted(paths, key=lambda x: x.stat().st_mtime, reverse=True)
     else:
         paths = sorted(paths, key=lambda x: x.name.lower())
@@ -151,7 +164,7 @@ async def files_handler(request: Request) -> Response:  # noqa: RUF029
         total_pages=total_pages,
         total_files=total_files,
         yak_dir_label=yak_dir_label,
-        sort_by=query_params.sort_by,
+        sort_by=query_params.sort_by.value,
         current_category=query_params.category,
         categories=categories,
     )

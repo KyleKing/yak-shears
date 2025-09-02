@@ -64,7 +64,7 @@
 <div class="sort-controls">
     Sort by:
     <a href="/files?sort_by=name{% if current_category %}&category={{ current_category }}{% endif %}" class="{% if sort_by == 'name' %}active{% endif %}">Name (Created At)</a> |
-    <a href="/files?sort_by=date{% if current_category %}&category={{ current_category }}{% endif %}" class="{% if sort_by == 'date' %}active{% endif %}">Modified Date</a>
+    <a href="/files?sort_by=modified_date{% if current_category %}&category={{ current_category }}{% endif %}" class="{% if sort_by == 'modified_date' %}active{% endif %}">Modified Date</a>
 </div>
 {% if categories %}
 <div class="filter-controls" style="margin-bottom: 10px;">
