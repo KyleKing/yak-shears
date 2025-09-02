@@ -64,6 +64,7 @@ def mock_djot_files() -> list[Path]:
 
 def test_files_endpoint(client: TestClient, mock_djot_files: list[Path], mock_user_session, snapshot) -> None:
     """Test the files endpoint."""
+    # TODO: Add testing of get_djot_files
     with patch("yak_shears.file.handlers.get_djot_files") as mock_get_files:
         mock_get_files.return_value = (mock_djot_files, 3, 1)
 
@@ -72,6 +73,7 @@ def test_files_endpoint(client: TestClient, mock_djot_files: list[Path], mock_us
             class MockStat:
                 st_size = 1024
                 st_mtime = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC).timestamp()
+                st_mode = 16877  # stat.filemode(16877) - 'drwxr-xr-x'
 
             mock_stat.return_value = MockStat()
 

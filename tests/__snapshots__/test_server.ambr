@@ -68,6 +68,25 @@
   }
   .card h2 { margin: 0 0 10px 0; font-size: 1.2em; }
   .card p.preview { margin: 0 0 10px 0; color: #555; }
+  .pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+  }
+  .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: 500;
+      background-color: #f0f0f0;
+      color: #666;
+  }
+  .pill.recent {
+      background-color: #4CAF50;
+      color: white;
+  }
   .pagination { display: flex; margin-top: 20px; }
   .pagination a { color: black; padding: 8px 16px; text-decoration: none; }
   .pagination a.active { background-color: #4CAF50; color: white; }
@@ -75,6 +94,16 @@
   .status-bar { margin-top: 10px; }
   .sort-controls { margin-bottom: 10px; }
   .sort-controls a.active { font-weight: bold; text-decoration: underline; }
+  .cards-container a {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      transition: box-shadow 0.2s ease;
+  }
+  .cards-container a:hover .card {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+  }
     </style>
    </head>
    <body>
@@ -86,57 +115,57 @@
     </p>
     <div class="sort-controls">
      Sort by:
-     <a class="active" href="/files?page=1&amp;sort_by=name">
-      Name
+     <a class="active" href="/files?sort_by=name">
+      Name (Created At)
      </a>
      |
-     <a class="" href="/files?page=1&amp;sort_by=date">
-      Date
+     <a class="" href="/files?sort_by=date">
+      Modified Date
      </a>
     </div>
     <div class="cards-container">
-     <div class="card">
-      <h2>
-       <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file1.dj">
-        file1.dj
-       </a>
-      </h2>
-      <p class="preview">
-      </p>
-      <p>
-       <small>
-        Last modified: 2025-05-01 10:00:00
-       </small>
-      </p>
-     </div>
-     <div class="card">
-      <h2>
-       <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file2.dj">
-        file2.dj
-       </a>
-      </h2>
-      <p class="preview">
-      </p>
-      <p>
-       <small>
-        Last modified: 2025-05-01 10:00:00
-       </small>
-      </p>
-     </div>
-     <div class="card">
-      <h2>
-       <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory/file3.dj">
-        file3.dj
-       </a>
-      </h2>
-      <p class="preview">
-      </p>
-      <p>
-       <small>
-        Last modified: 2025-05-01 10:00:00
-       </small>
-      </p>
-     </div>
+     <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file1.dj">
+      <div class="card">
+       <p class="preview">
+       </p>
+       <div class="pills">
+        <span class="pill recent">
+         2025-05-01
+        </span>
+        <span class="pill">
+         mock_djot_files
+        </span>
+       </div>
+      </div>
+     </a>
+     <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file2.dj">
+      <div class="card">
+       <p class="preview">
+       </p>
+       <div class="pills">
+        <span class="pill recent">
+         2025-05-01
+        </span>
+        <span class="pill">
+         mock_djot_files
+        </span>
+       </div>
+      </div>
+     </a>
+     <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory/file3.dj">
+      <div class="card">
+       <p class="preview">
+       </p>
+       <div class="pills">
+        <span class="pill recent">
+         2025-05-01
+        </span>
+        <span class="pill">
+         subdirectory
+        </span>
+       </div>
+      </div>
+     </a>
     </div>
     <script defer="" src="/static/js/alpine-ajax.min.js">
     </script>

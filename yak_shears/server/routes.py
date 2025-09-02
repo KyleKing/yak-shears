@@ -22,7 +22,7 @@ ROUTES = [
 ]
 
 
-def create_app_without_auth() -> Starlette:
+def create_app_without_auth() -> Starlette:  # pragma: no cover
     """Only used for local development and testing.
 
     Returns:
@@ -37,7 +37,7 @@ def create_app_without_auth() -> Starlette:
     return app
 
 
-def create_app() -> Starlette:
+def create_app() -> Starlette:  # pragma: no cover
     """Create and configure the Starlette application.
 
     Returns:
@@ -51,7 +51,9 @@ def create_app() -> Starlette:
     return app
 
 
-def start(host: str = "localhost", port: int = 8080, *, reload: bool = False, no_auth: bool = True) -> None:
+def start(
+    host: str = "localhost", port: int = 8080, *, reload: bool = False, no_auth: bool = True
+) -> None:  # pragma: no cover
     """Run the ASGI server with uvicorn.
 
     Args:
@@ -75,6 +77,7 @@ def start(host: str = "localhost", port: int = 8080, *, reload: bool = False, no
         uvicorn.run(create_app(), host=host, port=port)
 
 
+# TODO: Split into start and cli to allow testing of cli
 def cli() -> None:
     """Run the development server with auto-reload."""
     parser = argparse.ArgumentParser(description="Run the Yak Shears development server")

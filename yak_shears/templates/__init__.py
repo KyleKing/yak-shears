@@ -61,23 +61,28 @@ def render_auth_login(redirect: str | None = None, error: str = "") -> HTMLRespo
     return _render_template("auth/login.html.jinja", redirect=redirect, error=error, status_code=status_code)
 
 
-def render_files_list(  # noqa: PLR0917
+def render_files_list(
+    *,
     files: list[dict[str, Any]],
     current_page: int,
     total_pages: int,
     total_files: int,
     directory_path: str,
     sort_by: str,
+    current_category: str | None,
+    categories: set[str],
 ) -> HTMLResponse:
     """Render the files listing page.
 
     Args:
-        files: List of file information dictionaries
+        files: List of files and metadata
         current_page: Current page number
         total_pages: Total number of pages
         total_files: Total number of files
         directory_path: Path to the directory being listed
         sort_by: Criteria to sort files, either 'name' or 'date'
+        current_category: active category filter currently applied
+        categories: set of available categories for filtering
 
     Returns:
         HTMLResponse with the files listing template
@@ -90,6 +95,8 @@ def render_files_list(  # noqa: PLR0917
         total_files=total_files,
         directory_path=directory_path,
         sort_by=sort_by,
+        current_category=current_category,
+        categories=categories,
     )
 
 
