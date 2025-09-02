@@ -5,6 +5,7 @@ import argparse
 import uvicorn
 from starlette.applications import Starlette
 from starlette.routing import Route
+from starlette.staticfiles import StaticFiles
 
 from yak_shears.auth.middleware import AuthMiddleware
 from yak_shears.auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
@@ -27,11 +28,13 @@ def create_app_without_auth() -> Starlette:
     Returns:
         Starlette: The configured Starlette application
     """
-    return Starlette(
+    app = Starlette(
         routes=ROUTES,
         debug=True,
         exception_handlers={404: not_found},
     )
+    app.mount("/static", StaticFiles(directory="yak_shears/static"), name="static")
+    return app
 
 
 def create_app() -> Starlette:
@@ -42,7 +45,7 @@ def create_app() -> Starlette:
     """
     app = create_app_without_auth()
 
-    public_paths = {"/", "/favicon.ico", *AUTH_PUBLIC_PATHS}
+    public_paths = {"/", "/favicon.ico", "/static", *AUTH_PUBLIC_PATHS}
     app.add_middleware(AuthMiddleware, public_paths=public_paths)
 
     return app

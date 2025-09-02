@@ -52,9 +52,9 @@
       Note: Users must be created by an administrator using the CLI tool.
      </p>
     </div>
-    <script defer="" src="https://cdn.jsdelivr.net/npm/@imacrayon/alpine-ajax@0.12.4/dist/cdn.min.js">
+    <script defer="" src="/static/js/alpine-ajax.min.js">
     </script>
-    <script defer="" src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js">
+    <script defer="" src="/static/js/alpine.min.js">
     </script>
    </body>
   </html>
@@ -110,9 +110,9 @@
       Note: Users must be created by an administrator using the CLI tool.
      </p>
     </div>
-    <script defer="" src="https://cdn.jsdelivr.net/npm/@imacrayon/alpine-ajax@0.12.4/dist/cdn.min.js">
+    <script defer="" src="/static/js/alpine-ajax.min.js">
     </script>
-    <script defer="" src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js">
+    <script defer="" src="/static/js/alpine.min.js">
     </script>
    </body>
   </html>
