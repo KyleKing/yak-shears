@@ -47,7 +47,7 @@
   <html>
    <head>
     <title>
-     Notes in ~/Sync/yak-shears
+     Notes in ./test_data/mock_djot_files
     </title>
     <style>
      body { font-family: Arial, sans-serif; margin: 20px; }
@@ -108,7 +108,7 @@
    </head>
    <body>
     <h1>
-     Notes in ~/Sync/yak-shears
+     Notes in ./test_data/mock_djot_files
     </h1>
     <p class="status-bar">
      Showing 3 of 3 notes (Page 1 of 1)
@@ -123,10 +123,29 @@
       Modified Date
      </a>
     </div>
+    <div class="filter-controls" style="margin-bottom: 10px;">
+     Filter by category:
+     <a class="active" href="/files?sort_by=name">
+      All
+     </a>
+     |
+     <a class="" href="/files?sort_by=name&amp;category=mock_djot_files">
+      mock_djot_files
+     </a>
+     |
+     <a class="" href="/files?sort_by=name&amp;category=subdirectory-2">
+      subdirectory-2
+     </a>
+     |
+     <a class="" href="/files?sort_by=name&amp;category=subdirectory-3">
+      subdirectory-3
+     </a>
+    </div>
     <div class="cards-container">
      <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file1.dj">
       <div class="card">
        <p class="preview">
+        # File 1  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 1
        </p>
        <div class="pills">
         <span class="pill recent">
@@ -138,30 +157,32 @@
        </div>
       </div>
      </a>
-     <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file2.dj">
+     <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-2/file2.dj">
       <div class="card">
        <p class="preview">
+        # File 2  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 2
        </p>
        <div class="pills">
         <span class="pill recent">
          2025-05-01
         </span>
         <span class="pill">
-         mock_djot_files
+         subdirectory-2
         </span>
        </div>
       </div>
      </a>
-     <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory/file3.dj">
+     <a href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-3/file3.dj">
       <div class="card">
        <p class="preview">
+        # File 3  This is a test file number 3  Unrelated to file 1 or file 2
        </p>
        <div class="pills">
         <span class="pill recent">
          2025-05-01
         </span>
         <span class="pill">
-         subdirectory
+         subdirectory-3
         </span>
        </div>
       </div>

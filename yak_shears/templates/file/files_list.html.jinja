@@ -1,6 +1,6 @@
 {% extends "base.html.jinja" %}
 
-{% block title %}Notes in {{ directory_path }}{% endblock %}
+{% block title %}Notes in {{ yak_dir_label }}{% endblock %}
 
 {# TODO: Move these CSS rules to a shared file #}
 {% block extra_styles %}
@@ -59,7 +59,7 @@
 {% endblock %}
 
 {% block content %}
-<h1>Notes in {{ directory_path }}</h1>
+<h1>Notes in {{ yak_dir_label }}</h1>
 <p class="status-bar">Showing {{ files|length }} of {{ total_files }} notes (Page {{ current_page }} of {{ total_pages }})</p>
 <div class="sort-controls">
     Sort by:
@@ -82,7 +82,7 @@
             <p class="preview">{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
             <div class="pills">
                 <span class="pill{% if info.last_modified[:4] == '2025' %} recent{% endif %}">{{ info.last_modified[:10] }}</span>
-                <span class="pill">{{ info.path.rsplit('/', 1)[0].rsplit('/', 1)[-1] }}</span>
+                <span class="pill">{{ info.category }}</span>
             </div>
         </div>
     </a>

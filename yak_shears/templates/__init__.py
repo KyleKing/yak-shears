@@ -67,7 +67,7 @@ def render_files_list(
     current_page: int,
     total_pages: int,
     total_files: int,
-    directory_path: str,
+    yak_dir_label: str,
     sort_by: str,
     current_category: str | None,
     categories: set[str],
@@ -79,7 +79,7 @@ def render_files_list(
         current_page: Current page number
         total_pages: Total number of pages
         total_files: Total number of files
-        directory_path: Path to the directory being listed
+        yak_dir_label: name of the `YAK_SHEARS_DIR`
         sort_by: Criteria to sort files, either 'name' or 'date'
         current_category: active category filter currently applied
         categories: set of available categories for filtering
@@ -93,7 +93,7 @@ def render_files_list(
         current_page=current_page,
         total_pages=total_pages,
         total_files=total_files,
-        directory_path=directory_path,
+        yak_dir_label=yak_dir_label,
         sort_by=sort_by,
         current_category=current_category,
         categories=categories,

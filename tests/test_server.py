@@ -1,8 +1,8 @@
 # TODO: Split up into file/routes
 
-
 from datetime import UTC, datetime
 from http import HTTPStatus
+from os import environ
 from pathlib import Path
 from unittest.mock import patch
 
@@ -47,46 +47,22 @@ def test_root_endpoint(client: TestClient) -> None:
     assert response.headers["location"] == DEFAULT_REDIRECT
 
 
-@pytest.fixture
-def mock_djot_files() -> list[Path]:
-    """Create mock Djot files for testing.
-
-    Returns:
-        list[Path]: List of mock file paths
-    """
-    mock_dir = Path(__file__).parent / "test_data/mock_djot_files"
-    return [
-        mock_dir / "file1.dj",
-        mock_dir / "file2.dj",
-        mock_dir / "subdirectory/file3.dj",
-    ]
+MOCK_YAK_DIR = Path(__file__).parent / "test_data/mock_djot_files"
 
 
-def test_files_endpoint(client: TestClient, mock_djot_files: list[Path], mock_user_session, snapshot) -> None:
+@patch.dict(environ, {"YAK_SHEARS_DIR": MOCK_YAK_DIR.as_posix()}, clear=True)
+def test_files_endpoint(client: TestClient, mock_user_session, snapshot) -> None:
     """Test the files endpoint."""
-    # TODO: Add testing of get_djot_files
-    with patch("yak_shears.file.handlers.get_djot_files") as mock_get_files:
-        mock_get_files.return_value = (mock_djot_files, 3, 1)
+    with patch("yak_shears.file.handlers.datetime") as mock_datetime:
+        mock_datetime.fromtimestamp.return_value = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC)
+        mock_datetime.UTC = UTC
 
-        with patch("pathlib.Path.stat") as mock_stat:
-
-            class MockStat:
-                st_size = 1024
-                st_mtime = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC).timestamp()
-                st_mode = 16877  # stat.filemode(16877) - 'drwxr-xr-x'
-
-            mock_stat.return_value = MockStat()
-
-            with patch("yak_shears.file.handlers.datetime") as mock_datetime:
-                mock_datetime.fromtimestamp.return_value = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC)
-                mock_datetime.UTC = UTC
-
-                response = client.get("/files")
-                assert response.status_code == HTTPStatus.OK
-                assert "file1.dj" in response.text
-                assert "file2.dj" in response.text
-                assert "file3.dj" in response.text
-                assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
+        response = client.get("/files")
+        assert response.status_code == HTTPStatus.OK
+        assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
+        assert "file1.dj" in response.text
+        assert "file2.dj" in response.text
+        assert "file3.dj" in response.text
 
 
 def test_not_found(client: TestClient, mock_user_session) -> None:

@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from http import HTTPStatus
+from os import getenv
 from pathlib import Path
 
 from starlette.requests import Request
@@ -42,44 +43,41 @@ class FilesQueryParams:
         return cls(page=page, sort_by=sort_by, category=category)
 
 
-def get_categories(directory_path: str) -> set[str]:
-    """Get list of available categories (parent directories) from the specified directory.
-
-    Args:
-        directory_path: Path to the directory to scan for categories
-
-    Returns:
-        List of category names (parent directory names)
-    """
-    pth = Path(directory_path).expanduser()
-    if not pth.exists() or not pth.is_dir():
-        return set()
-    return {f.parent.name for f in pth.rglob("*.dj") if f.is_file()}
-
-
 # TODO: Evaluate at how many files a TTL cache would improve performance
-def _paths(directory_path: str) -> list[Path]:
+def _djot_paths(pth: Path) -> list[Path]:
     """Return matching file paths."""
-    pth = Path(directory_path).expanduser()
     if not pth.exists() or not pth.is_dir():
         return []
     return [f for f in pth.rglob("*.dj") if f.is_file()]
 
 
+def get_categories(directory_path: Path) -> set[str]:
+    """Get list of available categories (parent directories) from the specified directory.
+
+    Args:
+        directory_path: Path to the notes directory
+
+    Returns:
+        List of category names (parent directory names)
+    """
+    paths = _djot_paths(directory_path)
+    return {f.parent.name for f in paths if f.is_file()}
+
+
 def get_djot_files(
-    directory_path: str,
+    directory_path: Path,
     query_params: FilesQueryParams,
 ) -> tuple[list[Path], int, int]:
     """Get a paginated list of Djot files from the specified directory.
 
     Args:
-        directory_path: Path to the directory to list files from
+        directory_path: Path to the notes directory
         query_params: FilesQueryParams
 
     Returns:
         Tuple containing (list of file paths, total number of files, total pages)
     """
-    if not (paths := _paths(directory_path)):
+    if not (paths := _djot_paths(directory_path)):
         return [], 0, 0
 
     if query_params.category:
@@ -116,12 +114,14 @@ def prepare_files(paths: list[Path]) -> list[dict[str, str | bool]]:
         content = file_path.read_text(encoding="utf-8")
         preview = content[:PREVIEW_LENGTH].replace("\n", " ")
 
+        # TODO: Create a Frozen DataClass
         info: dict[str, str | bool] = {
-            "path": str(file_path),
+            "category": file_path.parent.name,
+            "last_modified": last_modified,
             "name": file_path.name,
+            "path": str(file_path),
             "preview": preview,
             "truncated": len(content) > PREVIEW_LENGTH,
-            "last_modified": last_modified,
         }
         files.append(info)
 
@@ -137,19 +137,20 @@ async def files_handler(request: Request) -> Response:  # noqa: RUF029
     Returns:
         Response with paginated file listing
     """
-    directory_path = "~/Sync/yak-shears"
+    directory_path = Path(getenv("YAK_SHEARS_DIR", "~/Sync/yak-shears")).expanduser()
 
     query_params = FilesQueryParams.from_request(request)
 
     paths, total_files, total_pages = get_djot_files(directory_path, query_params=query_params)
     categories = get_categories(directory_path)
     files = prepare_files(paths)
+    yak_dir_label = "./" + directory_path.relative_to(directory_path.parents[1]).as_posix()
     return render_files_list(
         files=files,
         current_page=query_params.page,
         total_pages=total_pages,
         total_files=total_files,
-        directory_path=directory_path,
+        yak_dir_label=yak_dir_label,
         sort_by=query_params.sort_by,
         current_category=query_params.category,
         categories=categories,
