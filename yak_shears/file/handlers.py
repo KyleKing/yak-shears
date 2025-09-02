@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from enum import Enum
 from http import HTTPStatus
 from os import getenv
 from pathlib import Path
@@ -11,17 +10,10 @@ from typing import Self
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 
-from yak_shears.templates import render_error, render_file_edit, render_files_list
+from yak_shears.templates import FileInfo, SortBy, render_error, render_file_edit, render_files_list
 
 PREVIEW_LENGTH = 200
 """Number of characters for content preview."""
-
-
-class SortBy(Enum):
-    """Enum for file sorting options."""
-
-    NAME = "name"
-    MODIFIED_DATE = "modified_date"
 
 
 @dataclass(frozen=True)
@@ -111,14 +103,14 @@ def get_djot_files(
     return paths[start_idx:end_idx], total_files, total_pages
 
 
-def prepare_files(paths: list[Path]) -> list[dict[str, str | bool]]:
+def prepare_files(paths: list[Path]) -> list[FileInfo]:
     """Prepare file data for template rendering.
 
     Args:
         paths: List of file paths to process
 
     Returns:
-        List of dictionaries containing file information for template
+        List of FileInfo objects containing file information for template
     """
     files = []
     for file_path in paths:
@@ -127,15 +119,14 @@ def prepare_files(paths: list[Path]) -> list[dict[str, str | bool]]:
         content = file_path.read_text(encoding="utf-8")
         preview = content[:PREVIEW_LENGTH].replace("\n", " ")
 
-        # TODO: Create a Frozen DataClass
-        info: dict[str, str | bool] = {
-            "category": file_path.parent.name,
-            "last_modified": last_modified,
-            "name": file_path.name,
-            "path": str(file_path),
-            "preview": preview,
-            "truncated": len(content) > PREVIEW_LENGTH,
-        }
+        info = FileInfo(
+            category=file_path.parent.name,
+            last_modified=last_modified,
+            name=file_path.name,
+            path=str(file_path),
+            preview=preview,
+            truncated=len(content) > PREVIEW_LENGTH,
+        )
         files.append(info)
 
     return files
@@ -164,7 +155,7 @@ async def files_handler(request: Request) -> Response:  # noqa: RUF029
         total_pages=total_pages,
         total_files=total_files,
         yak_dir_label=yak_dir_label,
-        sort_by=query_params.sort_by.value,
+        sort_by=query_params.sort_by,
         current_category=query_params.category,
         categories=categories,
     )

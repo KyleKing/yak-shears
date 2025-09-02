@@ -1,11 +1,32 @@
 """Template rendering utilities."""
 
+from dataclasses import dataclass
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any
+from enum import StrEnum
 
 from jinja2 import Environment, FileSystemLoader
 from starlette.responses import HTMLResponse
+
+
+class SortBy(StrEnum):
+    """Enum for file sorting options."""
+
+    NAME = "name"
+    MODIFIED_DATE = "modified_date"
+
+@dataclass(frozen=True)
+class FileInfo:
+    """File information for template rendering."""
+
+    category: str
+    last_modified: str
+    name: str
+    path: str
+    preview: str
+    truncated: bool
+
 
 TEMPLATE_DIR = Path(__file__).parent
 
@@ -63,12 +84,12 @@ def render_auth_login(redirect: str | None = None, error: str = "") -> HTMLRespo
 
 def render_files_list(
     *,
-    files: list[dict[str, Any]],
+    files: list[FileInfo],
     current_page: int,
     total_pages: int,
     total_files: int,
     yak_dir_label: str,
-    sort_by: str,
+    sort_by: SortBy,
     current_category: str | None,
     categories: set[str],
 ) -> HTMLResponse:
