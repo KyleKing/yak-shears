@@ -1,5 +1,6 @@
 """Handlers for Yak Shears."""
 
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from http import HTTPStatus
 from pathlib import Path
@@ -11,6 +12,34 @@ from yak_shears.templates import render_error, render_file_edit, render_files_li
 
 PREVIEW_LENGTH = 200
 """Number of characters for content preview."""
+
+
+@dataclass(frozen=True)
+class FilesQueryParams:
+    """Query parameters for files listing endpoint."""
+
+    page: int
+    sort_by: str
+    category: str | None
+    page_size: int = 30
+
+    @classmethod
+    def from_request(cls, request: Request) -> "FilesQueryParams":
+        """Parse query parameters from request.
+
+        Returns:
+            FilesQueryParams instance with parsed and validated parameters.
+        """
+        try:
+            page = max(int(request.query_params.get("page", "1")), 1)
+        except ValueError:
+            page = 1
+
+        # TODO: Validate against an enum rather than hardcoded string
+        sort_by = request.query_params.get("sort_by", "name").lower()
+        category = request.query_params.get("category")
+
+        return cls(page=page, sort_by=sort_by, category=category)
 
 
 def get_categories(directory_path: str) -> set[str]:
@@ -39,19 +68,13 @@ def _paths(directory_path: str) -> list[Path]:
 
 def get_djot_files(
     directory_path: str,
-    page: int = 1,
-    page_size: int = 30,
-    sort_by: str = "name",
-    categories: set[str] | None = None,
+    query_params: FilesQueryParams,
 ) -> tuple[list[Path], int, int]:
     """Get a paginated list of Djot files from the specified directory.
 
     Args:
         directory_path: Path to the directory to list files from
-        page: Current page number (1-indexed)
-        page_size: Number of files per page
-        sort_by: Criteria to sort files, either 'name' or 'date'
-        categories: Optional categories (parent directory) to filter by
+        query_params: FilesQueryParams
 
     Returns:
         Tuple containing (list of file paths, total number of files, total pages)
@@ -59,18 +82,19 @@ def get_djot_files(
     if not (paths := _paths(directory_path)):
         return [], 0, 0
 
-    if categories:
-        paths = [f for f in paths if f.parent.name in categories]
+    if query_params.category:
+        paths = [f for f in paths if f.parent.name == query_params.category]
 
-    if sort_by == "date":
+    if query_params.sort_by == "date":
         paths = sorted(paths, key=lambda x: x.stat().st_mtime, reverse=True)
     else:
         paths = sorted(paths, key=lambda x: x.name.lower())
 
+    page_size = query_params.page_size
     total_files = len(paths)
     total_pages = (total_files + page_size - 1) // page_size
 
-    start_idx = (page - 1) * page_size
+    start_idx = (query_params.page - 1) * page_size
     end_idx = min(start_idx + page_size, total_files)
 
     return paths[start_idx:end_idx], total_files, total_pages
@@ -115,31 +139,19 @@ async def files_handler(request: Request) -> Response:  # noqa: RUF029
     """
     directory_path = "~/Sync/yak-shears"
 
-    # TODO: Cast these query parameters into a clearly defined type
-    try:
-        current_page = max(int(request.query_params.get("page", "1")), 1)
-    except ValueError:
-        current_page = 1
-    sort_by = request.query_params.get("sort_by", "name").lower()
-    current_category = request.query_params.get("category")
+    query_params = FilesQueryParams.from_request(request)
 
-    paths, total_files, total_pages = get_djot_files(
-        directory_path,
-        current_page,
-        sort_by=sort_by,
-        # FIXME: yak_shears/file/handlers.py:130:20: error: Argument "categories" to "get_djot_files" has incompatible type "set[str] | dict[Never, Never]"; expected "set[str] | None"  [arg-type]
-        categories={current_category} if current_category else {},
-    )
+    paths, total_files, total_pages = get_djot_files(directory_path, query_params=query_params)
     categories = get_categories(directory_path)
     files = prepare_files(paths)
     return render_files_list(
         files=files,
-        current_page=current_page,
+        current_page=query_params.page,
         total_pages=total_pages,
         total_files=total_files,
         directory_path=directory_path,
-        sort_by=sort_by,
-        current_category=current_category,
+        sort_by=query_params.sort_by,
+        current_category=query_params.category,
         categories=categories,
     )
 
