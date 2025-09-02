@@ -1,10 +1,10 @@
 """Template rendering utilities."""
 
 from dataclasses import dataclass
+from enum import StrEnum
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any
-from enum import StrEnum
 
 from jinja2 import Environment, FileSystemLoader
 from starlette.responses import HTMLResponse
@@ -15,6 +15,7 @@ class SortBy(StrEnum):
 
     NAME = "name"
     MODIFIED_DATE = "modified_date"
+
 
 @dataclass(frozen=True)
 class FileInfo:

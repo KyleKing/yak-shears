@@ -18,7 +18,14 @@ PREVIEW_LENGTH = 200
 
 @dataclass(frozen=True)
 class FilesQueryParams:
-    """Query parameters for files listing endpoint."""
+    """Parameters for querying and paginating Djot files.
+
+    Attributes:
+        page: Current page number (1-based)
+        sort_by: Sorting criteria (name or modified date)
+        category: Optional category filter (parent directory name)
+        page_size: Number of files per page (default: 30)
+    """
 
     page: int
     sort_by: SortBy
@@ -26,63 +33,71 @@ class FilesQueryParams:
     page_size: int = 30  # Currently not configurable
 
     @classmethod
-    def from_request(cls, request: Request) -> Self:
-        """Parse query parameters from request.
+    def from_request(cls, request: Request, categories: set[str]) -> Self:
+        """Parse and validate query parameters from HTTP request.
+
+        Args:
+            request: Starlette request object containing query parameters
+            categories: Set of valid category names for validation
 
         Returns:
             FilesQueryParams instance with parsed and validated parameters.
         """
         try:
+            # Must be positive integer
             page = max(int(request.query_params.get("page", "1")), 1)
         except ValueError:
             page = 1
 
-        sort_by_str = request.query_params.get("sort_by", "").lower()
         try:
-            sort_by = SortBy(sort_by_str)
+            sort_by = SortBy(request.query_params.get("sort_by", "").lower())
         except ValueError:
             sort_by = SortBy.NAME
 
-        category = request.query_params.get("category") or None
+        if (category := request.query_params.get("category") or None) and category not in categories:
+            # TODO: Bind the ignored category to logs
+            category = None
 
         return cls(page=page, sort_by=sort_by, category=category)
 
 
-# TODO: Evaluate at how many files a TTL cache would improve performance
-def _djot_paths(pth: Path) -> list[Path]:
-    """Return matching file paths."""
+def get_notes(pth: Path) -> list[Path]:
+    """Return djot note paths.
+
+    Args:
+        pth: top-level directory to search
+
+    Returns:
+        List of djot notes
+    """
     if not pth.exists() or not pth.is_dir():
         return []
     return [f for f in pth.rglob("*.dj") if f.is_file()]
 
 
-def get_categories(directory_path: Path) -> set[str]:
-    """Get list of available categories (parent directories) from the specified directory.
+def get_categories(all_paths: list[Path]) -> set[str]:
+    """Get list of available categories (parent directories).
 
     Args:
-        directory_path: Path to the notes directory
+        all_paths: paths to djot notes
 
     Returns:
         List of category names (parent directory names)
     """
-    paths = _djot_paths(directory_path)
-    return {f.parent.name for f in paths if f.is_file()}
+    return {f.parent.name for f in all_paths if f.is_file()}
 
 
-def get_djot_files(
-    directory_path: Path,
-    query_params: FilesQueryParams,
-) -> tuple[list[Path], int, int]:
+def get_djot_files(paths: list[Path], query_params: FilesQueryParams) -> tuple[list[Path], int, int]:
     """Get a paginated list of Djot files from the specified directory.
 
     Args:
-        directory_path: Path to the notes directory
+        paths: paths to djot notes
         query_params: FilesQueryParams
 
     Returns:
         Tuple containing (list of file paths, total number of files, total pages)
     """
-    if not (paths := _djot_paths(directory_path)):
+    if not paths:
         return [], 0, 0
 
     if query_params.category:
@@ -143,10 +158,12 @@ async def files_handler(request: Request) -> Response:  # noqa: RUF029
     """
     directory_path = Path(getenv("YAK_SHEARS_DIR", "~/Sync/yak-shears")).expanduser()
 
-    query_params = FilesQueryParams.from_request(request)
+    all_paths = get_notes(directory_path)
+    categories = get_categories(all_paths)
 
-    paths, total_files, total_pages = get_djot_files(directory_path, query_params=query_params)
-    categories = get_categories(directory_path)
+    query_params = FilesQueryParams.from_request(request, categories)
+
+    paths, total_files, total_pages = get_djot_files(all_paths, query_params=query_params)
     files = prepare_files(paths)
     yak_dir_label = "./" + directory_path.relative_to(directory_path.parents[1]).as_posix()
     return render_files_list(
