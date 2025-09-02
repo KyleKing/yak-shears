@@ -1,23 +1,23 @@
 /* Editor Component Styles */
 
 .editor__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 }
 
 .editor__textarea {
-  width: 100%;
-  height: 70vh;
-  font-family: monospace;
-  padding: 10px;
+	width: 100%;
+	height: 70vh;
+	font-family: monospace;
+	padding: 10px;
 }
 
 .editor__actions {
-  margin: 10px 0;
+	margin: 10px 0;
 }
 
 .editor__back-link {
-  text-decoration: none;
-  color: inherit;
+	text-decoration: none;
+	color: inherit;
 }

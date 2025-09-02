@@ -2,10 +2,11 @@
 _.python.venv = {path = ".venv"}
 
 [tasks.format]
-run = ['uv run ruff check --fix {{option(name="unsafe_fixes")}}', "uv run ruff format"]
+run = ['uv run ruff check --fix {{option(name="unsafe_fixes")}}', "uv run ruff format", "biome --write"]
 
 [tasks.typecheck]
 run = ["uv run mypy"]
 
 [tools]
-python = ["3.13.3"]
+"npm:@biomejs/biome" =["latest"]
+python = ["latest"]

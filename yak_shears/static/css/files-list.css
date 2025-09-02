@@ -1,116 +1,118 @@
 /* Files List Component Styles */
 
 .files-list {
-  max-width: 1100px;
-  margin: 0 auto;
+	max-width: 1100px;
+	margin: 0 auto;
 }
 
 .files-list__status-bar {
-  margin-top: 10px;
+	margin-top: 10px;
 }
 
 .files-list__sort-controls {
-  margin-bottom: 10px;
+	margin-bottom: 10px;
 }
 
 .files-list__sort-controls a {
-  text-decoration: none;
-  color: inherit;
+	text-decoration: none;
+	color: inherit;
 }
 
 .files-list__sort-controls a.active {
-  font-weight: bold;
-  text-decoration: underline;
+	font-weight: bold;
+	text-decoration: underline;
 }
 
 .files-list__filter-controls {
-  margin-bottom: 10px;
+	margin-bottom: 10px;
 }
 
 .files-list__filter-controls a {
-  text-decoration: none;
-  color: inherit;
+	text-decoration: none;
+	color: inherit;
 }
 
 .files-list__filter-controls a.active {
-  font-weight: bold;
-  text-decoration: underline;
+	font-weight: bold;
+	text-decoration: underline;
 }
 
 .files-list__cards-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 20px;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+	gap: 20px;
 }
 
 .files-list__card {
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  padding: 10px;
-  box-sizing: border-box;
-  width: 100%;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+	border: 1px solid #ddd;
+	border-radius: 5px;
+	padding: 10px;
+	box-sizing: border-box;
+	width: 100%;
+	transition:
+		box-shadow 0.2s ease,
+		transform 0.2s ease;
 }
 
 .files-list__card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+	transform: translateY(-2px);
 }
 
 .files-list__card-link {
-  text-decoration: none;
-  color: inherit;
-  display: block;
+	text-decoration: none;
+	color: inherit;
+	display: block;
 }
 
 .files-list__card-title {
-  margin: 0 0 10px 0;
-  font-size: 1.2em;
+	margin: 0 0 10px 0;
+	font-size: 1.2em;
 }
 
 .files-list__card-preview {
-  margin: 0 0 10px 0;
-  color: #555;
+	margin: 0 0 10px 0;
+	color: #555;
 }
 
 .files-list__pills {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 10px;
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-top: 10px;
 }
 
 .files-list__pill {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.8em;
-  font-weight: 500;
-  background-color: #f0f0f0;
-  color: #666;
+	display: inline-block;
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 0.8em;
+	font-weight: 500;
+	background-color: #f0f0f0;
+	color: #666;
 }
 
 .files-list__pill--recent {
-  background-color: #4CAF50;
-  color: white;
+	background-color: #4caf50;
+	color: white;
 }
 
 .files-list__pagination {
-  display: flex;
-  margin-top: 20px;
+	display: flex;
+	margin-top: 20px;
 }
 
 .files-list__pagination-link {
-  color: black;
-  padding: 8px 16px;
-  text-decoration: none;
+	color: black;
+	padding: 8px 16px;
+	text-decoration: none;
 }
 
 .files-list__pagination-link--active {
-  background-color: #4CAF50;
-  color: white;
+	background-color: #4caf50;
+	color: white;
 }
 
 .files-list__pagination-link:hover:not(.files-list__pagination-link--active) {
-  background-color: #ddd;
+	background-color: #ddd;
 }
