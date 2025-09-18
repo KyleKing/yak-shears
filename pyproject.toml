@@ -131,6 +131,7 @@ dev-dependencies = [
   "beautifulsoup4>=4.13.4",
   "httpx>=0.28.1",
   "mypy>=1.15.0",
+  "playwright>=1.40.0",
   "pytest-cov>=6.2.1",
   "pytest-watcher>=0.4.3",
   "ruff>=0.11.10",

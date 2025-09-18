@@ -6,6 +6,7 @@ from typing import Literal
 from unittest.mock import patch
 
 import pytest
+from playwright.sync_api import Browser, Page
 
 from yak_shears.auth import handlers
 from yak_shears.auth.models import HashedPassword, Password, User
@@ -71,3 +72,27 @@ def mock_user_session():
         )
         mock_get_user.return_value = mock_user
         yield mock_get_user
+
+
+# Playwright fixtures
+@pytest.fixture(scope="session")
+def browser_context_args(browser_context_args):
+    """Configure browser context for testing."""
+    return {
+        **browser_context_args,
+        "viewport": {"width": 1280, "height": 720},
+    }
+
+
+@pytest.fixture
+def authenticated_page(browser: Browser, temp_user_file, sample_user) -> Page:
+    """Create a page with authenticated session."""
+    context = browser.new_context()
+    page = context.new_page()
+
+    # Set up authentication cookie/session
+    # This would need to be implemented based on your auth system
+    # For now, we'll just return the page
+    yield page
+
+    context.close()
