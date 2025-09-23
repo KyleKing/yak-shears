@@ -175,64 +175,8 @@ poetry.toml
 # ----------------------------------------------------------------------------------------------------------------------
 # Common Rules
 
-# General
-.vscode/*
-*.csv
-*.doc*
-*.jsonl
-*.lnk
-*.log
-*.pdf
-*.png
-*.jp*g
-*.spe
-*.svg
-*.xl*
-~*.*
-~$*
-
-# SQLite DB files (Note: use *.dvc to check these into git)
-*.db
-*.sqlite
-*.sqlite-journal
-
-# Other Python
-*.whl
-*.tar.gz
-setup.py
-
-# Coverage (for Pytest)
-.cover/*
-coverage*
-cov_html/
-coverage.json
-
-# Other Custom Pytest
-/tests/_tmp_cache/**
-
-# Static Type Checkers
-.pytype/*
-
-# Ignore testmon cache files
-.testmondata
-
-# Built Outputs
-/releases/
-
-# Ignore auto-created files by documentation tasks
-/docs/modules/*.md
-/docs/modules/**/*.md
-
-# Allow List
-!/docs/*.*
-!supporting/**
-!tests/data/**
-
 # Ensure that system files don't appear in the Allow List
 .DS_Store
-
-# Ensure *.pyc files are still ignored even if in tests/data directory
-*.pyc
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Custom Rules
