@@ -1,12 +1,15 @@
 """Pytest configuration."""
 
+import asyncio
+import subprocess  # noqa: S404
 import tempfile
 from pathlib import Path
 from typing import Literal
 from unittest.mock import patch
 
 import pytest
-from playwright.sync_api import Browser, Page
+import pytest_asyncio
+from playwright.async_api import Page
 
 from yak_shears.auth import handlers
 from yak_shears.auth.models import HashedPassword, Password, User
@@ -74,25 +77,63 @@ def mock_user_session():
         yield mock_get_user
 
 
+# ------------------------------------------------------------------------------
 # Playwright fixtures
+# ------------------------------------------------------------------------------
+
+PORT = "8081"
+BASE_URL = f"http://localhost:{PORT}"
+
+
+@pytest_asyncio.fixture(scope="session")
+async def server_lifecycle():
+    """Start and stop the server."""
+    # PLANNED: Will this error when incorrect?
+    process = subprocess.Popen(
+        # FIXME: Remove reload & no-auth
+        #  https://www.google.com/search?q=save%20cookies%20python%20playwright%20auth
+        ["uv", "run", "serve", "--no-auth", "--reload", "--port", PORT],  # noqa: S607
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    # PLANNED: Maybe check for availability?
+    #  urllib.request.urlopen(BASE_URL).getcode() == 200  # noqa: ERA001
+    await asyncio.sleep(2)
+
+    try:
+        yield
+    finally:
+        process.terminate()
+        process.wait()
+
+
 @pytest.fixture(scope="session")
-def browser_context_args(browser_context_args):
-    """Configure browser context for testing."""
-    return {
-        **browser_context_args,
-        "viewport": {"width": 1280, "height": 720},
-    }
+def base_url():
+    """Overrides https://github.com/pytest-dev/pytest-base-url."""
+    return BASE_URL
 
 
-@pytest.fixture
-def authenticated_page(browser: Browser, temp_user_file, sample_user) -> Page:
-    """Create a page with authenticated session."""
-    context = browser.new_context()
-    page = context.new_page()
+@pytest_asyncio.fixture
+async def console_messages(page: Page):
+    """Collect console messages."""
+    messages = []
 
-    # Set up authentication cookie/session
-    # This would need to be implemented based on your auth system
-    # For now, we'll just return the page
-    yield page
+    def handler(msg):
+        messages.append(f"{msg.type}: {msg.text}")
 
-    context.close()
+    page.on("console", handler)
+    yield messages
+
+
+@pytest_asyncio.fixture
+async def console_errors(console_messages):
+    """Filter console errors."""
+    return [msg for msg in console_messages if msg.startswith("error:")]
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def check_console_errors(console_errors):
+    """Fail test if there are console errors."""
+    yield
+    assert len(console_errors) == 0, f"Console errors: {console_errors}"

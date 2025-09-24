@@ -1,5 +1,5 @@
 # serializer version: 1
-# name: TestLoginEndpoint.test_displayed_error
+# name: TestLoginEndpoint.test_displayed_error[chromium]
   '''
   <!DOCTYPE html>
   <html>
@@ -51,7 +51,7 @@
   
   '''
 # ---
-# name: TestLoginEndpoint.test_login_get_shows_form
+# name: TestLoginEndpoint.test_login_get_shows_form[chromium]
   '''
   <!DOCTYPE html>
   <html>

@@ -2,6 +2,18 @@
 build-backend = "hatchling.build"
 requires = ["hatchling"]
 
+[dependency-groups]
+dev = [
+  "beautifulsoup4>=4.13.4",
+  "httpx>=0.28.1",
+  "mypy>=1.15.0",
+  "pytest-cov>=6.2.1",
+  "pytest-playwright-asyncio>=0.7.1",
+  "pytest-watcher>=0.4.3",
+  "ruff>=0.11.10",
+  "syrupy>=4.9.1",
+]
+
 [project]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -48,11 +60,16 @@ warn_unused_configs = true
 warn_unused_ignores = true
 
 [tool.pyright]
-include = ["tests", "yak_shears"]
+include = ["tests", "tests-e2e", "yak_shears"]
 pythonVersion = "3.12"
 
 [tool.pytest.ini_options]
-addopts = "./tests --cov=yak_shears --cov-fail-under=90 --cov-report=html:.cover"
+# FYI: browser is required for non-E2E test as well
+addopts = "tests --strict-markers --durations=5 --browser=chromium"
+asyncio_default_test_loop_scope = "session"
+markers = [
+  "playwright: e2e browser tests",
+]
 
 [tool.pytest-watcher]
 clear = true
@@ -60,7 +77,7 @@ ignore_patterns = []
 now = true
 patterns = ["*.jinja", "*.json", "*.py"]
 runner = "pytest"
-runner_args = ["--exitfirst", "--last-failed", "--new-first", "--no-cov", "-vv"]
+runner_args = ["--exitfirst", "--last-failed", "--new-first", "--no-cov", "-m 'not playwright'", "-vv"]
 
 [tool.ruff]
 # Docs: https://github.com/charliermarsh/ruff
@@ -112,10 +129,15 @@ known-first-party = ['yak_shears']
   'D101', # Missing docstring in public class
   'D102', # Missing docstring in public method
   'D103', # Missing docstring in public function
+  'DOC201', # `return` is not documented in docstring
+  'DOC402', # `yield` is not documented in docstring
   'PLC2701', # Private name import `_<>` from external module
   'PLR6301', # Method `test_main_no_command` could be a function, class method, or static method
   'PT004', # flake8-pytest-style: fixture does not return
   'S101', # Use of `assert` detected
+]
+'tests/e2e/test_comments.py' = [
+  'ERA001', # Commented out code
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -127,17 +149,7 @@ in_place = true
 trailing_comma_inline_array = true
 
 [tool.uv]
-dev-dependencies = [
-  "beautifulsoup4>=4.13.4",
-  "httpx>=0.28.1",
-  "mypy>=1.15.0",
-  "playwright>=1.40.0",
-  "pytest-cov>=6.2.1",
-  "pytest-watcher>=0.4.3",
-  "ruff>=0.11.10",
-  "syrupy>=4.9.1",
-]
-required-version = ">=0.7.3"
+required-version = ">=0.8.22"
 
 # pytorch-uv guide: https://docs.astral.sh/uv/guides/integration/pytorch/#using-a-pytorch-index
 [[tool.uv.index]]

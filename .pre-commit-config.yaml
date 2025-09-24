@@ -1,4 +1,6 @@
 ---
+# PLANNED: migrate to hk by updating the calcipy template
+
 # Common commands:
 # pre-commit install
 # pre-commit autoupdate
@@ -41,7 +43,7 @@ repos:
       - id: trailing-whitespace
         exclude: __snapshots__/.*\.ambr
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.8.3
+    rev: v4.9.1
     hooks:
       - id: commitizen
   - repo: https://github.com/executablebooks/mdformat
@@ -69,7 +71,7 @@ repos:
         types_or: [yaml]
         stages: ["pre-commit"]
   - repo: https://github.com/pappasam/toml-sort
-    rev: v0.24.2
+    rev: v0.24.3
     hooks:
       - id: toml-sort-fix
         exclude: uv\.lock|mise\.toml

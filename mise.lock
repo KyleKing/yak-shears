@@ -1,7 +1,7 @@
-[tools."npm:@biomejs/biome"]
-version = "2.2.2"
+[[tools."npm:@biomejs/biome"]]
+version = "2.2.4"
 backend = "npm:@biomejs/biome"
 
-[tools.python]
-version = "3.13.3"
+[[tools.python]]
+version = "3.13.7"
 backend = "core:python"

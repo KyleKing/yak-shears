@@ -1,11 +1,33 @@
 [env]
 _.python.venv = {path = ".venv"}
 
+[vars]
+unsafe_fixes = ''  # PLANNED: This doesn't actually work. Previously: `{{option(name="unsafe_fixes")}}`
+
 [tasks.format]
-run = ['uv run ruff check --fix {{option(name="unsafe_fixes")}}', "uv run ruff format", "biome format --write"]
+run = ['uv run ruff check --fix {{vars.unsafe_fixes}}', "uv run ruff format", "biome format --write"]
+
+[tasks.dev]
+run = 'uv run serve --reload --no-auth'
 
 [tasks.typecheck]
 run = ["uv run mypy"]
+
+[tasks.test]
+run = "uv run pytest --cov=yak_shears --cov-report=html:.cover --cov-fail-under=90"
+
+[tasks."test:unit"]
+run = "mise run test -m 'not playwright'"
+
+[tasks."test:e2e"]
+run = "uv run pytest -m 'playwright' --browser=firefox --tracing=retain-on-failure --video=off --screenshot=only-on-failure"
+# PLANNED: also see: https://www.better-simple.com/django/2025/09/17/playwright-pytest-that-brings-me-joy
+# --video=retain-on-failure < Consider for CI Only
+# --browser={chromium,firefox,webkit}
+# --device='iPhone 14'
+
+[tasks."test:e2e:debug"]
+run = "mise run test:e2e --headed --slowmo=20"
 
 [tools]
 "npm:@biomejs/biome" =["latest"]

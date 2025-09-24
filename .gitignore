@@ -183,3 +183,7 @@ poetry.toml
 
 .yak-shears-users.json
 yak_shears/static/**/*.min.*
+
+## Playwright
+playwright-report/*
+test-results/*
