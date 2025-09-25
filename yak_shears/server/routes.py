@@ -45,7 +45,7 @@ def create_app() -> Starlette:  # pragma: no cover
     """
     app = create_app_without_auth()
 
-    public_paths = {"/", "/favicon.ico", "/static", *AUTH_PUBLIC_PATHS}
+    public_paths = {r"^/$", r"^/favicon.ico$", r"^/static/.+", *AUTH_PUBLIC_PATHS}
     app.add_middleware(AuthMiddleware, public_paths=public_paths)
 
     return app

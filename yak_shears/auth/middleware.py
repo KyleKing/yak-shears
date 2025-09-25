@@ -1,5 +1,6 @@
 """Authentication middleware for Starlette applications."""
 
+import re
 from warnings import catch_warnings, filterwarnings
 
 from beartype.roar import BeartypeDecorHintPep585DeprecationWarning
@@ -25,10 +26,13 @@ with catch_warnings():
 
             Args:
                 app: The ASGI application
-                public_paths: Paths that do not require authentication
+                public_paths: Paths that do not require authentication specified with regular expressions
             """
             super().__init__(app)
-            self.public_paths = public_paths
+            if any(not pth.startswith("^") for pth in public_paths):
+                msg = f"Public paths must be regular expressions and start with '^'. Found: {public_paths}"
+                raise ValueError(msg)
+            self.public_path_matchers = {re.compile(pth) for pth in public_paths}
 
         async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
             """Process the request through the middleware.
@@ -40,7 +44,7 @@ with catch_warnings():
             Returns:
                 Response: The response
             """
-            if request.url.path in self.public_paths:
+            if any(pth.match(request.url.path) for pth in self.public_path_matchers):
                 return await call_next(request)
             if handlers.get_user_from_session(request):
                 return await call_next(request)
