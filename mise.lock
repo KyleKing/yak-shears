@@ -2,6 +2,10 @@
 version = "2.2.4"
 backend = "npm:@biomejs/biome"
 
+[[tools."npm:dprint"]]
+version = "0.50.1"
+backend = "npm:dprint"
+
 [[tools.python]]
 version = "3.13.7"
 backend = "core:python"

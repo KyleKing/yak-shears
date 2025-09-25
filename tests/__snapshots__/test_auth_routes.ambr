@@ -17,7 +17,7 @@
      <h2>
       Login
      </h2>
-     <form action="/auth/login" id="login" method="post" x-target="login">
+     <form action="/auth/login" id="login" method="post">
       <input name="redirect" type="hidden" value="/files"/>
       <div class="form-field">
        <label for="email">
@@ -67,7 +67,7 @@
      <h2>
       Login
      </h2>
-     <form action="/auth/login" id="login" method="post" x-target="login">
+     <form action="/auth/login" id="login" method="post">
       <div class="form-field">
        <label for="email">
         Email

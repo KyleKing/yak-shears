@@ -1,4 +1,5 @@
 /* Login Form Styles */
+/* FIXME: This isn't loaded as mimetype text/css during auth */
 
 .form-container {
 	max-width: 400px;

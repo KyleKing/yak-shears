@@ -88,12 +88,7 @@
 	border-radius: 12px;
 	font-size: 0.8em;
 	font-weight: 500;
-	background-color: #f0f0f0;
-	color: #666;
-}
-
-.files-list__pill--recent {
-	background-color: #4caf50;
+	ackground-color: #4caf50;
 	color: white;
 }
 

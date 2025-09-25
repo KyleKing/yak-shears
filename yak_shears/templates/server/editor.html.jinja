@@ -1,20 +1,20 @@
 {% extends "base.html.jinja" %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="/static/css/editor.css">
+  <link rel="stylesheet" href="/static/css/editor.css">
 {% endblock %}
 
 {% block title %}Editing {{ filename }}{% endblock %}
 
 {% block content %}
-<div class="editor__header">
+  <div class="editor__header">
     <h1>Editing {{ filename }}</h1>
     <a href="/files" class="editor__back-link">Back to Files</a>
-</div>
-<form method="post">
+  </div>
+  <form method="post">
     <textarea name="content" class="editor__textarea">{{ content }}</textarea>
     <div class="editor__actions">
-        <button type="submit">Save Changes</button>
+      <button type="submit">Save Changes</button>
     </div>
-</form>
+  </form>
 {% endblock %}

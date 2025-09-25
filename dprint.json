@@ -1,0 +1,15 @@
+{
+	"markup": {
+		"printWidth": 999
+	},
+	"jinja": {
+		"printWidth": 999
+	},
+	"yaml": {},
+	"excludes": ["**/node_modules"],
+	"plugins": [
+		"https://plugins.dprint.dev/g-plane/markup_fmt-v0.24.0.wasm",
+		"https://plugins.dprint.dev/g-plane/pretty_jinja-v0.2.0.wasm",
+		"https://plugins.dprint.dev/g-plane/pretty_yaml-v0.5.1.wasm"
+	]
+}

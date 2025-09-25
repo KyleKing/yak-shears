@@ -6,7 +6,7 @@ unsafe_fixes = ''  # PLANNED: This doesn't actually work. Previously: `{{option(
 
 [tasks.format]
 description = 'Run code formatting'
-run = ['uv run ruff check --fix {{vars.unsafe_fixes}}', "uv run ruff format", "biome format --write"]
+run = ['uv run ruff check --fix {{vars.unsafe_fixes}}', "uv run ruff format", "biome format --write", "dprint fmt"]
 
 [tasks.dev]
 description = 'Run development server without authentication'
@@ -45,5 +45,6 @@ description = "Download production assets"
 run = "./scripts/download-assets.sh"
 
 [tools]
-"npm:@biomejs/biome" =["latest"]
-python = ["latest"]
+"npm:@biomejs/biome" ="latest"
+"npm:dprint" = "latest"
+python = "latest"

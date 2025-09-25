@@ -1,57 +1,60 @@
 {% extends "base.html.jinja" %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="/static/css/files-list.css">
+  <link rel="stylesheet" href="/static/css/files-list.css">
 {% endblock %}
 
 {% block title %}Notes in {{ yak_dir_label }}{% endblock %}
 
 {% block content %}
-<div class="files-list">
+  <div class="files-list">
     <h1>Notes in {{ yak_dir_label }}</h1>
-    <p class="files-list__status-bar">Showing {{ files|length }} of {{ total_files }} notes (Page {{ current_page }} of {{ total_pages }})</p>
+    <p class="files-list__status-bar">Showing {{ files | length }} of {{ total_files }} notes (Page {{ current_page }} of {{ total_pages }})</p>
     <div class="files-list__sort-controls">
-        Sort by:
-        <a href="/files?sort_by=name{% if current_category %}&category={{ current_category }}{% endif %}" class="{% if sort_by == 'name' %}active{% endif %}">Name (Created At)</a> |
-        <a href="/files?sort_by=modified_date{% if current_category %}&category={{ current_category }}{% endif %}" class="{% if sort_by == 'modified_date' %}active{% endif %}">Modified Date</a>
+      Sort by:
+      <a href="/files?sort_by=name{% if current_category %}&category={{ current_category }}{% endif %}" class="{% if sort_by == 'name' %}active{% endif %}">Name (Created At)</a> |
+      <a href="/files?sort_by=modified_date{% if current_category %}&category={{ current_category }}{% endif %}" class="{% if sort_by == 'modified_date' %}active{% endif %}">Modified Date</a>
     </div>
     {% if categories %}
-    <div class="files-list__filter-controls">
+      <div class="files-list__filter-controls">
         Filter by category:
         <a href="/files?sort_by={{ sort_by }}" class="{% if not current_category %}active{% endif %}">All</a>
-        {% for cat in categories|sort %} |
-        <a href="/files?sort_by={{ sort_by }}&category={{ cat }}" class="{% if current_category == cat %}active{% endif %}">{{ cat }}</a>
+        {% for cat in categories | sort %}
+          |
+          <a href="/files?sort_by={{ sort_by }}&category={{ cat }}" class="{% if current_category == cat %}active{% endif %}">{{ cat }}</a>
         {% endfor %}
-    </div>
+      </div>
     {% endif %}
     <div class="files-list__cards-container">
-        {% for info in files %}
+      {% for info in files %}
         <a href="/edit?file={{ info.path }}" class="files-list__card-link">
-            <div class="files-list__card">
-                <p class="files-list__card-preview">{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
-                <div class="files-list__pills">
-                    <span class="files-list__pill{% if info.last_modified[:4] == '2025' %} files-list__pill--recent{% endif %}">{{ info.last_modified[:10] }}</span>
-                    <span class="files-list__pill">{{ info.category }}</span>
-                </div>
+          <div class="files-list__card">
+            <p class="files-list__card-preview">{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
+            <div class="files-list__pills">
+              <!-- FIXME: dprint fmt doesn't support [:10]
+              <span class="files-list__pill">{{ info.last_modified[:10] }}</span> -->
+              <span class="files-list__pill">{{ info.last_modified }}</span>
+              <span class="files-list__pill">{{ info.category }}</span>
             </div>
+          </div>
         </a>
-        {% endfor %}
+      {% endfor %}
     </div>
 
     {% if total_pages > 1 %}
-    <div class="files-list__pagination">
+      <div class="files-list__pagination">
         {% if current_page > 1 %}
-        <a href="/files?page={{ current_page - 1 }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}" class="files-list__pagination-link">&laquo; Previous</a>
+          <a href="/files?page={{ current_page - 1 }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}" class="files-list__pagination-link">&laquo; Previous</a>
         {% endif %}
 
-        {% for page_num in range([1, current_page - 2]|max, [total_pages + 1, current_page + 3]|min) %}
-        <a class="{% if page_num == current_page %}files-list__pagination-link--active{% endif %} files-list__pagination-link" href="/files?page={{ page_num }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}">{{ page_num }}</a>
+        {% for page_num in range([1, current_page - 2] | max, [total_pages + 1, current_page + 3] | min) %}
+          <a class="{% if page_num == current_page %}files-list__pagination-link--active{% endif %} files-list__pagination-link" href="/files?page={{ page_num }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}">{{ page_num }}</a>
         {% endfor %}
 
         {% if current_page < total_pages %}
-        <a href="/files?page={{ current_page + 1 }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}" class="files-list__pagination-link">Next &raquo;</a>
+          <a href="/files?page={{ current_page + 1 }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}" class="files-list__pagination-link">Next &raquo;</a>
         {% endif %}
-    </div>
+      </div>
     {% endif %}
-</div>
+  </div>
 {% endblock %}

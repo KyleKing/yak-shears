@@ -83,17 +83,19 @@
       </a>
      </div>
      <div class="files-list__cards-container">
-      <a class="files-list__card-link" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file1.dj">
+      <a class="files-list__card-link" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-3/file3.dj">
        <div class="files-list__card">
         <p class="files-list__card-preview">
-         # File 1  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 1
+         # File 3  This is a test file number 3  Unrelated to file 1 or file 2
         </p>
         <div class="files-list__pills">
-         <span class="files-list__pill files-list__pill--recent">
-          2025-05-01
+         <!-- FIXME: dprint fmt doesn't support [:10]
+                <span class="files-list__pill">2025-05-01</span> -->
+         <span class="files-list__pill">
+          2025-05-01 10:00:00
          </span>
          <span class="files-list__pill">
-          mock_djot_files
+          subdirectory-3
          </span>
         </div>
        </div>
@@ -104,8 +106,10 @@
          # File 2  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 2
         </p>
         <div class="files-list__pills">
-         <span class="files-list__pill files-list__pill--recent">
-          2025-05-01
+         <!-- FIXME: dprint fmt doesn't support [:10]
+                <span class="files-list__pill">2025-05-01</span> -->
+         <span class="files-list__pill">
+          2025-05-01 10:00:00
          </span>
          <span class="files-list__pill">
           subdirectory-2
@@ -113,17 +117,19 @@
         </div>
        </div>
       </a>
-      <a class="files-list__card-link" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-3/file3.dj">
+      <a class="files-list__card-link" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file1.dj">
        <div class="files-list__card">
         <p class="files-list__card-preview">
-         # File 3  This is a test file number 3  Unrelated to file 1 or file 2
+         # File 1  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 1
         </p>
         <div class="files-list__pills">
-         <span class="files-list__pill files-list__pill--recent">
-          2025-05-01
+         <!-- FIXME: dprint fmt doesn't support [:10]
+                <span class="files-list__pill">2025-05-01</span> -->
+         <span class="files-list__pill">
+          2025-05-01 10:00:00
          </span>
          <span class="files-list__pill">
-          subdirectory-3
+          mock_djot_files
          </span>
         </div>
        </div>

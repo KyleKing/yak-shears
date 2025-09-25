@@ -106,7 +106,7 @@ def get_djot_files(paths: list[Path], query_params: FilesQueryParams) -> tuple[l
     if query_params.sort_by == SortBy.MODIFIED_DATE:
         paths = sorted(paths, key=lambda x: x.stat().st_mtime, reverse=True)
     else:
-        paths = sorted(paths, key=lambda x: x.name.lower())
+        paths = sorted(paths, key=lambda x: x.name.lower(), reverse=True)
 
     page_size = query_params.page_size
     total_files = len(paths)

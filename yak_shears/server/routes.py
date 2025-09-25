@@ -52,7 +52,11 @@ def create_app() -> Starlette:  # pragma: no cover
 
 
 def start(
-    host: str = "localhost", port: int = 8080, *, reload: bool = False, no_auth: bool = True
+    host: str = "localhost",
+    port: int = 8080,
+    *,
+    reload: bool = False,
+    no_auth: bool = True,
 ) -> None:  # pragma: no cover
     """Run the ASGI server with uvicorn.
 
