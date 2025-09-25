@@ -1,7 +1,6 @@
 """Pytest configuration."""
 
 import asyncio
-import subprocess  # noqa: S404
 import tempfile
 from pathlib import Path
 from typing import Literal
@@ -89,12 +88,18 @@ BASE_URL = f"http://localhost:{PORT}"
 async def server_lifecycle():
     """Start and stop the server."""
     # PLANNED: Will this error when incorrect?
-    process = subprocess.Popen(
+    process = await asyncio.create_subprocess_exec(
         # FIXME: Remove reload & no-auth
         #  https://www.google.com/search?q=save%20cookies%20python%20playwright%20auth
-        ["uv", "run", "serve", "--no-auth", "--reload", "--port", PORT],  # noqa: S607
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        "uv",
+        "run",
+        "serve",
+        "--no-auth",
+        "--reload",
+        "--port",
+        PORT,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
     )
 
     # PLANNED: Maybe check for availability?
@@ -105,7 +110,7 @@ async def server_lifecycle():
         yield
     finally:
         process.terminate()
-        process.wait()
+        await process.wait()
 
 
 @pytest.fixture(scope="session")
@@ -115,7 +120,7 @@ def base_url():
 
 
 @pytest_asyncio.fixture
-async def console_messages(page: Page):
+async def console_messages(page: Page):  # noqa: RUF029 - required for event loop!
     """Collect console messages."""
     messages = []
 
@@ -123,17 +128,17 @@ async def console_messages(page: Page):
         messages.append(f"{msg.type}: {msg.text}")
 
     page.on("console", handler)
-    yield messages
+    return messages
 
 
-@pytest_asyncio.fixture
-async def console_errors(console_messages):
+@pytest.fixture
+def console_errors(console_messages):
     """Filter console errors."""
     return [msg for msg in console_messages if msg.startswith("error:")]
 
 
-@pytest_asyncio.fixture(autouse=True)
-async def check_console_errors(console_errors):
+@pytest.fixture(autouse=True)
+def check_console_errors(console_errors):
     """Fail test if there are console errors."""
     yield
     assert len(console_errors) == 0, f"Console errors: {console_errors}"

@@ -77,7 +77,7 @@ ignore_patterns = []
 now = true
 patterns = ["*.jinja", "*.json", "*.py"]
 runner = "pytest"
-runner_args = ["--exitfirst", "--last-failed", "--new-first", "--no-cov", "-m 'not playwright'", "-vv"]
+runner_args = ["--exitfirst", "--last-failed", "--new-first", "--no-cov", "-m", "not playwright", "-vv"]
 
 [tool.ruff]
 # Docs: https://github.com/charliermarsh/ruff
