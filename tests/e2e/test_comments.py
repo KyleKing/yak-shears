@@ -1,5 +1,5 @@
 # FYI: Adapted from App-Template example and planning for auth
-# Note: when modifying/dleeting this file, remove the ignore rules for ruff from pyproject.toml
+# Note: when modifying/deleting this file, remove the ignore rules for ruff from pyproject.toml
 #
 # import pytest
 #

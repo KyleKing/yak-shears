@@ -89,8 +89,6 @@
          # File 3  This is a test file number 3  Unrelated to file 1 or file 2
         </p>
         <div class="files-list__pills">
-         <!-- FIXME: dprint fmt doesn't support [:10]
-                <span class="files-list__pill">2025-05-01</span> -->
          <span class="files-list__pill">
           2025-05-01 10:00:00
          </span>
@@ -106,8 +104,6 @@
          # File 2  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 2
         </p>
         <div class="files-list__pills">
-         <!-- FIXME: dprint fmt doesn't support [:10]
-                <span class="files-list__pill">2025-05-01</span> -->
          <span class="files-list__pill">
           2025-05-01 10:00:00
          </span>
@@ -123,8 +119,6 @@
          # File 1  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 1
         </p>
         <div class="files-list__pills">
-         <!-- FIXME: dprint fmt doesn't support [:10]
-                <span class="files-list__pill">2025-05-01</span> -->
          <span class="files-list__pill">
           2025-05-01 10:00:00
          </span>

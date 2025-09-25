@@ -31,8 +31,6 @@
           <div class="files-list__card">
             <p class="files-list__card-preview">{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
             <div class="files-list__pills">
-              <!-- FIXME: dprint fmt doesn't support [:10]
-              <span class="files-list__pill">{{ info.last_modified[:10] }}</span> -->
               <span class="files-list__pill">{{ info.last_modified }}</span>
               <span class="files-list__pill">{{ info.category }}</span>
             </div>
