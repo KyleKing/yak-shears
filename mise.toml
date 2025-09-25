@@ -26,7 +26,7 @@ run = "mise run test -m 'not playwright'"
 
 [tasks."test:e2e"]
 description = 'Run only E2E tests'
-run = "uv run pytest -m 'playwright' --browser=firefox --tracing=retain-on-failure --video=off --screenshot=only-on-failure"
+run = "uv run pytest -m 'playwright' --tracing=retain-on-failure --video=off --screenshot=only-on-failure"
 # PLANNED: also see: https://www.better-simple.com/django/2025/09/17/playwright-pytest-that-brings-me-joy
 # --video=retain-on-failure < Consider for CI Only
 # --browser={chromium,firefox,webkit}
@@ -34,7 +34,7 @@ run = "uv run pytest -m 'playwright' --browser=firefox --tracing=retain-on-failu
 
 [tasks."test:e2e:debug"]
 description = 'Debug E2E tests with "Slow Mo"'
-run = "mise run test:e2e --headed --slowmo=20"
+run = "mise run test:e2e --headed --slowmo=20 -vv"
 
 [tasks.build]
 description = 'Build generated code'

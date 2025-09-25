@@ -9,6 +9,7 @@ dev = [
   "mypy>=1.15.0",
   "pytest-cov>=6.2.1",
   "pytest-playwright-asyncio>=0.7.1",
+  "pytest-timeout>=2.4.0",
   "pytest-watcher>=0.4.3",
   "ruff>=0.11.10",
   "syrupy>=4.9.1",
@@ -65,7 +66,7 @@ pythonVersion = "3.12"
 
 [tool.pytest.ini_options]
 # FYI: browser is required for non-E2E test as well
-addopts = "tests --strict-markers --durations=5 --browser=chromium"
+addopts = "tests --strict-markers --durations=5 --browser=chromium --timeout=25"
 asyncio_default_test_loop_scope = "session"
 markers = [
   "playwright: e2e browser tests",
