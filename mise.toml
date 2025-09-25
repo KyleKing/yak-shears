@@ -5,21 +5,27 @@ _.python.venv = {path = ".venv"}
 unsafe_fixes = ''  # PLANNED: This doesn't actually work. Previously: `{{option(name="unsafe_fixes")}}`
 
 [tasks.format]
+description = 'Run code formatting'
 run = ['uv run ruff check --fix {{vars.unsafe_fixes}}', "uv run ruff format", "biome format --write"]
 
 [tasks.dev]
+description = 'Run development server without authentication'
 run = 'uv run serve --reload --no-auth'
 
 [tasks.typecheck]
+description = 'Run static type checks'
 run = ["uv run mypy"]
 
 [tasks.test]
+description = 'Run all tests'
 run = "uv run pytest --cov=yak_shears --cov-report=html:.cover --cov-fail-under=90"
 
 [tasks."test:unit"]
+description = 'Run only non-E2E Tests'
 run = "mise run test -m 'not playwright'"
 
 [tasks."test:e2e"]
+description = 'Run only E2E tests'
 run = "uv run pytest -m 'playwright' --browser=firefox --tracing=retain-on-failure --video=off --screenshot=only-on-failure"
 # PLANNED: also see: https://www.better-simple.com/django/2025/09/17/playwright-pytest-that-brings-me-joy
 # --video=retain-on-failure < Consider for CI Only
@@ -27,7 +33,16 @@ run = "uv run pytest -m 'playwright' --browser=firefox --tracing=retain-on-failu
 # --device='iPhone 14'
 
 [tasks."test:e2e:debug"]
+description = 'Debug E2E tests with "Slow Mo"'
 run = "mise run test:e2e --headed --slowmo=20"
+
+[tasks.build]
+description = 'Build generated code'
+depends = ['download-assets']
+
+[tasks.download-assets]
+description = "Download production assets"
+run = "./scripts/download-assets.sh"
 
 [tools]
 "npm:@biomejs/biome" =["latest"]

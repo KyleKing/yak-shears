@@ -8,6 +8,8 @@
      Login to Yak-Shears
     </title>
     <link href="/static/css/main.css" rel="stylesheet"/>
+    <script src="/static/js/htmx.min.js">
+    </script>
     <link href="/static/css/login.css" rel="stylesheet"/>
    </head>
    <body>
@@ -42,10 +44,6 @@
       Note: Users must be created by an administrator using the CLI tool.
      </p>
     </div>
-    <script defer="" src="/static/js/alpine-ajax.min.js">
-    </script>
-    <script defer="" src="/static/js/alpine.min.js">
-    </script>
    </body>
   </html>
   
@@ -60,6 +58,8 @@
      Login to Yak-Shears
     </title>
     <link href="/static/css/main.css" rel="stylesheet"/>
+    <script src="/static/js/htmx.min.js">
+    </script>
     <link href="/static/css/login.css" rel="stylesheet"/>
    </head>
    <body>
@@ -90,10 +90,6 @@
       Note: Users must be created by an administrator using the CLI tool.
      </p>
     </div>
-    <script defer="" src="/static/js/alpine-ajax.min.js">
-    </script>
-    <script defer="" src="/static/js/alpine.min.js">
-    </script>
    </body>
   </html>
   

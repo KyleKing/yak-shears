@@ -42,7 +42,7 @@ This file provides guidance to AI agents when working with code in this reposito
 - **Starlette**: ASGI web framework for routing and request handling
 - **Uvicorn**: ASGI server for development and production
 - **Jinja2**: Template engine for HTML rendering
-- **Alpine.js + Alpine-Ajax**: Frontend interactivity (loaded via CDN)
+- **HTMX**: Frontend interactivity
 
 ### Project Structure
 
@@ -72,7 +72,7 @@ yak_shears/
 ### Frontend Approach
 
 - Server-side rendering with Jinja2 templates
-- Alpine.js for client-side interactivity
+- HTMX for interactivity
 - Minimal CSS approach, under 14KB page size target
 - Mobile-first responsive design for iPhone 14, iPad, Desktop
 
@@ -117,7 +117,7 @@ yak_shears/
 - Write easy to read code, with no comments, no one letter variables, and follow DRY
 - Update docstrings when making changes and check `mise run format ::: typecheck` after making changes
 - Do not add dependencies unless absolutely necessary
-- Prefer implementing features in server side Python when possible. Use Alpine.js and Alpine-Ajax for interactivity
+- Prefer implementing features in server side Python when possible. Use HTMX for client-side interactivity
 - Keep CSS minimal and scoped to component. Use default styling whenever possible
 - The whole page should not be larger than 14Kb
 - Support recent versions of FireFox desktop and Safari mobile browsers

@@ -8,6 +8,8 @@
      Editing test.dj
     </title>
     <link href="/static/css/main.css" rel="stylesheet"/>
+    <script src="/static/js/htmx.min.js">
+    </script>
    </head>
    <body>
     <div class="editor__header">
@@ -26,10 +28,6 @@
       </button>
      </div>
     </form>
-    <script defer="" src="/static/js/alpine-ajax.min.js">
-    </script>
-    <script defer="" src="/static/js/alpine.min.js">
-    </script>
    </body>
   </html>
   
@@ -44,6 +42,8 @@
      Notes in ./test_data/mock_djot_files
     </title>
     <link href="/static/css/main.css" rel="stylesheet"/>
+    <script src="/static/js/htmx.min.js">
+    </script>
     <link href="/static/css/files-list.css" rel="stylesheet"/>
    </head>
    <body>
@@ -130,10 +130,6 @@
       </a>
      </div>
     </div>
-    <script defer="" src="/static/js/alpine-ajax.min.js">
-    </script>
-    <script defer="" src="/static/js/alpine.min.js">
-    </script>
    </body>
   </html>
   

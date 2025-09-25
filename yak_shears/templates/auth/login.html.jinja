@@ -9,7 +9,7 @@
 {% block content %}
 <div class="form-container">
     <h2>Login</h2>
-    <form x-target="login" id="login" method="post" action="/auth/login">
+    <form id="login" method="post" action="/auth/login">
         {% if redirect %}
         <input type="hidden" name="redirect" value="{{ redirect }}">
         {% endif %}
