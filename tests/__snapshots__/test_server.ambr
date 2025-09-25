@@ -1,5 +1,5 @@
 # serializer version: 1
-# name: test_edit_file_get[chromium]
+# name: test_edit_file_get
   '''
   <!DOCTYPE html>
   <html>
@@ -33,7 +33,7 @@
   
   '''
 # ---
-# name: test_files_endpoint[chromium]
+# name: test_files_endpoint
   '''
   <!DOCTYPE html>
   <html>

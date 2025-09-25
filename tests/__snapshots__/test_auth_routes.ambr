@@ -1,5 +1,5 @@
 # serializer version: 1
-# name: test_displayed_error[chromium]
+# name: test_displayed_error
   '''
   <!DOCTYPE html>
   <html>
@@ -49,7 +49,7 @@
   
   '''
 # ---
-# name: test_login_get_shows_form[chromium]
+# name: test_login_get_shows_form
   '''
   <!DOCTYPE html>
   <html>
