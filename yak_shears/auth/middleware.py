@@ -48,4 +48,4 @@ with catch_warnings():
                 return await call_next(request)
             if handlers.get_user_from_session(request):
                 return await call_next(request)
-            return RedirectResponse(url=f"/auth/login?redirect={request.url.path}")
+            return RedirectResponse(url=f"/auth/login?redirect={request.url!s}")
