@@ -10,7 +10,7 @@ from typing import Self
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 
-from yak_shears.templates import FileInfo, SortBy, render_error, render_file_edit, render_files_list
+from yak_shears._templates import FileInfo, SortBy, render_error, render_file_edit, render_files_list
 
 PREVIEW_LENGTH = 200
 """Number of characters for content preview."""

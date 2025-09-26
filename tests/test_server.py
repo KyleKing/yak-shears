@@ -11,9 +11,9 @@ from bs4 import BeautifulSoup
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
-from yak_shears.constants import DEFAULT_REDIRECT
-from yak_shears.server.handlers import not_found
-from yak_shears.server.routes import ROUTES
+from yak_shears._constants import DEFAULT_REDIRECT
+from yak_shears.server._handlers import not_found
+from yak_shears.server._routes import ROUTES
 
 
 @pytest.fixture
@@ -53,7 +53,7 @@ MOCK_YAK_DIR = Path(__file__).parent / "test_data/mock_djot_files"
 @patch.dict(environ, {"YAK_SHEARS_DIR": MOCK_YAK_DIR.as_posix()}, clear=True)
 def test_files_endpoint(client: TestClient, mock_user_session, snapshot) -> None:
     """Test the files endpoint."""
-    with patch("yak_shears.file.handlers.datetime") as mock_datetime:
+    with patch("yak_shears._file.handlers.datetime") as mock_datetime:
         mock_datetime.fromtimestamp.return_value = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC)
         mock_datetime.UTC = UTC
 

@@ -2,7 +2,7 @@
 
 from starlette.routing import Route
 
-from yak_shears.file.handlers import edit_file_handler, files_handler
+from .handlers import edit_file_handler, files_handler
 
 ROUTES = [
     Route("/files", endpoint=files_handler),

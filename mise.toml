@@ -33,8 +33,8 @@ run = "uv run pytest -m 'playwright' --tracing=retain-on-failure --video=off --s
 # --device='iPhone 14'
 
 [tasks."test:e2e:debug"]
-description = 'Debug E2E tests with "Slow Mo"'
-run = "mise run test:e2e --headed --slowmo=20 -vv"
+description = 'Debug E2E tests with "Slow Mo". Optionally set PWDEBUG=1'
+run = "mise run test:e2e --headed --slowmo=30 -v"
 
 [tasks.build]
 description = 'Build generated code'

@@ -13,12 +13,12 @@ import getpass
 import sys
 from datetime import datetime
 
-from yak_shears.auth.models import Password
-from yak_shears.auth.storage import create_user, delete_user, get_user_by_email, list_all_users
-from yak_shears.log_utils import log
+from yak_shears._auth.models import Password
+from yak_shears._auth.storage import create_user, delete_user, get_user_by_email, list_all_users
+from yak_shears._log_utils import log
 
 
-def create_user_command(args: argparse.Namespace) -> None:
+def _create_user_command(args: argparse.Namespace) -> None:
     """Create a new user.
 
     Args:
@@ -49,7 +49,7 @@ def create_user_command(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
-def list_users_command(_args: argparse.Namespace) -> None:
+def _list_users_command(_args: argparse.Namespace) -> None:
     """List all users.
 
     Args:
@@ -77,7 +77,7 @@ Display Name: {user["display_name"]}
         log(f"{'-' * 40}\n{summary.strip()}")
 
 
-def delete_user_command(args: argparse.Namespace) -> None:
+def _delete_user_command(args: argparse.Namespace) -> None:
     """Delete a user.
 
     Args:
@@ -112,14 +112,14 @@ def main() -> None:
     create_parser = subparsers.add_parser("create", help="Create a new user")
     create_parser.add_argument("email", help="User email address")
     create_parser.add_argument("--display-name", help="User display name (defaults to email)")
-    create_parser.set_defaults(func=create_user_command)
+    create_parser.set_defaults(func=_create_user_command)
 
     list_parser = subparsers.add_parser("list", help="List all users")
-    list_parser.set_defaults(func=list_users_command)
+    list_parser.set_defaults(func=_list_users_command)
 
     delete_parser = subparsers.add_parser("delete", help="Delete a user")
     delete_parser.add_argument("email", help="Email of user to delete")
-    delete_parser.set_defaults(func=delete_user_command)
+    delete_parser.set_defaults(func=_delete_user_command)
 
     args = parser.parse_args()
     if not args.command:

@@ -7,9 +7,9 @@ from unittest.mock import patch
 
 import pytest
 
-from yak_shears.auth import handlers
-from yak_shears.auth.models import HashedPassword, Password, User
-from yak_shears.auth.storage import create_user
+from yak_shears._auth import handlers
+from yak_shears._auth.models import HashedPassword, Password, User
+from yak_shears._auth.storage import create_user
 
 
 @pytest.fixture
@@ -24,10 +24,10 @@ def temp_user_file():
         _f.write('{"users": {}, "email_to_user_id": {}, "sessions": {}}')
 
     with (
-        patch("yak_shears.auth.storage._USER_DATA_PATH", temp_path),
-        patch("yak_shears.auth.storage._USERS", {}),
-        patch("yak_shears.auth.storage._EMAIL_TO_USER_ID", {}),
-        patch("yak_shears.auth.storage._SESSION_STORE", {}),
+        patch("yak_shears._auth.storage._USER_DATA_PATH", temp_path),
+        patch("yak_shears._auth.storage._USERS", {}),
+        patch("yak_shears._auth.storage._EMAIL_TO_USER_ID", {}),
+        patch("yak_shears._auth.storage._SESSION_STORE", {}),
     ):
         yield temp_path
 

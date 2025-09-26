@@ -7,8 +7,8 @@ from os import getenv
 from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse, Response
 
-from yak_shears.constants import DEFAULT_REDIRECT
-from yak_shears.templates import render_auth_login
+from yak_shears._constants import DEFAULT_REDIRECT
+from yak_shears._templates import render_auth_login
 
 from . import storage
 from .models import Password, SessionId, User

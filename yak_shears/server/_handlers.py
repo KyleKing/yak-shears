@@ -5,8 +5,8 @@ from http import HTTPStatus
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 
-from yak_shears.constants import DEFAULT_REDIRECT
-from yak_shears.templates import render_error
+from yak_shears._constants import DEFAULT_REDIRECT
+from yak_shears._templates import render_error
 
 
 async def not_found(request: Request, exc: Exception) -> HTMLResponse:  # noqa: ARG001,RUF029

@@ -9,6 +9,6 @@ curl -o "yak_shears/static/js/htmx.min.js" "https://cdn.jsdelivr.net/npm/htmx.or
 # Download, transpile, and minify CodeJar
 TEMP_DIR=$(mktemp -d)
 curl -o "$TEMP_DIR/codejar.ts" "https://raw.githubusercontent.com/antonmedv/codejar/$CODEJAR_VERSION/codejar.ts"
-npx tsc "$TEMP_DIR/codejar.ts" --outDir "$TEMP_DIR" --target ES2015 --module ES2015 --noEmitOnError
+npx --package=typescript -- tsc "$TEMP_DIR/codejar.ts" --outDir "$TEMP_DIR" --target ES2015 --module ES2015 --noEmitOnError
 npx terser "$TEMP_DIR/codejar.js" -o "yak_shears/static/js/codejar.min.js" --compress --mangle
 rm -rf "$TEMP_DIR"

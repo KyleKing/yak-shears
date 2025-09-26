@@ -2,7 +2,7 @@
 
 from starlette.routing import Route
 
-from yak_shears.auth.handlers import login_handler, logout_handler, status_handler
+from .handlers import login_handler, logout_handler, status_handler
 
 ROUTES = [
     Route("/auth/login", endpoint=login_handler, methods=["GET", "POST"]),

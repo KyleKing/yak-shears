@@ -7,12 +7,13 @@ from starlette.applications import Starlette
 from starlette.routing import Route
 from starlette.staticfiles import StaticFiles
 
-from yak_shears.auth.middleware import AuthMiddleware
-from yak_shears.auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
-from yak_shears.auth.routes import ROUTES as AUTH_ROUTES
-from yak_shears.file.routes import ROUTES as FILE_ROUTES
-from yak_shears.log_utils import log
-from yak_shears.server.handlers import favicon_handler, not_found, root_handler
+from yak_shears._auth.middleware import AuthMiddleware
+from yak_shears._auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
+from yak_shears._auth.routes import ROUTES as AUTH_ROUTES
+from yak_shears._file.routes import ROUTES as FILE_ROUTES
+from yak_shears._log_utils import log
+
+from ._handlers import favicon_handler, not_found, root_handler
 
 ROUTES = [
     Route("/", endpoint=root_handler),
@@ -71,7 +72,7 @@ def start(
     if reload:
         log("Auto-reload enabled: Server will restart on code changes")
         uvicorn.run(
-            "yak_shears.server.routes:create_app_without_auth" if no_auth else "yak_shears.server.routes:create_app",
+            "yak_shears.server._routes:create_app_without_auth" if no_auth else "yak_shears.server._routes:create_app",
             host=host,
             port=port,
             reload=True,
@@ -81,7 +82,6 @@ def start(
         uvicorn.run(create_app(), host=host, port=port)
 
 
-# TODO: Split into start and cli to allow testing of cli
 def cli() -> None:
     """Run the development server with auto-reload."""
     parser = argparse.ArgumentParser(description="Run the Yak Shears development server")
@@ -97,7 +97,3 @@ def cli() -> None:
     args = parser.parse_args()
 
     start(host=args.host, port=args.port, reload=args.reload, no_auth=args.no_auth)
-
-
-if __name__ == "__main__":
-    cli()

@@ -8,10 +8,10 @@ from starlette.routing import Route
 from starlette.testclient import TestClient
 from syrupy.assertion import SnapshotAssertion
 
-from yak_shears.auth.middleware import AuthMiddleware
-from yak_shears.auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
-from yak_shears.auth.routes import ROUTES as AUTH_ROUTES
-from yak_shears.constants import DEFAULT_REDIRECT
+from yak_shears._auth.middleware import AuthMiddleware
+from yak_shears._auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
+from yak_shears._auth.routes import ROUTES as AUTH_ROUTES
+from yak_shears._constants import DEFAULT_REDIRECT
 
 from .conftest import SAMPLE_USER_EMAIL, SAMPLE_USER_PASSWORD
 

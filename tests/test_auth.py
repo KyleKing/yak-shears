@@ -1,8 +1,8 @@
 import pytest
 
-from yak_shears.auth.models import Password
-from yak_shears.auth.password import generate_salt, hash_password, verify_password
-from yak_shears.auth.storage import (
+from yak_shears._auth.models import Password
+from yak_shears._auth.password import generate_salt, hash_password, verify_password
+from yak_shears._auth.storage import (
     authenticate_user,
     create_session,
     create_user,

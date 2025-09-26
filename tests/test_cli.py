@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 import pytest
 
-from yak_shears.auth.models import Password
-from yak_shears.auth.storage import create_user
+from yak_shears._auth.models import Password
+from yak_shears._auth.storage import create_user
 from yak_shears.cli import main
 
 from .conftest import SAMPLE_USER_EMAIL
