@@ -87,19 +87,26 @@ def test_get_user_by_email(email, expected, temp_user_file, sample_user):
         assert user is None
 
 
-def test_get_user_by_id(sample_user):
+@pytest.mark.parametrize(
+    ("user_id", "expected"),
+    [
+        ("sample_user_id", True),
+        ("nonexistent-id", False),
+    ],
+)
+def test_get_user_by_id(user_id, expected, sample_user):
     """Test retrieving user by ID."""
-    user = get_user_by_id(sample_user["id"])
+    if user_id == "sample_user_id":
+        user_id = sample_user["id"]
 
-    assert user is not None
-    assert user["email"] == SAMPLE_USER_EMAIL
-    assert user["id"] == sample_user["id"]
+    user = get_user_by_id(user_id)
 
-
-def test_get_user_by_id_nonexistent(sample_user):
-    """Test retrieving non-existent user by ID."""
-    user = get_user_by_id("nonexistent-id")
-    assert user is None
+    if expected:
+        assert user is not None
+        assert user["email"] == SAMPLE_USER_EMAIL
+        assert user["id"] == user_id
+    else:
+        assert user is None
 
 
 @pytest.mark.parametrize(
@@ -138,62 +145,50 @@ def test_list_all_users(temp_user_file):
     assert "user2@example.com" in emails
 
 
-def test_delete_user(sample_user):
+@pytest.mark.parametrize(
+    ("email", "expected"),
+    [
+        (SAMPLE_USER_EMAIL, True),
+        ("nonexistent@example.com", False),
+    ],
+)
+def test_delete_user(email, expected, temp_user_file, sample_user):
     """Test user deletion."""
+    if expected:
+        user_id = sample_user["id"]
+        assert get_user_by_email(SAMPLE_USER_EMAIL) is not None
+        assert get_user_by_id(user_id) is not None
+
+        result = delete_user(email)
+        assert result is expected
+
+        assert get_user_by_email(SAMPLE_USER_EMAIL) is None
+        assert get_user_by_id(user_id) is None
+    else:
+        result = delete_user(email)
+        assert result is expected
+
+
+def test_session_operations(sample_user, temp_user_file):
+    """Test session creation, deletion, and retrieval."""
     user_id = sample_user["id"]
 
-    assert get_user_by_email(SAMPLE_USER_EMAIL) is not None
-    assert get_user_by_id(user_id) is not None
-
-    result = delete_user(SAMPLE_USER_EMAIL)
-    assert result is True
-
-    assert get_user_by_email(SAMPLE_USER_EMAIL) is None
-    assert get_user_by_id(user_id) is None
-
-
-def test_delete_user_nonexistent(temp_user_file):
-    result = delete_user("nonexistent@example.com")
-    assert result is False
-
-
-def test_create_session(sample_user):
-    """Test session creation."""
-    user_id = sample_user["id"]
+    # Test creation
     session_id = create_session(user_id)
-
     assert session_id is not None
     assert len(session_id) == SALT_LENGTH
 
-
-def test_delete_session(sample_user):
-    """Test session deletion."""
-    user_id = sample_user["id"]
-    session_id = create_session(user_id)
-    assert get_user_id_from_session(session_id) == user_id
-
-    delete_session(session_id)
-    assert get_user_id_from_session(session_id) is None
-
-
-def test_delete_nonexistent_session(temp_user_file):
-    """Test deleting non-existent session."""
-    delete_session("nonexistent-session-id")
-
-
-def test_get_user_id_from_session(sample_user):
-    """Test retrieving user ID from session."""
-    user_id = sample_user["id"]
-    session_id = create_session(user_id)
-
+    # Test retrieval
     retrieved_user_id = get_user_id_from_session(session_id)
     assert retrieved_user_id == user_id
 
+    # Test deletion
+    delete_session(session_id)
+    assert get_user_id_from_session(session_id) is None
 
-def test_get_user_id_from_nonexistent_session(temp_user_file):
-    """Test retrieving user ID from non-existent session."""
-    user_id = get_user_id_from_session("nonexistent-session-id")
-    assert user_id is None
+    # Test nonexistent operations
+    delete_session("nonexistent-session-id")
+    assert get_user_id_from_session("nonexistent-session-id") is None
 
 
 @pytest.mark.parametrize(

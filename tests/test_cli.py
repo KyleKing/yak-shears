@@ -13,146 +13,117 @@ ERROR_CODE = 2
 """Argparse exits with 2 for invalid command."""
 
 
-def test_create_user_success(temp_user_file):
-    args = argparse.Namespace(email="test@example.com", display_name="Test User")
-
+def run_create_user_command(args, getpass_side_effect, expect_success=True):
+    """Helper to run create_user_command with mocked inputs."""
     with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-        mock_getpass.side_effect = ["secure123", "secure123"]  # password and confirmation
-
+        mock_getpass.side_effect = getpass_side_effect
         with patch("yak_shears.cli.log") as mock_log:
-            create_user_command(args)
-
-        mock_log.assert_called()
-        logged_messages = [call.args[0] for call in mock_log.call_args_list]
-        assert any("Successfully created user: test@example.com" in msg for msg in logged_messages)
-        assert any("Test User" in msg for msg in logged_messages)
-
-
-def test_create_user_no_display_name(temp_user_file):
-    args = argparse.Namespace(email="test@example.com", display_name=None)
-
-    with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-        mock_getpass.side_effect = ["secure123", "secure123"]
-
-        with patch("yak_shears.cli.log") as mock_log:
-            create_user_command(args)
-
-        logged_messages = [call.args[0] for call in mock_log.call_args_list]
-        assert any("Successfully created user: test@example.com" in msg for msg in logged_messages)
-
-
-def test_create_user_empty_password(temp_user_file):
-    args = argparse.Namespace(email="test@example.com", display_name="Test User")
-
-    with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-        mock_getpass.return_value = ""
-
-        with patch("yak_shears.cli.log") as mock_log:
-            with pytest.raises(SystemExit) as excinfo:
+            if expect_success:
                 create_user_command(args)
-
-            assert excinfo.value.code == 1
-            logged_messages = [call.args[0] for call in mock_log.call_args_list]
-            assert any("Password cannot be empty" in msg for msg in logged_messages)
-
-
-def test_create_user_password_mismatch(temp_user_file):
-    args = argparse.Namespace(email="test@example.com", display_name="Test User")
-
-    with patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-        mock_getpass.side_effect = ["secure123", "different123"]
-
-        with patch("yak_shears.cli.log") as mock_log:
-            with pytest.raises(SystemExit) as excinfo:
-                create_user_command(args)
-
-            assert excinfo.value.code == 1
-            logged_messages = [call.args[0] for call in mock_log.call_args_list]
-            assert any("Passwords do not match" in msg for msg in logged_messages)
+                logged_messages = [call.args[0] for call in mock_log.call_args_list]
+                return logged_messages
+            else:
+                with pytest.raises(SystemExit) as excinfo:
+                    create_user_command(args)
+                assert excinfo.value.code == 1
+                logged_messages = [call.args[0] for call in mock_log.call_args_list]
+                return logged_messages
 
 
-def test_create_duplicate_user(sample_user):
-    args = argparse.Namespace(email=SAMPLE_USER_EMAIL, display_name="Another User")
+@pytest.mark.parametrize(
+    ("email", "display_name", "getpass_side_effect", "expected_messages"),
+    [
+        (
+            "newuser@example.com",
+            "Test User",
+            ["secure123", "secure123"],
+            ["Successfully created user: newuser@example.com (Test User)"],
+        ),
+        (
+            "newuser2@example.com",
+            None,
+            ["secure123", "secure123"],
+            ["Successfully created user: newuser2@example.com (newuser2@example.com)"],
+        ),
+        ("newuser3@example.com", "Test User", [""], ["Password cannot be empty"]),
+        ("newuser4@example.com", "Test User", ["secure123", "different123"], ["Passwords do not match"]),
+        (SAMPLE_USER_EMAIL, "Another User", ["secure123", "secure123"], ["already exists"]),
+    ],
+)
+def test_create_user_scenarios(
+    temp_user_file, sample_user, email, display_name, getpass_side_effect, expected_messages
+):
+    """Test various create user scenarios."""
+    args = argparse.Namespace(email=email, display_name=display_name)
+    logged_messages = run_create_user_command(args, getpass_side_effect, "already exists" not in expected_messages)
 
-    with patch("yak_shears.cli.log") as mock_log:
-        with pytest.raises(SystemExit) as excinfo:
-            create_user_command(args)
-
-        assert excinfo.value.code == 1
-        logged_messages = [call.args[0] for call in mock_log.call_args_list]
-        assert any("already exists" in msg for msg in logged_messages)
-
-
-def test_list_empty_users(temp_user_file):
-    args = argparse.Namespace()
-
-    with patch("yak_shears.cli.log") as mock_log:
-        list_users_command(args)
-
-    logged_messages = [call.args[0] for call in mock_log.call_args_list]
-    assert any("No users found" in msg for msg in logged_messages)
-
-
-def test_list_single_user(sample_user):
-    args = argparse.Namespace()
-
-    with patch("yak_shears.cli.log") as mock_log:
-        list_users_command(args)
-
-    logged_messages = [call.args[0] for call in mock_log.call_args_list]
-    assert any(SAMPLE_USER_EMAIL in msg for msg in logged_messages)
-    assert any("Found 1 users" in msg for msg in logged_messages)
+    for msg in expected_messages:
+        assert any(msg in logged_msg for logged_msg in logged_messages)
 
 
-def test_list_multiple_users(temp_user_file):
-    create_user("user1@example.com", "User 1", Password("password1"))
-    create_user("user2@example.com", "User 2", Password("password2"))
-    create_user("user3@example.com", "User 3", Password("password3"))
+def run_list_users_command(temp_user_file, sample_user, user_count=0):
+    """Helper to run list_users_command and return logged messages."""
+    if user_count > 0:
+        for i in range(1, user_count + 1):
+            create_user(f"user{i}@example.com", f"User {i}", Password(f"password{i}"))
 
     args = argparse.Namespace()
-
     with patch("yak_shears.cli.log") as mock_log:
         list_users_command(args)
-
-    logged_messages = [call.args[0] for call in mock_log.call_args_list]
-    assert any("Found 3 users" in msg for msg in logged_messages)
-    assert any("user1@example.com" in msg for msg in logged_messages)
-    assert any("user2@example.com" in msg for msg in logged_messages)
-    assert any("user3@example.com" in msg for msg in logged_messages)
+        logged_messages = [call.args[0] for call in mock_log.call_args_list]
+        return logged_messages
 
 
-def test_delete_existing_user(sample_user):
-    args = argparse.Namespace(email=SAMPLE_USER_EMAIL)
+@pytest.mark.parametrize(
+    ("user_count", "expected_messages"),
+    [
+        (0, [SAMPLE_USER_EMAIL, "Found 1 user"]),  # sample_user fixture creates 1 user
+        (1, [SAMPLE_USER_EMAIL, "Found 2 users"]),  # 1 from fixture + 1 added
+        (
+            3,
+            ["Found 4 users", "user1@example.com", "user2@example.com", "user3@example.com"],
+        ),  # 1 from fixture + 3 added
+    ],
+)
+def test_list_users_scenarios(temp_user_file, sample_user, user_count, expected_messages):
+    """Test list users with different user counts."""
+    logged_messages = run_list_users_command(temp_user_file, sample_user, user_count)
 
-    with patch("builtins.input", return_value="yes"):
+    for msg in expected_messages:
+        assert any(msg in logged_msg for logged_msg in logged_messages)
+
+
+def run_delete_user_command(args, input_value, expect_success=True):
+    """Helper to run delete_user_command with mocked input."""
+    with patch("builtins.input", return_value=input_value):
         with patch("yak_shears.cli.log") as mock_log:
-            delete_user_command(args)
-
-        logged_messages = [call.args[0] for call in mock_log.call_args_list]
-        assert any("Successfully deleted user: test@example.com" in msg for msg in logged_messages)
-
-
-def test_delete_nonexistent_user(temp_user_file):
-    args = argparse.Namespace(email="nonexistent@example.com")
-
-    with patch("yak_shears.cli.log") as mock_log:
-        with pytest.raises(SystemExit) as excinfo:
-            delete_user_command(args)
-
-        assert excinfo.value.code == 1
-        logged_messages = [call.args[0] for call in mock_log.call_args_list]
-        assert any("not found" in msg for msg in logged_messages)
+            if expect_success:
+                delete_user_command(args)
+                logged_messages = [call.args[0] for call in mock_log.call_args_list]
+                return logged_messages
+            else:
+                with pytest.raises(SystemExit) as excinfo:
+                    delete_user_command(args)
+                assert excinfo.value.code == 1
+                logged_messages = [call.args[0] for call in mock_log.call_args_list]
+                return logged_messages
 
 
-def test_delete_user_cancelled(sample_user):
-    args = argparse.Namespace(email=SAMPLE_USER_EMAIL)
+@pytest.mark.parametrize(
+    ("email", "input_value", "expected_messages", "expect_success"),
+    [
+        (SAMPLE_USER_EMAIL, "yes", ["Successfully deleted user: test@example.com"], True),
+        ("nonexistent@example.com", "yes", ["not found"], False),
+        (SAMPLE_USER_EMAIL, "no", ["Deletion cancelled"], True),
+    ],
+)
+def test_delete_user_scenarios(sample_user, temp_user_file, email, input_value, expected_messages, expect_success):
+    """Test delete user scenarios."""
+    args = argparse.Namespace(email=email)
+    logged_messages = run_delete_user_command(args, input_value, expect_success)
 
-    with patch("builtins.input", return_value="no"):
-        with patch("yak_shears.cli.log") as mock_log:
-            delete_user_command(args)
-
-        logged_messages = [call.args[0] for call in mock_log.call_args_list]
-        assert any("Deletion cancelled" in msg for msg in logged_messages)
+    for msg in expected_messages:
+        assert any(msg in logged_msg for logged_msg in logged_messages)
 
 
 def test_main_no_command(capsys):
