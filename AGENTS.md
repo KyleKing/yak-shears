@@ -90,7 +90,7 @@ yak_shears/
 
 - Keep AGENTS.md up to date
 - Run `mise run format ::: typecheck ::: test` after making changes
-- Liberally use `pytest.parameterize` when writing tests
+- Liberally use `pytest.mark.parametrize` when writing tests
     - Write the fewest number of tests to avoid coverage overlap
     - Always test at the consumer level on the public interface
     - Avoid mocking and spying whenever possible

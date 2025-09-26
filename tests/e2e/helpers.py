@@ -2,8 +2,8 @@
 
 from playwright.async_api import BrowserContext, Page
 
-from ..conftest import SAMPLE_USER_EMAIL, SAMPLE_USER_PASSWORD
-from .conftest import PLAYWRIGHT_AUTH_PATH
+from tests.conftest import SAMPLE_USER_EMAIL, SAMPLE_USER_PASSWORD
+from tests.e2e.conftest import PLAYWRIGHT_AUTH_PATH
 
 
 async def login(context: BrowserContext, page: Page) -> None:

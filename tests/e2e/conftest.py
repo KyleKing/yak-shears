@@ -36,26 +36,28 @@ def base_url():
     return BASE_URL
 
 
+async def check_connection(*, timeout_s: float, url: str) -> None:
+    start = time.monotonic()
+    async with httpx.AsyncClient() as client:
+
+        async def _is_reachable() -> bool:
+            with suppress(httpx.ConnectError):
+                await client.get(url)
+                return True
+            return False
+
+        while not await _is_reachable():
+            if (start - time.monotonic()) >= timeout_s:
+                msg = f"Failed to connect to {url} within the {timeout_s}s timeout"
+                raise RuntimeError(msg)
+            await asyncio.sleep(0.5)
+
+
 @pytest_asyncio.fixture(scope="session")
 async def server_lifecycle():
     """Start and stop the server."""
     process = await asyncio.create_subprocess_exec("uv", "run", "serve", "--port", PORT)
-
-    timeout_s = 5
-    start = time.monotonic()
-    async with httpx.AsyncClient() as client:
-
-        async def is_reachable() -> bool:
-            with suppress(httpx.ConnectError):
-                await client.get(BASE_URL)
-                return True
-            return False
-
-        while not await is_reachable():
-            if (start - time.monotonic()) >= timeout_s:
-                raise RuntimeError("Failed to connect within the timeout")
-            await asyncio.sleep(0.5)
-
+    await check_connection(timeout_s=5, url=BASE_URL)
     try:
         yield
     finally:
@@ -68,7 +70,8 @@ class Messages:
     """Collects console messages."""
 
     def __init__(self) -> None:
-        self.captured = []
+        """Initialized captured messages."""
+        self.captured: list[str] = []
 
     def handler(self, msg: ConsoleMessage) -> None:
         """Use with `page.on("console", ...)`."""
