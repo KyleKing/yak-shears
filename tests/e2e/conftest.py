@@ -8,9 +8,9 @@ from pathlib import Path
 import httpx
 import pytest
 import pytest_asyncio
-from playwright.async_api import Page
+from playwright.async_api import ConsoleMessage, Page
 
-PORT = "8082"
+PORT = "8081"
 BASE_URL = f"http://localhost:{PORT}"
 
 PLAYWRIGHT_AUTH_PATH = "playwright-secure/auth.json"
@@ -64,26 +64,28 @@ async def server_lifecycle():
         await process.wait()
 
 
+class Messages:
+    """Collects console messages."""
+
+    def __init__(self) -> None:
+        self.captured = []
+
+    def handler(self, msg: ConsoleMessage) -> None:
+        """Use with `page.on("console", ...)`."""
+        self.captured.append(f"{msg.type}: {msg.text}")
+
+
 @pytest_asyncio.fixture
 async def console_messages(page: Page):  # noqa: RUF029 - required to be async for event loop!
     """Collect console messages."""
-    messages = []
-
-    def handler(msg):
-        messages.append(f"{msg.type}: {msg.text}")
-
-    page.on("console", handler)
+    messages = Messages()
+    page.on("console", messages.handler)
     return messages
 
 
-@pytest.fixture
-def console_errors(console_messages):
-    """Filter console errors."""
-    return [msg for msg in console_messages if msg.startswith("error:")]
-
-
 @pytest.fixture(autouse=True)
-def check_console_errors(console_errors):
+def check_console_errors(console_messages):
     """Fail test if there are console errors."""
     yield
+    console_errors = [msg for msg in console_messages.captured if msg.startswith("error:")]
     assert len(console_errors) == 0, f"Console errors: {console_errors}"
