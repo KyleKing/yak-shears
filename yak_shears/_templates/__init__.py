@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from enum import StrEnum
 from http import HTTPStatus
-from pathlib import Path
+from pathlib import Path as SyncPath
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader
@@ -29,7 +29,7 @@ class FileInfo:
     truncated: bool
 
 
-TEMPLATE_DIR = Path(__file__).parent
+TEMPLATE_DIR = SyncPath(__file__).parent
 
 ENV = Environment(
     loader=FileSystemLoader(str(TEMPLATE_DIR)),

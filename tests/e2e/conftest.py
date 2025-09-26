@@ -3,7 +3,7 @@
 import asyncio
 import time
 from contextlib import suppress
-from pathlib import Path
+from pathlib import Path as SyncPath
 
 import httpx
 import pytest
@@ -14,7 +14,7 @@ PORT = "8081"
 BASE_URL = f"http://localhost:{PORT}"
 
 PLAYWRIGHT_AUTH_PATH = ".playwright-auth.json"
-(Path(__file__).absolute().parents[2] / PLAYWRIGHT_AUTH_PATH).write_text("{}")
+(SyncPath(__file__).absolute().parents[2] / PLAYWRIGHT_AUTH_PATH).write_text("{}")
 
 
 @pytest.fixture(scope="session")

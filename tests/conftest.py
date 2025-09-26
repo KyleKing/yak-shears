@@ -1,19 +1,20 @@
 """Pytest configuration."""
 
 import tempfile
-from pathlib import Path
 from typing import Literal
 from unittest.mock import patch
 
 import pytest
+import pytest_asyncio
+from anyio import Path
 
 from yak_shears._auth import handlers
 from yak_shears._auth.models import HashedPassword, Password, User
 from yak_shears._auth.storage import create_user
 
 
-@pytest.fixture
-def temp_user_file():
+@pytest_asyncio.fixture
+async def temp_user_file():
     """Create a temporary user file for testing.
 
     Yields:
@@ -31,7 +32,7 @@ def temp_user_file():
     ):
         yield temp_path
 
-    temp_path.unlink(missing_ok=True)
+    await temp_path.unlink(missing_ok=True)
 
 
 SAMPLE_USER_EMAIL = "test@example.com"

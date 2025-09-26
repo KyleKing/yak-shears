@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from http import HTTPStatus
 from os import environ
-from pathlib import Path
+from pathlib import Path as SyncPath
 from unittest.mock import patch
 
 import pytest
@@ -47,13 +47,15 @@ def test_root_endpoint(client: TestClient) -> None:
     assert response.headers["location"] == DEFAULT_REDIRECT
 
 
-MOCK_YAK_DIR = Path(__file__).parent / "test_data/mock_djot_files"
+MOCK_YAK_DIR = SyncPath(__file__).parent / "test_data/mock_djot_files"
 
 
-@patch.dict(environ, {"YAK_SHEARS_DIR": MOCK_YAK_DIR.as_posix()}, clear=True)
 def test_files_endpoint(client: TestClient, mock_user_session, snapshot) -> None:
     """Test the files endpoint."""
-    with patch("yak_shears._file.handlers.datetime") as mock_datetime:
+    with (
+        patch.dict(environ, {"YAK_SHEARS_DIR": MOCK_YAK_DIR.as_posix()}, clear=True),
+        patch("yak_shears._file.handlers.datetime") as mock_datetime,
+    ):
         mock_datetime.fromtimestamp.return_value = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC)
         mock_datetime.UTC = UTC
 
@@ -73,48 +75,42 @@ def test_not_found(client: TestClient, mock_user_session) -> None:
     assert "Not Found" in response.text
 
 
-def test_edit_file_get(client: TestClient, mock_user_session, snapshot) -> None:
+def test_edit_file_get(client: TestClient, mock_user_session, tmp_path, snapshot) -> None:
     """Test the edit file endpoint with GET request."""
-    with patch("pathlib.Path.exists") as mock_exists:
-        mock_exists.return_value = True
-        with patch("pathlib.Path.is_file") as mock_is_file:
-            mock_is_file.return_value = True
-            with patch("pathlib.Path.read_text") as mock_read_text:
-                mock_read_text.return_value = "Test file content"
+    # Create a temporary file
+    test_file = tmp_path / "test.dj"
+    test_file.write_text("Test file content")
 
-                response = client.get("/edit?file=/path/to/test.dj")
-                assert response.status_code == HTTPStatus.OK
-                assert "Editing test.dj" in response.text
-                assert "Test file content" in response.text
-                assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
+    response = client.get(f"/edit?file={test_file}")
+    assert response.status_code == HTTPStatus.OK
+    assert "Editing test.dj" in response.text
+    assert "Test file content" in response.text
+    assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
 
 
-def test_edit_file_post(client: TestClient, mock_user_session) -> None:
+def test_edit_file_post(client: TestClient, mock_user_session, tmp_path) -> None:
     """Test the edit file endpoint with POST request."""
-    with patch("pathlib.Path.exists") as mock_exists:
-        mock_exists.return_value = True
-        with patch("pathlib.Path.is_file") as mock_is_file:
-            mock_is_file.return_value = True
-            with patch("pathlib.Path.write_text") as mock_write_text:
-                mock_write_text.return_value = None
+    # Create a temporary file
+    test_file = tmp_path / "test.dj"
+    test_file.write_text("Original content")
 
-                response = client.post(
-                    "/edit?file=/path/to/test.dj",
-                    data={"content": "Updated content"},
-                )
-                assert response.status_code == HTTPStatus.SEE_OTHER
-                assert response.headers["location"] == "/edit?file=/path/to/test.dj"
-                mock_write_text.assert_called_once_with("Updated content", encoding="utf-8")
+    response = client.post(
+        f"/edit?file={test_file}",
+        data={"content": "Updated content"},
+    )
+    assert response.status_code == HTTPStatus.SEE_OTHER
+    assert response.headers["location"] == f"/edit?file={test_file}"
+    assert test_file.read_text() == "Updated content"
 
 
-def test_edit_file_not_found(client: TestClient, mock_user_session) -> None:
+def test_edit_file_not_found(client: TestClient, mock_user_session, tmp_path) -> None:
     """Test the edit file endpoint with non-existent file."""
-    with patch("pathlib.Path.exists") as mock_exists:
-        mock_exists.return_value = False
+    # Use a non-existent file path
+    nonexistent_file = tmp_path / "nonexistent.dj"
 
-        response = client.get("/edit?file=/path/to/nonexistent.dj")
-        assert response.status_code == HTTPStatus.NOT_FOUND
-        assert "File not found: " in response.text
+    response = client.get(f"/edit?file={nonexistent_file}")
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert "File not found: " in response.text
 
 
 def test_edit_file_no_file_specified(client: TestClient, mock_user_session) -> None:

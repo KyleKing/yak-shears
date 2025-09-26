@@ -1,12 +1,13 @@
 """Handlers for Yak Shears."""
 
+import asyncio
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from http import HTTPStatus
 from os import getenv
-from pathlib import Path
 from typing import Self
 
+from anyio import Path
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 
@@ -33,7 +34,7 @@ class FilesQueryParams:
     page_size: int = 30  # Currently not configurable
 
     @classmethod
-    def from_request(cls, request: Request, categories: set[str]) -> Self:
+    async def from_request(cls, request: Request, categories: set[str]) -> Self:
         """Parse and validate query parameters from HTTP request.
 
         Args:
@@ -61,7 +62,7 @@ class FilesQueryParams:
         return cls(page=page, sort_by=sort_by, category=category)
 
 
-def get_notes(pth: Path) -> list[Path]:
+async def get_notes(pth: Path) -> list[Path]:
     """Return djot note paths.
 
     Args:
@@ -70,12 +71,12 @@ def get_notes(pth: Path) -> list[Path]:
     Returns:
         List of djot notes
     """
-    if not pth.exists() or not pth.is_dir():
+    if not await pth.exists() or not await pth.is_dir():
         return []
-    return [f for f in pth.rglob("*.dj") if f.is_file()]
+    return [f async for f in pth.rglob("*.dj") if await f.is_file()]
 
 
-def get_categories(all_paths: list[Path]) -> set[str]:
+async def get_categories(all_paths: list[Path]) -> set[str]:
     """Get list of available categories (parent directories).
 
     Args:
@@ -84,7 +85,7 @@ def get_categories(all_paths: list[Path]) -> set[str]:
     Returns:
         List of category names (parent directory names)
     """
-    return {f.parent.name for f in all_paths if f.is_file()}
+    return {f.parent.name for f in all_paths if await f.is_file()}
 
 
 def get_djot_files(paths: list[Path], query_params: FilesQueryParams) -> tuple[list[Path], int, int]:
@@ -104,9 +105,9 @@ def get_djot_files(paths: list[Path], query_params: FilesQueryParams) -> tuple[l
         paths = [f for f in paths if f.parent.name == query_params.category]
 
     if query_params.sort_by == SortBy.MODIFIED_DATE:
-        paths = sorted(paths, key=lambda x: x.stat().st_mtime, reverse=True)
+        paths = sorted(paths, key=lambda pth: asyncio.run(pth.stat()).st_mtime, reverse=True)
     else:
-        paths = sorted(paths, key=lambda x: x.name.lower(), reverse=True)
+        paths = sorted(paths, key=lambda pth: pth.name.lower(), reverse=True)
 
     page_size = query_params.page_size
     total_files = len(paths)
@@ -118,7 +119,7 @@ def get_djot_files(paths: list[Path], query_params: FilesQueryParams) -> tuple[l
     return paths[start_idx:end_idx], total_files, total_pages
 
 
-def prepare_files(paths: list[Path]) -> list[FileInfo]:
+async def prepare_files(paths: list[Path]) -> list[FileInfo]:
     """Prepare file data for template rendering.
 
     Args:
@@ -129,9 +130,9 @@ def prepare_files(paths: list[Path]) -> list[FileInfo]:
     """
     files = []
     for file_path in paths:
-        file_stats = file_path.stat()
+        file_stats = await file_path.stat()
         last_modified = datetime.fromtimestamp(file_stats.st_mtime, tz=UTC).strftime("%Y-%m-%d %H:%M:%S")
-        content = file_path.read_text(encoding="utf-8")
+        content = await file_path.read_text(encoding="utf-8")
         preview = content[:PREVIEW_LENGTH].replace("\n", " ")
 
         info = FileInfo(
@@ -147,7 +148,7 @@ def prepare_files(paths: list[Path]) -> list[FileInfo]:
     return files
 
 
-async def files_handler(request: Request) -> Response:  # noqa: RUF029
+async def files_handler(request: Request) -> Response:
     """Handle requests to /files.
 
     Args:
@@ -156,15 +157,15 @@ async def files_handler(request: Request) -> Response:  # noqa: RUF029
     Returns:
         Response with paginated file listing
     """
-    directory_path = Path(getenv("YAK_SHEARS_DIR", "~/Sync/yak-shears")).expanduser()
+    directory_path = await Path(getenv("YAK_SHEARS_DIR", "~/Sync/yak-shears")).expanduser()
 
-    all_paths = get_notes(directory_path)
-    categories = get_categories(all_paths)
+    all_paths = await get_notes(directory_path)
+    categories = await get_categories(all_paths)
 
-    query_params = FilesQueryParams.from_request(request, categories)
+    query_params = await FilesQueryParams.from_request(request, categories)
 
     paths, total_files, total_pages = get_djot_files(all_paths, query_params=query_params)
-    files = prepare_files(paths)
+    files = await prepare_files(paths)
     yak_dir_label = "./" + directory_path.relative_to(directory_path.parents[1]).as_posix()
     return render_files_list(
         files=files,
@@ -194,18 +195,18 @@ async def edit_file_handler(request: Request) -> Response:
 
     try:
         file_path = Path(file_path_str)
-        if not file_path.exists() or not file_path.is_file():
+        if not await file_path.exists() or not await file_path.is_file():
             return render_error(f"File not found: {file_path}", status_code=HTTPStatus.NOT_FOUND)
 
         # If the request includes content, save the changes
         if request.method == "POST":
             form_data = await request.form()
             content = str(form_data.get("content", ""))
-            file_path.write_text(content, encoding="utf-8")
+            await file_path.write_text(content, encoding="utf-8")
             return RedirectResponse(url=f"/edit?file={file_path_str}", status_code=303)
 
         # Generate HTML editor
-        content = file_path.read_text(encoding="utf-8")
+        content = await file_path.read_text(encoding="utf-8")
         return render_file_edit(file_path.name, content)
     except Exception as e:
         return render_error(f"An error occurred: {e!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)

@@ -10,7 +10,7 @@ FIXME: Should likely be single user and not worry about multiple accounts
 import json
 import secrets
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path as SyncPath
 
 from .models import HashedPassword, Password, SessionId, User
 from .password import create_password_hash, verify_password
@@ -23,7 +23,7 @@ _EMAIL_TO_USER_ID: dict[str, str] = {}
 _SESSION_STORE: dict[str, str] = {}  # session_id -> user_id
 
 # Path to save user data
-_USER_DATA_PATH = Path(__file__).parents[1] / ".yak-shears-users.json"
+_USER_DATA_PATH = SyncPath(__file__).parents[1] / ".yak-shears-users.json"
 
 
 def _save_users() -> None:
