@@ -94,6 +94,7 @@ yak_shears/
     - Write the fewest number of tests to avoid coverage overlap
     - Always test at the consumer level on the public interface
     - Avoid mocking and spying whenever possible
+    - See example of these practices in `tests/test_cli.py`
 - Favor server-side Python over client-side HTMX and JavaScript when all else equal
 - Write easy to read code, *no one letter variables*, and follow YAGNI and DRY
 - Update docstrings when making changes
@@ -153,3 +154,5 @@ TODO: Not yet implemented
 ## Future Features
 
 - Best tiny model for plain text RAG (https://www.baseten.com/blog/the-best-open-source-embedding-models/#the-best-reward-model-allanai-llama-31-tulu-3-8b-reward) or run something slightly better on my laptop? For the latter, would track new and modified files removed from RAG until I can next ingest them from my laptop.
+- Consider revisiting automatic coverage overlap. See last item, which was too specific at line level when function level would be more useful: https://github.com/KyleKing/yak-shears/commit/ddc8b0c535b79317a13ef5accf32f0aa5018f49b
+- Consider adding mutation testing, such as with https://github.com/boxed/mutmut or the more complicated https://github.com/sixty-north/cosmic-ray
