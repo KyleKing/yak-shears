@@ -26,10 +26,16 @@ This file provides guidance to AI agents when working with code in this reposito
 ### Testing
 
 - `ptw .` - Run tests on file changes
-- `mise run test` - Run all tests
+- `mise run test` - Run all tests with coverage and performance reports
 - `mise run test:e2e` - Run only Playwright tests
 - `mise run test:unit` - Run non-Playwright tests
 - `mise run test --snapshot-update` - Run all tests and update test snapshots
+
+### Coverage Analysis
+
+- `uv run analyze_coverage.py` - Run coverage analysis to generate per-test contributions and overlaps
+- `uv run coverage report` - Show coverage report after running tests with coverage
+- `uv run coverage html` - Generate HTML coverage report
 
 ### Server Development
 

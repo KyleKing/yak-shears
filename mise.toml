@@ -18,7 +18,7 @@ run = ["uv run mypy"]
 
 [tasks.test]
 description = 'Run all tests'
-run = "uv run pytest --cov=yak_shears --cov-report=html:.cover --cov-fail-under=90"
+run = "uv run pytest --cov=yak_shears --cov-report=html:.cover --cov-report=term-missing --cov-fail-under=90"
 
 [tasks."test:unit"]
 description = 'Run only non-E2E Tests'
