@@ -4,42 +4,46 @@ This file provides guidance to AI agents when working with code in this reposito
 
 ## Development Commands
 
+### General
+
+- `mise --help` - information about mise for task and system dependency management
+    - `mise task` - list all mise tasks
+- `uv --help` - information about uv for package management
+- `git` - use git for history, but never commit
+
 ### Package Management
 
 - `uv sync` - Install dependencies
 - `uv add <package>` - Add a new dependency
-- Do not add new packages without asking and proposing at least two options
+    - Do not add new packages without asking and proposing at least two options
 
 ### Code Quality
 
-- `mise run format` - Format code with Ruff (fix + format)
+- `mise run format` - Format code with multiple tools
 - `mise run typecheck` - Run mypy type checking
-- `uv run ruff check --fix` - Run Ruff linter with fixes
-- `uv run ruff format` - Format code with Ruff
-- `uv run mypy` - Type check with mypy
+- `pre-commit run --all-files` - miscellaneous formatting
 
 ### Testing
 
-- `uv run pytest -v --ff -x` - Run tests with verbose output, fail-fast, exit on first failure
-- `uv run pytest --snapshot-update` - Update test snapshots
+- `ptw .` - Run tests on file changes
+- `mise run test` - Run all tests
+- `mise run test:e2e` - Run only Playwright tests
+- `mise run test:unit` - Run non-Playwright tests
+- `mise run test --snapshot-update` - Run all tests and update test snapshots
 
 ### Server Development
 
-- `uv run serve --reload` - Start development server with auto-reload and no auth
-- `uv run serve --reload --no-auth` - Start development server without auth middleware for faster testing
+- `uv run serve` - Start production server
+- `mise run dev` - Start development server with auto-reload and no auth
 - `uv run yak-shears-users list` - List all users
-- `uv run yak-shears-users create <email>` - Create a new user
-
-### Pre-commit
-
-- `pre-commit install` - Install pre-commit hooks
-- `pre-commit run --all-files` - Run all pre-commit hooks
+- `uv run yak-shears-users create <email>` - Create a new user (AI should never run this. Use the test user below instead)
+    - Note: the default test user has email: `test@example.com` and password `secure123`
 
 ## Architecture Overview
 
 ### Web Framework Stack
 
-- **Starlette**: ASGI web framework for routing and request handling
+- **Starlette**: Minimal ASGI web framework for routing and request handling
 - **Uvicorn**: ASGI server for development and production
 - **Jinja2**: Template engine for HTML rendering
 - **HTMX**: Frontend interactivity
@@ -49,82 +53,57 @@ This file provides guidance to AI agents when working with code in this reposito
 ```
 yak_shears/
 ├── auth/           # Authentication system (password-based, JSON file storage)
-├── file/           # File management (Djot files in ~/Sync/yak-shears)
+├── file/           # File management
 ├── server/         # Main server routes and handlers
+├── static/         # Static CSS and JS files
 ├── templates/      # Jinja2 HTML templates
-└── cli.py          # User management CLI tool
+└── cli.py          # CLI Tool for User management
 ```
 
 ### Authentication System
 
-- Password-based authentication with sessions
-- In-memory storage with JSON file persistence (`.yak-shears-users.json`)
-- Session middleware protects routes except public paths
-- Development mode can skip auth with `--no-auth` flag
+- Password-based authentication stored in-memory by the server
+    - Session middleware enforces user authentication
+- User persistence in a JSON file (`.yak-shears-users.json`) written to by the CLI and read by the server
 
 ### File Management
 
-- Works with Djot files (`.dj` extension) from `~/Sync/yak-shears`
+- Works with Djot files (`.dj` extension) stored in `~/Sync/yak-shears` by default
 - Supports file listing with pagination and sorting (name/date)
-- File editing with content preview and truncation
-- Uses pathlib for file operations
+- File editing with content preview
 
 ### Frontend Approach
 
 - Server-side rendering with Jinja2 templates
-- HTMX for interactivity
-- Minimal CSS approach, under 14KB page size target
-- Mobile-first responsive design for iPhone 14, iPad, Desktop
-
-### Configuration
-
-- Python 3.12+ required (configured for 3.13.3 in mise.toml)
-- Uses beartype for runtime type checking
-- Ruff for linting/formatting with extensive rule configuration
-- MyPy for static type checking with strict settings
-- Test coverage requirement: 90% minimum
+- Responsive design for iPhone 14, iPad, and Desktop
+- Keep total assets under 14KB
 
 ### Key Design Patterns
 
 - TypedDict models for structured data (User, etc.)
-- NewType for type safety (Password, HashedPassword, SessionId)
+- "Opaque types" for special strings (Password, HashedPassword, SessionId)
 - Starlette route handlers with async/await
-- Template rendering helpers in templates/__init__.py
+- Template rendering helpers in `yak_shears/templates/__init__.py`
 - Centralized error handling with custom error pages
-
-### Development Notes
-
-- Use `uv` for all Python package management
-- Run `mise run format ::: typecheck` after making changes
-- Tests use pytest with parameterization and snapshot testing
-- No comments in code unless explicitly requested
-- Prefer server-side Python over client-side JavaScript when possible
-- Update AGENTS.md when making relevant changes
-
-## Design Guidelines
-
-### Visual Vibe
-
-- Clean and minimal with whimsical accents
-- Font is clean and easy to read on Mobile and Desktop
-- Be inspired by this color scheme from Welcome to the Jungle: #f7cf46 (primary accent), #f5f3ef (background), #000000 (text), #ffff (nav), and additional accent colors include #f19d71, #73c1e5, and #e99bc6
-- Responsive for iPhone 14, iPad, and Desktop Monitor
 
 ### Code Standards
 
-- Use Python 3.13
-- Use pytest and liberally use `pytest.parameterize`. Test with `uv run pytest -v --ff`
-- Write easy to read code, with no comments, no one letter variables, and follow DRY
-- Update docstrings when making changes and check `mise run format ::: typecheck` after making changes
-- Do not add dependencies unless absolutely necessary
-- Prefer implementing features in server side Python when possible. Use HTMX for client-side interactivity
-- Keep CSS minimal and scoped to component. Use default styling whenever possible
-- The whole page should not be larger than 14Kb
-- Support recent versions of FireFox desktop and Safari mobile browsers
+- Keep AGENTS.md up to date
+- Run `mise run format ::: typecheck ::: test` after making changes
+- Liberally use `pytest.parameterize` when writing tests
+    - Write the fewest number of tests to avoid coverage overlap
+    - Always test at the consumer level on the public interface
+    - Avoid mocking and spying whenever possible
+- Favor server-side Python over client-side HTMX and JavaScript when all else equal
+- Write easy to read code, *no one letter variables*, and follow YAGNI and DRY
+- Update docstrings when making changes
+- Keep CSS minimal and scoped to BEM component
 
 ## Component Specifications
 
 ### Note Editor
+
+Now implemented with CodeJar
 
 - Indicates spelling and grammar mistakes
 - Pasted links are auto-formatted as markdown
@@ -134,10 +113,13 @@ yak_shears/
 
 ### Note Preview
 
-- Indicates spelling and grammar mistakes
+TODO: Not yet implemented
+
 - Renders with djot library (`<script src="https://unpkg.com/@djot/djot@0.2.5/dist/djot.js"></script>` and `djot.renderHTML(djot.parse("- _example_"))`)
 
 ### Search
+
+TODO: Not yet implemented
 
 - Inspired by Telescope for nvim
 - There is a text input, which is full width
@@ -150,26 +132,23 @@ yak_shears/
 
 ### Login
 
-- Basic username/password if no valid session credentials were found
+- Basic username/password
 - Credentials last for 7 days
-- Login goes to last URL before redirect
 
 ### View Notes
 
-- URL is `/`
-- Preview each note in rectangle with any metadata and any content that will fit
-- Rectangles are wrapped with flexbox for responsiveness
+- URL is `/files`
+- Preview each note in a flexbox-wrapped layout
 - Clicking on a note opens the Note Page
 
 ### Note Page
 
-- URL is `/note/<note-title>`
-- There is a button to go back to `/`
+- URL is `/file/<note-title>`
 - On mobile, defaults to Note Editor component full screen. If the screen is wide enough, the preview is shown side-by-side
 - There is a button to toggle between Editor and Preview components
-- There is a feature to link notes (TBD)
-- There is a feature to see similar notes (TBD)
-- There is a feature to support configuring note metadata during edit and to view when viewing (TBD)
+- There is a feature to link notes (*TBD*)
+- There is a feature to see similar notes (*TBD*)
+- There is a feature to support configuring note metadata during edit and to view when viewing (*TBD*)
 
 ## Future Features
 
