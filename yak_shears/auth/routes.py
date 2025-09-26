@@ -9,4 +9,4 @@ ROUTES = [
     Route("/auth/logout", endpoint=logout_handler, methods=["GET"]),
     Route("/auth/status", endpoint=status_handler, methods=["GET"]),
 ]
-PUBLIC_PATHS = {r"^/auth/.*"}
+PUBLIC_PATHS = {r"^/auth/[^/]{5,7}$"}

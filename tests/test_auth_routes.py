@@ -181,7 +181,7 @@ def test_status_with_invalid_session(auth_client):
 def test_middleware_allows_public_paths(temp_user_file):
     """Test that middleware allows access to public paths."""
     app = Starlette(routes=AUTH_ROUTES)
-    app.add_middleware(AuthMiddleware, public_paths={"/auth/login", "/auth/status"})
+    app.add_middleware(AuthMiddleware, public_paths=AUTH_PUBLIC_PATHS)
 
     client = TestClient(app, follow_redirects=False)
 
@@ -200,13 +200,13 @@ def test_middleware_redirects_unauthenticated_users(temp_user_file):
         return Response("Protected content")
 
     app = Starlette(routes=[Route("/protected", endpoint=protected_endpoint), *AUTH_ROUTES])
-    app.add_middleware(AuthMiddleware, public_paths={"/auth/login", "/auth/status"})
+    app.add_middleware(AuthMiddleware, public_paths=AUTH_PUBLIC_PATHS)
 
     client = TestClient(app, follow_redirects=False)
 
     response = client.get("/protected", follow_redirects=False)
     assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
-    assert response.headers["location"] == "/auth/login?redirect=/protected"
+    assert response.headers["location"] == "/auth/login?redirect=http://testserver/protected"
 
 
 def test_middleware_allows_authenticated_users(sample_user):
@@ -216,7 +216,7 @@ def test_middleware_allows_authenticated_users(sample_user):
         return Response("Protected content")
 
     app = Starlette(routes=[Route("/protected", endpoint=protected_endpoint), *AUTH_ROUTES])
-    app.add_middleware(AuthMiddleware, public_paths={"/auth/login", "/auth/status"})
+    app.add_middleware(AuthMiddleware, public_paths=AUTH_PUBLIC_PATHS)
     client = TestClient(app, follow_redirects=False)
 
     post_login(client)
