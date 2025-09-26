@@ -29,36 +29,18 @@
      </a>
     </div>
     <form method="post">
-     <textarea class="editor__textarea" name="content">Test file content</textarea>
+     <div class="editor" data-gramm="false" data-manual="">
+     </div>
      <div class="editor__actions">
       <button type="submit">
        Save Changes
       </button>
      </div>
     </form>
-    <div class="editor" data-gramm="false" data-manual="">
-    </div>
-    <script type="module">
-     const editor = document.querySelector(".editor");
-  if (editor) {
-  const jar = CodeJar(editor, highlight, {
-    tab: " ".repeat(4),
-    addClosing: false,
-  });
-  
-  const storageKey = "index";
-  const saved = localStorage.getItem(storageKey);
-  if (saved && saved !== editor.textContent) {
-    if (editor.textContent != "") {
-      console.info({
-        event: "Replacing text with saved text",
-        oldContent: editor.textContent,
-      });
-    }
-    editor.textContent = saved;
-  }
-  jar.onUpdate((code) => localStorage.setItem(storageKey, code));
-  }
+    <script>
+     window.serverContent = "Test file content";
+    </script>
+    <script src="/static/js/editor.js" type="module">
     </script>
    </body>
   </html>

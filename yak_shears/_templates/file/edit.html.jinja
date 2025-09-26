@@ -22,54 +22,16 @@
     <a href="/files" class="editor__back-link">Back to Files</a>
   </div>
   <form method="post">
-    <textarea name="content" class="editor__textarea">{{ content }}</textarea>
+    <div class="editor" data-manual data-gramm="false"></div>
     <div class="editor__actions">
       <button type="submit">Save Changes</button>
     </div>
   </form>
-  <div class="editor" data-manual data-gramm="false"></div>
 {% endblock %}
 
 {% block scripts %}
-  <script type="module">
-  const editor = document.querySelector(".editor");
- if (editor) {
- const jar = CodeJar(editor, highlight, {
-   tab: " ".repeat(4),
-   addClosing: false,
- });
-
- const storageKey = "index";
- const serverContent = {{ content | tojson }};
- editor.textContent = serverContent;
-
- const saved = localStorage.getItem(storageKey);
- if (saved && saved !== serverContent) {
-   // Add toggle UI for differences
-   const toggleDiv = document.createElement("div");
-   toggleDiv.className = "editor__toggle";
-   toggleDiv.innerHTML = `
-     <button id="server-btn" class="active">Server Version</button>
-     <button id="local-btn">Local Draft</button>
-   `;
-   document.querySelector(".editor__header").appendChild(toggleDiv);
-
-   document.getElementById("server-btn").addEventListener("click", () => {
-     editor.textContent = serverContent;
-     jar.updateCode(serverContent);
-     document.getElementById("server-btn").classList.add("active");
-     document.getElementById("local-btn").classList.remove("active");
-   });
-
-   document.getElementById("local-btn").addEventListener("click", () => {
-     editor.textContent = saved;
-     jar.updateCode(saved);
-     document.getElementById("local-btn").classList.add("active");
-     document.getElementById("server-btn").classList.remove("active");
-   });
- }
-
- jar.onUpdate((code) => localStorage.setItem(storageKey, code));
- }
+  <script>
+  window.serverContent = {{ content | tojson }};
   </script>
+  <script type="module" src="/static/js/editor.js"></script>
 {% endblock %}
