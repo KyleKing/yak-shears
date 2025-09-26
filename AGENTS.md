@@ -31,12 +31,6 @@ This file provides guidance to AI agents when working with code in this reposito
 - `mise run test:unit` - Run non-Playwright tests
 - `mise run test --snapshot-update` - Run all tests and update test snapshots
 
-### Coverage Analysis
-
-- `uv run analyze_coverage.py` - Run coverage analysis to generate per-test contributions and overlaps
-- `uv run coverage report` - Show coverage report after running tests with coverage
-- `uv run coverage html` - Generate HTML coverage report
-
 ### Server Development
 
 - `uv run serve` - Start production server

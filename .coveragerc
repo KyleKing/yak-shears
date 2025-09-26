@@ -1,4 +1,0 @@
-[run]
-source = yak_shears
-omit = tests/*
-parallel = True
