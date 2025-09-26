@@ -8,8 +8,16 @@
      Editing test.dj
     </title>
     <link href="/static/css/main.css" rel="stylesheet"/>
-    <script src="/static/js/htmx.min.js">
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro&amp;display=swap" rel="stylesheet">
+     <link href="/static/css/editor.css" rel="stylesheet"/>
+     <!-- PLANNED: <script src="/static/js/htmx.min.js"></script> -->
+     <script src="https://unpkg.com/@djot/djot@0.3.2/dist/djot.js">
+     </script>
+     <script src="/static/js/codejar.min.js">
+     </script>
+     <script src="/static/js/highlight.js">
+     </script>
+    </link>
    </head>
    <body>
     <div class="editor__header">
@@ -28,6 +36,30 @@
       </button>
      </div>
     </form>
+    <div class="editor" data-gramm="false" data-manual="">
+    </div>
+    <script type="module">
+     const editor = document.querySelector(".editor");
+  if (editor) {
+  const jar = CodeJar(editor, highlight, {
+    tab: " ".repeat(4),
+    addClosing: false,
+  });
+  
+  const storageKey = "index";
+  const saved = localStorage.getItem(storageKey);
+  if (saved && saved !== editor.textContent) {
+    if (editor.textContent != "") {
+      console.info({
+        event: "Replacing text with saved text",
+        oldContent: editor.textContent,
+      });
+    }
+    editor.textContent = saved;
+  }
+  jar.onUpdate((code) => localStorage.setItem(storageKey, code));
+  }
+    </script>
    </body>
   </html>
   
@@ -42,9 +74,8 @@
      Notes in ./test_data/mock_djot_files
     </title>
     <link href="/static/css/main.css" rel="stylesheet"/>
-    <script src="/static/js/htmx.min.js">
-    </script>
     <link href="/static/css/files-list.css" rel="stylesheet"/>
+    <!-- PLANNED: <script src="/static/js/htmx.min.js"></script> -->
    </head>
    <body>
     <div class="files-list">

@@ -1,5 +1,19 @@
 {% extends "base.html.jinja" %}
 
+{% block extra_styles %}
+  <link
+    href="https://fonts.googleapis.com/css2?family=Source+Code+Pro&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/static/css/editor.css">
+{% endblock %}
+
+{% block extra_head %}
+  <script src="https://unpkg.com/@djot/djot@0.3.2/dist/djot.js"></script>
+  <script src="/static/js/codejar.min.js"></script>
+  <script src="/static/js/highlight.js"></script>
+{% endblock %}
+
 {% block title %}Editing {{ file_name }}{% endblock %}
 
 {% block content %}
@@ -13,4 +27,30 @@
       <button type="submit">Save Changes</button>
     </div>
   </form>
+  <div class="editor" data-manual data-gramm="false"></div>
+{% endblock %}
+
+{% block scripts %}
+  <script type="module">
+const editor = document.querySelector(".editor");
+if (editor) {
+const jar = CodeJar(editor, highlight, {
+  tab: " ".repeat(4),
+  addClosing: false,
+});
+
+const storageKey = "index";
+const saved = localStorage.getItem(storageKey);
+if (saved && saved !== editor.textContent) {
+  if (editor.textContent != "") {
+    console.info({
+      event: "Replacing text with saved text",
+      oldContent: editor.textContent,
+    });
+  }
+  editor.textContent = saved;
+}
+jar.onUpdate((code) => localStorage.setItem(storageKey, code));
+}
+  </script>
 {% endblock %}

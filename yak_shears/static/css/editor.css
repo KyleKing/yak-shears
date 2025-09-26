@@ -21,3 +21,68 @@
 	text-decoration: none;
 	color: inherit;
 }
+
+/* Extra Styles from CodeJar Demo */
+/* * {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+body {
+	min-height: 100vh;
+	background: #f6f8f8;
+}
+main {
+	max-width: 860px;
+	margin: 40px auto;
+	padding: 20px;
+} */
+.editor {
+	background: #fff;
+	border-radius: 6px;
+	box-shadow:
+		0 2px 2px rgba(0, 0, 0, 0.14),
+		0 1px 5px rgba(0, 0, 0, 0.12),
+		0 3px 1px -2px rgba(0, 0, 0, 0.2);
+	font-family: "Source Code Pro", monospace;
+	font-size: 14px;
+	line-height: 20px;
+	min-height: 260px;
+	padding: 10px;
+	tab-size: 4;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+.editor em {
+	font-style: italic;
+}
+.editor strong {
+	font-weight: 700;
+}
+.editor .quote {
+	color: #6a737d;
+}
+.editor .checkbox {
+	background: transparent;
+	padding: 0;
+	font-weight: 600;
+}
+.editor .checkbox.checked {
+	color: #466053;
+}
+.editor .checkbox.unchecked {
+	color: #dbc074;
+}
+.editor .heading {
+	font-weight: 600;
+	color: #333;
+}
+.editor .h1 {
+	font-size: 1.25em;
+}
+.editor .h2 {
+	font-size: 1.18em;
+}
+.editor .h3 {
+	font-size: 1.12em;
+}
