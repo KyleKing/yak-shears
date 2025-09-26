@@ -185,6 +185,5 @@ poetry.toml
 yak_shears/static/**/*.min.*
 
 ## Playwright
-playwright-report/*
-playwright-secure/auth.json
+.playwright-auth.json
 test-results/*

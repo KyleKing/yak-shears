@@ -13,7 +13,7 @@ from playwright.async_api import ConsoleMessage, Page
 PORT = "8081"
 BASE_URL = f"http://localhost:{PORT}"
 
-PLAYWRIGHT_AUTH_PATH = "playwright-secure/auth.json"
+PLAYWRIGHT_AUTH_PATH = ".playwright-auth.json"
 (Path(__file__).absolute().parents[2] / PLAYWRIGHT_AUTH_PATH).write_text("{}")
 
 
