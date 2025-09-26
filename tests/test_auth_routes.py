@@ -126,86 +126,101 @@ def test_login_keeps_redirect(auth_client, sample_user):
     assert response.headers["location"] == "/page/abc"
 
 
-@pytest.mark.parametrize(
-    ("is_logged_in",),
-    [
-        (True,),
-        (False,),
-    ],
-)
-def test_logout(auth_client, sample_user, is_logged_in):
-    """Test GET /auth/logout in logged in and logged out states."""
-    if is_logged_in:
-        post_login(auth_client)
+def test_logout_get(auth_client, sample_user):
+    """Test GET /auth/logout."""
+    post_login(auth_client)
 
+    logout_response = auth_client.get("/auth/logout")
+
+    assert logout_response.status_code == HTTPStatus.TEMPORARY_REDIRECT
+    assert logout_response.headers["location"] == "/auth/login"
+    session_cookies = [cookie for cookie in logout_response.cookies if cookie == "session_id"]
+    assert len(session_cookies) == 0, "Expected session cookie to be deleted"
+
+
+def test_logout_when_not_logged_in(auth_client):
+    """Test logout when not logged in."""
     response = auth_client.get("/auth/logout")
 
     assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
     assert response.headers["location"] == "/auth/login"
 
-    if is_logged_in:
-        session_cookies = [cookie for cookie in response.cookies if cookie.name == "session_id"]
-        assert len(session_cookies) == 0, "Expected session cookie to be deleted"
+
+def test_status_when_not_logged_in(auth_client):
+    """Test /auth/status when not authenticated."""
+    status_response = auth_client.get("/auth/status")
+
+    assert status_response.status_code == HTTPStatus.OK
+    assert status_response.headers["content-type"] == "application/json"
+    assert status_response.json() == {"authenticated": False}
 
 
-@pytest.mark.parametrize(
-    ("setup_func", "expected_authenticated", "expected_email"),
-    [
-        (lambda client: None, False, None),
-        (lambda client: post_login(client), True, SAMPLE_USER_EMAIL),
-        (lambda client: client.cookies.set("session_id", "invalid-session-id"), False, None),
-    ],
-)
-def test_auth_status(auth_client, sample_user, setup_func, expected_authenticated, expected_email):
-    """Test /auth/status in various authentication states."""
-    setup_func(auth_client)
+def test_status_when_logged_in(auth_client, sample_user):
+    """Test /auth/status when authenticated."""
+    post_login(auth_client)
 
     status_response = auth_client.get("/auth/status")
 
     assert status_response.status_code == HTTPStatus.OK
     assert status_response.headers["content-type"] == "application/json"
     data = status_response.json()
-    assert data["authenticated"] == expected_authenticated
-    if expected_email:
-        assert data["email"] == expected_email
+    assert data["authenticated"] is True
+    assert data["email"] == SAMPLE_USER_EMAIL
 
 
-def create_middleware_app(temp_user_file, sample_user, protected_route=False):
-    """Helper to create app with middleware for testing."""
-    routes = AUTH_ROUTES
-    if protected_route:
+def test_status_with_invalid_session(auth_client):
+    """Test /auth/status with invalid session cookie."""
+    auth_client.cookies.set("session_id", "invalid-session-id")
 
-        async def protected_endpoint(request):
-            return Response("Protected content")
+    status_response = auth_client.get("/auth/status")
 
-        routes = [Route("/protected", endpoint=protected_endpoint), *routes]
+    assert status_response.status_code == HTTPStatus.OK
+    assert status_response.json() == {"authenticated": False}
 
-    app = Starlette(routes=routes)
+
+def test_middleware_allows_public_paths(temp_user_file):
+    """Test that middleware allows access to public paths."""
+    app = Starlette(routes=AUTH_ROUTES)
     app.add_middleware(AuthMiddleware, public_paths=AUTH_PUBLIC_PATHS)
-    return TestClient(app, follow_redirects=False)
+
+    client = TestClient(app, follow_redirects=False)
+
+    # Should allow access to public paths even when not logged in
+    response = client.get("/auth/login")
+    assert response.status_code == HTTPStatus.OK
+    status_response = client.get("/auth/status")
+    assert status_response.status_code == HTTPStatus.OK
+    assert status_response.json() == {"authenticated": False}
 
 
-@pytest.mark.parametrize(
-    ("is_authenticated", "endpoint", "expected_status", "expected_location"),
-    [
-        (False, "/auth/login", HTTPStatus.OK, None),
-        (False, "/protected", HTTPStatus.TEMPORARY_REDIRECT, "/auth/login?redirect=http://testserver/protected"),
-        (True, "/protected", HTTPStatus.OK, None),
-    ],
-)
-def test_middleware_behavior(
-    temp_user_file, sample_user, is_authenticated, endpoint, expected_status, expected_location
-):
-    """Test middleware allows public paths and protects others."""
-    client = create_middleware_app(temp_user_file, sample_user, protected_route=True)
+def test_middleware_redirects_unauthenticated_users(temp_user_file):
+    """Test that middleware redirects unauthenticated users."""
 
-    if is_authenticated:
-        post_login(client)
+    async def protected_endpoint(request):  # noqa: RUF029
+        return Response("Protected content")
 
-    response = client.get(endpoint)
-    assert response.status_code == expected_status
+    app = Starlette(routes=[Route("/protected", endpoint=protected_endpoint), *AUTH_ROUTES])
+    app.add_middleware(AuthMiddleware, public_paths=AUTH_PUBLIC_PATHS)
 
-    if expected_location:
-        assert response.headers["location"] == expected_location
-    elif is_authenticated and endpoint == "/protected":
-        assert b"Protected content" in response.content
+    client = TestClient(app, follow_redirects=False)
+
+    response = client.get("/protected", follow_redirects=False)
+    assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
+    assert response.headers["location"] == "/auth/login?redirect=http://testserver/protected"
+
+
+def test_middleware_allows_authenticated_users(sample_user):
+    """Test that middleware allows authenticated users to access protected paths."""
+
+    async def protected_endpoint(request):  # noqa: RUF029
+        return Response("Protected content")
+
+    app = Starlette(routes=[Route("/protected", endpoint=protected_endpoint), *AUTH_ROUTES])
+    app.add_middleware(AuthMiddleware, public_paths=AUTH_PUBLIC_PATHS)
+    client = TestClient(app, follow_redirects=False)
+
+    post_login(client)
+
+    response = client.get("/protected")
+    assert response.status_code == HTTPStatus.OK
+    assert b"Protected content" in response.content
