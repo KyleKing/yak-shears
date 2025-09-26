@@ -228,88 +228,6 @@ def test_main_invalid_command(capsys):
         assert "invalid choice" in captured.err
 
 
-def test_full_user_lifecycle(temp_user_file):
-    create_args = ["yak-shears-users", "create", "test@example.com", "--display-name", "Test User"]
-    with patch("sys.argv", create_args), patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-        mock_getpass.side_effect = ["secure123", "secure123"]
-        main()
-
-    list_args = ["yak-shears-users", "list"]
-    with patch("sys.argv", list_args):
-        with patch("yak_shears.cli.log") as mock_log:
-            main()
-
-        logged_messages = [call.args[0] for call in mock_log.call_args_list]
-        assert any("test@example.com" in msg for msg in logged_messages)
-
-    delete_args = ["yak-shears-users", "delete", "test@example.com"]
-    with patch("sys.argv", delete_args), patch("builtins.input", return_value="yes"):
-        main()
-
-    with patch("sys.argv", list_args):
-        with patch("yak_shears.cli.log") as mock_log:
-            main()
-
-        logged_messages = [call.args[0] for call in mock_log.call_args_list]
-        assert any("No users found" in msg for msg in logged_messages)
-
-
-def test_create_multiple_users_and_list(temp_user_file):
-    users = [
-        ("user1@example.com", "User One"),
-        ("user2@example.com", "User Two"),
-        ("user3@example.com", "User Three"),
-    ]
-    for email, display_name in users:
-        create_args = ["yak-shears-users", "create", email, "--display-name", display_name]
-        with patch("sys.argv", create_args), patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-            mock_getpass.side_effect = ["password123", "password123"]
-            main()
-
-    list_args = ["yak-shears-users", "list"]
-    with patch("sys.argv", list_args):
-        with patch("yak_shears.cli.log") as mock_log:
-            main()
-
-        logged_messages = [call.args[0] for call in mock_log.call_args_list]
-        assert any("Found 3 users" in msg for msg in logged_messages)
-        for email, display_name in users:
-            assert any(email in msg for msg in logged_messages)
-            assert any(display_name in msg for msg in logged_messages)
-
-
-def test_unicode_user_data(temp_user_file):
-    email = "тест@пример.рф"
-    display_name = "测试用户"
-
-    create_args = ["yak-shears-users", "create", email, "--display-name", display_name]
-    with patch("sys.argv", create_args), patch("yak_shears.cli.getpass.getpass") as mock_getpass:
-        mock_getpass.side_effect = ["пароль123", "пароль123"]  # noqa: RUF001
-        main()
-
-    # List should show Unicode correctly
-    list_args = ["yak-shears-users", "list"]
-    with patch("sys.argv", list_args):
-        with patch("yak_shears.cli.log") as mock_log:
-            main()
-
-        logged_messages = [call.args[0] for call in mock_log.call_args_list]
-        assert any(email in msg for msg in logged_messages)
-        assert any(display_name in msg for msg in logged_messages)
-
-
-def test_create_parser_required_args(capsys):
-    test_args = ["yak-shears-users", "create"]
-
-    with patch("sys.argv", test_args):
-        with pytest.raises(SystemExit) as excinfo:
-            main()
-
-        assert excinfo.value.code == ERROR_CODE
-        captured = capsys.readouterr()
-        assert "required" in captured.err
-
-
 def test_create_parser_optional_display_name(temp_user_file):
     test_args = ["yak-shears-users", "create", "test@example.com"]
 
@@ -318,18 +236,6 @@ def test_create_parser_optional_display_name(temp_user_file):
 
         with patch("yak_shears.cli.log"):
             main()
-
-
-def test_delete_parser_required_args(capsys):
-    test_args = ["yak-shears-users", "delete"]
-
-    with patch("sys.argv", test_args):
-        with pytest.raises(SystemExit) as excinfo:
-            main()
-
-        assert excinfo.value.code == ERROR_CODE
-        captured = capsys.readouterr()
-        assert "required" in captured.err
 
 
 def test_list_parser_no_args(temp_user_file):

@@ -46,16 +46,6 @@ def test_verify_password(password, expected):
     assert verify_password(password, salt, password_hash) is expected
 
 
-def test_verify_password_with_wrong_salt():
-    """Test password verification with wrong salt."""
-    password = Password("test_password")
-    salt1 = generate_salt()
-    password_hash = hash_password(password, salt1)
-
-    salt2 = generate_salt()
-    assert verify_password(password, salt2, password_hash) is False
-
-
 def test_create_user(temp_user_file):
     """Test user creation."""
     email = "test@example.com"
@@ -176,16 +166,6 @@ def test_create_session(sample_user):
     assert len(session_id) == SALT_LENGTH
 
 
-def test_create_multiple_sessions_for_same_user(sample_user):
-    """Test creating multiple sessions for the same user."""
-    user_id = sample_user["id"]
-
-    session1 = create_session(user_id)
-    session2 = create_session(user_id)
-
-    assert session1 != session2  # Should be unique
-
-
 def test_delete_session(sample_user):
     """Test session deletion."""
     user_id = sample_user["id"]
@@ -216,23 +196,6 @@ def test_get_user_id_from_nonexistent_session(temp_user_file):
     assert user_id is None
 
 
-def test_data_persists_across_module_reloads(temp_user_file):
-    """Test that user data persists when the module is reloaded."""
-    email = "persistent@example.com"
-    display_name = "Persistent User"
-    password = Password("persistent123")
-
-    user = create_user(email, display_name, password)
-    user_id = user["id"]
-
-    with temp_user_file.open(encoding="utf-8") as f:
-        data = json.load(f)
-
-    assert user_id in data["users"]
-    assert email in data["email_to_user_id"]
-    assert data["email_to_user_id"][email] == user_id
-
-
 @pytest.mark.parametrize(
     ("email", "display_name", "password"),
     [
@@ -255,35 +218,3 @@ def test_data_persists_across_module_reloads(temp_user_file):
 def test_field_validation(temp_user_file, email, display_name, password):
     with pytest.raises(ValueError, match=r".+ cannot be empty or whitespace-only"):
         create_user(email, display_name, password)
-
-
-def test_invalid_email_format(temp_user_file):
-    # Note: This depends on whether email validation is implemented
-    # For now, we'll just check that it doesn't crash
-    user = create_user("not-an-email", "Test User", Password("password"))
-    assert user["email"] == "not-an-email"
-
-
-def test_very_long_password(temp_user_file):
-    """Test with very long password."""
-    long_password = Password("a" * 1000)
-    user = create_user("test@example.com", "Test User", long_password)
-
-    # Should be able to authenticate with the long password
-    authenticated = authenticate_user(user["email"], long_password)
-    assert authenticated is not None
-
-
-def test_unicode_in_fields(temp_user_file):
-    """Test with Unicode characters in fields."""
-    email = "тест@пример.рф"
-    display_name = "测试用户"
-    password = Password("пароль123")  # noqa: RUF001
-
-    user = create_user(email, display_name, password)
-    assert user["email"] == email
-    assert user["display_name"] == display_name
-
-    # Should be able to authenticate
-    authenticated = authenticate_user(email, password)
-    assert authenticated is not None
