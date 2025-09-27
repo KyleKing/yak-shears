@@ -117,5 +117,71 @@ function highlight(editor) {
 		if (idx < src.length) out += _escapeHTML(src[idx]);
 		if (closes[idx]) out += closes[idx].join("");
 	}
+
+	// Save cursor position
+	const sel = window.getSelection();
+	let cursorOffset = 0;
+	if (sel.rangeCount > 0) {
+		const range = sel.getRangeAt(0);
+		cursorOffset = getTextOffset(
+			editor,
+			range.startContainer,
+			range.startOffset,
+		);
+	}
+
 	editor.innerHTML = out;
+
+	// Restore cursor position
+	if (cursorOffset > 0) {
+		const newRange = document.createRange();
+		const { node, offset } = getNodeAtOffset(editor, cursorOffset);
+		if (node) {
+			newRange.setStart(node, offset);
+			newRange.setEnd(node, offset);
+			sel.removeAllRanges();
+			sel.addRange(newRange);
+		}
+	}
+}
+
+// Helper function to get text offset from a DOM node and offset
+function getTextOffset(root, node, offset) {
+	let totalOffset = 0;
+	const walker = document.createTreeWalker(
+		root,
+		NodeFilter.SHOW_TEXT,
+		null,
+		false,
+	);
+	let currentNode = walker.nextNode();
+	while (currentNode) {
+		if (currentNode === node) {
+			return totalOffset + offset;
+		}
+		totalOffset += currentNode.textContent.length;
+		currentNode = walker.nextNode();
+	}
+	return totalOffset;
+}
+
+// Helper function to get node and offset at a given text offset
+function getNodeAtOffset(root, targetOffset) {
+	let totalOffset = 0;
+	const walker = document.createTreeWalker(
+		root,
+		NodeFilter.SHOW_TEXT,
+		null,
+		false,
+	);
+	let currentNode = walker.nextNode();
+	while (currentNode) {
+		const nodeLength = currentNode.textContent.length;
+		if (totalOffset + nodeLength >= targetOffset) {
+			return { node: currentNode, offset: targetOffset - totalOffset };
+		}
+		totalOffset += nodeLength;
+		currentNode = walker.nextNode();
+	}
+	return { node: null, offset: 0 };
 }
