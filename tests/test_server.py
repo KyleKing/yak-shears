@@ -3,7 +3,6 @@
 from datetime import UTC, datetime
 from http import HTTPStatus
 from os import environ
-from pathlib import Path as SyncPath
 from unittest.mock import patch
 
 import pytest
@@ -14,6 +13,8 @@ from starlette.testclient import TestClient
 from yak_shears._constants import DEFAULT_REDIRECT
 from yak_shears.server._handlers import not_found
 from yak_shears.server._routes import ROUTES
+
+from .conftest import MOCK_YAK_DIR
 
 
 @pytest.fixture
@@ -45,9 +46,6 @@ def test_root_endpoint(client: TestClient) -> None:
 
     assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
     assert response.headers["location"] == DEFAULT_REDIRECT
-
-
-MOCK_YAK_DIR = SyncPath(__file__).parent / "test_data/mock_djot_files"
 
 
 def test_files_endpoint(client: TestClient, mock_user_session, snapshot) -> None:

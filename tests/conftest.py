@@ -1,6 +1,7 @@
 """Pytest configuration."""
 
 import tempfile
+from pathlib import Path as SyncPath
 from typing import Literal
 from unittest.mock import patch
 
@@ -11,6 +12,8 @@ from anyio import Path
 from yak_shears._auth import handlers
 from yak_shears._auth.models import HashedPassword, Password, User
 from yak_shears._auth.storage import create_user
+
+MOCK_YAK_DIR = SyncPath(__file__).parent / "test_data/mock_djot_files"
 
 
 @pytest_asyncio.fixture

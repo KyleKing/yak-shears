@@ -21,15 +21,15 @@
    </head>
    <body>
     <div class="editor__header">
-     <h1>
-      Editing test.dj
-     </h1>
+     <h3>
+      Editing `test.dj`
+     </h3>
      <a class="editor__back-link" href="/files">
       Back to Files
      </a>
     </div>
-    <form method="post">
-     <div class="editor" data-gramm="false" data-manual="">
+    <form id="editor_form" method="post">
+     <div class="editor" data-gramm="false" data-manual="" name="content">
      </div>
      <div class="editor__actions">
       <button type="submit">

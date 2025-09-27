@@ -1,6 +1,7 @@
 """Playwright fixtures."""
 
 import asyncio
+import os
 import time
 from contextlib import suppress
 from pathlib import Path as SyncPath
@@ -9,6 +10,8 @@ import httpx
 import pytest
 import pytest_asyncio
 from playwright.async_api import ConsoleMessage, Page
+
+from tests.conftest import MOCK_YAK_DIR
 
 PORT = "8081"
 BASE_URL = f"http://localhost:{PORT}"
@@ -56,7 +59,8 @@ async def check_connection(*, timeout_s: float, url: str) -> None:
 @pytest_asyncio.fixture(scope="session")
 async def server_lifecycle():
     """Start and stop the server."""
-    process = await asyncio.create_subprocess_exec("uv", "run", "serve", "--port", PORT)
+    env = {**os.environ, "YAK_SHEARS_DIR": MOCK_YAK_DIR.as_posix()}
+    process = await asyncio.create_subprocess_exec("uv", "run", "serve", "--port", PORT, env=env)
     await check_connection(timeout_s=5, url=BASE_URL)
     try:
         yield

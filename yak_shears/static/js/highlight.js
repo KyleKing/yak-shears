@@ -13,6 +13,8 @@ if (
 		},
 	});
 }
+
+// PLANNED: consider better escaping logic
 function _escapeHTML(ch) {
 	switch (ch) {
 		case "&":
@@ -39,16 +41,9 @@ function highlight(editor) {
 		(map[i] || (map[i] = [])).push(val);
 	};
 
-	let events = [];
-	try {
-		if (!globalThis.djot) throw new Error("djot lib missing");
-		events = globalThis.djot.parseEvents(src);
-	} catch (e) {
-		// Keep graceful degradation; do not throw in highlight
-		// eslint-disable-next-line no-console
-		console.warn("djot.parseEvents error", e);
-	}
+	if (!globalThis.djot) throw new Error("Could not find djot library");
 
+	const events = globalThis.djot.parseEvents(src);
 	for (const ev of events) {
 		const { annot } = ev;
 		const start = Math.max(0, Math.min(ev.startpos, src.length));
@@ -102,6 +97,14 @@ function highlight(editor) {
 				}
 				break;
 			}
+			case "+code_block":
+				// TODO: Add syntax highlighting!
+				const lang = "TBD";
+				add(opens, start, `<pre><code class="language-${lang}">`);
+				break;
+			case "-code_block":
+				add(closes, closeIndex, "</code></pre>");
+				break;
 			default:
 				break;
 		}
@@ -109,10 +112,10 @@ function highlight(editor) {
 	for (const k in closes) closes[k].reverse();
 
 	let out = "";
-	for (let i = 0; i <= src.length; i++) {
-		if (opens[i]) out += opens[i].join("");
-		if (i < src.length) out += _escapeHTML(src[i]);
-		if (closes[i]) out += closes[i].join("");
+	for (const idx of Array(src.length).keys()) {
+		if (opens[idx]) out += opens[idx].join("");
+		if (idx < src.length) out += _escapeHTML(src[idx]);
+		if (closes[idx]) out += closes[idx].join("");
 	}
 	editor.innerHTML = out;
 }
