@@ -9,11 +9,9 @@ from .helpers import login
 async def _validate_highlight(page: Page, fill: str, editor_locator: str, expected: str = "") -> None:
     """Enter specified text into the editor and verify expected highlighting."""
     editor = page.locator(".editor")
-    await editor.fill(fill)
-
-    # FIXME: temporarily required to trigger KeyUp event listened to by CodeJar
-    #  because fill doesn't appear to trigger that event
-    await page.keyboard.press(" ")
+    # Fill sets the content directly, bypassing the KeyUp event expected by CodeJar
+    await editor.fill("")
+    await editor.type(fill)
 
     highlighted = editor.locator(editor_locator)
     await expect(highlighted).to_be_visible()
