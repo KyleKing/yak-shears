@@ -138,9 +138,6 @@ known-first-party = ['yak_shears']
   'PT004', # flake8-pytest-style: fixture does not return
   'S101', # Use of `assert` detected
 ]
-'tests/e2e/test_comments.py' = [
-  'ERA001', # Commented out code
-]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

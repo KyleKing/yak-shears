@@ -3,7 +3,7 @@ from playwright.async_api import BrowserContext, Page, expect
 
 from tests.conftest import MOCK_YAK_DIR
 
-from .helpers import login
+from ._helpers import login
 
 
 async def _validate_highlight(page: Page, fill: str, editor_locator: str, expected: str = "") -> None:
@@ -34,7 +34,14 @@ async def test_editor_highlight_behavior(context: BrowserContext, page: Page, se
         await _validate_highlight(page, f"{'#' * idx} Title", f".heading.h{idx}")
     await _validate_highlight(page, "- [x] done", ".checkbox.checked", "[x]")
     await _validate_highlight(page, "- [ ] incomplete", ".checkbox.unchecked", "[ ]")
-    # PLANNED: Test codeblocks
+
+    # PLANNED: Integrate with Prism.js (v2 on master) or Highlight.js for syntax highlighting within code blocks
+
+    # TODO: Implement and test auto-completion for:
+    # = List indention (tab and shift-tab to cycle list or not, and introduce newline above if indenting beyond prior)
+    # - Ctrl-L to toggle checklist state (none, unchecked, checked)
+    # - List items (on enter, auto-complete `-`, `1.`, or `- [ ]`)
+    # = Doesn't autocomplete brackets, parenthesis, or `
 
     # PLANNED: Test HTML Escaping
     await editor.fill("<tag>")
