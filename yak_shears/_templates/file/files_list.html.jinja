@@ -7,52 +7,62 @@
 {% block title %}Notes in {{ yak_dir_label }}{% endblock %}
 
 {% block content %}
-  <div class="files-list">
-    <h1>Notes in {{ yak_dir_label }}</h1>
-    <p class="files-list__status-bar">Showing {{ files | length }} of {{ total_files }} notes (Page {{ current_page }} of {{ total_pages }})</p>
-    <div class="files-list__sort-controls">
-      Sort by:
-      <a href="/files?sort_by=name{% if current_category %}&category={{ current_category }}{% endif %}" class="{% if sort_by == 'name' %}active{% endif %}">Name (Created At)</a> |
-      <a href="/files?sort_by=modified_date{% if current_category %}&category={{ current_category }}{% endif %}" class="{% if sort_by == 'modified_date' %}active{% endif %}">Modified Date</a>
-    </div>
-    {% if categories %}
-      <div class="files-list__filter-controls">
-        Filter by category:
-        <a href="/files?sort_by={{ sort_by }}" class="{% if not current_category %}active{% endif %}">All</a>
-        {% for cat in categories | sort %}
-          |
-          <a href="/files?sort_by={{ sort_by }}&category={{ cat }}" class="{% if current_category == cat %}active{% endif %}">{{ cat }}</a>
-        {% endfor %}
-      </div>
-    {% endif %}
-    <div class="files-list__cards-container">
-      {% for info in files %}
-        <a href="/edit?file={{ info.path }}" class="files-list__card-link">
-          <div class="files-list__card">
-            <p class="files-list__card-preview">{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
-            <div class="files-list__pills">
-              <span class="files-list__pill">{{ info.last_modified }}</span>
-              <span class="files-list__pill">{{ info.category }}</span>
-            </div>
+  <main class="layout__inner">
+    <div class="container">
+      <div class="section">
+        <div class="section__head">
+          <h1 class="section__title">Notes in {{ yak_dir_label }}</h1>
+          <p class="section__description">Showing {{ files | length }} of {{ total_files }} notes (Page {{ current_page }} of {{ total_pages }})</p>
+        </div>
+
+        <div class="files-list__sort-controls">
+          <div class="inline-cluster">
+            <span class="text-sm font-semibold upper">Sort by:</span>
+            <a href="/files?sort_by=name{% if current_category %}&category={{ current_category }}{% endif %}" class="button button--sm {% if sort_by == 'name' %}button--primary{% else %}button--ghost{% endif %}">Name (Created At)</a>
+            <a href="/files?sort_by=modified_date{% if current_category %}&category={{ current_category }}{% endif %}" class="button button--sm {% if sort_by == 'modified_date' %}button--primary{% else %}button--ghost{% endif %}">Modified Date</a>
           </div>
-        </a>
-      {% endfor %}
-    </div>
+        </div>
 
-    {% if total_pages > 1 %}
-      <div class="files-list__pagination">
-        {% if current_page > 1 %}
-          <a href="/files?page={{ current_page - 1 }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}" class="files-list__pagination-link">&laquo; Previous</a>
+        {% if categories %}
+          <div class="files-list__filter-controls">
+            <span class="text-sm font-semibold upper">Filter by category:</span>
+            <a href="/files?sort_by={{ sort_by }}" class="button button--sm {% if not current_category %}button--primary{% else %}button--ghost{% endif %}">All</a>
+            {% for cat in categories | sort %}
+              <a href="/files?sort_by={{ sort_by }}&category={{ cat }}" class="button button--sm {% if current_category == cat %}button--primary{% else %}button--ghost{% endif %}">{{ cat }}</a>
+            {% endfor %}
+          </div>
         {% endif %}
 
-        {% for page_num in range([1, current_page - 2] | max, [total_pages + 1, current_page + 3] | min) %}
-          <a class="{% if page_num == current_page %}files-list__pagination-link--active{% endif %} files-list__pagination-link" href="/files?page={{ page_num }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}">{{ page_num }}</a>
-        {% endfor %}
+        <div class="cards">
+          {% for info in files %}
+            <a href="/edit?file={{ info.path }}" class="card">
+              <div class="card__body">
+                <p>{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
+              </div>
+              <div class="card__actions">
+                <span class="badge">{{ info.last_modified }}</span>
+                <span class="badge">{{ info.category }}</span>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
 
-        {% if current_page < total_pages %}
-          <a href="/files?page={{ current_page + 1 }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}" class="files-list__pagination-link">Next &raquo;</a>
+        {% if total_pages > 1 %}
+          <div class="files-list__pagination">
+            {% if current_page > 1 %}
+              <a href="/files?page={{ current_page - 1 }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}" class="button button--sm button--ghost">&laquo; Previous</a>
+            {% endif %}
+
+            {% for page_num in range([1, current_page - 2] | max, [total_pages + 1, current_page + 3] | min) %}
+              <a class="{% if page_num == current_page %}button button--sm button--primary{% else %}button button--sm button--ghost{% endif %}" href="/files?page={{ page_num }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}">{{ page_num }}</a>
+            {% endfor %}
+
+            {% if current_page < total_pages %}
+              <a href="/files?page={{ current_page + 1 }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}" class="button button--sm button--ghost">Next &raquo;</a>
+            {% endif %}
+          </div>
         {% endif %}
       </div>
-    {% endif %}
-  </div>
+    </div>
+  </main>
 {% endblock %}

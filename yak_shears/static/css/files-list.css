@@ -1,62 +1,112 @@
 /* Files List Component Styles */
 
 .files-list {
-	max-width: 1100px;
+	max-width: var(--size-max-width);
 	margin: 0 auto;
+	padding: var(--space-4);
 }
 
 .files-list__status-bar {
-	margin-top: 10px;
+	margin-top: var(--space-2);
+	font-size: 0.9rem;
+	color: var(--color-text-dim);
 }
 
 .files-list__sort-controls {
-	margin-bottom: 10px;
+	margin-bottom: var(--space-2);
 }
 
 .files-list__sort-controls a {
 	text-decoration: none;
-	color: inherit;
+	color: var(--color-text-dim);
+	font-weight: 500;
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--radius-sm);
+	transition: background var(--transition-fast);
+}
+
+.files-list__sort-controls a:hover {
+	background: var(--color-surface-alt);
+	color: var(--color-text);
 }
 
 .files-list__sort-controls a.active {
-	font-weight: bold;
-	text-decoration: underline;
+	font-weight: 600;
+	color: var(--color-text);
+	background: var(--color-accent);
 }
 
 .files-list__filter-controls {
-	margin-bottom: 10px;
+	margin-bottom: var(--space-2);
 }
 
 .files-list__filter-controls a {
 	text-decoration: none;
-	color: inherit;
+	color: var(--color-text-dim);
+	font-weight: 500;
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--radius-sm);
+	transition: background var(--transition-fast);
+}
+
+.files-list__filter-controls a:hover {
+	background: var(--color-surface-alt);
+	color: var(--color-text);
 }
 
 .files-list__filter-controls a.active {
-	font-weight: bold;
-	text-decoration: underline;
+	font-weight: 600;
+	color: var(--color-text);
+	background: var(--color-accent);
 }
 
 .files-list__cards-container {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-	gap: 20px;
+	gap: var(--space-4);
+	grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
 }
 
 .files-list__card {
-	border: 1px solid #ddd;
-	border-radius: 5px;
-	padding: 10px;
-	box-sizing: border-box;
-	width: 100%;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	padding: var(--space-5);
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-sm);
 	transition:
-		box-shadow 0.2s ease,
-		transform 0.2s ease;
+		border-color var(--transition-fast),
+		transform var(--transition-fast),
+		box-shadow var(--transition-fast);
+	isolation: isolate;
+}
+
+.files-list__card::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		120deg,
+		var(--color-accent) 0%,
+		var(--color-accent-warm) 50%,
+		var(--color-accent-soft) 100%
+	);
+	opacity: 0;
+	transition: opacity var(--transition-fast);
+	mix-blend-mode: multiply;
+	border-radius: inherit;
 }
 
 .files-list__card:hover {
-	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-	transform: translateY(-2px);
+	transform: translateY(-3px);
+	box-shadow: var(--shadow-md);
+	border-color: var(--color-accent);
+}
+
+.files-list__card:hover::before {
+	opacity: 0.12;
 }
 
 .files-list__card-link {
@@ -66,48 +116,63 @@
 }
 
 .files-list__card-title {
-	margin: 0 0 10px 0;
-	font-size: 1.2em;
+	margin: 0;
+	font-size: 1.05rem;
+	font-weight: 600;
+	line-height: 1.25;
 }
 
 .files-list__card-preview {
-	margin: 0 0 10px 0;
-	color: #555;
+	margin: 0;
+	font-size: 0.9rem;
+	color: var(--color-text-dim);
+	flex: 1;
 }
 
 .files-list__pills {
 	display: flex;
-	gap: 8px;
+	gap: var(--space-2);
 	flex-wrap: wrap;
-	margin-top: 10px;
+	margin-top: auto;
 }
 
 .files-list__pill {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 0.8em;
-	font-weight: 500;
-	ackground-color: #4caf50;
-	color: white;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4ch;
+	padding: 0.35rem 0.6rem 0.4rem;
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+	background: var(--color-accent);
+	color: #000;
+	border-radius: var(--radius-pill);
 }
 
 .files-list__pagination {
 	display: flex;
-	margin-top: 20px;
+	margin-top: var(--space-5);
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: var(--space-2);
 }
 
 .files-list__pagination-link {
-	color: black;
-	padding: 8px 16px;
+	color: var(--color-text);
+	padding: 0.5rem 0.85rem;
 	text-decoration: none;
+	border-radius: var(--radius-pill);
+	font-weight: 500;
+	transition: background var(--transition-fast);
 }
 
 .files-list__pagination-link--active {
-	background-color: #4caf50;
-	color: white;
+	background: var(--color-accent);
+	color: #000;
+	font-weight: 600;
 }
 
 .files-list__pagination-link:hover:not(.files-list__pagination-link--active) {
-	background-color: #ddd;
+	background: var(--color-surface-alt);
 }

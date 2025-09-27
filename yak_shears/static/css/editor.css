@@ -4,80 +4,100 @@
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	gap: var(--space-4);
+	margin-bottom: var(--space-4);
 }
 
 .editor__actions {
-	margin: 10px 0;
+	margin-top: var(--space-4);
 	display: flex;
 	align-items: center;
-	gap: 10px;
+	gap: var(--space-3);
 }
 
 .editor__status {
-	font-size: 14px;
+	font-size: 0.8rem;
 	font-weight: 500;
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--radius-sm);
 }
 
 .editor__status.saved {
-	color: green;
+	background: #e8f5e8;
+	color: #2e7d32;
 }
 
 .editor__status.error {
-	color: red;
+	background: #ffebee;
+	color: var(--color-danger);
 }
 
 .editor__back-link {
 	text-decoration: none;
-	color: inherit;
+	color: var(--color-text-dim);
+	font-weight: 500;
+	padding: 0.5rem 0.85rem;
+	border-radius: var(--radius-pill);
+	transition: background var(--transition-fast);
+}
+
+.editor__back-link:hover {
+	background: var(--color-surface-alt);
+	color: var(--color-text);
 }
 
 .editor__toggle {
 	display: flex;
-	gap: 10px;
+	gap: var(--space-2);
 }
 
 .editor__toggle button {
-	padding: 5px 10px;
-	border: 1px solid #ccc;
-	background: #f9f9f9;
+	padding: 0.45rem 0.85rem;
+	border: 1px solid var(--color-border);
+	background: var(--color-surface-alt);
+	color: var(--color-text);
+	border-radius: var(--radius-pill);
+	font-weight: 600;
+	font-size: 0.78rem;
+	line-height: 1.1;
 	cursor: pointer;
+	transition:
+		background var(--transition-fast),
+		color var(--transition-fast),
+		border-color var(--transition-fast);
+}
+
+.editor__toggle button:hover {
+	background: var(--color-surface);
 }
 
 .editor__toggle button.active {
-	background: #e0e0e0;
-	font-weight: bold;
+	background: var(--color-accent);
+	color: #000;
+	border-color: #000;
 }
 
-/* Extra Styles from CodeJar Demo */
-/* * {
-	margin: 0;
-	padding: 0;
-	box-sizing: border-box;
-}
-body {
-	min-height: 100vh;
-	background: #f6f8f8;
-}
-main {
-	max-width: 860px;
-	margin: 40px auto;
-	padding: 20px;
-} */
 .editor {
-	background: #fff;
-	border-radius: 6px;
-	box-shadow:
-		0 2px 2px rgba(0, 0, 0, 0.14),
-		0 1px 5px rgba(0, 0, 0, 0.12),
-		0 3px 1px -2px rgba(0, 0, 0, 0.2);
-	font-family: "Source Code Pro", monospace;
-	font-size: 14px;
-	line-height: 20px;
-	min-height: 260px;
-	padding: 10px;
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	box-shadow: var(--shadow-sm);
+	font-family:
+		ui-monospace,
+		SFMono-Regular,
+		SF Mono,
+		Menlo,
+		Consolas,
+		Liberation Mono,
+		monospace;
+	font-size: 0.9rem;
+	line-height: 1.5;
+	min-height: 20rem;
+	padding: var(--space-4);
 	tab-size: 4;
 	white-space: pre-wrap;
 	overflow-wrap: break-word;
+	color: var(--color-text);
 }
 .editor em {
 	font-style: italic;
@@ -86,7 +106,7 @@ main {
 	font-weight: 700;
 }
 .editor .quote {
-	color: #6a737d;
+	color: var(--sh-comment);
 }
 .editor .checkbox {
 	background: transparent;
@@ -94,14 +114,14 @@ main {
 	font-weight: 600;
 }
 .editor .checkbox.checked {
-	color: #466053;
+	color: var(--sh-string);
 }
 .editor .checkbox.unchecked {
-	color: #dbc074;
+	color: var(--sh-number);
 }
 .editor .heading {
 	font-weight: 600;
-	color: #333;
+	color: var(--color-text);
 }
 .editor .h1 {
 	font-size: 1.25em;

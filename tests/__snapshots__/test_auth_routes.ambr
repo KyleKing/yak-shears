@@ -2,8 +2,10 @@
 # name: test_displayed_error
   '''
   <!DOCTYPE html>
-  <html>
+  <html lang="en">
    <head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>
      Login to Yak-Shears
     </title>
@@ -12,38 +14,77 @@
     </script>
     <link href="/static/css/login.css" rel="stylesheet"/>
    </head>
-   <body>
-    <div class="form-container">
-     <h2>
-      Login
-     </h2>
-     <form action="/auth/login" id="login" method="post">
-      <input name="redirect" type="hidden" value="/files"/>
-      <div class="form-field">
-       <label for="email">
-        Email
-       </label>
-       <input id="email" name="email" required="" type="email"/>
+   <body class="layout">
+    <header class="header">
+     <div class="container">
+      <div class="header__bar">
+       <a class="brand" href="/files">
+        <div class="brand__logo">
+         YS
+        </div>
+        <span>
+         Yak Shears
+        </span>
+       </a>
+       <nav class="nav">
+        <ul class="nav__list">
+         <li>
+          <a class="nav__link" href="/files">
+           Notes
+          </a>
+         </li>
+        </ul>
+       </nav>
       </div>
-      <div class="form-field">
-       <label for="password">
-        Password
-       </label>
-       <input id="password" name="password" required="" type="password"/>
-      </div>
-      <p class="error">
-       Invalid email or password
-      </p>
-      <div class="form-field">
-       <button type="submit">
+     </div>
+    </header>
+    <main class="layout__inner">
+     <div class="container">
+      <div class="section">
+       <h1 class="section__title">
         Login
-       </button>
+       </h1>
+       <form action="/auth/login" class="form" id="login" method="post">
+        <input name="redirect" type="hidden" value="/files"/>
+        <div class="form__group">
+         <label class="form__label" for="email">
+          Email
+         </label>
+         <input class="form__control" id="email" name="email" required="" type="email"/>
+        </div>
+        <div class="form__group">
+         <label class="form__label" for="password">
+          Password
+         </label>
+         <input class="form__control" id="password" name="password" required="" type="password"/>
+        </div>
+        <div class="alert alert--warn" role="alert">
+         <strong>
+          Error:
+         </strong>
+         Invalid email or password
+        </div>
+        <div class="form__group">
+         <button class="button button--primary" type="submit">
+          Login
+         </button>
+        </div>
+       </form>
+       <p class="text-center text-sm text-dim">
+        Note: Users must be created by an administrator using the CLI tool.
+       </p>
       </div>
-     </form>
-     <p>
-      Note: Users must be created by an administrator using the CLI tool.
-     </p>
-    </div>
+     </div>
+    </main>
+    <footer class="footer">
+     <div class="container">
+      <div class="footer__inner">
+       <p class="footer__meta">
+        Yak Shears - A simple note editor
+       </p>
+      </div>
+     </div>
+    </footer>
    </body>
   </html>
   
@@ -52,8 +93,10 @@
 # name: test_login_get_shows_form
   '''
   <!DOCTYPE html>
-  <html>
+  <html lang="en">
    <head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>
      Login to Yak-Shears
     </title>
@@ -62,34 +105,70 @@
     </script>
     <link href="/static/css/login.css" rel="stylesheet"/>
    </head>
-   <body>
-    <div class="form-container">
-     <h2>
-      Login
-     </h2>
-     <form action="/auth/login" id="login" method="post">
-      <div class="form-field">
-       <label for="email">
-        Email
-       </label>
-       <input id="email" name="email" required="" type="email"/>
+   <body class="layout">
+    <header class="header">
+     <div class="container">
+      <div class="header__bar">
+       <a class="brand" href="/files">
+        <div class="brand__logo">
+         YS
+        </div>
+        <span>
+         Yak Shears
+        </span>
+       </a>
+       <nav class="nav">
+        <ul class="nav__list">
+         <li>
+          <a class="nav__link" href="/files">
+           Notes
+          </a>
+         </li>
+        </ul>
+       </nav>
       </div>
-      <div class="form-field">
-       <label for="password">
-        Password
-       </label>
-       <input id="password" name="password" required="" type="password"/>
-      </div>
-      <div class="form-field">
-       <button type="submit">
+     </div>
+    </header>
+    <main class="layout__inner">
+     <div class="container">
+      <div class="section">
+       <h1 class="section__title">
         Login
-       </button>
+       </h1>
+       <form action="/auth/login" class="form" id="login" method="post">
+        <div class="form__group">
+         <label class="form__label" for="email">
+          Email
+         </label>
+         <input class="form__control" id="email" name="email" required="" type="email"/>
+        </div>
+        <div class="form__group">
+         <label class="form__label" for="password">
+          Password
+         </label>
+         <input class="form__control" id="password" name="password" required="" type="password"/>
+        </div>
+        <div class="form__group">
+         <button class="button button--primary" type="submit">
+          Login
+         </button>
+        </div>
+       </form>
+       <p class="text-center text-sm text-dim">
+        Note: Users must be created by an administrator using the CLI tool.
+       </p>
       </div>
-     </form>
-     <p>
-      Note: Users must be created by an administrator using the CLI tool.
-     </p>
-    </div>
+     </div>
+    </main>
+    <footer class="footer">
+     <div class="container">
+      <div class="footer__inner">
+       <p class="footer__meta">
+        Yak Shears - A simple note editor
+       </p>
+      </div>
+     </div>
+    </footer>
    </body>
   </html>
   

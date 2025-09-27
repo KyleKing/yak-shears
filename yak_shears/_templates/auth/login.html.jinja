@@ -7,27 +7,33 @@
 {% block title %}Login to Yak-Shears{% endblock %}
 
 {% block content %}
-  <div class="form-container">
-    <h2>Login</h2>
-    <form id="login" method="post" action="/auth/login">
-      {% if redirect %}
-        <input type="hidden" name="redirect" value="{{ redirect }}">
-      {% endif %}
-      <div class="form-field">
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" required>
+  <main class="layout__inner">
+    <div class="container">
+      <div class="section">
+        <h1 class="section__title">Login</h1>
+        <form class="form" id="login" method="post" action="/auth/login">
+          {% if redirect %}
+            <input type="hidden" name="redirect" value="{{ redirect }}">
+          {% endif %}
+          <div class="form__group">
+            <label class="form__label" for="email">Email</label>
+            <input class="form__control" type="email" id="email" name="email" required>
+          </div>
+          <div class="form__group">
+            <label class="form__label" for="password">Password</label>
+            <input class="form__control" type="password" id="password" name="password" required>
+          </div>
+          {% if error %}
+            <div class="alert alert--warn" role="alert">
+              <strong>Error:</strong> {{ error }}
+            </div>
+          {% endif %}
+          <div class="form__group">
+            <button class="button button--primary" type="submit">Login</button>
+          </div>
+        </form>
+        <p class="text-center text-sm text-dim">Note: Users must be created by an administrator using the CLI tool.</p>
       </div>
-      <div class="form-field">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" required>
-      </div>
-      {% if error %}
-        <p class="error">{{ error }}</p>
-      {% endif %}
-      <div class="form-field">
-        <button type="submit">Login</button>
-      </div>
-    </form>
-    <p>Note: Users must be created by an administrator using the CLI tool.</p>
-  </div>
+    </div>
+  </main>
 {% endblock %}

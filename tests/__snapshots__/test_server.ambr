@@ -2,8 +2,10 @@
 # name: test_edit_file_get
   '''
   <!DOCTYPE html>
-  <html>
+  <html lang="en">
    <head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>
      Editing test.dj
     </title>
@@ -20,28 +22,66 @@
      </script>
     </link>
    </head>
-   <body>
-    <div class="editor__header">
-     <h3>
-      Editing `test.dj`
-     </h3>
-     <a class="editor__back-link" href="/files">
-      Back to Files
-     </a>
-    </div>
-    <form hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent()}" id="editor_form" method="post">
-     <input name="file" type="hidden" value="/private/var/folders/wn/fg9n8vkn6vq104ghhj4_mqpw0000gn/T/pytest-of-kyleking/pytest-53/test_edit_file_get0/test.dj"/>
-     <div class="editor" data-gramm="false" data-manual="">
+   <body class="layout">
+    <header class="header">
+     <div class="container">
+      <div class="header__bar">
+       <a class="brand" href="/files">
+        <div class="brand__logo">
+         YS
+        </div>
+        <span>
+         Yak Shears
+        </span>
+       </a>
+       <nav class="nav">
+        <ul class="nav__list">
+         <li>
+          <a class="nav__link" href="/files">
+           Notes
+          </a>
+         </li>
+        </ul>
+       </nav>
+      </div>
      </div>
-     <div class="editor__actions">
-      <button id="save-btn" type="submit">
-       Save Changes
-      </button>
-      <span class="editor__status" id="save-status">
-       Ready
-      </span>
+    </header>
+    <main class="layout__inner">
+     <div class="container">
+      <div class="section">
+       <div class="editor__header">
+        <h1 class="section__title mt-0">
+         Editing `test.dj`
+        </h1>
+        <a class="button button--ghost" href="/files">
+         Back to Files
+        </a>
+       </div>
+       <form hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent()}" id="editor_form" method="post">
+        <input name="file" type="hidden" value="/private/var/folders/wn/fg9n8vkn6vq104ghhj4_mqpw0000gn/T/pytest-of-kyleking/pytest-8/test_edit_file_get0/test.dj"/>
+        <div class="editor" data-gramm="false" data-manual="">
+        </div>
+        <div class="editor__actions">
+         <button class="button button--primary" id="save-btn" type="submit">
+          Save Changes
+         </button>
+         <span class="editor__status" id="save-status">
+          Ready
+         </span>
+        </div>
+       </form>
+      </div>
      </div>
-    </form>
+    </main>
+    <footer class="footer">
+     <div class="container">
+      <div class="footer__inner">
+       <p class="footer__meta">
+        Yak Shears - A simple note editor
+       </p>
+      </div>
+     </div>
+    </footer>
     <script>
      window.serverContent = "Test file content";
     </script>
@@ -55,8 +95,10 @@
 # name: test_files_endpoint
   '''
   <!DOCTYPE html>
-  <html>
+  <html lang="en">
    <head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>
      Notes in ./test_data/mock_djot_files
     </title>
@@ -65,90 +107,130 @@
     <script src="/static/js/htmx.min.js">
     </script>
    </head>
-   <body>
-    <div class="files-list">
-     <h1>
-      Notes in ./test_data/mock_djot_files
-     </h1>
-     <p class="files-list__status-bar">
-      Showing 3 of 3 notes (Page 1 of 1)
-     </p>
-     <div class="files-list__sort-controls">
-      Sort by:
-      <a class="active" href="/files?sort_by=name">
-       Name (Created At)
-      </a>
-      |
-      <a class="" href="/files?sort_by=modified_date">
-       Modified Date
-      </a>
+   <body class="layout">
+    <header class="header">
+     <div class="container">
+      <div class="header__bar">
+       <a class="brand" href="/files">
+        <div class="brand__logo">
+         YS
+        </div>
+        <span>
+         Yak Shears
+        </span>
+       </a>
+       <nav class="nav">
+        <ul class="nav__list">
+         <li>
+          <a class="nav__link" href="/files">
+           Notes
+          </a>
+         </li>
+        </ul>
+       </nav>
+      </div>
      </div>
-     <div class="files-list__filter-controls">
-      Filter by category:
-      <a class="active" href="/files?sort_by=name">
-       All
-      </a>
-      |
-      <a class="" href="/files?sort_by=name&amp;category=mock_djot_files">
-       mock_djot_files
-      </a>
-      |
-      <a class="" href="/files?sort_by=name&amp;category=subdirectory-2">
-       subdirectory-2
-      </a>
-      |
-      <a class="" href="/files?sort_by=name&amp;category=subdirectory-3">
-       subdirectory-3
-      </a>
-     </div>
-     <div class="files-list__cards-container">
-      <a class="files-list__card-link" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-3/file3.dj">
-       <div class="files-list__card">
-        <p class="files-list__card-preview">
-         # File 3  This is a test file number 3  Unrelated to file 1 or file 2
+    </header>
+    <main class="layout__inner">
+     <div class="container">
+      <div class="section">
+       <div class="section__head">
+        <h1 class="section__title">
+         Notes in ./test_data/mock_djot_files
+        </h1>
+        <p class="section__description">
+         Showing 3 of 3 notes (Page 1 of 1)
         </p>
-        <div class="files-list__pills">
-         <span class="files-list__pill">
-          2025-05-01 10:00:00
+       </div>
+       <div class="files-list__sort-controls">
+        <div class="inline-cluster">
+         <span class="text-sm font-semibold upper">
+          Sort by:
          </span>
-         <span class="files-list__pill">
-          subdirectory-3
-         </span>
+         <a class="button button--sm button--primary" href="/files?sort_by=name">
+          Name (Created At)
+         </a>
+         <a class="button button--sm button--ghost" href="/files?sort_by=modified_date">
+          Modified Date
+         </a>
         </div>
        </div>
-      </a>
-      <a class="files-list__card-link" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-2/file2.dj">
-       <div class="files-list__card">
-        <p class="files-list__card-preview">
-         # File 2  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 2
-        </p>
-        <div class="files-list__pills">
-         <span class="files-list__pill">
-          2025-05-01 10:00:00
-         </span>
-         <span class="files-list__pill">
-          subdirectory-2
-         </span>
-        </div>
+       <div class="files-list__filter-controls">
+        <span class="text-sm font-semibold upper">
+         Filter by category:
+        </span>
+        <a class="button button--sm button--primary" href="/files?sort_by=name">
+         All
+        </a>
+        <a class="button button--sm button--ghost" href="/files?sort_by=name&amp;category=mock_djot_files">
+         mock_djot_files
+        </a>
+        <a class="button button--sm button--ghost" href="/files?sort_by=name&amp;category=subdirectory-2">
+         subdirectory-2
+        </a>
+        <a class="button button--sm button--ghost" href="/files?sort_by=name&amp;category=subdirectory-3">
+         subdirectory-3
+        </a>
        </div>
-      </a>
-      <a class="files-list__card-link" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file1.dj">
-       <div class="files-list__card">
-        <p class="files-list__card-preview">
-         # File 1  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 1
-        </p>
-        <div class="files-list__pills">
-         <span class="files-list__pill">
-          2025-05-01 10:00:00
-         </span>
-         <span class="files-list__pill">
-          mock_djot_files
-         </span>
-        </div>
+       <div class="cards">
+        <a class="card" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-3/file3.dj">
+         <div class="card__body">
+          <p>
+           # File 3  This is a test file number 3  Unrelated to file 1 or file 2
+          </p>
+         </div>
+         <div class="card__actions">
+          <span class="badge">
+           2025-05-01 10:00:00
+          </span>
+          <span class="badge">
+           subdirectory-3
+          </span>
+         </div>
+        </a>
+        <a class="card" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-2/file2.dj">
+         <div class="card__body">
+          <p>
+           # File 2  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 2
+          </p>
+         </div>
+         <div class="card__actions">
+          <span class="badge">
+           2025-05-01 10:00:00
+          </span>
+          <span class="badge">
+           subdirectory-2
+          </span>
+         </div>
+        </a>
+        <a class="card" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file1.dj">
+         <div class="card__body">
+          <p>
+           # File 1  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 1
+          </p>
+         </div>
+         <div class="card__actions">
+          <span class="badge">
+           2025-05-01 10:00:00
+          </span>
+          <span class="badge">
+           mock_djot_files
+          </span>
+         </div>
+        </a>
        </div>
-      </a>
+      </div>
      </div>
-    </div>
+    </main>
+    <footer class="footer">
+     <div class="container">
+      <div class="footer__inner">
+       <p class="footer__meta">
+        Yak Shears - A simple note editor
+       </p>
+      </div>
+     </div>
+    </footer>
    </body>
   </html>
   

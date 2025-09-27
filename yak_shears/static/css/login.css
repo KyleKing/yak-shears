@@ -1,37 +1,67 @@
 /* Login Form Styles */
 
 .form-container {
-	max-width: 400px;
+	max-width: 30rem;
 	margin: 10% auto 0 auto;
-	padding: 20px;
-	border: 1px solid #ccc;
-	border-radius: 5px;
+	padding: var(--space-5);
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-sm);
 }
 
 .form-field {
-	margin-bottom: 15px;
+	margin-bottom: var(--space-4);
 }
 
 label {
 	display: block;
-	margin-bottom: 5px;
+	margin-bottom: 0.4rem;
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+	color: var(--color-text-dim);
 }
 
 input {
 	width: 100%;
-	padding: 8px;
-	box-sizing: border-box;
+	padding: 0.85rem 1rem;
+	font: inherit;
+	color: inherit;
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	line-height: 1.25;
+	transition:
+		border-color var(--transition-fast),
+		background var(--transition-fast);
+}
+
+input:hover {
+	border-color: var(--color-text-dim);
+}
+
+input:focus-visible {
+	border-color: var(--color-accent);
+	box-shadow: 0 0 0 3px rgba(247, 207, 70, 0.4);
 }
 
 button {
-	padding: 10px 15px;
-	background-color: #4caf50;
-	color: white;
-	border: none;
-	border-radius: 4px;
+	padding: 0.65rem 1rem;
+	background: var(--color-accent);
+	color: #000;
+	border: 1px solid #000;
+	border-radius: var(--radius-pill);
+	font-weight: 600;
+	line-height: 1.1;
 	cursor: pointer;
+	transition:
+		background var(--transition-fast),
+		color var(--transition-fast),
+		border-color var(--transition-fast);
 }
 
 button:hover {
-	background-color: #45a049;
+	filter: brightness(1.05);
 }

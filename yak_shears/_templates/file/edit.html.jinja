@@ -17,18 +17,25 @@
 {% block title %}Editing {{ file_name }}{% endblock %}
 
 {% block content %}
-  <div class="editor__header">
-    <h3>Editing `{{ file_name }}`</h3>
-    <a href="/files" class="editor__back-link">Back to Files</a>
-  </div>
-   <form id="editor_form" method="post" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent()}">
-     <input type="hidden" name="file" value="{{ file_path }}">
-     <div class="editor" data-manual data-gramm="false"></div>
-     <div class="editor__actions">
-       <button type="submit" id="save-btn">Save Changes</button>
-       <span id="save-status" class="editor__status">Ready</span>
-     </div>
-   </form>
+  <main class="layout__inner">
+    <div class="container">
+      <div class="section">
+        <div class="editor__header">
+          <h1 class="section__title mt-0">Editing `{{ file_name }}`</h1>
+          <a href="/files" class="button button--ghost">Back to Files</a>
+        </div>
+
+        <form id="editor_form" method="post" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent()}">
+          <input type="hidden" name="file" value="{{ file_path }}">
+          <div class="editor" data-manual data-gramm="false"></div>
+          <div class="editor__actions">
+            <button class="button button--primary" type="submit" id="save-btn">Save Changes</button>
+            <span id="save-status" class="editor__status">Ready</span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
 {% endblock %}
 
 {% block scripts %}

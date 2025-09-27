@@ -1,14 +1,41 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Yak Shears{% endblock %}</title>
     <link rel="stylesheet" href="/static/css/main.css">
     {% block extra_styles %}{% endblock %}
     <script src="/static/js/htmx.min.js"></script>
     {% block extra_head %}{% endblock %}
   </head>
-  <body>
+  <body class="layout">
+    <header class="header">
+      <div class="container">
+        <div class="header__bar">
+          <a href="/files" class="brand">
+            <div class="brand__logo">YS</div>
+            <span>Yak Shears</span>
+          </a>
+          <nav class="nav">
+            <ul class="nav__list">
+              <li><a href="/files" class="nav__link">Notes</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </header>
+
     {% block content %}{% endblock %}
+
+    <footer class="footer">
+      <div class="container">
+        <div class="footer__inner">
+          <p class="footer__meta">Yak Shears - A simple note editor</p>
+        </div>
+      </div>
+    </footer>
+
     {% block scripts %}{% endblock %}
   </body>
 </html>
