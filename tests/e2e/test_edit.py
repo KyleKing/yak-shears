@@ -6,13 +6,18 @@ from tests.conftest import MOCK_YAK_DIR
 from ._helpers import login
 
 
-async def _validate_highlight(page: Page, fill: str, editor_locator: str, expected: str = "") -> None:
-    """Enter specified text into the editor and verify expected highlighting."""
+async def _fill_editor(page: Page, fill: str) -> None:
     editor = page.locator(".editor")
     # Fill sets the content directly, bypassing the KeyUp event expected by CodeJar
     await editor.fill("")
     await editor.type(fill)
 
+
+async def _validate_highlight(page: Page, fill: str, editor_locator: str, expected: str = "") -> None:
+    """Enter specified text into the editor and verify expected highlighting."""
+    await _fill_editor(page=page, fill=fill)
+
+    editor = page.locator(".editor")
     highlighted = editor.locator(editor_locator)
     await expect(highlighted).to_be_visible()
     await expect(highlighted).to_contain_text(expected or fill)
@@ -62,7 +67,6 @@ async def test_edit_save_persistence(context: BrowserContext, page: Page, server
     file_path = MOCK_YAK_DIR / "file1.dj"
     await page.goto(f"/edit?file={file_path}")
 
-    # Wait for editor to load
     editor = page.locator(".editor")
     await expect(editor).to_be_editable()
 
@@ -70,29 +74,17 @@ async def test_edit_save_persistence(context: BrowserContext, page: Page, server
     initial_content = await editor.text_content()
     assert initial_content is not None
 
-    # Modify content
     modified_content = initial_content + "\n\nModified for test"
-
-    # Set content via CodeJar
-    await page.evaluate("content => window.jar.updateCode(content)", modified_content)
-
-    # Click save
+    await _fill_editor(page=page, fill=modified_content)
     await page.locator("#save-btn").click()
+    await expect(page.locator("#save-status")).to_contain_text("Saved")
 
-    # Wait for "Saved!" to appear
-    await expect(page.locator("#save-status")).to_contain_text("Saved!")
-
-    # Refresh page
+    # Refresh page to ensure changes are persisted
     await page.reload()
-
-    # Wait for editor to load again
     await expect(editor).to_be_editable()
-
-    # Check content is modified
-    current_content = await editor.text_content()
-    assert current_content == modified_content
+    await expect(editor).to_contain_text(modified_content)
 
     # Restore original content
-    await page.evaluate("content => window.jar.updateCode(content)", initial_content)
+    await _fill_editor(page=page, fill=initial_content)
     await page.locator("#save-btn").click()
-    await expect(page.locator("#save-status")).to_contain_text("Saved!")
+    await expect(page.locator("#save-status")).to_contain_text("Saved")

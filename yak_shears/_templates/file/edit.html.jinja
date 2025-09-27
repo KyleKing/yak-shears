@@ -1,13 +1,5 @@
 {% extends "base.html.jinja" %}
 
-{% block extra_styles %}
-  <link
-    href="https://fonts.googleapis.com/css2?family=Source+Code+Pro&display=swap"
-    rel="stylesheet"
-  />
-  <link rel="stylesheet" href="/static/css/editor.css">
-{% endblock %}
-
 {% block extra_head %}
   <script src="https://unpkg.com/@djot/djot@0.3.2/dist/djot.js"></script>
   <script src="/static/js/codejar.min.js"></script>
@@ -17,25 +9,18 @@
 {% block title %}Editing {{ file_name }}{% endblock %}
 
 {% block content %}
-  <main class="layout__inner">
-    <div class="container">
-      <div class="section">
-        <div class="editor__header">
-          <h1 class="section__title mt-0">Editing `{{ file_name }}`</h1>
-          <a href="/files" class="button button--ghost">Back to Files</a>
-        </div>
+  <div class="editor__header">
+    <h1>Editing {{ file_name }}</h1>
+  </div>
 
-        <form id="editor_form" method="post" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent()}">
-          <input type="hidden" name="file" value="{{ file_path }}">
-          <div class="editor" data-manual data-gramm="false"></div>
-          <div class="editor__actions">
-            <button class="button button--primary" type="submit" id="save-btn">Save Changes</button>
-            <span id="save-status" class="editor__status">Ready</span>
-          </div>
-        </form>
-      </div>
+  <form id="editor_form" method="post" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent()}">
+    <input type="hidden" name="file" value="{{ file_path }}">
+    <div class="editor" data-manual data-gramm="false"></div>
+    <div class="editor__actions">
+      <button class="button button--primary" type="submit" id="save-btn">Save Changes</button>
+      <span id="save-status" class="editor__status"></span>
     </div>
-  </main>
+  </form>
 {% endblock %}
 
 {% block scripts %}

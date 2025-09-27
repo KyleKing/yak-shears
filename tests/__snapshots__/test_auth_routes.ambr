@@ -12,7 +12,6 @@
     <link href="/static/css/main.css" rel="stylesheet"/>
     <script src="/static/js/htmx.min.js">
     </script>
-    <link href="/static/css/login.css" rel="stylesheet"/>
    </head>
    <body class="layout">
     <header class="header">
@@ -26,7 +25,7 @@
          Yak Shears
         </span>
        </a>
-       <nav class="nav">
+       <nav>
         <ul class="nav__list">
          <li>
           <a class="nav__link" href="/files">
@@ -40,40 +39,36 @@
     </header>
     <main class="layout__inner">
      <div class="container">
-      <div class="section">
-       <h1 class="section__title">
+      <h1>
+       Login
+      </h1>
+      <form action="/auth/login" class="form" method="post">
+       <input name="redirect" type="hidden" value="/files"/>
+       <div class="form__group">
+        <label class="form__label" for="email">
+         Email
+        </label>
+        <input class="form__control" id="email" name="email" required="" type="email"/>
+       </div>
+       <div class="form__group">
+        <label class="form__label" for="password">
+         Password
+        </label>
+        <input class="form__control" id="password" name="password" required="" type="password"/>
+       </div>
+       <div class="alert alert--warn">
+        <strong>
+         Error:
+        </strong>
+        Invalid email or password
+       </div>
+       <button class="button button--primary" type="submit">
         Login
-       </h1>
-       <form action="/auth/login" class="form" id="login" method="post">
-        <input name="redirect" type="hidden" value="/files"/>
-        <div class="form__group">
-         <label class="form__label" for="email">
-          Email
-         </label>
-         <input class="form__control" id="email" name="email" required="" type="email"/>
-        </div>
-        <div class="form__group">
-         <label class="form__label" for="password">
-          Password
-         </label>
-         <input class="form__control" id="password" name="password" required="" type="password"/>
-        </div>
-        <div class="alert alert--warn" role="alert">
-         <strong>
-          Error:
-         </strong>
-         Invalid email or password
-        </div>
-        <div class="form__group">
-         <button class="button button--primary" type="submit">
-          Login
-         </button>
-        </div>
-       </form>
-       <p class="text-center text-sm text-dim">
-        Note: Users must be created by an administrator using the CLI tool.
-       </p>
-      </div>
+       </button>
+      </form>
+      <p class="text-center text-sm">
+       Note: Users must be created by an administrator using the CLI tool.
+      </p>
      </div>
     </main>
    </body>
@@ -94,7 +89,6 @@
     <link href="/static/css/main.css" rel="stylesheet"/>
     <script src="/static/js/htmx.min.js">
     </script>
-    <link href="/static/css/login.css" rel="stylesheet"/>
    </head>
    <body class="layout">
     <header class="header">
@@ -108,7 +102,7 @@
          Yak Shears
         </span>
        </a>
-       <nav class="nav">
+       <nav>
         <ul class="nav__list">
          <li>
           <a class="nav__link" href="/files">
@@ -122,33 +116,29 @@
     </header>
     <main class="layout__inner">
      <div class="container">
-      <div class="section">
-       <h1 class="section__title">
+      <h1>
+       Login
+      </h1>
+      <form action="/auth/login" class="form" method="post">
+       <div class="form__group">
+        <label class="form__label" for="email">
+         Email
+        </label>
+        <input class="form__control" id="email" name="email" required="" type="email"/>
+       </div>
+       <div class="form__group">
+        <label class="form__label" for="password">
+         Password
+        </label>
+        <input class="form__control" id="password" name="password" required="" type="password"/>
+       </div>
+       <button class="button button--primary" type="submit">
         Login
-       </h1>
-       <form action="/auth/login" class="form" id="login" method="post">
-        <div class="form__group">
-         <label class="form__label" for="email">
-          Email
-         </label>
-         <input class="form__control" id="email" name="email" required="" type="email"/>
-        </div>
-        <div class="form__group">
-         <label class="form__label" for="password">
-          Password
-         </label>
-         <input class="form__control" id="password" name="password" required="" type="password"/>
-        </div>
-        <div class="form__group">
-         <button class="button button--primary" type="submit">
-          Login
-         </button>
-        </div>
-       </form>
-       <p class="text-center text-sm text-dim">
-        Note: Users must be created by an administrator using the CLI tool.
-       </p>
-      </div>
+       </button>
+      </form>
+      <p class="text-center text-sm">
+       Note: Users must be created by an administrator using the CLI tool.
+      </p>
      </div>
     </main>
    </body>

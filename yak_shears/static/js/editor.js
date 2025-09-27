@@ -1,3 +1,11 @@
+/**
+ * Editor save status states:
+ * - "Synced": No difference from server, checked by polling
+ * - "Modified": Local changes ready for submission
+ * - "Saved": In sync because local changes were pushed
+ * - "Saving...": In the process of sending changes to the server
+ */
+
 const maxRetries = 50; // 5 seconds at 100ms intervals
 let retries = 0;
 let jar; // Global reference to CodeJar instance
@@ -46,6 +54,9 @@ function initEditor() {
 			});
 		}
 
+		// Set initial status
+		updateSaveStatus(saved && saved !== serverContent ? "Modified" : "Synced");
+
 		// HTMX event listeners for feedback
 		document.body.addEventListener("htmx:beforeRequest", function (evt) {
 			if (evt.target.id === "editor_form") {
@@ -58,9 +69,9 @@ function initEditor() {
 			if (evt.target.id === "editor_form") {
 				document.getElementById("save-btn").disabled = false;
 				if (evt.detail.successful) {
-					document.getElementById("save-status").textContent = "Saved!";
+					updateSaveStatus("Saved");
 					setTimeout(() => {
-						document.getElementById("save-status").textContent = "";
+						updateSaveStatus("Synced");
 					}, 2000);
 					// Clear local storage on successful save
 					localStorage.removeItem(storageKey);
@@ -73,8 +84,10 @@ function initEditor() {
 		jar.onUpdate((code) => {
 			if (code === serverContent) {
 				localStorage.removeItem(storageKey);
+				updateSaveStatus("Synced");
 			} else {
 				localStorage.setItem(storageKey, code);
+				updateSaveStatus("Modified");
 			}
 			// PLANNED: Consider how to otherwise prune old unused local storage? Might need a separate local review page which compares against server?
 		});
@@ -82,6 +95,11 @@ function initEditor() {
 		retries++;
 		setTimeout(initEditor, 100);
 	}
+}
+
+// Function to update save status
+function updateSaveStatus(status) {
+	document.getElementById("save-status").textContent = status;
 }
 
 // Function to get current editor content for HTMX
