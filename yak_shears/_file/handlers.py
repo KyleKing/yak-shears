@@ -1,9 +1,9 @@
 """Handlers for Yak Shears."""
 
-import asyncio
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from http import HTTPStatus
+from operator import itemgetter
 from os import getenv
 from typing import Self
 
@@ -88,7 +88,7 @@ async def get_categories(all_paths: list[Path]) -> set[str]:
     return {f.parent.name for f in all_paths if await f.is_file()}
 
 
-def get_djot_files(paths: list[Path], query_params: FilesQueryParams) -> tuple[list[Path], int, int]:
+async def get_djot_files(paths: list[Path], query_params: FilesQueryParams) -> tuple[list[Path], int, int]:
     """Get a paginated list of Djot files from the specified directory.
 
     Args:
@@ -105,7 +105,10 @@ def get_djot_files(paths: list[Path], query_params: FilesQueryParams) -> tuple[l
         paths = [f for f in paths if f.parent.name == query_params.category]
 
     if query_params.sort_by == SortBy.MODIFIED_DATE:
-        paths = sorted(paths, key=lambda pth: asyncio.run(pth.stat()).st_mtime, reverse=True)
+        # Collect mtimes asynchronously, then sort DESC
+        path_mtimes = [(pth, (await pth.stat()).st_mtime) for pth in paths]
+        path_mtimes.sort(key=itemgetter(1), reverse=True)
+        paths = [pth for pth, _ in path_mtimes]
     else:
         paths = sorted(paths, key=lambda pth: pth.name.lower(), reverse=True)
 
@@ -164,7 +167,7 @@ async def files_handler(request: Request) -> Response:
 
     query_params = await FilesQueryParams.from_request(request, categories)
 
-    paths, total_files, total_pages = get_djot_files(all_paths, query_params=query_params)
+    paths, total_files, total_pages = await get_djot_files(all_paths, query_params=query_params)
     files = await prepare_files(paths)
     yak_dir_label = "./" + directory_path.relative_to(directory_path.parents[1]).as_posix()
     return render_files_list(
