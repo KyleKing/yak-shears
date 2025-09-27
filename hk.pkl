@@ -1,0 +1,101 @@
+// Install with `hk install --mise` to ensure local tools are available
+
+amends "package://github.com/jdx/hk/releases/download/v1.15.6/hk@1.15.6#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.15.6/hk@1.15.6#/Builtins.pkl"
+
+min_hk_version = "1.15.6"
+
+// PLANNED: exclude = List("**/*.min.js", "**/*.ambr")
+
+local linters = new Mapping<String, Step> {
+    ["actionlint"] = Builtins.actionlint
+
+    ["pkl"] {
+        glob = "*.pkl"
+        check = "pkl eval {{files}} >/dev/null"
+    }
+
+    ["pch-check-added-large-files"] {
+        check = "check-added-large-files {{ files }}"
+    }
+    ["pch-check-merge-conflict"] {
+        check = "check-merge-conflict {{ files }}"
+    }
+    ["pch-check-symlinks"] {
+        check = "check-symlinks {{ files }}"
+    }
+    ["pch-check-vcs-permalinks"] {
+        check = "check-vcs-permalinks {{ files }}"
+    }
+    ["pch-check-yaml"] {
+        glob = List("**/*.{yml,yaml}")
+        check = "check-yaml {{ files }}"
+    }
+    ["pch-end-of-file-fixer"] {
+        // FYI: without check, these fixers are always run!
+        check_first = false  // FYI: without check_first, these linters request write-locks on all files
+        fix = "end-of-file-fixer {{ files }}"
+    }
+    ["pch-mixed-line-ending"] {
+        check_first = false
+        fix = "mixed-line-ending {{ files }}"
+    }
+    ["pch-trailing-whitespace-fixer"] {
+        check_first = false
+        fix = "trailing-whitespace-fixer {{ files }}"
+    }
+
+    ["toml-sort"] {
+        glob = List("**/*.toml")
+        check = "toml-sort --check {{ files }}"
+        fix = "toml-sort --in-place {{ files }}"
+    }
+}
+
+local commit_msg_checks = new Mapping<String, Step> {
+    ["commitizen"] {
+        check = "cz check --allow-abort --commit-msg-file={{commit_msg_file}}"
+    }
+}
+local pre_push_checks = new Mapping<String, Step> {
+    ["ci"] {
+        check = "mise run ci"
+    }
+    ["commitizen-branch"] {
+        check = "cz check --rev-range origin/HEAD..HEAD"
+    }
+}
+
+// FYI: there are additional configuration options for batch, workspace_indicator, etc. https://hk.jdx.dev/configuration.html
+hooks = new {
+    ["pre-commit"] {
+        fix = true    // automatically modify files with available linter fixes
+        stash = "git" // stashes unstaged changes while running fix steps
+        steps = linters
+    }
+    ["pre-push"] {
+        steps = new {
+            // FYI: PRs aren't required for this project
+            // ["pch-no-commit-to-branch"] {
+            //     run = "no-commit-to-branch --branch=main"
+            // }
+            ...pre_push_checks
+            ...linters
+        }
+    }
+    ["commit-msg"] {
+        steps = commit_msg_checks
+    }
+
+    // "fix" and "check" are special steps for `hk fix` and `hk check` commands
+    ["fix"] {
+        fix = true
+        steps = linters
+    }
+    ["check"] {
+        steps = new {
+            ...pre_push_checks
+            ...linters
+        }
+    }
+}

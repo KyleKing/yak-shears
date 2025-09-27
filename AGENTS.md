@@ -21,7 +21,7 @@ This file provides guidance to AI agents when working with code in this reposito
 
 - `mise run format` - Format code with multiple tools
 - `mise run typecheck` - Run mypy type checking
-- `pre-commit run --all-files` - miscellaneous formatting
+- `hk run pre-commit --all` - run hk against all files and not just incrementally with git
 
 ### Testing
 

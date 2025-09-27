@@ -1,0 +1,6 @@
+[tools]
+actionlint = "latest"
+hk = "latest"
+"pipx:commitizen" = "latest"
+"pipx:pre-commit-hooks" = "latest"
+"pipx:toml-sort" = "latest"

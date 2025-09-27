@@ -1,5 +1,7 @@
 [env]
+MISE_ENV = "hk"
 _.python.venv = {path = ".venv"}
+HK_EXCLUDE="**/*.min.js,**/*.ambr"
 
 [vars]
 unsafe_fixes = ''  # PLANNED: This doesn't actually work. Previously: `{{option(name="unsafe_fixes")}}`
@@ -48,3 +50,8 @@ run = "./scripts/download-assets.sh"
 "npm:@biomejs/biome" ="latest"
 "npm:dprint" = "latest"
 python = "latest"
+
+[tasks.hooks]
+description = "Run git hooks"
+dir = "./../" # FYI: required because the default is otherwise `.config/` where these files are located
+run = ["hk fix --quiet"]

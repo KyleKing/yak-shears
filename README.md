@@ -49,13 +49,14 @@ If still interested, these are the high-level commands necessary to run locally
 
 ```sh
 # Initial Setup
-brew install mise pre-commit uv
-pre-commit install
+brew install mise uv
 uv sync
+mise install
+hk install --mise
 
 # Formatting
-pre-commit run --all-files
 mise run format ::: typecheck
+hk run pre-commit --all
 
 # Testing
 mise run test
