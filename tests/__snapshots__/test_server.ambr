@@ -58,7 +58,7 @@
         </a>
        </div>
        <form hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent()}" id="editor_form" method="post">
-        <input name="file" type="hidden" value="/private/var/folders/wn/fg9n8vkn6vq104ghhj4_mqpw0000gn/T/pytest-of-kyleking/pytest-8/test_edit_file_get0/test.dj"/>
+        <input name="file" type="hidden" value="/private/var/folders/wn/fg9n8vkn6vq104ghhj4_mqpw0000gn/T/pytest-of-kyleking/pytest-9/test_edit_file_get0/test.dj"/>
         <div class="editor" data-gramm="false" data-manual="">
         </div>
         <div class="editor__actions">
@@ -73,15 +73,6 @@
       </div>
      </div>
     </main>
-    <footer class="footer">
-     <div class="container">
-      <div class="footer__inner">
-       <p class="footer__meta">
-        Yak Shears - A simple note editor
-       </p>
-      </div>
-     </div>
-    </footer>
     <script>
      window.serverContent = "Test file content";
     </script>
@@ -222,15 +213,6 @@
       </div>
      </div>
     </main>
-    <footer class="footer">
-     <div class="container">
-      <div class="footer__inner">
-       <p class="footer__meta">
-        Yak Shears - A simple note editor
-       </p>
-      </div>
-     </div>
-    </footer>
    </body>
   </html>
   

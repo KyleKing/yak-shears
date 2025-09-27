@@ -76,15 +76,6 @@
       </div>
      </div>
     </main>
-    <footer class="footer">
-     <div class="container">
-      <div class="footer__inner">
-       <p class="footer__meta">
-        Yak Shears - A simple note editor
-       </p>
-      </div>
-     </div>
-    </footer>
    </body>
   </html>
   
@@ -160,15 +151,6 @@
       </div>
      </div>
     </main>
-    <footer class="footer">
-     <div class="container">
-      <div class="footer__inner">
-       <p class="footer__meta">
-        Yak Shears - A simple note editor
-       </p>
-      </div>
-     </div>
-    </footer>
    </body>
   </html>
   
