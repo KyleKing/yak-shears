@@ -51,7 +51,7 @@
        </h1>
       </div>
       <form hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent()}" id="editor_form" method="post">
-       <input name="file" type="hidden" value="/private/var/folders/wn/fg9n8vkn6vq104ghhj4_mqpw0000gn/T/pytest-of-kyleking/pytest-17/test_edit_file_get0/test.dj"/>
+       <input name="file" type="hidden" value="/private/var/folders/wn/fg9n8vkn6vq104ghhj4_mqpw0000gn/T/pytest-of-kyleking/pytest-23/test_edit_file_get0/test.dj"/>
        <div class="editor" data-gramm="false" data-manual="">
        </div>
        <div class="editor__actions">
@@ -118,7 +118,7 @@
        Notes in ./test_data/mock_djot_files
       </h1>
       <p>
-       Showing 3 of 3 notes (Page 1 of 1)
+       Showing 4 of 4 notes (Page 1 of 1)
       </p>
       <div class="sort-controls">
        <span class="sort-controls__label">
@@ -183,6 +183,21 @@
         <div class="card__body">
          <p>
           # File 1  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 1
+         </p>
+        </div>
+        <div class="card__actions">
+         <span class="badge">
+          2025-05-01 10:00:00
+         </span>
+         <span class="badge">
+          mock_djot_files
+         </span>
+        </div>
+       </a>
+       <a class="card" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file0-untracked.dj">
+        <div class="card__body">
+         <p>
+          Placeholder
          </p>
         </div>
         <div class="card__actions">

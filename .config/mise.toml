@@ -1,57 +1,53 @@
 [env]
+HK_EXCLUDE = "**/*.min.js,**/*.ambr"
 MISE_ENV = "hk"
 _.python.venv = {path = ".venv"}
-HK_EXCLUDE="**/*.min.js,**/*.ambr"
 
-[vars]
-unsafe_fixes = ''  # PLANNED: This doesn't actually work. Previously: `{{option(name="unsafe_fixes")}}`
-
-[tasks.format]
-description = 'Run code formatting'
-run = ['uv run ruff check --fix {{vars.unsafe_fixes}}', "uv run ruff format", "biome format --write", "dprint fmt"]
+[tasks.build]
+depends = ['download-assets']
+description = 'Build generated code'
 
 [tasks.dev]
 description = 'Run development server without authentication'
 run = 'uv run serve --reload --no-auth'
 
-[tasks.typecheck]
-description = 'Run static type checks'
-run = ["uv run mypy"]
-
-[tasks.test]
-description = 'Run all tests'
-run = "uv run pytest --cov=yak_shears --cov-report=html:.cover --cov-report=term-missing --cov-fail-under=90"
-
-[tasks."test:unit"]
-description = 'Run only non-E2E Tests'
-run = "mise run test -m 'not playwright'"
-
-[tasks."test:e2e"]
-description = 'Run only E2E tests'
-run = "uv run pytest -m 'playwright' --tracing=retain-on-failure --video=off --screenshot=only-on-failure"
-# PLANNED: also see: https://www.better-simple.com/django/2025/09/17/playwright-pytest-that-brings-me-joy
-# --video=retain-on-failure < Consider for CI Only
-# --browser={chromium,firefox,webkit}
-# --device='iPhone 14'
-
-[tasks."test:e2e:debug"]
-description = 'Debug E2E tests with "Slow Mo". Optionally set PWDEBUG=1'
-run = "mise run test:e2e --headed --slowmo=30 -v"
-
-[tasks.build]
-description = 'Build generated code'
-depends = ['download-assets']
-
 [tasks.download-assets]
 description = "Download production assets"
 run = "./scripts/download-assets.sh"
 
-[tools]
-"npm:@biomejs/biome" ="latest"
-"npm:dprint" = "latest"
-python = "latest"
+[tasks.format]
+description = 'Run code formatting'
+run = ['uv run ruff check --fix {{vars.unsafe_fixes}}', "uv run ruff format", "biome format --write", "dprint fmt"]
 
 [tasks.hooks]
 description = "Run git hooks"
 dir = "./../" # FYI: required because the default is otherwise `.config/` where these files are located
 run = ["hk fix --quiet"]
+
+[tasks.test]
+description = 'Run all tests'
+run = "uv run pytest --cov=yak_shears --cov-report=html:.cover --cov-report=term-missing --cov-fail-under=90"
+
+[tasks."test:e2e"]
+description = 'Run only E2E tests'
+run = "uv run pytest -m 'playwright' --tracing=retain-on-failure --video=off --screenshot=only-on-failure"
+
+[tasks."test:e2e:debug"]
+description = 'Debug E2E tests with "Slow Mo". Optionally set PWDEBUG=1'
+run = "mise run test:e2e --headed --slowmo=30 -v"
+
+[tasks."test:unit"]
+description = 'Run only non-E2E Tests'
+run = "mise run test -m 'not playwright'"
+
+[tasks.typecheck]
+description = 'Run static type checks'
+run = ["uv run mypy"]
+
+[tools]
+"npm:@biomejs/biome" = "latest"
+"npm:dprint" = "latest"
+python = "latest"
+
+[vars]
+unsafe_fixes = '' # PLANNED: This doesn't actually work. Previously: `{{option(name="unsafe_fixes")}}`

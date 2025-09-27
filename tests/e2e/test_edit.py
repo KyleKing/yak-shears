@@ -64,7 +64,8 @@ async def test_edit_save_persistence(context: BrowserContext, page: Page, server
     """Test that edits are saved and persist after page refresh."""
     await login(context, page)
 
-    file_path = MOCK_YAK_DIR / "file1.dj"
+    file_path = MOCK_YAK_DIR / "file0-untracked.dj"
+    file_path.write_text("Placeholder")
     await page.goto(f"/edit?file={file_path}")
 
     editor = page.locator(".editor")

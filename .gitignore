@@ -187,3 +187,4 @@ yak_shears/static/**/*.min.*
 ## Playwright
 .playwright-auth.json
 test-results/*
+tests/test_data/mock_djot_files/file0-untracked.dj
