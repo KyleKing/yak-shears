@@ -15,11 +15,12 @@ pre-commit run --all-files
 mise run format ::: typecheck
 
 # Testing
-uv run pytest -v --ff -x
-uv run pytest --snapshot-update
+mise run test
+mise run test --snapshot-update
 uv run ptw .
 
 # Local Development
 uv run yak-shears-users list
-uv run serve --reload
+uv run serve
+mise run dev
 ```
