@@ -51,3 +51,48 @@ async def test_editor_highlight_behavior(context: BrowserContext, page: Page, se
     fill = "*bold _and_ more*\n Next line"
     await _validate_highlight(page, fill, "strong em", "_and_")
     await expect(editor).to_contain_text(fill.replace("\n", ""))
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_edit_save_persistence(context: BrowserContext, page: Page, server_lifecycle):
+    """Test that edits are saved and persist after page refresh."""
+    await login(context, page)
+
+    file_path = MOCK_YAK_DIR / "file1.dj"
+    await page.goto(f"/edit?file={file_path}")
+
+    # Wait for editor to load
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    # Get initial content
+    initial_content = await editor.text_content()
+    assert initial_content is not None
+
+    # Modify content
+    modified_content = initial_content + "\n\nModified for test"
+
+    # Set content via CodeJar
+    await page.evaluate("content => window.jar.updateCode(content)", modified_content)
+
+    # Click save
+    await page.locator("#save-btn").click()
+
+    # Wait for "Saved!" to appear
+    await expect(page.locator("#save-status")).to_contain_text("Saved!")
+
+    # Refresh page
+    await page.reload()
+
+    # Wait for editor to load again
+    await expect(editor).to_be_editable()
+
+    # Check content is modified
+    current_content = await editor.text_content()
+    assert current_content == modified_content
+
+    # Restore original content
+    await page.evaluate("content => window.jar.updateCode(content)", initial_content)
+    await page.locator("#save-btn").click()
+    await expect(page.locator("#save-status")).to_contain_text("Saved!")

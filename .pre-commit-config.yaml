@@ -1,5 +1,5 @@
 ---
-# PLANNED: migrate to hk (see: https://github.com/KyleKing/yak-shears/blob/b0f2bdfb741f7533985cf664270bb9eaa548b8f7/hk.pkl)
+# FIXME: finish migration to hk
 
 # Common commands:
 # pre-commit install

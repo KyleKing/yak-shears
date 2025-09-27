@@ -10,6 +10,7 @@ function initEditor() {
 			spellcheck: true,
 			tab: " ".repeat(4),
 		});
+		window.jar = jar; // Expose for testing
 
 		// Use the filename from the URL for the key
 		const filename = new URLSearchParams(window.location.search).get("file");
