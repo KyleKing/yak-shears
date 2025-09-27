@@ -8,7 +8,8 @@
      Login to Yak-Shears
     </title>
     <link href="/static/css/main.css" rel="stylesheet"/>
-    <!-- PLANNED: <script src="/static/js/htmx.min.js"></script> -->
+    <script src="/static/js/htmx.min.js">
+    </script>
     <link href="/static/css/login.css" rel="stylesheet"/>
    </head>
    <body>
@@ -57,7 +58,8 @@
      Login to Yak-Shears
     </title>
     <link href="/static/css/main.css" rel="stylesheet"/>
-    <!-- PLANNED: <script src="/static/js/htmx.min.js"></script> -->
+    <script src="/static/js/htmx.min.js">
+    </script>
     <link href="/static/css/login.css" rel="stylesheet"/>
    </head>
    <body>

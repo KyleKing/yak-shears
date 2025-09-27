@@ -1,10 +1,11 @@
 const maxRetries = 50; // 5 seconds at 100ms intervals
 let retries = 0;
+let jar; // Global reference to CodeJar instance
 
 function initEditor() {
 	const editor = document.querySelector(".editor");
 	if (editor) {
-		const jar = CodeJar(editor, highlight, {
+		jar = CodeJar(editor, highlight, {
 			addClosing: false,
 			spellcheck: true,
 			tab: " ".repeat(4),
@@ -44,11 +45,28 @@ function initEditor() {
 			});
 		}
 
-		const form = document.getElementById("editor_form");
-		if (!form) throw new Error("Could not locate editor_form");
-		form.addEventListener("submit", () => {
-			// Clear local storage on submit, assuming success
-			localStorage.removeItem(storageKey);
+		// HTMX event listeners for feedback
+		document.body.addEventListener("htmx:beforeRequest", function (evt) {
+			if (evt.target.id === "editor_form") {
+				document.getElementById("save-btn").disabled = true;
+				document.getElementById("save-status").textContent = "Saving...";
+			}
+		});
+
+		document.body.addEventListener("htmx:afterRequest", function (evt) {
+			if (evt.target.id === "editor_form") {
+				document.getElementById("save-btn").disabled = false;
+				if (evt.detail.successful) {
+					document.getElementById("save-status").textContent = "Saved!";
+					setTimeout(() => {
+						document.getElementById("save-status").textContent = "";
+					}, 2000);
+					// Clear local storage on successful save
+					localStorage.removeItem(storageKey);
+				} else {
+					document.getElementById("save-status").textContent = "Error saving!";
+				}
+			}
 		});
 
 		jar.onUpdate((code) => {
@@ -64,5 +82,16 @@ function initEditor() {
 		setTimeout(initEditor, 100);
 	}
 }
+
+// Function to get current editor content for HTMX
+function getEditorContent() {
+	if (jar) {
+		return jar.toString();
+	}
+	return "";
+}
+
+// Expose function globally for HTMX
+window.getEditorContent = getEditorContent;
 
 initEditor();

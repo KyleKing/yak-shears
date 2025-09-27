@@ -122,14 +122,15 @@ def render_files_list(
     )
 
 
-def render_file_edit(file_name: str, content: str) -> HTMLResponse:
+def render_file_edit(file_path: str, content: str) -> HTMLResponse:
     """Render the file editor page.
 
     Args:
-        file_name: Name of the file being edited
+        file_path: Path of the file being edited
         content: Current content of the file
 
     Returns:
         HTMLResponse with the file editor template
     """
-    return _render_template("file/edit.html.jinja", file_name=file_name, content=content)
+    file_name = SyncPath(file_path).name
+    return _render_template("file/edit.html.jinja", file_name=file_name, file_path=file_path, content=content)

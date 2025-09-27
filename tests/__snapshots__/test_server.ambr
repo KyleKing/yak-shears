@@ -10,7 +10,8 @@
     <link href="/static/css/main.css" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro&amp;display=swap" rel="stylesheet">
      <link href="/static/css/editor.css" rel="stylesheet"/>
-     <!-- PLANNED: <script src="/static/js/htmx.min.js"></script> -->
+     <script src="/static/js/htmx.min.js">
+     </script>
      <script src="https://unpkg.com/@djot/djot@0.3.2/dist/djot.js">
      </script>
      <script src="/static/js/codejar.min.js">
@@ -28,13 +29,17 @@
       Back to Files
      </a>
     </div>
-    <form id="editor_form" method="post">
-     <div class="editor" data-gramm="false" data-manual="" name="content">
+    <form hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent()}" id="editor_form" method="post">
+     <input name="file" type="hidden" value="/private/var/folders/wn/fg9n8vkn6vq104ghhj4_mqpw0000gn/T/pytest-of-kyleking/pytest-53/test_edit_file_get0/test.dj"/>
+     <div class="editor" data-gramm="false" data-manual="">
      </div>
      <div class="editor__actions">
-      <button type="submit">
+      <button id="save-btn" type="submit">
        Save Changes
       </button>
+      <span class="editor__status" id="save-status">
+       Ready
+      </span>
      </div>
     </form>
     <script>
@@ -57,7 +62,8 @@
     </title>
     <link href="/static/css/main.css" rel="stylesheet"/>
     <link href="/static/css/files-list.css" rel="stylesheet"/>
-    <!-- PLANNED: <script src="/static/js/htmx.min.js"></script> -->
+    <script src="/static/js/htmx.min.js">
+    </script>
    </head>
    <body>
     <div class="files-list">

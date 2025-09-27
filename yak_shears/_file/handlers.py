@@ -9,7 +9,7 @@ from typing import Self
 
 from anyio import Path
 from starlette.requests import Request
-from starlette.responses import RedirectResponse, Response
+from starlette.responses import HTMLResponse, RedirectResponse, Response
 
 from yak_shears._templates import FileInfo, SortBy, render_error, render_file_edit, render_files_list
 
@@ -191,7 +191,12 @@ async def edit_file_handler(request: Request) -> Response:
     Returns:
         Response with file editor or redirect
     """
-    file_path_str = request.query_params.get("file")
+    # For HTMX requests, get file from form data, otherwise from query params
+    if request.headers.get("HX-Request") == "true":
+        form_data = await request.form()
+        file_path_str = str(form_data.get("file", ""))
+    else:
+        file_path_str = request.query_params.get("file") or ""
 
     if not file_path_str:
         return render_error("No file specified")
@@ -206,10 +211,16 @@ async def edit_file_handler(request: Request) -> Response:
             form_data = await request.form()
             content = str(form_data.get("content", ""))
             await file_path.write_text(content, encoding="utf-8")
+
+            # Check if this is an HTMX request
+            if request.headers.get("HX-Request") == "true":
+                # Return empty response, JS handles the status update
+                return HTMLResponse("")
+            # Traditional form submission - redirect
             return RedirectResponse(url=f"/edit?file={file_path_str}", status_code=303)
 
         # Generate HTML editor
         content = await file_path.read_text(encoding="utf-8")
-        return render_file_edit(file_path.name, content)
+        return render_file_edit(str(file_path), content)
     except Exception as e:
         return render_error(f"An error occurred: {e!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
