@@ -42,15 +42,15 @@ SAMPLE_USER_EMAIL = "test@example.com"
 SAMPLE_USER_PASSWORD = Password("secure123")
 
 
-@pytest.fixture
-def sample_user(temp_user_file) -> dict[Literal["id"], str]:
+@pytest_asyncio.fixture
+async def sample_user(temp_user_file) -> dict[Literal["id"], str]:
     """Create the sample user for testing.
 
     Returns:
         dict[Literal["id"], str]: A dictionary containing the user ID
     """
     display_name = "Test User"
-    user = create_user(SAMPLE_USER_EMAIL, display_name, SAMPLE_USER_PASSWORD)
+    user = await create_user(SAMPLE_USER_EMAIL, display_name, SAMPLE_USER_PASSWORD)
     return {"id": user["id"]}
 
 

@@ -42,7 +42,7 @@ async def login_handler(request: Request) -> Response:
                 redirect=redirect_path,
                 error="Email and password are required",
             )
-        if not (user := storage.authenticate_user(email, password)):
+        if not (user := await storage.authenticate_user(email, password)):
             return render_auth_login(
                 redirect=redirect_path,
                 error="Invalid email or password",

@@ -40,7 +40,7 @@ version = "0.0.0"
 
 [project.scripts] # Docs: https://setuptools.pypa.io/en/latest/userguide/entry_point.html#console-scripts
 serve = "yak_shears.server:cli"
-yak-shears-users = "yak_shears.cli:main"
+yak-shears-users = "yak_shears.cli:main_sync"
 
 [tool.mypy]
 check_untyped_defs = true

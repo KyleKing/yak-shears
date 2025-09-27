@@ -9,16 +9,19 @@ uv run yak-shears-users list
 """
 
 import argparse
+import asyncio
 import getpass
 import sys
 from datetime import datetime
+
+from anyio import to_thread
 
 from yak_shears._auth.models import Password
 from yak_shears._auth.storage import create_user, delete_user, get_user_by_email, list_all_users
 from yak_shears._log_utils import log
 
 
-def _create_user_command(args: argparse.Namespace) -> None:
+async def _create_user_command(args: argparse.Namespace) -> None:
     """Create a new user.
 
     Args:
@@ -41,7 +44,7 @@ def _create_user_command(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     try:
-        user = create_user(email, display_name, password)
+        user = await create_user(email, display_name, password)
         log(f"Successfully created user: {user['email']} ({user['display_name']})")
         log(f"User ID: {user['id']}")
     except ValueError as e:
@@ -49,7 +52,7 @@ def _create_user_command(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
-def _list_users_command(_args: argparse.Namespace) -> None:
+async def _list_users_command(_args: argparse.Namespace) -> None:  # noqa: RUF029
     """List all users.
 
     Args:
@@ -61,7 +64,8 @@ def _list_users_command(_args: argparse.Namespace) -> None:
         log("No users found.")
         return
 
-    log(f"Found {len(users)} users")
+    len_users = len(users)
+    log(f"Found {len_users} user{'s' if len_users > 1 else ''}")
     fmt = "%Y-%m-%d %H:%M:%S"
     for user in users:
         last_login = datetime.fromisoformat(user["last_login"]).strftime(fmt) if user["last_login"] else "Never"
@@ -77,7 +81,7 @@ Display Name: {user["display_name"]}
         log(f"{'-' * 40}\n{summary.strip()}")
 
 
-def _delete_user_command(args: argparse.Namespace) -> None:
+async def _delete_user_command(args: argparse.Namespace) -> None:
     """Delete a user.
 
     Args:
@@ -90,20 +94,20 @@ def _delete_user_command(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     log(f"About to delete user: {user['email']} ({user['display_name']})")
-    confirm = input("Are you sure? Type 'yes' to confirm: ")
+    confirm = await to_thread.run_sync(input, "Are you sure? Type 'yes' to confirm: ")
 
     if confirm.lower() != "yes":
         log("Deletion cancelled.")
         return
 
-    if delete_user(email):
+    if await delete_user(email):
         log(f"Successfully deleted user: {email}")
     else:
         log(f"Error: Failed to delete user: {email}", file=sys.stderr)
         sys.exit(1)
 
 
-def main() -> None:
+async def main() -> None:
     """Main CLI function."""
     parser = argparse.ArgumentParser(description="Manage Yak Shears users", prog="yak-shears-users")
 
@@ -125,8 +129,9 @@ def main() -> None:
     if not args.command:
         parser.print_help()
         sys.exit(1)
-    args.func(args)
+    await args.func(args)
 
 
-if __name__ == "__main__":
-    main()
+def main_sync() -> None:
+    """Referenced in pyproject.toml."""
+    asyncio.run(main())

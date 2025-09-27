@@ -44,13 +44,14 @@ def test_verify_password(password, expected):
     assert verify_password(password, salt, password_hash) is expected
 
 
-def test_create_user(temp_user_file):
+@pytest.mark.asyncio
+async def test_create_user(temp_user_file):
     """Test user creation."""
     email = "test@example.com"
     display_name = "Test User"
     password = Password("secure123")
 
-    user = create_user(email, display_name, password)
+    user = await create_user(email, display_name, password)
 
     assert user["email"] == email
     assert user["display_name"] == display_name
@@ -61,10 +62,11 @@ def test_create_user(temp_user_file):
     assert user["last_login"] is None
 
 
-def test_create_user_duplicate_email(sample_user):
+@pytest.mark.asyncio
+async def test_create_user_duplicate_email(sample_user):
     """Test that duplicate email addresses are rejected."""
     with pytest.raises(ValueError, match=r"Email .+ is already taken"):
-        create_user(SAMPLE_USER_EMAIL, "Another User", SAMPLE_USER_PASSWORD)
+        await create_user(SAMPLE_USER_EMAIL, "Another User", SAMPLE_USER_PASSWORD)
 
 
 @pytest.mark.parametrize(
@@ -100,6 +102,7 @@ def test_get_user_by_id_nonexistent(sample_user):
     assert user is None
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("email", "password", "expected"),
     [
@@ -108,9 +111,9 @@ def test_get_user_by_id_nonexistent(sample_user):
         ("nonexistent@example.com", SAMPLE_USER_PASSWORD, False),
     ],
 )
-def test_authenticate_user(email, password, expected, temp_user_file, sample_user):
+async def test_authenticate_user(email, password, expected, temp_user_file, sample_user):
     """Test user authentication."""
-    authenticated_user = authenticate_user(email, password)
+    authenticated_user = await authenticate_user(email, password)
 
     if expected:
         assert authenticated_user is not None
@@ -120,13 +123,14 @@ def test_authenticate_user(email, password, expected, temp_user_file, sample_use
         assert authenticated_user is None
 
 
-def test_list_all_users(temp_user_file):
+@pytest.mark.asyncio
+async def test_list_all_users(temp_user_file):
     """Test listing all users."""
     users = list_all_users()
     assert len(users) == 0
 
-    create_user("user1@example.com", "User 1", Password("password1"))
-    create_user("user2@example.com", "User 2", Password("password2"))
+    await create_user("user1@example.com", "User 1", Password("password1"))
+    await create_user("user2@example.com", "User 2", Password("password2"))
 
     users = list_all_users()
     assert len(users) == 2  # noqa: PLR2004
@@ -136,22 +140,24 @@ def test_list_all_users(temp_user_file):
     assert "user2@example.com" in emails
 
 
-def test_delete_user(sample_user):
+@pytest.mark.asyncio
+async def test_delete_user(sample_user):
     """Test user deletion."""
     user_id = sample_user["id"]
 
     assert get_user_by_email(SAMPLE_USER_EMAIL) is not None
     assert get_user_by_id(user_id) is not None
 
-    result = delete_user(SAMPLE_USER_EMAIL)
+    result = await delete_user(SAMPLE_USER_EMAIL)
     assert result is True
 
     assert get_user_by_email(SAMPLE_USER_EMAIL) is None
     assert get_user_by_id(user_id) is None
 
 
-def test_delete_user_nonexistent(temp_user_file):
-    result = delete_user("nonexistent@example.com")
+@pytest.mark.asyncio
+async def test_delete_user_nonexistent(temp_user_file):
+    result = await delete_user("nonexistent@example.com")
     assert result is False
 
 
@@ -194,6 +200,7 @@ def test_get_user_id_from_nonexistent_session(temp_user_file):
     assert user_id is None
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("email", "display_name", "password"),
     [
@@ -213,6 +220,6 @@ def test_get_user_id_from_nonexistent_session(temp_user_file):
         "Whitespace Password",
     ],
 )
-def test_field_validation(temp_user_file, email, display_name, password):
+async def test_field_validation(temp_user_file, email, display_name, password):
     with pytest.raises(ValueError, match=r".+ cannot be empty or whitespace-only"):
-        create_user(email, display_name, password)
+        await create_user(email, display_name, password)

@@ -3,14 +3,16 @@
 
 Implemented in-memory with persistence to a local JSON file
 
-FIXME: Should likely be single user and not worry about multiple accounts
+PLANNED: Should likely be single user and not worry about multiple accounts
 
 """
 
+import asyncio
 import json
 import secrets
 from datetime import UTC, datetime
-from pathlib import Path as SyncPath
+
+from anyio import Path
 
 from .models import HashedPassword, Password, SessionId, User
 from .password import create_password_hash, verify_password
@@ -23,27 +25,27 @@ _EMAIL_TO_USER_ID: dict[str, str] = {}
 _SESSION_STORE: dict[str, str] = {}  # session_id -> user_id
 
 # Path to save user data
-_USER_DATA_PATH = SyncPath(__file__).parents[1] / ".yak-shears-users.json"
+_USER_DATA_PATH = Path(__file__).parents[1] / ".yak-shears-users.json"
 
 
-def _save_users() -> None:
+async def _save_users() -> None:
     """Save users to disk."""
     data = {
         "users": _USERS,
         "email_to_user_id": _EMAIL_TO_USER_ID,
     }
-    _USER_DATA_PATH.write_text(json.dumps(data, indent=2))
+    await _USER_DATA_PATH.write_text(json.dumps(data, indent=2))
 
 
-def _load_users() -> None:
+async def _load_users() -> None:
     """Load users from disk."""
     global _USERS, _EMAIL_TO_USER_ID
 
-    if not _USER_DATA_PATH.exists():
+    if not await _USER_DATA_PATH.exists():
         return
 
     try:
-        data = json.loads(_USER_DATA_PATH.read_text())
+        data = json.loads(await _USER_DATA_PATH.read_text())
         _USERS = data.get("users", {})
         _EMAIL_TO_USER_ID = data.get("email_to_user_id", {})
     except (OSError, json.JSONDecodeError):
@@ -51,13 +53,13 @@ def _load_users() -> None:
         _EMAIL_TO_USER_ID = {}
 
 
-_load_users()
+asyncio.run(_load_users())
 
 # -----------------------------------------------------------------------------
 # User Management
 
 
-def create_user(email: str, display_name: str, password: Password) -> User:
+async def create_user(email: str, display_name: str, password: Password) -> User:
     """Create a new user with email and password.
 
     Args:
@@ -100,11 +102,11 @@ def create_user(email: str, display_name: str, password: Password) -> User:
 
     _USERS[user_id] = user
     _EMAIL_TO_USER_ID[email] = user_id
-    _save_users()
+    await _save_users()
     return user
 
 
-def authenticate_user(email: str, password: Password) -> User | None:
+async def authenticate_user(email: str, password: Password) -> User | None:
     """Authenticate a user with email and password.
 
     Args:
@@ -120,7 +122,7 @@ def authenticate_user(email: str, password: Password) -> User | None:
 
     if verify_password(password, user["salt"], HashedPassword(user["password_hash"])):
         user["last_login"] = datetime.now(tz=UTC).isoformat()
-        _save_users()
+        await _save_users()
         return user
 
     return None
@@ -162,7 +164,7 @@ def list_all_users() -> list[User]:
     return list(_USERS.values())
 
 
-def delete_user(email: str) -> bool:
+async def delete_user(email: str) -> bool:
     """Delete a user by email.
 
     Args:
@@ -178,7 +180,7 @@ def delete_user(email: str) -> bool:
 
     del _USERS[user_id]
     del _EMAIL_TO_USER_ID[email]
-    _save_users()
+    await _save_users()
 
     sessions_to_remove = [sid for sid, uid in _SESSION_STORE.items() if uid == user_id]
     for session_id in sessions_to_remove:
