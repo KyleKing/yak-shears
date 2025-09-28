@@ -330,6 +330,10 @@ pre code {
 	color: var(--color-danger);
 }
 
+.editor__form {
+	max-width: 800px;
+}
+
 /* For CodeJar */
 .editor .heading {
 	font-weight: 600;

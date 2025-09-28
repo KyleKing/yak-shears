@@ -79,7 +79,7 @@ def test_edit_file_get(client: TestClient, mock_user_session, tmp_path, snapshot
     test_file = tmp_path / "test.dj"
     test_file.write_text("Test file content")
 
-    response = client.get(f"/edit?file={test_file}")
+    response = client.get(f"/edit?yak={test_file}")
     assert response.status_code == HTTPStatus.OK
     assert "Editing test.dj" in response.text
     assert "Test file content" in response.text
@@ -93,11 +93,11 @@ def test_edit_file_post(client: TestClient, mock_user_session, tmp_path) -> None
     test_file.write_text("Original content")
 
     response = client.post(
-        f"/edit?file={test_file}",
+        f"/edit?yak={test_file}",
         data={"content": "Updated content"},
     )
     assert response.status_code == HTTPStatus.SEE_OTHER
-    assert response.headers["location"] == f"/edit?file={test_file}"
+    assert response.headers["location"] == f"/edit?yak={test_file}"
     assert test_file.read_text() == "Updated content"
 
 
@@ -106,13 +106,13 @@ def test_edit_file_not_found(client: TestClient, mock_user_session, tmp_path) ->
     # Use a non-existent file path
     nonexistent_file = tmp_path / "nonexistent.dj"
 
-    response = client.get(f"/edit?file={nonexistent_file}")
+    response = client.get(f"/edit?yak={nonexistent_file}")
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert "File not found: " in response.text
+    assert "Yak not found: " in response.text
 
 
 def test_edit_file_no_file_specified(client: TestClient, mock_user_session) -> None:
     """Test the edit file endpoint with no file specified."""
     response = client.get("/edit")
     assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert "No file specified" in response.text
+    assert "No yak specified" in response.text

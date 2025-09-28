@@ -21,7 +21,7 @@ function initEditor() {
 		window.jar = jar; // Expose for testing
 
 		// Use the filename from the URL for the key
-		const filename = new URLSearchParams(window.location.search).get("file");
+		const filename = new URLSearchParams(window.location.search).get("yak");
 		if (filename === null) throw new Error("URL does not have file parameter.");
 		const storageKey = `editor_${filename}`;
 		const serverContent = window.serverContent;

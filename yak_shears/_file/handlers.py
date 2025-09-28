@@ -11,7 +11,7 @@ from anyio import Path
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 
-from yak_shears._templates import SortBy, YakInfo, render_error, render_file_edit, render_yaks_list
+from yak_shears._templates import SortBy, YakInfo, render_error, render_yak_edit, render_yaks_list
 
 PREVIEW_LENGTH = 200
 """Number of characters for content preview."""
@@ -182,45 +182,45 @@ async def yaks_handler(request: Request) -> Response:
     )
 
 
-async def edit_file_handler(request: Request) -> Response:
+async def edit_yak_handler(request: Request) -> Response:
     """Handle requests to /edit.
 
     Args:
         request: The incoming request
 
     Returns:
-        Response with file editor or redirect
+        Response with yak editor or redirect
     """
-    # For HTMX requests, get file from form data, otherwise from query params
+    # For HTMX requests, get yak from form data, otherwise from query params
     if request.headers.get("HX-Request") == "true":
         form_data = await request.form()
-        file_path_str = str(form_data.get("file", ""))
+        yak_path_str = str(form_data.get("yak", ""))
     else:
-        file_path_str = request.query_params.get("file") or ""
+        yak_path_str = request.query_params.get("yak") or ""
 
-    if not file_path_str:
-        return render_error("No file specified")
+    if not yak_path_str:
+        return render_error("No yak specified")
 
     try:
-        file_path = Path(file_path_str)
-        if not await file_path.exists() or not await file_path.is_file():
-            return render_error(f"File not found: {file_path}", status_code=HTTPStatus.NOT_FOUND)
+        yak_path = Path(yak_path_str)
+        if not await yak_path.exists() or not await yak_path.is_file():
+            return render_error(f"Yak not found: {yak_path}", status_code=HTTPStatus.NOT_FOUND)
 
         # If the request includes content, save the changes
         if request.method == "POST":
             form_data = await request.form()
             content = str(form_data.get("content", ""))
-            await file_path.write_text(content, encoding="utf-8")
+            await yak_path.write_text(content, encoding="utf-8")
 
             # Check if this is an HTMX request
             if request.headers.get("HX-Request") == "true":
                 # Return empty response, JS handles the status update
                 return HTMLResponse("")
             # Traditional form submission - redirect
-            return RedirectResponse(url=f"/edit?file={file_path_str}", status_code=303)
+            return RedirectResponse(url=f"/edit?yak={yak_path_str}", status_code=303)
 
         # Generate HTML editor
-        content = await file_path.read_text(encoding="utf-8")
-        return render_file_edit(str(file_path), content)
+        content = await yak_path.read_text(encoding="utf-8")
+        return render_yak_edit(str(yak_path), content)
     except Exception as e:
         return render_error(f"An error occurred: {e!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)

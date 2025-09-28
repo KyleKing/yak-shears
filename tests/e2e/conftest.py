@@ -68,13 +68,6 @@ async def server_lifecycle():
             process.kill()
         await process.wait()
 
-    # TODO: Revisit how best to implement ctrl-c
-    # def signal_handler(sig, frame):
-    #     """Shutdown on interrupt."""
-    #     asyncio.run(shutdown())
-    #     sys.exit(1)
-
-    # signal.signal(signal.SIGINT, signal_handler)
     try:
         try:
             yield
@@ -83,7 +76,6 @@ async def server_lifecycle():
             raise
     finally:
         await shutdown()
-        # signal.pause()
 
 
 class Messages:

@@ -2,9 +2,9 @@
 
 from starlette.routing import Route
 
-from .handlers import edit_file_handler, yaks_handler
+from .handlers import edit_yak_handler, yaks_handler
 
 ROUTES = [
     Route("/files", endpoint=yaks_handler),
-    Route("/edit", endpoint=edit_file_handler, methods=["GET", "POST"]),
+    Route("/edit", endpoint=edit_yak_handler, methods=["GET", "POST"]),
 ]

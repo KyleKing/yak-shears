@@ -122,15 +122,15 @@ def render_yaks_list(
     )
 
 
-def render_file_edit(file_path: str, content: str) -> HTMLResponse:
-    """Render the file editor page.
+def render_yak_edit(yak_path: str, content: str) -> HTMLResponse:
+    """Render the yak editor page.
 
     Args:
-        file_path: Path of the file being edited
-        content: Current content of the file
+        yak_path: Path of the yak being edited
+        content: Current content of the yak
 
     Returns:
-        HTMLResponse with the file editor template
+        HTMLResponse with the yak editor template
     """
-    file_name = SyncPath(file_path).name
-    return _render_template("file/edit.html.jinja", file_name=file_name, file_path=file_path, content=content)
+    yak_name = SyncPath(yak_path).name
+    return _render_template("file/edit.html.jinja", yak_name=yak_name, yak_path=yak_path, content=content)

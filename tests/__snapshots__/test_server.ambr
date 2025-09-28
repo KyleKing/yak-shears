@@ -51,7 +51,7 @@
        </h1>
       </div>
       <form hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent()}" id="editor_form" method="post">
-       <input name="file" type="hidden" value="/private/var/folders/wn/fg9n8vkn6vq104ghhj4_mqpw0000gn/T/pytest-of-kyleking/pytest-1/test_edit_file_get0/test.dj"/>
+       <input name="yak" type="hidden" value="/private/var/folders/wn/fg9n8vkn6vq104ghhj4_mqpw0000gn/T/pytest-of-kyleking/pytest-14/test_edit_file_get0/test.dj"/>
        <div class="editor" data-gramm="false" data-manual="">
        </div>
        <div class="editor__actions">
@@ -149,7 +149,7 @@
        </a>
       </div>
       <div class="cards">
-       <a class="card" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-3/file3.dj">
+       <a class="card" href="/edit?yak=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-3/file3.dj">
         <div class="card__body">
          <p>
           # File 3  This is a test file number 3  Unrelated to file 1 or file 2
@@ -164,7 +164,7 @@
          </span>
         </div>
        </a>
-       <a class="card" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-2/file2.dj">
+       <a class="card" href="/edit?yak=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/subdirectory-2/file2.dj">
         <div class="card__body">
          <p>
           # File 2  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 2
@@ -179,7 +179,7 @@
          </span>
         </div>
        </a>
-       <a class="card" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file1.dj">
+       <a class="card" href="/edit?yak=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file1.dj">
         <div class="card__body">
          <p>
           # File 1  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 1
@@ -194,7 +194,7 @@
          </span>
         </div>
        </a>
-       <a class="card" href="/edit?file=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file0-untracked.dj">
+       <a class="card" href="/edit?yak=/Users/kyleking/Developer/kyleking/yak-shears-py/tests/test_data/mock_djot_files/file0-untracked.dj">
         <div class="card__body">
          <p>
           Placeholder

@@ -28,8 +28,8 @@ async def _validate_highlight(page: Page, fill: str, editor_locator: str, expect
 async def test_editor_highlight_behavior(context: BrowserContext, page: Page, server_lifecycle):
     await login(context, page)
 
-    file_path = MOCK_YAK_DIR / "file1.dj"
-    await page.goto(f"/edit?file={file_path}")
+    yak_path = MOCK_YAK_DIR / "file1.dj"
+    await page.goto(f"/edit?yak={yak_path}")
     editor = page.locator(".editor")
     await expect(editor).to_be_editable()
 
@@ -64,28 +64,31 @@ async def test_edit_save_persistence(context: BrowserContext, page: Page, server
     """Test that edits are saved and persist after page refresh."""
     await login(context, page)
 
-    file_path = MOCK_YAK_DIR / "file0-untracked.dj"
-    file_path.write_text("Placeholder")
-    await page.goto(f"/edit?file={file_path}")
+    yak_path = MOCK_YAK_DIR / "yak0-untracked.dj"
+    yak_path.write_text("Placeholder")
+    try:
+        await page.goto(f"/edit?yak={yak_path}")
 
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
+        editor = page.locator(".editor")
+        await expect(editor).to_be_editable()
 
-    # Get initial content
-    initial_content = await editor.text_content()
-    assert initial_content is not None
+        # Get initial content
+        initial_content = await editor.text_content()
+        assert initial_content is not None
 
-    modified_content = initial_content + "\n\nModified for test"
-    await _fill_editor(page=page, fill=modified_content)
-    await page.locator("#save-btn").click()
-    await expect(page.locator("#save-status")).to_contain_text("Saved")
+        modified_content = initial_content + "\n\nModified for test"
+        await _fill_editor(page=page, fill=modified_content)
+        await page.locator("#save-btn").click()
+        await expect(page.locator("#save-status")).to_contain_text("Saved")
 
-    # Refresh page to ensure changes are persisted
-    await page.reload()
-    await expect(editor).to_be_editable()
-    await expect(editor).to_contain_text(modified_content)
+        # Refresh page to ensure changes are persisted
+        await page.reload()
+        await expect(editor).to_be_editable()
+        await expect(editor).to_contain_text(modified_content)
 
-    # Restore original content
-    await _fill_editor(page=page, fill=initial_content)
-    await page.locator("#save-btn").click()
-    await expect(page.locator("#save-status")).to_contain_text("Saved")
+        # Restore original content
+        await _fill_editor(page=page, fill=initial_content)
+        await page.locator("#save-btn").click()
+        await expect(page.locator("#save-status")).to_contain_text("Saved")
+    finally:
+        yak_path.unlink()

@@ -24,7 +24,7 @@
 
   <div class="cards">
     {% for info in files %}
-      <a href="/edit?file={{ info.path }}" class="card">
+      <a href="/edit?yak={{ info.path }}" class="card">
         <div class="card__body">
           <p>{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
         </div>

@@ -53,8 +53,7 @@ This file provides guidance to AI agents when working with code in this reposito
 ```
 yak_shears/
 ├── auth/           # Authentication system (password-based, JSON file storage)
-├── file/           # File management
-├── server/         # Main server routes and handlers
+├── yak/            # yak management
 ├── static/         # Static CSS and JS files
 ├── templates/      # Jinja2 HTML templates
 └── cli.py          # CLI Tool for User management
@@ -138,13 +137,13 @@ TODO: Not yet implemented
 
 ### View Yaks
 
-- URL is `/files`
+- URL is `/yaks`
 - Preview each yak in a flexbox-wrapped layout
 - Clicking on a yak opens the Yak Page
 
 ### Yak Page
 
-- URL is `/file/<yak-title>`
+- URL is `/yak?yak_path=<yak-path>` = TODO: this is currently `/edit?...`
 - On mobile, defaults to Yak Editor component full screen. If the screen is wide enough, the preview is shown side-by-side
 - There is a button to toggle between Editor and Preview components
 - There is a feature to link yaks (*TBD*)
