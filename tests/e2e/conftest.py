@@ -62,12 +62,28 @@ async def server_lifecycle():
     env = {**os.environ, "YAK_SHEARS_DIR": MOCK_YAK_DIR.as_posix()}
     process = await asyncio.create_subprocess_exec("uv", "run", "serve", "--port", PORT, env=env)
     await check_connection(timeout_s=5, url=BASE_URL)
-    try:
-        yield
-    finally:
+
+    async def shutdown():
         if process.returncode is None:
             process.kill()
         await process.wait()
+
+    # TODO: Revisit how best to implement ctrl-c
+    # def signal_handler(sig, frame):
+    #     """Shutdown on interrupt."""
+    #     asyncio.run(shutdown())
+    #     sys.exit(1)
+
+    # signal.signal(signal.SIGINT, signal_handler)
+    try:
+        try:
+            yield
+        except KeyboardInterrupt:
+            await shutdown()
+            raise
+    finally:
+        await shutdown()
+        # signal.pause()
 
 
 class Messages:
