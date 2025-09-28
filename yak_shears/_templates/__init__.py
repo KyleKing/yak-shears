@@ -11,15 +11,15 @@ from starlette.responses import HTMLResponse
 
 
 class SortBy(StrEnum):
-    """Enum for file sorting options."""
+    """Enum for yak sorting options."""
 
     NAME = "name"
     MODIFIED_DATE = "modified_date"
 
 
 @dataclass(frozen=True)
-class FileInfo:
-    """File information for template rendering."""
+class YakInfo:
+    """Yak information for template rendering."""
 
     category: str
     last_modified: str
@@ -83,38 +83,38 @@ def render_auth_login(redirect: str | None = None, error: str = "") -> HTMLRespo
     return _render_template("auth/login.html.jinja", redirect=redirect, error=error, status_code=status_code)
 
 
-def render_files_list(
+def render_yaks_list(
     *,
-    files: list[FileInfo],
+    yaks: list[YakInfo],
     current_page: int,
     total_pages: int,
-    total_files: int,
+    total_yaks: int,
     yak_dir_label: str,
     sort_by: SortBy,
     current_category: str | None,
     categories: set[str],
 ) -> HTMLResponse:
-    """Render the files listing page.
+    """Render the yaks listing page.
 
     Args:
-        files: List of files and metadata
+        yaks: List of yaks and metadata
         current_page: Current page number
         total_pages: Total number of pages
-        total_files: Total number of files
+        total_yaks: Total number of yaks
         yak_dir_label: name of the `YAK_SHEARS_DIR`
-        sort_by: Criteria to sort files
+        sort_by: Criteria to sort yaks
         current_category: active category filter currently applied
         categories: set of available categories for filtering
 
     Returns:
-        HTMLResponse with the files listing template
+        HTMLResponse with the yaks listing template
     """
     return _render_template(
         "file/files_list.html.jinja",
-        files=files,
+        files=yaks,
         current_page=current_page,
         total_pages=total_pages,
-        total_files=total_files,
+        total_files=total_yaks,
         yak_dir_label=yak_dir_label,
         sort_by=sort_by,
         current_category=current_category,

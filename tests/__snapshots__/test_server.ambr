@@ -35,7 +35,7 @@
         <ul class="nav__list">
          <li>
           <a class="nav__link" href="/files">
-           Notes
+           Yaks
           </a>
          </li>
         </ul>
@@ -51,7 +51,7 @@
        </h1>
       </div>
       <form hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent()}" id="editor_form" method="post">
-       <input name="file" type="hidden" value="/private/var/folders/wn/fg9n8vkn6vq104ghhj4_mqpw0000gn/T/pytest-of-kyleking/pytest-23/test_edit_file_get0/test.dj"/>
+       <input name="file" type="hidden" value="/private/var/folders/wn/fg9n8vkn6vq104ghhj4_mqpw0000gn/T/pytest-of-kyleking/pytest-1/test_edit_file_get0/test.dj"/>
        <div class="editor" data-gramm="false" data-manual="">
        </div>
        <div class="editor__actions">
@@ -82,7 +82,7 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>
-     Notes in ./test_data/mock_djot_files
+     Yaks in ./test_data/mock_djot_files
     </title>
     <link href="/static/css/main.css" rel="stylesheet"/>
     <script src="/static/js/htmx.min.js">
@@ -104,7 +104,7 @@
         <ul class="nav__list">
          <li>
           <a class="nav__link" href="/files">
-           Notes
+           Yaks
           </a>
          </li>
         </ul>
@@ -115,10 +115,10 @@
     <main class="layout__inner">
      <div class="container">
       <h1>
-       Notes in ./test_data/mock_djot_files
+       Yaks in ./test_data/mock_djot_files
       </h1>
       <p>
-       Showing 4 of 4 notes (Page 1 of 1)
+       Showing 4 of 4 yaks (Page 1 of 1)
       </p>
       <div class="sort-controls">
        <span class="sort-controls__label">

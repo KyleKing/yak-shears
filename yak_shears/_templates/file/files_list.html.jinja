@@ -1,10 +1,10 @@
 {% extends "base.html.jinja" %}
 
-{% block title %}Notes in {{ yak_dir_label }}{% endblock %}
+{% block title %}Yaks in {{ yak_dir_label }}{% endblock %}
 
 {% block content %}
-  <h1>Notes in {{ yak_dir_label }}</h1>
-  <p>Showing {{ files | length }} of {{ total_files }} notes (Page {{ current_page }} of {{ total_pages }})</p>
+  <h1>Yaks in {{ yak_dir_label }}</h1>
+  <p>Showing {{ files | length }} of {{ total_files }} yaks (Page {{ current_page }} of {{ total_pages }})</p>
 
   <div class="sort-controls">
     <span class="sort-controls__label">Sort by:</span>

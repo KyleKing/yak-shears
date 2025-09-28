@@ -11,21 +11,21 @@ from anyio import Path
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 
-from yak_shears._templates import FileInfo, SortBy, render_error, render_file_edit, render_files_list
+from yak_shears._templates import SortBy, YakInfo, render_error, render_file_edit, render_yaks_list
 
 PREVIEW_LENGTH = 200
 """Number of characters for content preview."""
 
 
 @dataclass(frozen=True)
-class FilesQueryParams:
-    """Parameters for querying and paginating Djot files.
+class YaksQueryParams:
+    """Parameters for querying and paginating Djot yaks.
 
     Attributes:
         page: Current page number (1-based)
         sort_by: Sorting criteria (name or modified date)
         category: Optional category filter (parent directory name)
-        page_size: Number of files per page (default: 30)
+        page_size: Number of yaks per page (default: 30)
     """
 
     page: int
@@ -42,7 +42,7 @@ class FilesQueryParams:
             categories: Set of valid category names for validation
 
         Returns:
-            FilesQueryParams instance with parsed and validated parameters.
+            YaksQueryParams instance with parsed and validated parameters.
         """
         try:
             # Must be positive integer
@@ -62,14 +62,14 @@ class FilesQueryParams:
         return cls(page=page, sort_by=sort_by, category=category)
 
 
-async def get_notes(pth: Path) -> list[Path]:
-    """Return djot note paths.
+async def get_yaks(pth: Path) -> list[Path]:
+    """Return djot yak paths.
 
     Args:
         pth: top-level directory to search
 
     Returns:
-        List of djot notes
+        List of djot yaks
     """
     if not await pth.exists() or not await pth.is_dir():
         return []
@@ -88,15 +88,15 @@ async def get_categories(all_paths: list[Path]) -> set[str]:
     return {f.parent.name for f in all_paths if await f.is_file()}
 
 
-async def get_djot_files(paths: list[Path], query_params: FilesQueryParams) -> tuple[list[Path], int, int]:
-    """Get a paginated list of Djot files from the specified directory.
+async def get_djot_yaks(paths: list[Path], query_params: YaksQueryParams) -> tuple[list[Path], int, int]:
+    """Get a paginated list of Djot yaks from the specified directory.
 
     Args:
-        paths: paths to djot notes
-        query_params: FilesQueryParams
+        paths: paths to djot yaks
+        query_params: YaksQueryParams
 
     Returns:
-        Tuple containing (list of file paths, total number of files, total pages)
+        Tuple containing (list of yak paths, total number of yaks, total pages)
     """
     if not paths:
         return [], 0, 0
@@ -122,14 +122,14 @@ async def get_djot_files(paths: list[Path], query_params: FilesQueryParams) -> t
     return paths[start_idx:end_idx], total_files, total_pages
 
 
-async def prepare_files(paths: list[Path]) -> list[FileInfo]:
-    """Prepare file data for template rendering.
+async def prepare_yaks(paths: list[Path]) -> list[YakInfo]:
+    """Prepare yak data for template rendering.
 
     Args:
-        paths: List of file paths to process
+        paths: List of yak paths to process
 
     Returns:
-        List of FileInfo objects containing file information for template
+        List of FileInfo objects containing yak information for template
     """
     files = []
     for file_path in paths:
@@ -138,7 +138,7 @@ async def prepare_files(paths: list[Path]) -> list[FileInfo]:
         content = await file_path.read_text(encoding="utf-8")
         preview = content[:PREVIEW_LENGTH].replace("\n", " ")
 
-        info = FileInfo(
+        info = YakInfo(
             category=file_path.parent.name,
             last_modified=last_modified,
             name=file_path.name,
@@ -151,30 +151,30 @@ async def prepare_files(paths: list[Path]) -> list[FileInfo]:
     return files
 
 
-async def files_handler(request: Request) -> Response:
+async def yaks_handler(request: Request) -> Response:
     """Handle requests to /files.
 
     Args:
         request: The incoming request
 
     Returns:
-        Response with paginated file listing
+        Response with paginated yak listing
     """
     directory_path = await Path(getenv("YAK_SHEARS_DIR", "~/Sync/yak-shears")).expanduser()
 
-    all_paths = await get_notes(directory_path)
+    all_paths = await get_yaks(directory_path)
     categories = await get_categories(all_paths)
 
-    query_params = await FilesQueryParams.from_request(request, categories)
+    query_params = await YaksQueryParams.from_request(request, categories)
 
-    paths, total_files, total_pages = await get_djot_files(all_paths, query_params=query_params)
-    files = await prepare_files(paths)
+    paths, total_yaks, total_pages = await get_djot_yaks(all_paths, query_params=query_params)
+    yaks = await prepare_yaks(paths)
     yak_dir_label = "./" + directory_path.relative_to(directory_path.parents[1]).as_posix()
-    return render_files_list(
-        files=files,
+    return render_yaks_list(
+        yaks=yaks,
         current_page=query_params.page,
         total_pages=total_pages,
-        total_files=total_files,
+        total_yaks=total_yaks,
         yak_dir_label=yak_dir_label,
         sort_by=query_params.sort_by,
         current_category=query_params.category,

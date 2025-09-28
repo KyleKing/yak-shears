@@ -66,11 +66,11 @@ yak_shears/
     - Session middleware enforces user authentication
 - User persistence in a JSON file (`.yak-shears-users.json`) written to by the CLI and read by the server
 
-### File Management
+### Yak Management
 
-- Works with Djot files (`.dj` extension) stored in `~/Sync/yak-shears` by default
-- Supports file listing with pagination and sorting (name/date)
-- File editing with content preview
+- Works with Djot yaks (`.dj` extension) stored in `~/Sync/yak-shears` by default
+- Supports yak listing with pagination and sorting (name/date)
+- Yak editing with content preview
 
 ### Frontend Approach
 
@@ -102,7 +102,7 @@ yak_shears/
 
 ## Component Specifications
 
-### Note Editor
+### Yak Editor
 
 Now implemented with CodeJar
 
@@ -124,9 +124,9 @@ TODO: Not yet implemented
 
 - Inspired by Telescope for nvim
 - There is a text input, which is full width
-- There is sidebar with is 1/2 width and a note preview
-- The search sidebar shows each matched note with an abbreviated preview
-- The search preview highlights what was matched during the search
+ - There is sidebar with is 1/2 width and a yak preview
+ - The search sidebar shows each matched yak with an abbreviated preview
+ - The search preview highlights what was matched during the search
 - Search can either be a full page or a modal triggered by a button on the keyboard in mobile or ctrl-p on desktop
 
 ## Page Specifications
@@ -136,24 +136,24 @@ TODO: Not yet implemented
 - Basic username/password
 - Credentials last for 7 days
 
-### View Notes
+### View Yaks
 
 - URL is `/files`
-- Preview each note in a flexbox-wrapped layout
-- Clicking on a note opens the Note Page
+- Preview each yak in a flexbox-wrapped layout
+- Clicking on a yak opens the Yak Page
 
-### Note Page
+### Yak Page
 
-- URL is `/file/<note-title>`
-- On mobile, defaults to Note Editor component full screen. If the screen is wide enough, the preview is shown side-by-side
+- URL is `/file/<yak-title>`
+- On mobile, defaults to Yak Editor component full screen. If the screen is wide enough, the preview is shown side-by-side
 - There is a button to toggle between Editor and Preview components
-- There is a feature to link notes (*TBD*)
-- There is a feature to see similar notes (*TBD*)
-- There is a feature to support configuring note metadata during edit and to view when viewing (*TBD*)
+- There is a feature to link yaks (*TBD*)
+- There is a feature to see similar yaks (*TBD*)
+- There is a feature to support configuring yak metadata during edit and to view when viewing (*TBD*)
 
 ## Future Features
 
-- Best tiny model for plain text RAG (https://www.baseten.com/blog/the-best-open-source-embedding-models/#the-best-reward-model-allanai-llama-31-tulu-3-8b-reward) or run something slightly better on my laptop? For the latter, would track new and modified files removed from RAG until I can next ingest them from my laptop.
+- Best tiny model for plain text RAG (https://www.baseten.com/blog/the-best-open-source-embedding-models/#the-best-reward-model-allanai-llama-31-tulu-3-8b-reward) or run something slightly better on my laptop? For the latter, would track new and modified yaks removed from RAG until I can next ingest them from my laptop.
 - Revisit tests to ensure that private features aren't being tested
     - Consider revisiting automatic coverage overlap. See last item, which was too specific at line level when function level would be more useful: https://github.com/KyleKing/yak-shears/commit/ddc8b0c535b79317a13ef5accf32f0aa5018f49b
 - Consider adding mutation testing, such as with https://github.com/boxed/mutmut or the more complicated https://github.com/sixty-north/cosmic-ray
