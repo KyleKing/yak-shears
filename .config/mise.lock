@@ -6,6 +6,14 @@ backend = "npm:@biomejs/biome"
 version = "0.50.2"
 backend = "npm:dprint"
 
+[[tools."npm:terser"]]
+version = "5.44.0"
+backend = "npm:terser"
+
+[[tools."npm:typescript"]]
+version = "5.9.2"
+backend = "npm:typescript"
+
 [[tools.python]]
 version = "3.13.7"
 backend = "core:python"

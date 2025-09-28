@@ -19,14 +19,6 @@ backend = "go:github.com/Zxilly/go-size-analyzer/cmd/gsa"
 version = "1.15.6"
 backend = "aqua:jdx/hk"
 
-[[tools."npm:terser"]]
-version = "5.44.0"
-backend = "npm:terser"
-
-[[tools."npm:typescript"]]
-version = "5.9.2"
-backend = "npm:typescript"
-
 [[tools."pipx:commitizen"]]
 version = "4.9.1"
 backend = "pipx:commitizen"

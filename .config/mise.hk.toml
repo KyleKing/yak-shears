@@ -1,8 +1,6 @@
 [tools]
 actionlint = "latest"
 hk = "latest"
-"npm:terser" = "latest"
-"npm:typescript" = "latest"
 "pipx:commitizen" = "latest"
 "pipx:pre-commit-hooks" = "latest"
 "pipx:toml-sort" = "latest"
