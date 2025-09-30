@@ -83,7 +83,7 @@ def render_auth_login(redirect: str | None = None, error: str = "") -> HTMLRespo
     return _render_template("auth/login.html.jinja", redirect=redirect, error=error, status_code=status_code)
 
 
-def render_yaks_list(
+def render_yaks(
     *,
     yaks: list[YakInfo],
     current_page: int,
@@ -110,7 +110,7 @@ def render_yaks_list(
         HTMLResponse with the yaks listing template
     """
     return _render_template(
-        "yak/yaks_list.html.jinja",
+        "yaks/index.html.jinja",
         yaks=yaks,
         current_page=current_page,
         total_pages=total_pages,

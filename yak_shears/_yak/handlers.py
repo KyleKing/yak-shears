@@ -11,7 +11,7 @@ from anyio import Path
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, Response
 
-from yak_shears._templates import SortBy, YakInfo, render_error, render_yak_edit, render_yaks_list
+from yak_shears._templates import SortBy, YakInfo, render_error, render_yak_edit, render_yaks
 
 PREVIEW_LENGTH = 200
 """Number of characters for content preview."""
@@ -176,7 +176,7 @@ async def yaks_handler(request: Request) -> Response:
     paths, total_yaks, total_pages = await get_djot_yaks(all_paths, query_params=query_params)
     yaks = await prepare_yaks(paths, yak_dir)
     yak_dir_label = "./" + yak_dir.relative_to(yak_dir.parents[1]).as_posix()
-    return render_yaks_list(
+    return render_yaks(
         yaks=yaks,
         current_page=query_params.page,
         total_pages=total_pages,
