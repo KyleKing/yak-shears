@@ -2,6 +2,11 @@
 version = "1.7.7"
 backend = "aqua:rhysd/actionlint"
 
+[tools.actionlint.platforms.macos-arm64]
+checksum = "sha256:2693315b9093aeacb4ebd91a993fea54fc215057bf0da2659056b4bc033873db"
+size = 1962532
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_darwin_arm64.tar.gz"
+
 [[tools.go]]
 version = "1.24.2"
 backend = "core:go"
@@ -16,8 +21,13 @@ version = "1.8.0"
 backend = "go:github.com/Zxilly/go-size-analyzer/cmd/gsa"
 
 [[tools.hk]]
-version = "1.15.6"
+version = "1.15.7"
 backend = "aqua:jdx/hk"
+
+[tools.hk.platforms.macos-arm64]
+checksum = "blake3:4c2ed7089ba2c4bad522c479584baa14fc5d9f9c059a4945ab65926a24a3a47a"
+size = 6029861
+url = "https://github.com/jdx/hk/releases/download/v1.15.7/hk-aarch64-apple-darwin.tar.gz"
 
 [[tools."pipx:commitizen"]]
 version = "4.9.1"

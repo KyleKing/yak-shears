@@ -2,7 +2,6 @@
 
 from datetime import UTC, datetime
 from http import HTTPStatus
-from os import environ
 from unittest.mock import patch
 
 import pytest
@@ -14,7 +13,7 @@ from yak_shears._constants import DEFAULT_REDIRECT
 from yak_shears.server._handlers import not_found
 from yak_shears.server._routes import ROUTES
 
-from .conftest import MOCK_YAK_DIR
+from .conftest import MOCK_YAK_DIR, set_yak_shears_dir
 
 
 @pytest.fixture
@@ -51,7 +50,7 @@ def test_root_endpoint(client: TestClient) -> None:
 def test_files_endpoint(client: TestClient, mock_user_session, snapshot) -> None:
     """Test the files endpoint."""
     with (
-        patch.dict(environ, {"YAK_SHEARS_DIR": MOCK_YAK_DIR.as_posix()}, clear=True),
+        set_yak_shears_dir(MOCK_YAK_DIR),
         patch("yak_shears._file.handlers.datetime") as mock_datetime,
     ):
         mock_datetime.fromtimestamp.return_value = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC)
@@ -79,11 +78,12 @@ def test_edit_file_get(client: TestClient, mock_user_session, tmp_path, snapshot
     test_file = tmp_path / "test.dj"
     test_file.write_text("Test file content")
 
-    response = client.get(f"/edit?yak={test_file}")
-    assert response.status_code == HTTPStatus.OK
-    assert "Editing test.dj" in response.text
-    assert "Test file content" in response.text
-    assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
+    with set_yak_shears_dir(tmp_path):
+        response = client.get("/edit?yak=test.dj")
+        assert response.status_code == HTTPStatus.OK
+        assert "Editing test.dj" in response.text
+        assert "Test file content" in response.text
+        assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
 
 
 def test_edit_file_post(client: TestClient, mock_user_session, tmp_path) -> None:
@@ -92,27 +92,27 @@ def test_edit_file_post(client: TestClient, mock_user_session, tmp_path) -> None
     test_file = tmp_path / "test.dj"
     test_file.write_text("Original content")
 
-    response = client.post(
-        f"/edit?yak={test_file}",
-        data={"content": "Updated content"},
-    )
-    assert response.status_code == HTTPStatus.SEE_OTHER
-    assert response.headers["location"] == f"/edit?yak={test_file}"
-    assert test_file.read_text() == "Updated content"
+    with set_yak_shears_dir(tmp_path):
+        response = client.post(
+            "/edit",
+            data={"yak": "test.dj", "content": "Updated content"},
+            headers={"HX-Request": "true"},
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.text == ""
+        assert test_file.read_text() == "Updated content"
 
 
 def test_edit_file_not_found(client: TestClient, mock_user_session, tmp_path) -> None:
     """Test the edit file endpoint with non-existent file."""
-    # Use a non-existent file path
-    nonexistent_file = tmp_path / "nonexistent.dj"
-
-    response = client.get(f"/edit?yak={nonexistent_file}")
-    assert response.status_code == HTTPStatus.NOT_FOUND
-    assert "Yak not found: " in response.text
+    with set_yak_shears_dir(tmp_path):
+        response = client.get("/edit?yak=nonexistent.dj")
+        assert response.status_code == HTTPStatus.NOT_FOUND
+        assert "Yak not found: " in response.text
 
 
 def test_edit_file_no_file_specified(client: TestClient, mock_user_session) -> None:
     """Test the edit file endpoint with no file specified."""
     response = client.get("/edit")
     assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert "No yak specified" in response.text
+    assert "No `yak` path specified" in response.text

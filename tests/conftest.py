@@ -1,6 +1,9 @@
 """Pytest configuration."""
 
+import os
 import tempfile
+from collections.abc import AsyncGenerator, Generator
+from contextlib import contextmanager
 from pathlib import Path as SyncPath
 from typing import Literal
 from unittest.mock import patch
@@ -16,8 +19,15 @@ from yak_shears._auth.storage import create_user
 MOCK_YAK_DIR = SyncPath(__file__).parent / "test_data/mock_djot_files"
 
 
+@contextmanager
+def set_yak_shears_dir(dir_path: SyncPath) -> Generator[None, None, None]:
+    """Context manager to temporarily set the `YAK_SHEARS_DIR` environment variable."""
+    with patch.dict(os.environ, {"YAK_SHEARS_DIR": dir_path.as_posix()}, clear=True):
+        yield
+
+
 @pytest_asyncio.fixture
-async def temp_user_file():
+async def temp_user_file() -> AsyncGenerator[Path, None]:
     """Create a temporary user file for testing.
 
     Yields:
@@ -43,7 +53,7 @@ SAMPLE_USER_PASSWORD = Password("secure123")
 
 
 @pytest_asyncio.fixture
-async def sample_user(temp_user_file) -> dict[Literal["id"], str]:
+async def sample_user(temp_user_file: Path) -> dict[Literal["id"], str]:
     """Create the sample user for testing.
 
     Returns:

@@ -9,7 +9,7 @@ from typing import Self
 
 from anyio import Path
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, RedirectResponse, Response
+from starlette.responses import HTMLResponse, Response
 
 from yak_shears._templates import SortBy, YakInfo, render_error, render_yak_edit, render_yaks_list
 
@@ -122,11 +122,12 @@ async def get_djot_yaks(paths: list[Path], query_params: YaksQueryParams) -> tup
     return paths[start_idx:end_idx], total_files, total_pages
 
 
-async def prepare_yaks(paths: list[Path]) -> list[YakInfo]:
+async def prepare_yaks(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
     """Prepare yak data for template rendering.
 
     Args:
         paths: List of yak paths to process
+        yak_dir: Base directory for computing relative paths
 
     Returns:
         List of FileInfo objects containing yak information for template
@@ -142,13 +143,18 @@ async def prepare_yaks(paths: list[Path]) -> list[YakInfo]:
             category=file_path.parent.name,
             last_modified=last_modified,
             name=file_path.name,
-            path=str(file_path),
+            path=file_path.relative_to(yak_dir).as_posix(),
             preview=preview,
             truncated=len(content) > PREVIEW_LENGTH,
         )
         files.append(info)
 
     return files
+
+
+async def get_yak_dir() -> Path:
+    """Returns the `YAK_SHEARS_DIR` of fallback."""
+    return await Path(getenv("YAK_SHEARS_DIR", "~/Sync/yak-shears")).expanduser()
 
 
 async def yaks_handler(request: Request) -> Response:
@@ -160,16 +166,16 @@ async def yaks_handler(request: Request) -> Response:
     Returns:
         Response with paginated yak listing
     """
-    directory_path = await Path(getenv("YAK_SHEARS_DIR", "~/Sync/yak-shears")).expanduser()
+    yak_dir = await get_yak_dir()
 
-    all_paths = await get_yaks(directory_path)
+    all_paths = await get_yaks(yak_dir)
     categories = await get_categories(all_paths)
 
     query_params = await YaksQueryParams.from_request(request, categories)
 
     paths, total_yaks, total_pages = await get_djot_yaks(all_paths, query_params=query_params)
-    yaks = await prepare_yaks(paths)
-    yak_dir_label = "./" + directory_path.relative_to(directory_path.parents[1]).as_posix()
+    yaks = await prepare_yaks(paths, yak_dir)
+    yak_dir_label = "./" + yak_dir.relative_to(yak_dir.parents[1]).as_posix()
     return render_yaks_list(
         yaks=yaks,
         current_page=query_params.page,
@@ -191,36 +197,31 @@ async def edit_yak_handler(request: Request) -> Response:
     Returns:
         Response with yak editor or redirect
     """
-    # For HTMX requests, get yak from form data, otherwise from query params
-    if request.headers.get("HX-Request") == "true":
+    yak_dir = await get_yak_dir()
+
+    if request.headers.get("HX-Request") == "true":  # POST logic
         form_data = await request.form()
         yak_path_str = str(form_data.get("yak", ""))
     else:
         yak_path_str = request.query_params.get("yak") or ""
 
     if not yak_path_str:
-        return render_error("No yak specified")
+        return render_error("No `yak` path specified")
 
     try:
-        yak_path = Path(yak_path_str)
-        if not await yak_path.exists() or not await yak_path.is_file():
+        yak_path = yak_dir / yak_path_str
+
+        if not await yak_path.is_file():
             return render_error(f"Yak not found: {yak_path}", status_code=HTTPStatus.NOT_FOUND)
 
-        # If the request includes content, save the changes
         if request.method == "POST":
             form_data = await request.form()
             content = str(form_data.get("content", ""))
             await yak_path.write_text(content, encoding="utf-8")
+            return HTMLResponse("")  # Return empty response, JS handles the status update
 
-            # Check if this is an HTMX request
-            if request.headers.get("HX-Request") == "true":
-                # Return empty response, JS handles the status update
-                return HTMLResponse("")
-            # Traditional form submission - redirect
-            return RedirectResponse(url=f"/edit?yak={yak_path_str}", status_code=303)
-
-        # Generate HTML editor
         content = await yak_path.read_text(encoding="utf-8")
-        return render_yak_edit(str(yak_path), content)
+        relative_path = yak_path.relative_to(yak_dir).as_posix()
+        return render_yak_edit(relative_path, content)
     except Exception as e:
         return render_error(f"An error occurred: {e!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
