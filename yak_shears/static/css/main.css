@@ -150,6 +150,12 @@ button {
 	color: var(--color-text);
 }
 
+.nav__link--active {
+	background: var(--color-accent);
+	color: #000;
+	font-weight: 600;
+}
+
 .nav__item {
 	color: var(--color-text);
 	font-weight: 600;

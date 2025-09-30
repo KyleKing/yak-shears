@@ -109,7 +109,7 @@
        <nav>
         <ul class="nav__list">
          <li>
-          <a class="nav__link" href="/yaks">
+          <a class="nav__link nav__link--active" href="/yaks">
            Yaks
           </a>
          </li>

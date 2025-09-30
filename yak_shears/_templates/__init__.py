@@ -119,6 +119,7 @@ def render_yaks(
         sort_by=sort_by,
         current_category=current_category,
         categories=categories,
+        current_route="yaks",
     )
 
 
