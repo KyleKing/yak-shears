@@ -47,9 +47,9 @@ run = ["uv run mypy"]
 [tools]
 "npm:@biomejs/biome" = "latest"
 "npm:dprint" = "latest"
-python = "latest"
 "npm:terser" = "latest"
 "npm:typescript" = "latest"
+python = "latest"
 
 [vars]
 unsafe_fixes = '' # PLANNED: This doesn't actually work. Previously: `{{option(name="unsafe_fixes")}}`
