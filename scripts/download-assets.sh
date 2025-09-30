@@ -12,6 +12,6 @@ echo -e "\nDownloading and converting Codejar to minified JS $CODEJAR_VERSION"
 TEMP_DIR=$(mktemp -d)
 curl --progress-bar -o "$TEMP_DIR/codejar.ts" "https://raw.githubusercontent.com/antonmedv/codejar/$CODEJAR_VERSION/codejar.ts"
 tsc "$TEMP_DIR/codejar.ts" --outDir "$TEMP_DIR" --target ES2015 --module ES2015 --noEmitOnError
-sed 's/^export /window./' "$TEMP_DIR/codejar.js" > "$TEMP_DIR/codejar_sed.js"
+sed 's/^export //' "$TEMP_DIR/codejar.js" > "$TEMP_DIR/codejar_sed.js"
 terser "$TEMP_DIR/codejar_sed.js" -o "yak_shears/static/js/codejar.min.js" --compress --mangle
 rm -rf "$TEMP_DIR"
