@@ -60,13 +60,20 @@ async def check_connection(*, timeout_s: float, url: str) -> None:
 async def server_lifecycle():
     """Start and stop the server."""
     env = {**os.environ, "YAK_SHEARS_DIR": MOCK_YAK_DIR.as_posix()}
-    process = await asyncio.create_subprocess_exec("uv", "run", "serve", "--port", PORT, env=env)
+    process = await asyncio.create_subprocess_exec(
+        "uv", "run", "serve", "--port", PORT, env=env, stderr=asyncio.subprocess.PIPE
+    )
     await check_connection(timeout_s=5, url=BASE_URL)
+    if process.returncode is not None:
+        stderr_output = await process.stderr.read() if process.stderr else b""
+        error_msg = stderr_output.decode().strip() or f"exit code {process.returncode}"
+        msg = f"Server failed to start: {error_msg}"
+        raise RuntimeError(msg)
 
     async def shutdown():
         if process.returncode is None:
-            process.kill()
-        await process.wait()
+            process.terminate()
+            await asyncio.wait_for(process.wait(), timeout=5.0)
 
     try:
         try:
