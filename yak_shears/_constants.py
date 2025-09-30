@@ -1,3 +1,3 @@
 """App constants."""
 
-DEFAULT_REDIRECT = "/files"
+DEFAULT_REDIRECT = "/yaks"

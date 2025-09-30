@@ -28,8 +28,7 @@ async def _validate_highlight(page: Page, fill: str, editor_locator: str, expect
 async def test_editor_highlight_behavior(context: BrowserContext, page: Page, server_lifecycle):
     await login(context, page)
 
-    yak_path = MOCK_YAK_DIR / "file1.dj"
-    await page.goto(f"/edit?yak={yak_path}")
+    await page.goto(f"/edit?yak=yak1.dj")
     editor = page.locator(".editor")
     await expect(editor).to_be_editable()
 
@@ -64,6 +63,7 @@ async def test_edit_save_persistence(context: BrowserContext, page: Page, server
     """Test that edits are saved and persist after page refresh."""
     await login(context, page)
 
+    # TODO: Find a way for server_lifecycle with configurable directories
     yak_path = MOCK_YAK_DIR / "yak0-untracked.dj"
     yak_path.write_text("Placeholder")
     try:

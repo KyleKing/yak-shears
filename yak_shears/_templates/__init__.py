@@ -110,11 +110,11 @@ def render_yaks_list(
         HTMLResponse with the yaks listing template
     """
     return _render_template(
-        "file/files_list.html.jinja",
-        files=yaks,
+        "yak/yaks_list.html.jinja",
+        yaks=yaks,
         current_page=current_page,
         total_pages=total_pages,
-        total_files=total_yaks,
+        total_yaks=total_yaks,
         yak_dir_label=yak_dir_label,
         sort_by=sort_by,
         current_category=current_category,
@@ -133,4 +133,4 @@ def render_yak_edit(yak_path: str, content: str) -> HTMLResponse:
         HTMLResponse with the yak editor template
     """
     yak_name = SyncPath(yak_path).name
-    return _render_template("file/edit.html.jinja", yak_name=yak_name, yak_path=yak_path, content=content)
+    return _render_template("yak/edit.html.jinja", yak_name=yak_name, yak_path=yak_path, content=content)

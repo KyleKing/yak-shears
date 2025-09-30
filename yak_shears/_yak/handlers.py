@@ -113,13 +113,13 @@ async def get_djot_yaks(paths: list[Path], query_params: YaksQueryParams) -> tup
         paths = sorted(paths, key=lambda pth: pth.name.lower(), reverse=True)
 
     page_size = query_params.page_size
-    total_files = len(paths)
-    total_pages = (total_files + page_size - 1) // page_size
+    total_yaks = len(paths)
+    total_pages = (total_yaks + page_size - 1) // page_size
 
     start_idx = (query_params.page - 1) * page_size
-    end_idx = min(start_idx + page_size, total_files)
+    end_idx = min(start_idx + page_size, total_yaks)
 
-    return paths[start_idx:end_idx], total_files, total_pages
+    return paths[start_idx:end_idx], total_yaks, total_pages
 
 
 async def prepare_yaks(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
@@ -130,26 +130,26 @@ async def prepare_yaks(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
         yak_dir: Base directory for computing relative paths
 
     Returns:
-        List of FileInfo objects containing yak information for template
+        List of YakInfo objects containing yak information for template
     """
-    files = []
-    for file_path in paths:
-        file_stats = await file_path.stat()
-        last_modified = datetime.fromtimestamp(file_stats.st_mtime, tz=UTC).strftime("%Y-%m-%d %H:%M:%S")
-        content = await file_path.read_text(encoding="utf-8")
+    yaks = []
+    for yak_path in paths:
+        yak_stats = await yak_path.stat()
+        last_modified = datetime.fromtimestamp(yak_stats.st_mtime, tz=UTC).strftime("%Y-%m-%d %H:%M:%S")
+        content = await yak_path.read_text(encoding="utf-8")
         preview = content[:PREVIEW_LENGTH].replace("\n", " ")
 
         info = YakInfo(
-            category=file_path.parent.name,
+            category=yak_path.parent.name,
             last_modified=last_modified,
-            name=file_path.name,
-            path=file_path.relative_to(yak_dir).as_posix(),
+            name=yak_path.name,
+            path=yak_path.relative_to(yak_dir).as_posix(),
             preview=preview,
             truncated=len(content) > PREVIEW_LENGTH,
         )
-        files.append(info)
+        yaks.append(info)
 
-    return files
+    return yaks
 
 
 async def get_yak_dir() -> Path:
@@ -158,7 +158,7 @@ async def get_yak_dir() -> Path:
 
 
 async def yaks_handler(request: Request) -> Response:
-    """Handle requests to /files.
+    """Handle requests to /yaks.
 
     Args:
         request: The incoming request

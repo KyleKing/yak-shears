@@ -10,15 +10,15 @@ from starlette.staticfiles import StaticFiles
 from yak_shears._auth.middleware import AuthMiddleware
 from yak_shears._auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
 from yak_shears._auth.routes import ROUTES as AUTH_ROUTES
-from yak_shears._file.routes import ROUTES as FILE_ROUTES
 from yak_shears._log_utils import log
+from yak_shears._yak.routes import ROUTES as YAK_ROUTES
 
 from ._handlers import favicon_handler, not_found, root_handler
 
 ROUTES = [
     Route("/", endpoint=root_handler),
     Route("/favicon.ico", endpoint=favicon_handler),
-    *FILE_ROUTES,
+    *YAK_ROUTES,
     *AUTH_ROUTES,
 ]
 

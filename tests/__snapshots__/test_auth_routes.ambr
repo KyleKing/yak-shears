@@ -17,7 +17,7 @@
     <header class="header">
      <div class="container">
       <div class="header__bar">
-       <a class="brand" href="/files">
+       <a class="brand" href="/yaks">
         <div class="brand__logo">
          YS
         </div>
@@ -28,7 +28,7 @@
        <nav>
         <ul class="nav__list">
          <li>
-          <a class="nav__link" href="/files">
+          <a class="nav__link" href="/yaks">
            Yaks
           </a>
          </li>
@@ -43,7 +43,7 @@
        Login
       </h1>
       <form action="/auth/login" class="form" method="post">
-       <input name="redirect" type="hidden" value="/files"/>
+       <input name="redirect" type="hidden" value="/yaks"/>
        <div class="form__group">
         <label class="form__label" for="email">
          Email
@@ -94,7 +94,7 @@
     <header class="header">
      <div class="container">
       <div class="header__bar">
-       <a class="brand" href="/files">
+       <a class="brand" href="/yaks">
         <div class="brand__logo">
          YS
         </div>
@@ -105,7 +105,7 @@
        <nav>
         <ul class="nav__list">
          <li>
-          <a class="nav__link" href="/files">
+          <a class="nav__link" href="/yaks">
            Yaks
           </a>
          </li>

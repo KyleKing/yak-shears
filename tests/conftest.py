@@ -16,7 +16,7 @@ from yak_shears._auth import handlers
 from yak_shears._auth.models import HashedPassword, Password, User
 from yak_shears._auth.storage import create_user
 
-MOCK_YAK_DIR = SyncPath(__file__).parent / "test_data/mock_djot_files"
+MOCK_YAK_DIR = SyncPath(__file__).parent / "test_data/mock_djot_dir_0"
 
 
 @contextmanager

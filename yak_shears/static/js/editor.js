@@ -20,10 +20,10 @@ function initEditor() {
 		});
 		window.jar = jar; // Expose for testing
 
-		// Use the filename from the URL for the key
-		const filename = new URLSearchParams(window.location.search).get("yak");
-		if (filename === null) throw new Error("URL does not have file parameter.");
-		const storageKey = `editor_${filename}`;
+		// Use the path from the URL for the key
+		const yak_path = new URLSearchParams(window.location.search).get("yak");
+		if (yak_path === null) throw new Error("URL does not have file parameter.");
+		const storageKey = `editor_${yak_path}`;
 		const serverContent = window.serverContent;
 		editor.textContent = serverContent;
 		highlight(editor); // Otherwise only run on key presses

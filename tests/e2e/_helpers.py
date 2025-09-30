@@ -19,7 +19,7 @@ async def login(context: BrowserContext, page: Page) -> None:
         await page.get_by_role("textbox", name="Password").fill(SAMPLE_USER_PASSWORD)
         await page.get_by_role("button", name="Login").click()
 
-        await page.wait_for_url("/files")
+        await page.wait_for_url("/yaks")
         await page.wait_for_load_state("load")
 
         await context.storage_state(path=PLAYWRIGHT_AUTH_PATH)

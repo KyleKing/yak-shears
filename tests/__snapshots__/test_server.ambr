@@ -1,5 +1,5 @@
 # serializer version: 1
-# name: test_edit_file_get
+# name: test_edit_yak_get
   '''
   <!DOCTYPE html>
   <html lang="en">
@@ -23,7 +23,7 @@
     <header class="header">
      <div class="container">
       <div class="header__bar">
-       <a class="brand" href="/files">
+       <a class="brand" href="/yaks">
         <div class="brand__logo">
          YS
         </div>
@@ -34,7 +34,7 @@
        <nav>
         <ul class="nav__list">
          <li>
-          <a class="nav__link" href="/files">
+          <a class="nav__link" href="/yaks">
            Yaks
           </a>
          </li>
@@ -65,7 +65,7 @@
      </div>
     </main>
     <script>
-     window.serverContent = "Test file content";
+     window.serverContent = "Test yak content";
     </script>
     <script src="/static/js/editor.js" type="module">
     </script>
@@ -74,7 +74,7 @@
   
   '''
 # ---
-# name: test_files_endpoint
+# name: test_yaks_endpoint
   '''
   <!DOCTYPE html>
   <html lang="en">
@@ -82,7 +82,7 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>
-     Yaks in ./test_data/mock_djot_files
+     Yaks in ./test_data/mock_djot_dir_0
     </title>
     <link href="/static/css/main.css" rel="stylesheet"/>
     <script src="/static/js/htmx.min.js">
@@ -92,7 +92,7 @@
     <header class="header">
      <div class="container">
       <div class="header__bar">
-       <a class="brand" href="/files">
+       <a class="brand" href="/yaks">
         <div class="brand__logo">
          YS
         </div>
@@ -103,7 +103,7 @@
        <nav>
         <ul class="nav__list">
          <li>
-          <a class="nav__link" href="/files">
+          <a class="nav__link" href="/yaks">
            Yaks
           </a>
          </li>
@@ -115,19 +115,19 @@
     <main class="layout__inner">
      <div class="container">
       <h1>
-       Yaks in ./test_data/mock_djot_files
+       Yaks in ./test_data/mock_djot_dir_0
       </h1>
       <p>
-       Showing 4 of 4 yaks (Page 1 of 1)
+       Showing 3 of 3 yaks (Page 1 of 1)
       </p>
       <div class="sort-controls">
        <span class="sort-controls__label">
         Sort by:
        </span>
-       <a class="button button--sm button--primary" href="/files?sort_by=name">
+       <a class="button button--sm button--primary" href="/yaks?sort_by=name">
         Name (Created At)
        </a>
-       <a class="button button--sm" href="/files?sort_by=modified_date">
+       <a class="button button--sm" href="/yaks?sort_by=modified_date">
         Modified Date
        </a>
       </div>
@@ -135,24 +135,24 @@
        <span class="filter-controls__label">
         Filter by category:
        </span>
-       <a class="button button--sm button--primary" href="/files?sort_by=name">
+       <a class="button button--sm button--primary" href="/yaks?sort_by=name">
         All
        </a>
-       <a class="button button--sm" href="/files?sort_by=name&amp;category=mock_djot_files">
-        mock_djot_files
+       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=mock_djot_dir_0">
+        mock_djot_dir_0
        </a>
-       <a class="button button--sm" href="/files?sort_by=name&amp;category=subdirectory-2">
+       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=subdirectory-2">
         subdirectory-2
        </a>
-       <a class="button button--sm" href="/files?sort_by=name&amp;category=subdirectory-3">
+       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=subdirectory-3">
         subdirectory-3
        </a>
       </div>
       <div class="cards">
-       <a class="card" href="/edit?yak=subdirectory-3/file3.dj">
+       <a class="card" href="/edit?yak=subdirectory-3/yak3.dj">
         <div class="card__body">
          <p>
-          # File 3  This is a test file number 3  Unrelated to file 1 or file 2
+          # Yak 3  This is a test yak number 3  Unrelated to yak 1 or yak 2
          </p>
         </div>
         <div class="card__actions">
@@ -164,10 +164,10 @@
          </span>
         </div>
        </a>
-       <a class="card" href="/edit?yak=subdirectory-2/file2.dj">
+       <a class="card" href="/edit?yak=subdirectory-2/yak2.dj">
         <div class="card__body">
          <p>
-          # File 2  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 2
+          # Yak 2  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;  This is a test yak number 2
          </p>
         </div>
         <div class="card__actions">
@@ -179,10 +179,10 @@
          </span>
         </div>
        </a>
-       <a class="card" href="/edit?yak=file1.dj">
+       <a class="card" href="/edit?yak=yak1.dj">
         <div class="card__body">
          <p>
-          # File 1  &lt;https://www.ecosia.org/search?method=index&amp;q=file&gt;  This is a test file number 1
+          # Yak 1  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;  This is a test yak number 1
          </p>
         </div>
         <div class="card__actions">
@@ -190,22 +190,7 @@
           2025-05-01 10:00:00
          </span>
          <span class="badge">
-          mock_djot_files
-         </span>
-        </div>
-       </a>
-       <a class="card" href="/edit?yak=file0-untracked.dj">
-        <div class="card__body">
-         <p>
-          Placeholder
-         </p>
-        </div>
-        <div class="card__actions">
-         <span class="badge">
-          2025-05-01 10:00:00
-         </span>
-         <span class="badge">
-          mock_djot_files
+          mock_djot_dir_0
          </span>
         </div>
        </a>
