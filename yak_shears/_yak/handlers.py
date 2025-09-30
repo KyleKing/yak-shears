@@ -73,7 +73,7 @@ async def get_yaks(pth: Path) -> list[Path]:
     """
     if not await pth.exists() or not await pth.is_dir():
         return []
-    return [f async for f in pth.rglob("*.dj") if await f.is_file()]
+    return [_f async for _f in pth.rglob("*.dj") if await _f.is_file()]
 
 
 async def get_categories(all_paths: list[Path]) -> set[str]:
@@ -85,7 +85,7 @@ async def get_categories(all_paths: list[Path]) -> set[str]:
     Returns:
         List of category names (parent directory names)
     """
-    return {f.parent.name for f in all_paths if await f.is_file()}
+    return {_f.parent.name for _f in all_paths if await _f.is_file()}
 
 
 async def get_djot_yaks(paths: list[Path], query_params: YaksQueryParams) -> tuple[list[Path], int, int]:
@@ -102,7 +102,7 @@ async def get_djot_yaks(paths: list[Path], query_params: YaksQueryParams) -> tup
         return [], 0, 0
 
     if query_params.category:
-        paths = [f for f in paths if f.parent.name == query_params.category]
+        paths = [_f for _f in paths if _f.parent.name == query_params.category]
 
     if query_params.sort_by == SortBy.MODIFIED_DATE:
         # Collect mtimes asynchronously, then sort DESC

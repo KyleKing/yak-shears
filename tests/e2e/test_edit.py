@@ -28,7 +28,7 @@ async def _validate_highlight(page: Page, fill: str, editor_locator: str, expect
 async def test_editor_highlight_behavior(context: BrowserContext, page: Page, server_lifecycle):
     await login(context, page)
 
-    await page.goto(f"/edit?yak=yak1.dj")
+    await page.goto("/edit?yak=yak1.dj")
     editor = page.locator(".editor")
     await expect(editor).to_be_editable()
 
