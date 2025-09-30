@@ -101,6 +101,12 @@ button {
 	align-items: center;
 }
 
+.header__center {
+	flex: 1;
+	text-align: center;
+	font-weight: 600;
+}
+
 .brand {
 	display: flex;
 	align-items: center;
@@ -142,6 +148,11 @@ button {
 .nav__link:hover {
 	background: var(--color-surface-alt);
 	color: var(--color-text);
+}
+
+.nav__item {
+	color: var(--color-text);
+	font-weight: 600;
 }
 
 .button {
@@ -223,6 +234,7 @@ button {
 	flex-wrap: wrap;
 }
 
+/* TODO: rename these classes and associated HTML for `login*` */
 .form {
 	max-width: 400px;
 	margin: 0 auto;
@@ -273,7 +285,6 @@ code {
 	background: var(--color-surface-alt);
 	padding: 0.2em 0.4em;
 	border-radius: 0.25rem;
-	font-size: 0.9em;
 }
 
 pre {
@@ -281,7 +292,6 @@ pre {
 	padding: var(--space-4);
 	border-radius: var(--radius-sm);
 	overflow-x: auto;
-	font-size: 0.9em;
 	line-height: 1.4;
 }
 
@@ -292,12 +302,13 @@ pre code {
 
 .editor {
 	background: var(--color-surface);
-	border: 1px solid var(--color-border);
 	border-radius: var(--radius-sm);
-	padding: var(--space-4);
-	font-size: 0.9rem;
+	border: 1px solid var(--color-border);
 	line-height: 1.5;
+	margin: 0 auto 5rem auto;
+	max-width: 1000px;
 	min-height: 300px;
+	padding: var(--space-4);
 	white-space: pre-wrap;
 }
 
@@ -312,6 +323,14 @@ pre code {
 	display: flex;
 	gap: var(--space-3);
 	align-items: center;
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background: var(--color-bg);
+	padding: var(--space-3);
+	border-top: 1px solid var(--color-border);
+	z-index: 10;
 }
 
 .editor__status {
@@ -330,11 +349,6 @@ pre code {
 	color: var(--color-danger);
 }
 
-.editor__form {
-	max-width: 800px;
-}
-
-/* For CodeJar */
 .editor .heading {
 	font-weight: 600;
 }

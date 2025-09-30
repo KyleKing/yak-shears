@@ -31,6 +31,11 @@
          Yak Shears
         </span>
        </a>
+       <div class="header__center">
+        <span>
+         Editing: test.dj
+        </span>
+       </div>
        <nav>
         <ul class="nav__list">
          <li>
@@ -46,22 +51,21 @@
     <main class="layout__inner">
      <div class="container">
       <div class="editor__header">
-       <h1>
-        Editing test.dj
-       </h1>
       </div>
-      <form hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent()}" id="editor_form" method="post">
+      <form id="editor_form" method="post">
        <input name="yak" type="hidden" value="test.dj"/>
        <div class="editor" data-gramm="false" data-manual="">
        </div>
-       <div class="editor__actions">
-        <button class="button button--primary" id="save-btn" type="submit">
+      </form>
+      <div class="editor__actions">
+       <div class="container">
+        <button class="button button--primary" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent(), yak: 'test.dj'}" id="save-btn">
          Save Changes
         </button>
         <span class="editor__status" id="save-status">
         </span>
        </div>
-      </form>
+      </div>
      </div>
     </main>
     <script>
@@ -100,6 +104,8 @@
          Yak Shears
         </span>
        </a>
+       <div class="header__center">
+       </div>
        <nav>
         <ul class="nav__list">
          <li>

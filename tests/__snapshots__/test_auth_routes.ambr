@@ -25,6 +25,8 @@
          Yak Shears
         </span>
        </a>
+       <div class="header__center">
+       </div>
        <nav>
         <ul class="nav__list">
          <li>
@@ -102,6 +104,8 @@
          Yak Shears
         </span>
        </a>
+       <div class="header__center">
+       </div>
        <nav>
         <ul class="nav__list">
          <li>

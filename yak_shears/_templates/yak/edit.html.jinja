@@ -8,19 +8,24 @@
 
 {% block title %}Editing {{ yak_name }}{% endblock %}
 
-{% block content %}
-  <div class="editor__header">
-    <h1>Editing {{ yak_name }}</h1>
-  </div>
+{% block header_center %}
+  <span>Editing: {{ yak_name }}</span>
+{% endblock %}
 
-  <form id="editor_form" method="post" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent()}">
+{% block content %}
+  <div class="editor__header"></div>
+
+  <form id="editor_form" method="post">
     <input type="hidden" name="yak" value="{{ yak_path }}">
     <div class="editor" data-manual data-gramm="false"></div>
-    <div class="editor__actions">
-      <button class="button button--primary" type="submit" id="save-btn">Save Changes</button>
+  </form>
+
+  <div class="editor__actions">
+    <div class="container">
+      <button class="button button--primary" id="save-btn" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent(), yak: '{{ yak_path }}'}">Save Changes</button>
       <span id="save-status" class="editor__status"></span>
     </div>
-  </form>
+  </div>
 {% endblock %}
 
 {% block scripts %}
