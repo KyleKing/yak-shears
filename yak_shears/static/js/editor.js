@@ -20,13 +20,24 @@ function initEditor() {
 		});
 		window.jar = jar; // Expose for testing
 
-		// Use the path from the URL for the key
+		editor.addEventListener(
+			"keydown",
+			function (e) {
+				if (e.metaKey && e.key === "Enter") {
+					e.preventDefault();
+					document.getElementById("save-btn").click();
+				}
+			},
+			true,
+		);
+
+		// Use the full unique yak path from the URL for local storage
 		const yak_path = new URLSearchParams(window.location.search).get("yak");
 		if (yak_path === null) throw new Error("URL does not have file parameter.");
 		const storageKey = `editor_${yak_path}`;
 		const serverContent = window.serverContent;
 		editor.textContent = serverContent;
-		highlight(editor); // Otherwise only run on key presses
+		highlight(editor); // Highlight on load rather than waiting for key press
 
 		const saved = localStorage.getItem(storageKey);
 		if (saved && saved !== serverContent) {
@@ -59,14 +70,14 @@ function initEditor() {
 
 		// HTMX event listeners for feedback
 		document.body.addEventListener("htmx:beforeRequest", function (evt) {
-			if (evt.target.id === "editor_form") {
+			if (evt.target.id === "save-btn") {
 				document.getElementById("save-btn").disabled = true;
 				document.getElementById("save-status").textContent = "Saving...";
 			}
 		});
 
 		document.body.addEventListener("htmx:afterRequest", function (evt) {
-			if (evt.target.id === "editor_form") {
+			if (evt.target.id === "save-btn") {
 				document.getElementById("save-btn").disabled = false;
 				if (evt.detail.successful) {
 					updateSaveStatus("Saved");
