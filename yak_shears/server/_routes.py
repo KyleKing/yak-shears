@@ -1,6 +1,7 @@
 """Server routes for Yak Shears."""
 
 import argparse
+import socket
 
 import uvicorn
 from starlette.applications import Starlette
@@ -67,6 +68,11 @@ def start(
         reload: Whether to reload the server on code changes
         no_auth: Turn off auth middleware. Only use for local development and only allowed when reload is also specified
     """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:
+        if soc.connect_ex((host, port)) == 0:
+            msg = f"Port {port} is already in use on {host}"
+            raise RuntimeError(msg)
+
     log(f"Server running at http://{host}:{port}")
 
     if reload:
