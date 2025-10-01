@@ -10,7 +10,7 @@ from operator import itemgetter
 from pathlib import Path as SyncPath
 from typing import Self
 
-import duckdb
+import duckdb  # type: ignore[import-untyped]
 from anyio import Path
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
