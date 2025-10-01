@@ -29,6 +29,16 @@ class YakInfo:
     truncated: bool
 
 
+@dataclass(frozen=True)
+class SearchResult:
+    """Search result for template rendering."""
+
+    path: str
+    line_num: int
+    preview: str
+    word: str
+
+
 TEMPLATE_DIR = SyncPath(__file__).parent
 
 ENV = Environment(
@@ -168,3 +178,16 @@ def render_yak_new(categories: set[str]) -> HTMLResponse:
         HTMLResponse with the new yak template
     """
     return _render_template("yak/new.html.jinja", categories=categories, current_route="new")
+
+
+def render_search(results: list[SearchResult], query: str) -> HTMLResponse:
+    """Render the search results page.
+
+    Args:
+        results: List of search results
+        query: The search query
+
+    Returns:
+        HTMLResponse with the search template
+    """
+    return _render_template("search.html.jinja", results=results, query=query, current_route="search")

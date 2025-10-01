@@ -64,6 +64,14 @@ def test_yaks_endpoint(client: TestClient, mock_user_session, snapshot) -> None:
         assert "yak3.dj" in response.text
 
 
+def test_search_endpoint(client: TestClient, mock_user_session) -> None:
+    """Test the search endpoint."""
+    with set_yak_shears_dir(MOCK_YAK_DIR):
+        response = client.get("/search?q=test")
+        assert response.status_code == HTTPStatus.OK
+        assert "Search Yaks" in response.text
+
+
 def test_not_found(client: TestClient, mock_user_session) -> None:
     """Test the 404 handler."""
     response = client.get("/non_existent_endpoint")

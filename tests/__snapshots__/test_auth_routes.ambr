@@ -35,6 +35,11 @@
           </a>
          </li>
          <li>
+          <a class="nav__link" href="/search">
+           Search
+          </a>
+         </li>
+         <li>
           <a class="nav__link" href="/new">
            New
           </a>
@@ -116,6 +121,11 @@
          <li>
           <a class="nav__link" href="/yaks">
            Yaks
+          </a>
+         </li>
+         <li>
+          <a class="nav__link" href="/search">
+           Search
           </a>
          </li>
          <li>

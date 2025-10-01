@@ -119,14 +119,19 @@ TODO: Not yet implemented
 
 ### Search
 
-TODO: Not yet implemented
+Implemented as a full page at /search with fuzzy search using persistent DuckDB database.
 
+- Uses DuckDB levenshtein distance for fuzzy matching
+- Persistent database (`yak_shears_search.db`) stores indexed words from all yak files
+- Lazy updates: only re-indexes when files change and not more than once per minute
 - Inspired by Telescope for nvim
-- There is a text input, which is full width
- - There is sidebar with is 1/2 width and a yak preview
- - The search sidebar shows each matched yak with an abbreviated preview
- - The search preview highlights what was matched during the search
-- Search can either be a full page or a modal triggered by a button on the keyboard in mobile or ctrl-p on desktop
+- In the "Telescope-style" nearly full-width modal:
+    - There is a text input, which is full width
+     - There is sidebar with is 1/2 width and a yak preview
+     - The search sidebar shows each matched yak with an abbreviated preview
+     - The search preview highlights what was matched during the search
+- Keyboard navigation: Use arrow keys to navigate results, Enter to open selected yak
+- Search can either be a full page or a modal triggered by a button on the keyboard in mobile or ctrl-p on desktop (modal implementation TBD)
 
 ## Page Specifications
 

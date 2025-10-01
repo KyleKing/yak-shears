@@ -1,0 +1,52 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}Search Yaks{% endblock %}
+
+{% block extra_head %}
+  <script src="/static/js/search.js?v=2"></script>
+{% endblock %}
+
+{% block content %}
+  <div class="search-modal">
+    <div class="search-input-container">
+      <form action="/search" method="get" class="search-form" hx-get="/search" hx-target="#search-results-container" hx-trigger="input changed delay:300ms, submit">
+        <input
+          type="text"
+          name="q"
+          value="{{ query }}"
+          placeholder="Search yaks..."
+          class="search-input"
+          autofocus
+        >
+      </form>
+    </div>
+
+    <div class="search-content" id="search-results-container">
+      {% if query %}
+        <div class="search-results-sidebar">
+          <div class="search-results-count">Found {{ results | length }} matches for "{{ query }}"</div>
+          <div class="search-results-list" id="search-results-list">
+            {% for result in results %}
+              <div class="search-result" data-path="{{ result.path }}" data-line="{{ result.line_num }}">
+                <div class="search-result__path">{{ result.path }}</div>
+                <div class="search-result__preview">{{ result.preview }}</div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="search-preview" id="search-preview">
+          {% if results %}
+            <div class="search-preview-content" id="search-preview-content">
+              <!-- Preview will be loaded here -->
+            </div>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="search-empty">
+          <p>Start typing to search your yaks...</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
