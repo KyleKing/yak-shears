@@ -222,6 +222,7 @@ async def edit_yak_handler(request: Request) -> Response:
 
         content = await yak_path.read_text(encoding="utf-8")
         relative_path = yak_path.relative_to(yak_dir).as_posix()
-        return render_yak_edit(relative_path, content)
+        category = yak_path.parent.name if yak_path.parent != yak_dir else ""
+        return render_yak_edit(relative_path, content, category)
     except Exception as e:
         return render_error(f"An error occurred: {e!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)

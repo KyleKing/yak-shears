@@ -189,18 +189,6 @@ button {
 	font-size: 0.8rem;
 }
 
-.badge {
-	display: inline-flex;
-	align-items: center;
-	padding: var(--space-2) var(--space-3);
-	background: var(--color-accent);
-	color: #000;
-	border-radius: var(--radius-pill);
-	font-size: 0.7rem;
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
 .cards {
 	display: grid;
 	gap: var(--space-4);
@@ -212,7 +200,7 @@ button {
 	flex-direction: column;
 	padding: var(--space-5);
 	background: var(--color-surface);
-	border: 1px solid var(--color-border);
+	border: 3px solid var(--color-border);
 	border-radius: var(--radius-sm);
 	box-shadow: var(--shadow-sm);
 	transition:
@@ -220,6 +208,7 @@ button {
 		box-shadow var(--transition-fast);
 	text-decoration: none;
 	color: inherit;
+	position: relative;
 }
 
 .card:hover {
@@ -232,6 +221,33 @@ button {
 	margin-bottom: var(--space-3);
 	font-size: 0.9rem;
 	color: var(--color-text-dim);
+}
+
+.card__tooltip {
+	position: absolute;
+	bottom: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	background: var(--color-surface-alt);
+	color: var(--color-text);
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-sm);
+	border: 1px solid var(--color-border);
+	box-shadow: var(--shadow-md);
+	font-size: 0.8rem;
+	white-space: nowrap;
+	opacity: 0;
+	visibility: hidden;
+	transition:
+		opacity var(--transition-fast),
+		visibility var(--transition-fast);
+	pointer-events: none;
+	z-index: 10;
+}
+
+.card:hover .card__tooltip {
+	opacity: 1;
+	visibility: visible;
 }
 
 .card__actions {

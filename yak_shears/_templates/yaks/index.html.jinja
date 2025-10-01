@@ -17,21 +17,18 @@
       <span class="filter-controls__label">Filter by category:</span>
       <a href="/yaks?sort_by={{ sort_by }}" class="button button--sm {% if not current_category %}button--primary{% endif %}">All</a>
       {% for cat in categories | sort %}
-        <a href="/yaks?sort_by={{ sort_by }}&category={{ cat }}" class="button button--sm {% if current_category == cat %}button--primary{% endif %}">{{ cat }}</a>
+        <a href="/yaks?sort_by={{ sort_by }}&category={{ cat }}" class="button button--sm {% if current_category == cat %}button--primary{% endif %}" style="border-color: {{ get_category_color(cat) }}">{{ cat | title }}</a>
       {% endfor %}
     </div>
   {% endif %}
 
   <div class="cards">
     {% for info in yaks %}
-      <a href="/edit?yak={{ info.path }}" class="card">
+      <a href="/edit?yak={{ info.path }}" class="card" style="border-color: {{ get_category_color( info.category) }}">
         <div class="card__body">
           <p>{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
         </div>
-        <div class="card__actions">
-          <span class="badge">{{ info.last_modified }}</span>
-          <span class="badge">{{ info.category }}</span>
-        </div>
+        <div class="card__tooltip">{{ info.category }} | {{ info.name }} | {{ info.last_modified }}</div>
       </a>
     {% endfor %}
   </div>

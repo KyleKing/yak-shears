@@ -33,7 +33,7 @@
        </a>
        <div class="header__center">
         <span>
-         Editing: test.dj
+         Editing: test.dj (Root)
         </span>
        </div>
        <nav>
@@ -144,60 +144,45 @@
        <a class="button button--sm button--primary" href="/yaks?sort_by=name">
         All
        </a>
-       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=mock_djot_dir_0">
-        mock_djot_dir_0
+       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=mock_djot_dir_0" style="border-color: hsl(71, 70%, 50%)">
+        Mock_djot_dir_0
        </a>
-       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=subdirectory-2">
-        subdirectory-2
+       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=subdirectory-2" style="border-color: hsl(326, 70%, 50%)">
+        Subdirectory-2
        </a>
-       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=subdirectory-3">
-        subdirectory-3
+       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=subdirectory-3" style="border-color: hsl(327, 70%, 50%)">
+        Subdirectory-3
        </a>
       </div>
       <div class="cards">
-       <a class="card" href="/edit?yak=subdirectory-3/yak3.dj">
+       <a class="card" href="/edit?yak=subdirectory-3/yak3.dj" style="border-color: hsl(327, 70%, 50%)">
         <div class="card__body">
          <p>
           # Yak 3  This is a test yak number 3  Unrelated to yak 1 or yak 2
          </p>
         </div>
-        <div class="card__actions">
-         <span class="badge">
-          2025-05-01 10:00:00
-         </span>
-         <span class="badge">
-          subdirectory-3
-         </span>
+        <div class="card__tooltip">
+         subdirectory-3 | yak3.dj | 2025-05-01 10:00:00
         </div>
        </a>
-       <a class="card" href="/edit?yak=subdirectory-2/yak2.dj">
+       <a class="card" href="/edit?yak=subdirectory-2/yak2.dj" style="border-color: hsl(326, 70%, 50%)">
         <div class="card__body">
          <p>
           # Yak 2  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;  This is a test yak number 2
          </p>
         </div>
-        <div class="card__actions">
-         <span class="badge">
-          2025-05-01 10:00:00
-         </span>
-         <span class="badge">
-          subdirectory-2
-         </span>
+        <div class="card__tooltip">
+         subdirectory-2 | yak2.dj | 2025-05-01 10:00:00
         </div>
        </a>
-       <a class="card" href="/edit?yak=yak1.dj">
+       <a class="card" href="/edit?yak=yak1.dj" style="border-color: hsl(71, 70%, 50%)">
         <div class="card__body">
          <p>
           # Yak 1  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;  This is a test yak number 1
          </p>
         </div>
-        <div class="card__actions">
-         <span class="badge">
-          2025-05-01 10:00:00
-         </span>
-         <span class="badge">
-          mock_djot_dir_0
-         </span>
+        <div class="card__tooltip">
+         mock_djot_dir_0 | yak1.dj | 2025-05-01 10:00:00
         </div>
        </a>
       </div>
