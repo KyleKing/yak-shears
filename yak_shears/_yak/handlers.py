@@ -15,6 +15,7 @@ from anyio import Path
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
+from yak_shears._log_utils import log
 from yak_shears._templates import (
     SearchResult,
     SortBy,
@@ -28,17 +29,22 @@ from yak_shears._templates import (
 )
 
 MAX_WORD_LENGTH = 1000
+INDEX_UPDATE_INTERVAL_SECONDS = 60
 
 # Search database functions
 SEARCH_DB_PATH = SyncPath("yak_shears_search.db")
 
 
-def get_search_db():
-    """Get connection to search database."""
+def get_search_db() -> duckdb.DuckDBPyConnection:
+    """Get connection to search database.
+
+    Returns:
+        A DuckDB connection to the search database.
+    """
     return duckdb.connect(str(SEARCH_DB_PATH))
 
 
-def init_search_db():
+def init_search_db() -> None:
     """Initialize search database schema."""
     con = get_search_db()
     con.execute("""
@@ -64,30 +70,63 @@ def init_search_db():
     con.close()
 
 
-def get_last_update_time():
-    """Get the last update timestamp."""
+def get_last_update_time() -> float:
+    """Get the last update timestamp.
+
+    Returns:
+        The last update timestamp as a float.
+    """
     con = get_search_db()
     result = con.execute("SELECT value FROM metadata WHERE key = 'last_update'").fetchone()
     con.close()
     return float(result[0]) if result else 0
 
 
-def set_last_update_time(timestamp):
+def set_last_update_time(timestamp: float) -> None:
     """Set the last update timestamp."""
     con = get_search_db()
     con.execute("INSERT OR REPLACE INTO metadata (key, value) VALUES ('last_update', ?)", (str(timestamp),))
     con.close()
 
 
-def get_stored_files():
-    """Get dict of path -> mtime from database."""
+def get_stored_files() -> dict[str, float]:
+    """Get dict of path -> mtime from database.
+
+    Returns:
+        Dictionary mapping file paths to modification times.
+    """
     con = get_search_db()
     result = con.execute("SELECT path, mtime FROM files").fetchall()
     con.close()
     return {row[0]: row[1] for row in result}
 
 
-def update_search_index(yak_dir: SyncPath):
+def _process_file_words(dj_file: SyncPath, rel_path: str) -> list[tuple[str, int, str]]:
+    """Process a single file and return list of (path, line_num, word) tuples.
+
+    Returns:
+        List of tuples (path, line_num, word) for each word in the file.
+    """
+    words_data: list[tuple[str, int, str]] = []
+    try:
+        content = dj_file.read_text(encoding="utf-8")
+        lines = content.splitlines()
+        for line_num, line in enumerate(lines, 1):
+            raw_words = set(line.split())  # Use set to deduplicate
+            unique_words = set()
+            for raw_word in raw_words:
+                word = raw_word.lower().strip(".,!?;:\"'")
+                if len(word) > MAX_WORD_LENGTH:
+                    word = word[:MAX_WORD_LENGTH]
+                if word:
+                    unique_words.add(word)
+            words_data.extend((rel_path, line_num, word) for word in unique_words)
+    except Exception as exc:
+        log(f"WARNING: Skipping unreadable file {dj_file}: {exc}")
+    return words_data
+
+
+def update_search_index(yak_dir: SyncPath) -> None:
     """Update the search index with current files."""
     current_files = {}
     words_data = []
@@ -98,25 +137,7 @@ def update_search_index(yak_dir: SyncPath):
             rel_path = dj_file.relative_to(yak_dir).as_posix()
             mtime = dj_file.stat().st_mtime
             current_files[rel_path] = mtime
-
-            # Read content and extract words
-            try:
-                content = dj_file.read_text(encoding="utf-8")
-                lines = content.splitlines()
-                for line_num, line in enumerate(lines, 1):
-                    raw_words = set(line.split())  # Use set to deduplicate
-                    unique_words = set()
-                    for raw_word in raw_words:
-                        word = raw_word.lower().strip(".,!?;:\"'")
-                        if len(word) > MAX_WORD_LENGTH:
-                            word = word[:MAX_WORD_LENGTH]
-                        if word:
-                            unique_words.add(word)
-                    for word in unique_words:
-                        words_data.append((rel_path, line_num, word))
-            except Exception:
-                # Skip files that can't be read
-                continue
+            words_data.extend(_process_file_words(dj_file, rel_path))
 
     con = get_search_db()
     con.execute("BEGIN")
@@ -128,8 +149,8 @@ def update_search_index(yak_dir: SyncPath):
     deleted_paths = stored_paths - current_paths
     if deleted_paths:
         placeholders = ",".join("?" for _ in deleted_paths)
-        con.execute(f"DELETE FROM files WHERE path IN ({placeholders})", list(deleted_paths))
-        con.execute(f"DELETE FROM words WHERE path IN ({placeholders})", list(deleted_paths))
+        con.execute(f"DELETE FROM files WHERE path IN ({placeholders})", list(deleted_paths))  # noqa: S608
+        con.execute(f"DELETE FROM words WHERE path IN ({placeholders})", list(deleted_paths))  # noqa: S608
 
     # Update files table
     for path, mtime in current_files.items():
@@ -147,13 +168,17 @@ def update_search_index(yak_dir: SyncPath):
     set_last_update_time(time.time())
 
 
-def should_update_index(yak_dir: SyncPath):
-    """Check if search index should be updated."""
+def should_update_index(yak_dir: SyncPath) -> bool:
+    """Check if search index should be updated.
+
+    Returns:
+        True if the index should be updated, False otherwise.
+    """
     now = time.time()
     last_update = get_last_update_time()
 
     # Don't update more than once per minute
-    if now - last_update < 60:
+    if now - last_update < INDEX_UPDATE_INTERVAL_SECONDS:
         return False
 
     # Check if any files have changed
@@ -169,10 +194,7 @@ def should_update_index(yak_dir: SyncPath):
     # Check for new or deleted files
     current_paths = {dj_file.relative_to(yak_dir).as_posix() for dj_file in yak_dir.rglob("*.dj") if dj_file.is_file()}
     stored_paths = set(stored_files.keys())
-    if current_paths != stored_paths:
-        return True
-
-    return False
+    return current_paths != stored_paths
 
 
 PREVIEW_LENGTH = 200
@@ -426,8 +448,8 @@ async def edit_yak_handler(request: Request) -> Response:
         relative_path = yak_path.relative_to(yak_dir).as_posix()
         category = yak_path.parent.name if yak_path.parent != yak_dir else ""
         return render_yak_edit(relative_path, content, category)
-    except Exception as e:
-        return render_error(f"An error occurred: {e!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+    except Exception as exc:
+        return render_error(f"An error occurred: {exc!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 async def search_handler(request: Request) -> Response:
@@ -479,14 +501,15 @@ async def search_handler(request: Request) -> Response:
         if key not in seen:
             seen.add(key)
             # Get the line content (simplified - could cache this)
+            file_path = sync_yak_dir / path
             try:
-                file_path = sync_yak_dir / path
                 content = file_path.read_text(encoding="utf-8")
                 lines = content.splitlines()
                 if 1 <= line_num <= len(lines):
                     preview = lines[line_num - 1].strip()
                     results.append(SearchResult(path=path, line_num=line_num, preview=preview, word=word))
-            except Exception:
+            except Exception as exc:
+                log(f"WARNING: Error reading file {file_path}: {exc}")
                 continue
 
     if is_htmx:
@@ -526,23 +549,22 @@ async def yak_preview_handler(request: Request) -> Response:
     preview_lines = lines[start_line:end_line]
 
     # Highlight matches
-    highlighted_lines = []
-    for i, preview_line in enumerate(preview_lines, start_line + 1):
-        highlighted_line = preview_line
+    def highlight_line(preview_line: str) -> str:
+        highlighted = preview_line
         if query:
-            # Split query into words and highlight each
             query_words = query.lower().split()
             for word in query_words:
                 if word.strip():
-                    # Use regex to find matches case-insensitively
                     pattern = re.compile(re.escape(word), re.IGNORECASE)
-                    highlighted_line = pattern.sub(
-                        lambda m: f'<span class="search-highlight">{m.group(0)}</span>', highlighted_line
+                    highlighted = pattern.sub(
+                        lambda m: f'<span class="search-highlight">{m.group(0)}</span>', highlighted
                     )
+        return highlighted
 
-        line_marker = ">" if i == line else " "
-        line_prefix = f"{line_marker}{i:4d}: "
-        highlighted_lines.append(f"{line_prefix}{highlighted_line}")
+    highlighted_lines = [
+        f"{' >' if i == line else '  '}{i:4d}: {highlight_line(preview_line)}"
+        for i, preview_line in enumerate(preview_lines, start_line + 1)
+    ]
 
     html = '<pre class="search-preview-content">' + "\n".join(highlighted_lines) + "</pre>"
 

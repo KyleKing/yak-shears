@@ -14,7 +14,7 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
 
     # Check the HTML head
     head_html = await page.locator("head").inner_html()
-    print(f"Head HTML: {head_html}")
+    assert head_html is not None
 
     # Enter search query
     search_input = page.locator(".search-input")
@@ -39,11 +39,12 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
     # Check data attributes
     data_path = await first_result.get_attribute("data-path")
     data_line = await first_result.get_attribute("data-line")
-    print(f"First result data-path: {data_path}, data-line: {data_line}")
+    assert data_path is not None
+    assert data_line is not None
 
     # Check if JavaScript loaded
     body_class = await page.get_attribute("body", "class")
-    print(f"Body class: {body_class}")
+    assert body_class is not None
 
     # Test clicking on result shows preview
     await first_result.click()
@@ -54,8 +55,8 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
     # Check that preview content is loaded
     preview_content = page.locator("#search-preview-content")
     preview_text = await preview_content.text_content()
-    print(f"Preview text: '{preview_text}'")
-    assert preview_text is not None and len(preview_text.strip()) > 0, "Preview should contain content"
+    assert preview_text is not None, "Preview text should not be None"
+    assert len(preview_text.strip()) > 0, "Preview should contain content"
 
     # Test arrow key navigation updates preview
     if count > 1:
@@ -68,9 +69,8 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
         # Check that preview content changed (different line numbers or content)
         new_preview_text = await preview_content.text_content()
         # The preview should be different or at least exist
-        assert new_preview_text is not None and len(new_preview_text.strip()) > 0, (
-            "Preview should still contain content after navigation"
-        )
+        assert new_preview_text is not None, "New preview text should not be None"
+        assert len(new_preview_text.strip()) > 0, "Preview should still contain content after navigation"
 
     # Test arrow key navigation updates preview
     if count > 1:
@@ -83,6 +83,5 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
         # Check that preview content changed (different line numbers or content)
         new_preview_text = await preview_content.text_content()
         # The preview should be different or at least exist
-        assert new_preview_text is not None and len(new_preview_text.strip()) > 0, (
-            "Preview should still contain content after navigation"
-        )
+        assert new_preview_text is not None, "New preview text should not be None after second navigation"
+        assert len(new_preview_text.strip()) > 0, "Preview should still contain content after second navigation"
