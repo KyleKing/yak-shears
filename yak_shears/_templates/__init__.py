@@ -156,3 +156,15 @@ def render_yak_edit(yak_path: str, content: str, category: str) -> HTMLResponse:
         content=content,
         category=(category or "root").title(),
     )
+
+
+def render_yak_new(categories: set[str]) -> HTMLResponse:
+    """Render the new yak creation page.
+
+    Args:
+        categories: Set of available categories
+
+    Returns:
+        HTMLResponse with the new yak template
+    """
+    return _render_template("yak/new.html.jinja", categories=categories, current_route="new")

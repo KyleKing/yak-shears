@@ -9,9 +9,9 @@ from typing import Self
 
 from anyio import Path
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, Response
+from starlette.responses import HTMLResponse, RedirectResponse, Response
 
-from yak_shears._templates import SortBy, YakInfo, render_error, render_yak_edit, render_yaks
+from yak_shears._templates import SortBy, YakInfo, render_error, render_yak_edit, render_yak_new, render_yaks
 
 PREVIEW_LENGTH = 200
 """Number of characters for content preview."""
@@ -186,6 +186,46 @@ async def yaks_handler(request: Request) -> Response:
         current_category=query_params.category,
         categories=categories,
     )
+
+
+async def new_yak_handler(request: Request) -> Response:
+    """Handle requests to /new.
+
+    Args:
+        request: The incoming request
+
+    Returns:
+        Response with new yak form or redirect to edit
+    """
+    yak_dir = await get_yak_dir()
+
+    all_paths = await get_yaks(yak_dir)
+    categories = await get_categories(all_paths)
+
+    if request.method == "POST":
+        form_data = await request.form()
+        category = str(form_data.get("new_category", "")).strip() or str(form_data.get("category", "")).strip()
+
+        if not category:
+            return render_error("Category is required")
+
+        # Create category directory if it doesn't exist
+        category_dir = yak_dir / category
+        await category_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate filename based on current timestamp
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+        filename = f"{timestamp}.dj"
+        yak_path = category_dir / filename
+
+        # Create empty file
+        await yak_path.write_text("", encoding="utf-8")
+
+        # Redirect to edit
+        relative_path = yak_path.relative_to(yak_dir).as_posix()
+        return RedirectResponse(f"/edit?yak={relative_path}", status_code=HTTPStatus.SEE_OTHER)
+
+    return render_yak_new(categories)
 
 
 async def edit_yak_handler(request: Request) -> Response:

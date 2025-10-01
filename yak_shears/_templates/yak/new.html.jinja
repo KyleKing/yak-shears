@@ -1,0 +1,33 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}New Yak{% endblock %}
+
+{% block header_center %}
+  <span>Creating New Yak</span>
+{% endblock %}
+
+{% block content %}
+  <h1>Create New Yak</h1>
+
+  <form method="post" class="form">
+    <div class="form__group">
+      <label for="category_select" class="form__label">Category:</label>
+      <select id="category_select" name="category" class="form__select">
+        <option value="">Select existing category...</option>
+        {% for cat in categories | sort %}
+          <option value="{{ cat }}">{{ cat | title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form__group">
+      <label for="new_category" class="form__label">Or create new category:</label>
+      <input type="text" id="new_category" name="new_category" class="form__input" placeholder="Enter new category name">
+    </div>
+
+    <div class="form__actions">
+      <button type="submit" class="button button--primary">Create Yak</button>
+      <a href="/yaks" class="button">Cancel</a>
+    </div>
+  </form>
+{% endblock %}
