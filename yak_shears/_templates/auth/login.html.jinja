@@ -4,17 +4,17 @@
 
 {% block content %}
   <h1>Login</h1>
-  <form class="form" method="post" action="/auth/login">
+  <form class="login-form" method="post" action="/auth/login">
     {% if redirect %}
       <input type="hidden" name="redirect" value="{{ redirect }}">
     {% endif %}
-    <div class="form__group">
-      <label class="form__label" for="email">Email</label>
-      <input class="form__control" type="email" id="email" name="email" required>
+    <div class="login-form__group">
+      <label class="login-form__label" for="email">Email</label>
+      <input class="login-form__control" type="email" id="email" name="email" required>
     </div>
-    <div class="form__group">
-      <label class="form__label" for="password">Password</label>
-      <input class="form__control" type="password" id="password" name="password" required>
+    <div class="login-form__group">
+      <label class="login-form__label" for="password">Password</label>
+      <input class="login-form__control" type="password" id="password" name="password" required>
     </div>
     {% if error %}
       <div class="alert alert--warn">

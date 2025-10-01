@@ -44,19 +44,19 @@
       <h1>
        Login
       </h1>
-      <form action="/auth/login" class="form" method="post">
+      <form action="/auth/login" class="login-form" method="post">
        <input name="redirect" type="hidden" value="/yaks"/>
-       <div class="form__group">
-        <label class="form__label" for="email">
+       <div class="login-form__group">
+        <label class="login-form__label" for="email">
          Email
         </label>
-        <input class="form__control" id="email" name="email" required="" type="email"/>
+        <input class="login-form__control" id="email" name="email" required="" type="email"/>
        </div>
-       <div class="form__group">
-        <label class="form__label" for="password">
+       <div class="login-form__group">
+        <label class="login-form__label" for="password">
          Password
         </label>
-        <input class="form__control" id="password" name="password" required="" type="password"/>
+        <input class="login-form__control" id="password" name="password" required="" type="password"/>
        </div>
        <div class="alert alert--warn">
         <strong>
@@ -123,18 +123,18 @@
       <h1>
        Login
       </h1>
-      <form action="/auth/login" class="form" method="post">
-       <div class="form__group">
-        <label class="form__label" for="email">
+      <form action="/auth/login" class="login-form" method="post">
+       <div class="login-form__group">
+        <label class="login-form__label" for="email">
          Email
         </label>
-        <input class="form__control" id="email" name="email" required="" type="email"/>
+        <input class="login-form__control" id="email" name="email" required="" type="email"/>
        </div>
-       <div class="form__group">
-        <label class="form__label" for="password">
+       <div class="login-form__group">
+        <label class="login-form__label" for="password">
          Password
         </label>
-        <input class="form__control" id="password" name="password" required="" type="password"/>
+        <input class="login-form__control" id="password" name="password" required="" type="password"/>
        </div>
        <button class="button button--primary" type="submit">
         Login
