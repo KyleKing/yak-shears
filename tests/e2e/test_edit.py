@@ -92,3 +92,33 @@ async def test_edit_save_persistence(context: BrowserContext, page: Page, server
         await expect(page.locator("#save-status")).to_contain_text("Saved")
     finally:
         yak_path.unlink()
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_delete_yak(context: BrowserContext, page: Page, server_lifecycle):
+    """Test that a yak can be deleted with confirmation."""
+    await login(context, page)
+
+    # Create a test yak
+    yak_path = MOCK_YAK_DIR / "yak-delete-test.dj"
+    yak_path.write_text("Test content for deletion")
+    try:
+        await page.goto(f"/edit?yak={yak_path}")
+
+        # Click delete button and confirm
+        delete_button = page.locator("button:has-text('Delete Yak')")
+        await expect(delete_button).to_be_visible()
+
+        # Handle the confirm dialog
+        page.on("dialog", lambda dialog: dialog.accept())
+
+        await delete_button.click()
+
+        # Should redirect to /yaks
+        await page.wait_for_url("**/yaks")
+
+    finally:
+        # Clean up if not deleted
+        if yak_path.exists():
+            yak_path.unlink()

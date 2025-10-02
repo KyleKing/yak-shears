@@ -295,3 +295,30 @@ def test_edit_yak_post_no_hx(client: TestClient, mock_user_session, tmp_path) ->
         response = client.post("/edit?yak=test.dj", data={"content": "Updated"})
         assert response.status_code == HTTPStatus.OK
         assert test_yak.read_text() == "Updated"  # updated
+
+
+def test_delete_yak(client: TestClient, mock_user_session, tmp_path) -> None:
+    """Test the delete yak endpoint."""
+    test_yak = tmp_path / "test.dj"
+    test_yak.write_text("Content")
+    with set_yak_shears_dir(tmp_path):
+        response = client.post("/delete", data={"yak": "test.dj"})
+        assert response.status_code == HTTPStatus.OK
+        assert "HX-Redirect" in response.headers
+        assert response.headers["HX-Redirect"] == "/yaks"
+        assert not test_yak.exists()
+
+
+def test_delete_yak_not_found(client: TestClient, mock_user_session, tmp_path) -> None:
+    """Test the delete yak endpoint with nonexistent yak."""
+    with set_yak_shears_dir(tmp_path):
+        response = client.post("/delete", data={"yak": "nonexistent.dj"})
+        assert response.status_code == HTTPStatus.NOT_FOUND
+        assert "Yak not found" in response.text
+
+
+def test_delete_yak_no_yak_specified(client: TestClient, mock_user_session) -> None:
+    """Test the delete yak endpoint with no yak specified."""
+    response = client.post("/delete", data={})
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert "No `yak` path specified" in response.text

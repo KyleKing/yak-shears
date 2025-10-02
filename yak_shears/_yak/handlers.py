@@ -594,6 +594,41 @@ async def search_handler(request: Request) -> Response:
     return render_search(results, query)
 
 
+async def delete_yak_handler(request: Request) -> Response:
+    """Handle requests to delete a yak.
+
+    Args:
+        request: The incoming request
+
+    Returns:
+        Response with HX-Redirect to /yaks after deletion
+    """
+    yak_dir = await get_yak_dir()
+
+    if request.method == "POST":
+        form_data = await request.form()
+        yak_path_str = str(form_data.get("yak", ""))
+    else:
+        yak_path_str = request.query_params.get("yak") or ""
+
+    if not yak_path_str:
+        return render_error("No `yak` path specified")
+
+    try:
+        yak_path = yak_dir / yak_path_str
+
+        if not await yak_path.is_file():
+            return render_error(f"Yak not found: {yak_path}", status_code=HTTPStatus.NOT_FOUND)
+
+        # Delete the file
+        await yak_path.unlink()
+
+        # Redirect to yaks page using HTMX
+        return Response("", status_code=HTTPStatus.OK, headers={"HX-Redirect": "/yaks"})
+    except Exception as exc:
+        return render_error(f"An error occurred: {exc!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
 async def yak_preview_handler(request: Request) -> Response:
     """Handle requests for yak preview.
 

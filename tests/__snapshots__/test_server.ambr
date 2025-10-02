@@ -72,6 +72,9 @@
         <button class="button button--primary" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent(), yak: 'test.dj'}" id="save-btn">
          Save Changes
         </button>
+        <button class="button button--danger" hx-confirm="Are you sure you want to delete this yak? This action cannot be undone." hx-post="/delete" hx-vals="js:{yak: 'test.dj'}">
+         Delete Yak
+        </button>
         <span class="editor__status" id="save-status">
         </span>
        </div>
