@@ -61,12 +61,29 @@
     <main class="layout__inner">
      <div class="container">
       <div class="editor__header">
-      </div>
-      <form id="editor_form" method="post">
-       <input name="yak" type="hidden" value="test.dj"/>
-       <div class="editor" data-gramm="false" data-manual="">
+       <div class="view-toggle">
+        <button class="button button--sm" data-view="editor" id="editor-only-btn">
+         Editor
+        </button>
+        <button class="button button--sm" data-view="side-by-side" id="side-by-side-btn">
+         Side-by-Side
+        </button>
+        <button class="button button--sm" data-view="preview" id="preview-only-btn">
+         Preview
+        </button>
        </div>
-      </form>
+      </div>
+      <div class="editor-container" id="editor-container">
+       <form id="editor_form" method="post">
+        <input name="yak" type="hidden" value="test.dj"/>
+        <div class="editor" data-gramm="false" data-manual="">
+        </div>
+       </form>
+       <div class="preview" id="preview">
+        <div class="preview-content" id="preview-content">
+        </div>
+       </div>
+      </div>
       <div class="editor__actions">
        <div class="container">
         <button class="button button--primary" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent(), yak: 'test.dj'}" id="save-btn">

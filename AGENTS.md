@@ -110,6 +110,7 @@ Now implemented with CodeJar
 - When editing a bulleted or numbered list, there is logic to intelligently indent the current item right or left. On Desktop this is with Tab and Shift+Tab and on mobile, there are buttons added to the keyboard. The indentation is in increments of four spaces, can't be deeper than the parent item, and (TBD - adds a new line above when indenting and removes when out denting)
 - When typing enter from a bulleted or numbered list, the next line is automatically started with a continuation with matching indentation
 - Supports toggling italic and bold on the selected text. On mobile, the keyboard is extended with buttons to apply bullet or italic to highlighted text
+- Toggle between three view modes: Editor-only, Side-by-side (editor and preview), and Preview-only
 
 ### Note Preview
 
@@ -148,8 +149,8 @@ Implemented as a full page at /search with fuzzy search using persistent and laz
 ### Yak Page
 
 - URL is `/yak?yak=<yak-path>` (PLANNED: this is currently `/edit?yak=...`)
-- On mobile, defaults to Yak Editor component full screen. If the screen is wide enough, the preview is shown side-by-side
-- There is a button to toggle between Editor and Preview components
+- Toggle buttons to switch between Editor-only, Side-by-side (editor and preview), and Preview-only modes
+- On mobile, defaults to Editor-only mode. On desktop, defaults to Side-by-side mode
 - There is a feature to link yaks (*TBD*)
 - There is a feature to see similar yaks (*TBD*)
 - There is a feature to support configuring yak metadata during edit and to view when viewing (*TBD*)

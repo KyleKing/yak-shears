@@ -9,6 +9,44 @@
 const maxRetries = 50; // 5 seconds at 100ms intervals
 let retries = 0;
 let jar; // Global reference to CodeJar instance
+let currentView = "editor"; // Current view mode
+
+function renderPreview(content) {
+	const previewContent = document.getElementById("preview-content");
+	if (previewContent && window.djot) {
+		try {
+			const html = window.djot.renderHTML(window.djot.parse(content));
+			previewContent.innerHTML = html;
+		} catch (error) {
+			console.error("Error rendering preview:", error);
+			previewContent.textContent = content;
+		}
+	}
+}
+
+function setViewMode(mode) {
+	const container = document.getElementById("editor-container");
+	const buttons = document.querySelectorAll(".view-toggle .button");
+
+	// Remove active class from all buttons
+	buttons.forEach((btn) => btn.classList.remove("active"));
+
+	// Add active class to selected button
+	const activeButton = document.querySelector(`[data-view="${mode}"]`);
+	if (activeButton) {
+		activeButton.classList.add("active");
+	}
+
+	// Update container classes
+	container.className = "editor-container " + mode.replace("-", "");
+
+	currentView = mode;
+
+	// Update preview if switching to a mode that shows it
+	if (mode === "side-by-side" || mode === "preview") {
+		renderPreview(jar ? jar.toString() : window.serverContent);
+	}
+}
 
 function initEditor() {
 	const editor = document.querySelector(".editor");
@@ -100,7 +138,35 @@ function initEditor() {
 				localStorage.setItem(storageKey, code);
 				updateSaveStatus("Modified");
 			}
+			// Update preview if it's visible
+			if (currentView === "side-by-side" || currentView === "preview") {
+				renderPreview(code);
+			}
 			// PLANNED: Consider how to otherwise prune old unused local storage? Might need a separate local review page which compares against server?
+		});
+
+		// Initialize view toggle buttons
+		document.querySelectorAll(".view-toggle .button").forEach((button) => {
+			button.addEventListener("click", () => {
+				const view = button.getAttribute("data-view");
+				setViewMode(view);
+			});
+		});
+
+		// Set initial view mode (default to editor-only for mobile, side-by-side for desktop)
+		const isMobile = window.innerWidth <= 768;
+		const initialView = isMobile ? "editor" : "side-by-side";
+		setViewMode(initialView);
+
+		// Handle window resize to switch modes
+		let lastWidth = window.innerWidth;
+		window.addEventListener("resize", () => {
+			const wasMobile = lastWidth <= 768;
+			const nowMobile = window.innerWidth <= 768;
+			lastWidth = window.innerWidth;
+			if (wasMobile !== nowMobile && currentView === "side-by-side") {
+				setViewMode(nowMobile ? "editor" : "side-by-side");
+			}
 		});
 	} else if (retries < maxRetries) {
 		retries++;
