@@ -28,7 +28,7 @@
         <div class="card__body">
           <p>{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
         </div>
-        <div class="card__tooltip">{{ info.category }} | {{ info.name }} | {{ info.last_modified }}</div>
+        <div class="card__tooltip">{{ info.category | title }}<br />C: {{ info.name }}<br />M: {{ info.last_modified }}</div>
       </a>
     {% endfor %}
   </div>

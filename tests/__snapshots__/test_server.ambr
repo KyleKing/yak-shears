@@ -182,7 +182,11 @@
          </p>
         </div>
         <div class="card__tooltip">
-         subdirectory-3 | yak3.dj | 2025-05-01 10:00:00
+         Subdirectory-3
+         <br/>
+         C: yak3.dj
+         <br/>
+         M: 2025-05-01 10:00:00
         </div>
        </a>
        <a class="card" href="/edit?yak=subdirectory-2/yak2.dj" style="border-color: hsl(326, 70%, 50%)">
@@ -192,7 +196,11 @@
          </p>
         </div>
         <div class="card__tooltip">
-         subdirectory-2 | yak2.dj | 2025-05-01 10:00:00
+         Subdirectory-2
+         <br/>
+         C: yak2.dj
+         <br/>
+         M: 2025-05-01 10:00:00
         </div>
        </a>
        <a class="card" href="/edit?yak=yak1.dj" style="border-color: hsl(71, 70%, 50%)">
@@ -202,7 +210,11 @@
          </p>
         </div>
         <div class="card__tooltip">
-         mock_djot_dir_0 | yak1.dj | 2025-05-01 10:00:00
+         Mock_djot_dir_0
+         <br/>
+         C: yak1.dj
+         <br/>
+         M: 2025-05-01 10:00:00
         </div>
        </a>
       </div>
