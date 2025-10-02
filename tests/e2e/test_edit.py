@@ -123,3 +123,35 @@ async def test_delete_yak(context: BrowserContext, page: Page, server_lifecycle)
         # Clean up if not deleted
         if yak_path.exists():
             yak_path.unlink()
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_text_stability_during_editing(context: BrowserContext, page: Page, server_lifecycle):
+    """Test that text doesn't jump around when editing with highlighting enabled."""
+    await login(context, page)
+
+    await page.goto("/edit?yak=yak1.dj")
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    # Test case: clicking after "1" in "line 1\n\n```py\nimport *\n```" and pressing backspace
+    # should not cause newlines to disappear
+    test_content = "line 1\n\n```py\nimport *\n```"
+    await _fill_editor(page=page, fill=test_content)
+
+    # Position cursor after "1" by moving left from the end
+    # Total length is 26, position after "1" is 6, so move left 20 times
+    for _ in range(20):
+        await page.keyboard.press("ArrowLeft")
+
+    # Press backspace
+    await page.keyboard.press("Backspace")
+
+    # Verify the content is correct (should be "line \n\n```py\nimport *\n```")
+    expected_content = "line \n\n```py\nimport *\n```"
+    await expect(editor).to_contain_text(expected_content)
+
+    # Also verify the full content matches exactly
+    actual_content = await editor.text_content()
+    assert actual_content == expected_content
