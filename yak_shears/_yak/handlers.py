@@ -42,6 +42,9 @@ def get_search_db_path() -> SyncPath:
     Returns:
         The path to the search database file.
     """
+    search_db_dir = os.getenv("SEARCH_DB_DIR")
+    if search_db_dir:
+        return SyncPath(search_db_dir) / "yak_shears_search.db"
     yak_dir = SyncPath(os.getenv("YAK_SHEARS_DIR", "~/Sync/yak-shears")).expanduser()
     return yak_dir / "yak_shears_search.db"
 

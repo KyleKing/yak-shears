@@ -1,6 +1,7 @@
 """Server routes for Yak Shears."""
 
 import argparse
+import os
 
 import uvicorn
 from starlette.applications import Starlette
@@ -58,6 +59,7 @@ def start(
     *,
     reload: bool = False,
     no_auth: bool = True,
+    search_db_dir: str | None = None,
 ) -> None:  # pragma: no cover
     """Run the ASGI server with uvicorn.
 
@@ -66,7 +68,11 @@ def start(
         port: The port to bind to
         reload: Whether to reload the server on code changes
         no_auth: Turn off auth middleware. Only use for local development and only allowed when reload is also specified
+        search_db_dir: Directory for the search database
     """
+    if search_db_dir:
+        os.environ["SEARCH_DB_DIR"] = search_db_dir
+
     log(f"Server running at http://{host}:{port}")
 
     if reload:
@@ -93,7 +99,11 @@ def cli() -> None:
         action="store_true",
         help="Turn off auth middleware. Only use for local development and only allowed when reload is also specified",
     )
+    parser.add_argument(
+        "--search-db-dir",
+        help="Directory for the search database",
+    )
 
     args = parser.parse_args()
 
-    start(host=args.host, port=args.port, reload=args.reload, no_auth=args.no_auth)
+    start(host=args.host, port=args.port, reload=args.reload, no_auth=args.no_auth, search_db_dir=args.search_db_dir)
