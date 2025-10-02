@@ -571,18 +571,15 @@ pre code {
 	background: var(--color-surface-alt);
 }
 
-.search-result__path {
+.search-result__first-line {
 	font-weight: 600;
 	font-size: 0.9rem;
 	margin-bottom: var(--space-2);
 }
 
-.search-result__preview {
+.search-result__path {
 	font-size: 0.8rem;
 	color: var(--color-text-dim);
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
 }
 
 .search-preview {

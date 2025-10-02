@@ -37,6 +37,7 @@ class SearchResult:
     line_num: int
     preview: str
     word: str
+    first_line: str
 
 
 TEMPLATE_DIR = SyncPath(__file__).parent

@@ -29,11 +29,10 @@ async function loadPreview(resultElement) {
 
 	const searchInput = document.querySelector(".search-input");
 	const path = resultElement.dataset.path;
-	const line = resultElement.dataset.line;
 
 	try {
 		const response = await fetch(
-			`/api/yak-preview?path=${encodeURIComponent(path)}&line=${line}&query=${encodeURIComponent(searchInput.value)}`,
+			`/api/yak-preview?path=${encodeURIComponent(path)}&query=${encodeURIComponent(searchInput.value)}`,
 			{
 				credentials: "include",
 			},

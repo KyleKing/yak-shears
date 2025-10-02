@@ -515,24 +515,26 @@ def _perform_search(query: str) -> list[tuple[str, int, str]]:
 
 
 def _process_search_results(search_results: list[tuple[str, int, str]], sync_yak_dir: SyncPath) -> list[SearchResult]:
-    """Process raw search results into SearchResult objects.
+    """Process raw search results into SearchResult objects, grouped by file.
 
     Returns:
-        List of SearchResult objects with previews.
+        List of SearchResult objects with previews, one per file (best match).
     """
     results = []
-    seen = set()
+    seen_paths = set()
     for path, line_num, word in search_results:
-        key = (path, line_num)
-        if key not in seen:
-            seen.add(key)
+        if path not in seen_paths:
+            seen_paths.add(path)
             file_path = sync_yak_dir / path
             try:
                 content = file_path.read_text(encoding="utf-8")
                 lines = content.splitlines()
                 if 1 <= line_num <= len(lines):
                     preview = lines[line_num - 1].strip()
-                    results.append(SearchResult(path=path, line_num=line_num, preview=preview, word=word))
+                    first_line = lines[0].strip() if lines else ""
+                    results.append(
+                        SearchResult(path=path, line_num=line_num, preview=preview, word=word, first_line=first_line)
+                    )
             except Exception as exc:
                 log(f"WARNING: Error reading file {file_path}: {exc}")
     return results
@@ -556,8 +558,19 @@ async def search_handler(request: Request) -> Response:
         return render_search([], query)
 
     # Initialize database if needed
-    if not await Path(get_search_db_path()).exists():
+    db_path = get_search_db_path()
+    if not await Path(db_path).exists():
         init_search_db()
+    else:
+        # Check if tables exist, reinitialize if corrupted
+        try:
+            with get_search_db() as con:
+                con.execute("SELECT 1 FROM metadata LIMIT 1")
+                con.execute("SELECT 1 FROM words LIMIT 1")
+        except Exception:
+            log("WARNING: Search database appears corrupted, reinitializing")
+            await Path(db_path).unlink(missing_ok=True)
+            init_search_db()
 
     yak_dir = await get_yak_dir()
     sync_yak_dir = SyncPath(yak_dir)
@@ -591,7 +604,6 @@ async def yak_preview_handler(request: Request) -> Response:
         JSON response with preview HTML
     """
     path = request.query_params.get("path", "")
-    line = int(request.query_params.get("line", "1"))
     query = request.query_params.get("query", "")
 
     if not path:
@@ -610,14 +622,9 @@ async def yak_preview_handler(request: Request) -> Response:
         log(f"ERROR: Failed to read file {yak_path}: {exc}")
         return JSONResponse({"error": "Failed to read file"}, status_code=500)
 
-    # Get context around the matching line
-    start_line = max(0, line - 6)
-    end_line = min(len(lines), line + 5)
-    preview_lines = lines[start_line:end_line]
-
-    # Highlight matches
-    def highlight_line(preview_line: str) -> str:
-        highlighted = preview_line
+    # Highlight matches in full content
+    def highlight_line(content_line: str) -> str:
+        highlighted = content_line
         if query:
             query_words = query.lower().split()
             for word in query_words:
@@ -628,17 +635,14 @@ async def yak_preview_handler(request: Request) -> Response:
                     )
         return highlighted
 
-    highlighted_lines = [
-        f"{' >' if i == line else '  '}{i:4d}: {highlight_line(preview_line)}"
-        for i, preview_line in enumerate(preview_lines, start_line + 1)
-    ]
+    highlighted_content = "\n".join(highlight_line(line) for line in lines)
 
     edit_url = f"/edit?yak={quote(path)}&query={quote(query)}"
     html = (
         f'<div class="search-preview-header">'
         f'<a href="{edit_url}" class="button button--primary">Edit</a>'
         f"</div>"
-        f'<pre class="search-preview-content">' + "\n".join(highlighted_lines) + "</pre>"
+        f'<pre class="search-preview-content">{highlighted_content}</pre>'
     )
 
     return JSONResponse({"html": html})

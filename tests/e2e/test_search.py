@@ -34,9 +34,7 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
 
     # Check data attributes
     data_path = await first_result.get_attribute("data-path")
-    data_line = await first_result.get_attribute("data-line")
     assert data_path is not None
-    assert data_line is not None
 
     # Check if JavaScript loaded
     body_class = await page.get_attribute("body", "class")
