@@ -1,7 +1,12 @@
 // Search functionality for Telescope-style UI
-document.body.classList.add("js-loaded");
+if (document.body) {
+	document.body.classList.add("js-loaded");
+} else {
+	document.addEventListener("DOMContentLoaded", () => {
+		document.body.classList.add("js-loaded");
+	});
+}
 
-const searchInput = document.querySelector(".search-input");
 const resultsList = document.getElementById("search-results-list");
 let selectedIndex = -1;
 
@@ -22,12 +27,13 @@ async function loadPreview(resultElement) {
 	const previewPane = document.getElementById("search-preview-content");
 	if (!previewPane) return;
 
+	const searchInput = document.querySelector(".search-input");
 	const path = resultElement.dataset.path;
 	const line = resultElement.dataset.line;
 
 	try {
 		const response = await fetch(
-			`/api/yak-preview?path=${encodeURIComponent(path)}&line=${line}&q=${encodeURIComponent(searchInput.value)}`,
+			`/api/yak-preview?path=${encodeURIComponent(path)}&line=${line}&query=${encodeURIComponent(searchInput.value)}`,
 			{
 				credentials: "include",
 			},
@@ -60,6 +66,9 @@ function setupResults() {
 		});
 	}
 }
+
+// Expose function to window for HTMX
+window.setupResults = setupResults;
 
 // Handle initial results
 setupResults();
@@ -96,7 +105,9 @@ document.addEventListener("keydown", function (e) {
 			) {
 				e.preventDefault();
 				const path = resultItems[selectedIndex].dataset.path;
-				window.location.href = `/edit?yak=${encodeURIComponent(path)}`;
+				const searchInput = document.querySelector(".search-input");
+				const query = searchInput ? searchInput.value : "";
+				window.location.href = `/edit?yak=${encodeURIComponent(path)}&query=${encodeURIComponent(query)}`;
 			}
 			break;
 		case "Escape":

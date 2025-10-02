@@ -9,6 +9,7 @@ from http import HTTPStatus
 from operator import itemgetter
 from pathlib import Path as SyncPath
 from typing import Self
+from urllib.parse import quote
 
 import duckdb  # type: ignore[import-untyped]
 from anyio import Path
@@ -31,8 +32,12 @@ from yak_shears._templates import (
 MAX_WORD_LENGTH = 1000
 INDEX_UPDATE_INTERVAL_SECONDS = 60
 
+
 # Search database functions
-SEARCH_DB_PATH = SyncPath("yak_shears_search.db")
+def get_search_db_path() -> SyncPath:
+    """Get the path to the search database."""
+    yak_dir = SyncPath(os.getenv("YAK_SHEARS_DIR", "~/Sync/yak-shears")).expanduser()
+    return yak_dir / "yak_shears_search.db"
 
 
 def get_search_db() -> duckdb.DuckDBPyConnection:
@@ -41,7 +46,7 @@ def get_search_db() -> duckdb.DuckDBPyConnection:
     Returns:
         A DuckDB connection to the search database.
     """
-    return duckdb.connect(str(SEARCH_DB_PATH))
+    return duckdb.connect(str(get_search_db_path()))
 
 
 def init_search_db() -> None:
@@ -129,7 +134,7 @@ def _process_file_words(dj_file: SyncPath, rel_path: str) -> list[tuple[str, int
 def update_search_index(yak_dir: SyncPath) -> None:
     """Update the search index with current files."""
     current_files = {}
-    words_data = []
+    stored_files = get_stored_files()
 
     # Scan all .dj files
     for dj_file in yak_dir.rglob("*.dj"):
@@ -137,14 +142,12 @@ def update_search_index(yak_dir: SyncPath) -> None:
             rel_path = dj_file.relative_to(yak_dir).as_posix()
             mtime = dj_file.stat().st_mtime
             current_files[rel_path] = mtime
-            words_data.extend(_process_file_words(dj_file, rel_path))
 
     con = get_search_db()
     con.execute("BEGIN")
 
     # Remove deleted files
-    stored_paths = set(con.execute("SELECT path FROM files").fetchall())
-    stored_paths = {row[0] for row in stored_paths}
+    stored_paths = set(stored_files.keys())
     current_paths = set(current_files.keys())
     deleted_paths = stored_paths - current_paths
     if deleted_paths:
@@ -152,15 +155,30 @@ def update_search_index(yak_dir: SyncPath) -> None:
         con.execute(f"DELETE FROM files WHERE path IN ({placeholders})", list(deleted_paths))  # noqa: S608
         con.execute(f"DELETE FROM words WHERE path IN ({placeholders})", list(deleted_paths))  # noqa: S608
 
+    # Identify changed/new files
+    changed_paths = []
+    for path, mtime in current_files.items():
+        stored_mtime = stored_files.get(path)
+        if stored_mtime != mtime:
+            changed_paths.append(path)
+
+    # Remove old words for changed files
+    if changed_paths:
+        placeholders = ",".join("?" for _ in changed_paths)
+        con.execute(f"DELETE FROM words WHERE path IN ({placeholders})", changed_paths)  # noqa: S608
+
+    # Process and insert words for changed/new files
+    words_data = []
+    for path in changed_paths:
+        dj_file = yak_dir / path
+        words_data.extend(_process_file_words(dj_file, path))
+
+    if words_data:
+        con.executemany("INSERT INTO words (path, line_num, word) VALUES (?, ?, ?)", words_data)
+
     # Update files table
     for path, mtime in current_files.items():
         con.execute("INSERT OR REPLACE INTO files (path, mtime) VALUES (?, ?)", (path, mtime))
-
-    # Clear and reinsert words for updated files
-    # For simplicity, clear all words and reinsert (could be optimized)
-    con.execute("DELETE FROM words")
-    if words_data:
-        con.executemany("INSERT INTO words (path, line_num, word) VALUES (?, ?, ?)", words_data)
 
     con.execute("COMMIT")
     con.close()
@@ -426,8 +444,10 @@ async def edit_yak_handler(request: Request) -> Response:
     if request.headers.get("HX-Request") == "true":  # POST logic
         form_data = await request.form()
         yak_path_str = str(form_data.get("yak", ""))
+        query = str(form_data.get("q", ""))  # Not used yet
     else:
         yak_path_str = request.query_params.get("yak") or ""
+        query = request.query_params.get("query", "")  # Not used yet
 
     if not yak_path_str:
         return render_error("No `yak` path specified")
@@ -461,7 +481,7 @@ async def search_handler(request: Request) -> Response:
     Returns:
         Response with search results
     """
-    query = request.query_params.get("q", "").strip()
+    query = request.query_params.get("query", "").strip()
     is_htmx = request.headers.get("HX-Request") == "true"
 
     if not query:
@@ -470,28 +490,43 @@ async def search_handler(request: Request) -> Response:
         return render_search([], query)
 
     # Initialize database if needed
-    if not await Path(SEARCH_DB_PATH).exists():
+    if not await Path(get_search_db_path()).exists():
         init_search_db()
 
     yak_dir = await get_yak_dir()
     sync_yak_dir = SyncPath(yak_dir)
 
     # Check if we need to update the index
-    if should_update_index(sync_yak_dir):
-        update_search_index(sync_yak_dir)
+    try:
+        if should_update_index(sync_yak_dir):
+            update_search_index(sync_yak_dir)
+        else:
+            # Also update if database has no words (e.g., after reset)
+            con = get_search_db()
+            result = con.execute("SELECT COUNT(*) FROM words").fetchone()
+            con.close()
+            if result and result[0] == 0:
+                update_search_index(sync_yak_dir)
+    except Exception as exc:
+        log(f"WARNING: Failed to update search index: {exc}")
+        # Continue with search even if update fails
 
     # Search the database
-    con = get_search_db()
-    threshold = max(1, len(query) // 4)
-    sql = """
-        SELECT path, line_num, word
-        FROM words
-        WHERE levenshtein(word, lower(?)) <= ?
-        ORDER BY levenshtein(word, lower(?))
-        LIMIT 1000
-    """
-    search_results = con.execute(sql, (query, threshold, query)).fetchall()
-    con.close()
+    try:
+        con = get_search_db()
+        threshold = max(1, len(query) // 4)
+        sql = """
+            SELECT path, line_num, word
+            FROM words
+            WHERE levenshtein(word, lower(?)) <= ?
+            ORDER BY levenshtein(word, lower(?))
+            LIMIT 1000
+        """
+        search_results = con.execute(sql, (query, threshold, query)).fetchall()
+        con.close()
+    except Exception as exc:
+        log(f"ERROR: Search database query failed: {exc}")
+        return render_error("Search is temporarily unavailable", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
     # Group by path and line_num, take first match per line
     results = []
@@ -529,7 +564,7 @@ async def yak_preview_handler(request: Request) -> Response:
     """
     path = request.query_params.get("path", "")
     line = int(request.query_params.get("line", "1"))
-    query = request.query_params.get("q", "")
+    query = request.query_params.get("query", "")
 
     if not path:
         return JSONResponse({"error": "Path required"}, status_code=400)
@@ -540,8 +575,12 @@ async def yak_preview_handler(request: Request) -> Response:
     if not await yak_path.exists():
         return JSONResponse({"error": "File not found"}, status_code=404)
 
-    content = await yak_path.read_text(encoding="utf-8")
-    lines = content.splitlines()
+    try:
+        content = await yak_path.read_text(encoding="utf-8")
+        lines = content.splitlines()
+    except Exception as exc:
+        log(f"ERROR: Failed to read file {yak_path}: {exc}")
+        return JSONResponse({"error": "Failed to read file"}, status_code=500)
 
     # Get context around the matching line
     start_line = max(0, line - 6)
@@ -566,6 +605,12 @@ async def yak_preview_handler(request: Request) -> Response:
         for i, preview_line in enumerate(preview_lines, start_line + 1)
     ]
 
-    html = '<pre class="search-preview-content">' + "\n".join(highlighted_lines) + "</pre>"
+    edit_url = f"/edit?yak={quote(path)}&query={quote(query)}"
+    html = (
+        f'<div class="search-preview-header">'
+        f'<a href="{edit_url}" class="button button--primary">Edit</a>'
+        f"</div>"
+        f'<pre class="search-preview-content">' + "\n".join(highlighted_lines) + "</pre>"
+    )
 
     return JSONResponse({"html": html})

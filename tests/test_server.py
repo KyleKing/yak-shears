@@ -67,7 +67,7 @@ def test_yaks_endpoint(client: TestClient, mock_user_session, snapshot) -> None:
 def test_search_endpoint(client: TestClient, mock_user_session) -> None:
     """Test the search endpoint."""
     with set_yak_shears_dir(MOCK_YAK_DIR):
-        response = client.get("/search?q=test")
+        response = client.get("/search?query=test")
         assert response.status_code == HTTPStatus.OK
         assert "Search Yaks" in response.text
 

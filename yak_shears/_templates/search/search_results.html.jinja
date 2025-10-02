@@ -1,0 +1,26 @@
+<div class="search-content" id="search-results-container">
+  {% if results %}
+    <div class="search-results-sidebar">
+      <div class="search-results-count">Found {{ results | length }} matches for "{{ query }}"</div>
+      <div class="search-results-list" id="search-results-list">
+        {% for result in results %}
+          <div class="search-result" data-path="{{ result.path }}" data-line="{{ result.line_num }}">
+            <div class="search-result__path">{{ result.path }}</div>
+            <div class="search-result__preview">{{ result.preview }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="search-preview" id="search-preview">
+      <div class="search-preview-content" id="search-preview-content">
+        <!-- Preview will be loaded here -->
+      </div>
+    </div>
+  {% else %}
+    <div class="search-empty">
+      <p>No matches found for "{{ query }}"</p>
+    </div>
+  {% endif %}
+</div>
+<script>window.setupResults();</script>

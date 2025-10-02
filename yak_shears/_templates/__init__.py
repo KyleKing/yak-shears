@@ -190,4 +190,4 @@ def render_search(results: list[SearchResult], query: str) -> HTMLResponse:
     Returns:
         HTMLResponse with the search template
     """
-    return _render_template("search.html.jinja", results=results, query=query, current_route="search")
+    return _render_template("search/search.html.jinja", results=results, query=query, current_route="search")

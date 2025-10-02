@@ -501,10 +501,10 @@ pre code {
 /* Search Modal Styles */
 .search-modal {
 	position: fixed;
-	top: 0;
+	top: 3rem;
 	left: 0;
 	width: 100vw;
-	height: 100vh;
+	height: calc(100vh - 3rem);
 	background: var(--color-surface);
 	display: flex;
 	flex-direction: column;
@@ -595,6 +595,10 @@ pre code {
 	font-family: inherit;
 	line-height: 1.5;
 	white-space: pre-wrap;
+}
+
+.search-preview-header {
+	margin-bottom: var(--space-3);
 }
 
 .search-empty {

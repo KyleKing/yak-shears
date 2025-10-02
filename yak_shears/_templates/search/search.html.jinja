@@ -3,16 +3,19 @@
 {% block title %}Search Yaks{% endblock %}
 
 {% block extra_head %}
-  <script src="/static/js/search.js?v=2"></script>
+  <script>
+    window.setupResults = function() {};
+  </script>
+  <script src="/static/js/search.js"></script>
 {% endblock %}
 
 {% block content %}
   <div class="search-modal">
     <div class="search-input-container">
-      <form action="/search" method="get" class="search-form" hx-get="/search" hx-target="#search-results-container" hx-trigger="input changed delay:300ms, submit">
+       <form action="/search" method="get" class="search-form" hx-get="/search" hx-target="#search-results-container" hx-trigger="input changed delay:300ms, submit" hx-push-url="true">
         <input
           type="text"
-          name="q"
+          name="query"
           value="{{ query }}"
           placeholder="Search yaks..."
           class="search-input"
@@ -21,7 +24,7 @@
       </form>
     </div>
 
-    <div class="search-content" id="search-results-container">
+    <div class="search-content" id="search-results-container" hx-on:htmx:afterSwap="window.setupResults()">
       {% if query %}
         <div class="search-results-sidebar">
           <div class="search-results-count">Found {{ results | length }} matches for "{{ query }}"</div>

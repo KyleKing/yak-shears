@@ -113,25 +113,24 @@ Now implemented with CodeJar
 
 ### Note Preview
 
-TODO: Not yet implemented
-
-- Renders with djot library (`<script src="https://unpkg.com/@djot/djot@0.2.5/dist/djot.js"></script>` and `djot.renderHTML(djot.parse("- _example_"))`)
+- Renders with djot library (`djot.renderHTML(djot.parse("<content>"))`)
 
 ### Search
 
-Implemented as a full page at /search with fuzzy search using persistent DuckDB database.
+Implemented as a full page at /search with fuzzy search using persistent and lazily updated DuckDB database.
 
 - Uses DuckDB levenshtein distance for fuzzy matching
-- Persistent database (`yak_shears_search.db`) stores indexed words from all yak files
-- Lazy updates: only re-indexes when files change and not more than once per minute
-- Inspired by Telescope for nvim
-- In the "Telescope-style" nearly full-width modal:
+- Persistent database (`yak_shears_search.db`) stores indexed words from all yak files and updated lazily on search
+    - Lazy updates: only re-indexes when files change and not more than once per minute
+- UI is inspired by Telescope for nvim
     - There is a text input, which is full width
-     - There is sidebar with is 1/2 width and a yak preview
-     - The search sidebar shows each matched yak with an abbreviated preview
-     - The search preview highlights what was matched during the search
-- Keyboard navigation: Use arrow keys to navigate results, Enter to open selected yak
-- Search can either be a full page or a modal triggered by a button on the keyboard in mobile or ctrl-p on desktop (modal implementation TBD)
+    - There is sidebar which is 40% of the browser width. The other 60% is a Yak preview window, which shows a preview of the currently selected Yak
+    - The search sidebar shows each matched yak with a single, unwrapped line of preview text in the space available
+    - The search preview shows highlighted text for what was matched during the search
+- Keyboard navigation: Use arrow keys to navigate results, Enter to open the currently selected yak
+- PLANNED: support modal-based search without requiring a new page (ctrl-p), which opens in a new tab
+- PLANNED: support embeddings as well as fuzzy matches
+- PLANNED: Implement UI for mobile search
 
 ## Page Specifications
 
@@ -148,7 +147,7 @@ Implemented as a full page at /search with fuzzy search using persistent DuckDB 
 
 ### Yak Page
 
-- URL is `/yak?yak_path=<yak-path>` = TODO: this is currently `/edit?...`
+- URL is `/yak?yak=<yak-path>` (PLANNED: this is currently `/edit?yak=...`)
 - On mobile, defaults to Yak Editor component full screen. If the screen is wide enough, the preview is shown side-by-side
 - There is a button to toggle between Editor and Preview components
 - There is a feature to link yaks (*TBD*)
