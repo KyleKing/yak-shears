@@ -5,7 +5,8 @@ import "package://github.com/jdx/hk/releases/download/v1.15.6/hk@1.15.6#/Builtin
 
 min_hk_version = "1.15.6"
 
-// PLANNED: exclude = List("**/*.min.js", "**/*.ambr")
+exclude = List("**/*.min.js", "**/*.ambr", "**/*.png")
+
 
 local linters = new Mapping<String, Step> {
     ["actionlint"] = Builtins.actionlint

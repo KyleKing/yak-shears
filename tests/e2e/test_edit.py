@@ -29,6 +29,7 @@ async def test_editor_highlight_behavior(context: BrowserContext, page: Page, se
     await login(context, page)
 
     await page.goto("/edit?yak=yak1.dj")
+    await page.screenshot(path=".github/screenshots/edit-page.png")
     editor = page.locator(".editor")
     await expect(editor).to_be_editable()
 

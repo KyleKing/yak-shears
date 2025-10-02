@@ -11,6 +11,7 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
     await login(context, page)
 
     await page.goto("/search")
+    await page.screenshot(path=".github/screenshots/search-page.png")
 
     # Check the HTML head
     head_html = await page.locator("head").inner_html()

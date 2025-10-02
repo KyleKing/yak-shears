@@ -15,6 +15,8 @@ async def login(context: BrowserContext, page: Page) -> None:
         title = await page.title()
         assert "Login" in title
 
+        await page.screenshot(path=".github/screenshots/login-page.png")
+
         await page.get_by_role("textbox", name="Email").fill(SAMPLE_USER_EMAIL)
         await page.get_by_role("textbox", name="Password").fill(SAMPLE_USER_PASSWORD)
         await page.get_by_role("button", name="Login").click()

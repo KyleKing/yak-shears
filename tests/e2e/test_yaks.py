@@ -24,6 +24,7 @@ async def test_yaks_page_loads(context: BrowserContext, page: Page, server_lifec
     await login(context, page)
 
     await page.goto("/yaks")
+    await page.screenshot(path=".github/screenshots/yaks-page.png")
 
     content = await page.content()
     assert "Yaks" in content

@@ -43,6 +43,24 @@ My personal note taking app, but you probably want to use one of these primarily
 | _[Digital Gardens](https://github.com/MaggieAppleton/digital-gardeners)_                  | "Resources, links, projects, and ideas for gardeners tending their digital notes on the public interwebs"                                   |
 | Open Source hosted on [Pika Pods](https://www.pikapods.com/apps#notes)                    | Supports self-hosting of Memos, [linkding](https://github.com/sissbruecker/linkding), etc.                                                  |
 
+## Screenshots
+
+### Login Page
+
+![Login Page](.github/screenshots/login-page.png)
+
+### Yaks Page
+
+![Yaks Page](.github/screenshots/yaks-page.png)
+
+### Edit Page
+
+![Edit Page](.github/screenshots/edit-page.png)
+
+### Search Page
+
+![Search Page](.github/screenshots/search-page.png)
+
 ## Quick Start
 
 If still interested, these are the high-level commands necessary to run locally
