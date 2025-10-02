@@ -21,10 +21,18 @@ function updateSelection(items) {
 	});
 }
 
+// Check if screen is small (modal mode)
+function isSmallScreen() {
+	return window.innerWidth <= 768;
+}
+
 // Load preview for selected result
-async function loadPreview(resultElement) {
+async function loadPreview(resultElement, useModal = false) {
 	if (!resultElement) return;
-	const previewPane = document.getElementById("search-preview-content");
+	const previewPaneId = useModal
+		? "search-preview-modal-content"
+		: "search-preview-content";
+	const previewPane = document.getElementById(previewPaneId);
 	if (!previewPane) return;
 
 	const searchInput = document.querySelector(".search-input");
@@ -40,9 +48,38 @@ async function loadPreview(resultElement) {
 		if (response.ok) {
 			const data = await response.json();
 			previewPane.innerHTML = data.html;
+			if (useModal) {
+				scrollToFirstMatch(previewPane);
+			}
 		}
 	} catch (error) {
 		console.error("Failed to load preview:", error);
+	}
+}
+
+// Scroll to first match in preview
+function scrollToFirstMatch(previewPane) {
+	const firstHighlight = previewPane.querySelector(".search-highlight");
+	if (firstHighlight) {
+		firstHighlight.scrollIntoView({ behavior: "smooth", block: "center" });
+	}
+}
+
+// Open modal
+function openModal() {
+	const modal = document.getElementById("search-preview-modal");
+	if (modal) {
+		modal.style.display = "flex";
+		document.body.style.overflow = "hidden";
+	}
+}
+
+// Close modal
+function closeModal() {
+	const modal = document.getElementById("search-preview-modal");
+	if (modal) {
+		modal.style.display = "none";
+		document.body.style.overflow = "";
 	}
 }
 
@@ -53,14 +90,21 @@ function setupResults() {
 	if (results.length > 0) {
 		selectedIndex = 0;
 		updateSelection(results);
-		loadPreview(results[0]);
+		if (!isSmallScreen()) {
+			loadPreview(results[0]);
+		}
 
 		// Attach click handlers to results
 		results.forEach((result, index) => {
 			result.addEventListener("click", function () {
 				selectedIndex = index;
 				updateSelection(results);
-				loadPreview(result);
+				if (isSmallScreen()) {
+					loadPreview(result, true);
+					openModal();
+				} else {
+					loadPreview(result);
+				}
 			});
 		});
 	}
@@ -71,6 +115,19 @@ window.setupResults = setupResults;
 
 // Handle initial results
 setupResults();
+
+// Modal event listeners
+document.addEventListener("DOMContentLoaded", function () {
+	const modalClose = document.getElementById("search-preview-modal-close");
+	const modalOverlay = document.querySelector(".search-preview-modal__overlay");
+
+	if (modalClose) {
+		modalClose.addEventListener("click", closeModal);
+	}
+	if (modalOverlay) {
+		modalOverlay.addEventListener("click", closeModal);
+	}
+});
 
 // Keyboard navigation
 document.addEventListener("keydown", function (e) {

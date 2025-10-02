@@ -23,6 +23,25 @@
     </div>
   {% endif %}
 </div>
+
+<div class="search-preview-modal" id="search-preview-modal" style="display: none;">
+  <div class="search-preview-modal__overlay"></div>
+  <div class="search-preview-modal__content">
+    <button class="search-preview-modal__close" id="search-preview-modal-close">&times;</button>
+    <div class="search-preview-content" id="search-preview-modal-content">
+      <!-- Modal preview will be loaded here -->
+    </div>
+  </div>
+</div>
 <script>
 window.setupResults();
+
+// Modal event listeners
+document.getElementById("search-preview-modal-close")?.addEventListener("click", function() {
+    const modal = document.getElementById("search-preview-modal");
+    if (modal) {
+        modal.style.display = "none";
+        document.body.style.overflow = "";
+    }
+});
 </script>

@@ -129,9 +129,9 @@ Implemented as a full page at /search with fuzzy search using persistent and laz
     - The search sidebar shows each matched yak with a single, unwrapped line of preview text in the space available
     - The search preview shows highlighted text for what was matched during the search
 - Keyboard navigation: Use arrow keys to navigate results, Enter to open the currently selected yak
+- On small screens (≤768px width), the preview is shown in a closeable modal instead of side-by-side layout, scrolled to the first match
 - PLANNED: support modal-based search without requiring a new page (ctrl-p), which opens in a new tab
 - PLANNED: support embeddings as well as fuzzy matches
-- PLANNED: Implement UI for mobile search
 
 ## Page Specifications
 

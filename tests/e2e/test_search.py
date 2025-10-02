@@ -70,3 +70,50 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
     # The preview should be different or at least exist
     assert new_preview_text is not None, "New preview text should not be None after second navigation"
     assert len(new_preview_text.strip()) > 0, "Preview should still contain content after second navigation"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_search_modal_on_small_screen(context: BrowserContext, page: Page, server_lifecycle, console_messages):
+    """Test that search shows preview in modal on small screens."""
+    await login(context, page)
+
+    # Set viewport to small screen
+    await page.set_viewport_size({"width": 600, "height": 800})
+
+    await page.goto("/search")
+
+    # Enter search query
+    search_input = page.locator(".search-input")
+    await search_input.fill("yak")
+    await page.wait_for_timeout(500)
+    await page.wait_for_selector(".search-results-list")
+
+    # Check that results are displayed
+    results = page.locator(".search-result")
+    count = await results.count()
+    assert count > 1
+
+    # Check that preview is not visible on small screen
+    preview = page.locator("#search-preview")
+    await expect(preview).not_to_be_visible()
+
+    # Click on first result to open modal
+    first_result = results.first
+    await first_result.click()
+
+    # Wait for modal to appear
+    modal = page.locator("#search-preview-modal")
+    await expect(modal).to_be_visible()
+
+    # Check that modal content is loaded
+    modal_content = page.locator("#search-preview-modal-content")
+    await page.wait_for_timeout(500)  # Wait for API call
+    modal_text = await modal_content.text_content()
+    assert modal_text is not None
+    assert len(modal_text.strip()) > 0
+
+    # Check that close button works
+    close_button = page.locator("#search-preview-modal-close")
+    await close_button.click()
+    await expect(modal).not_to_be_visible()
