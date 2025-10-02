@@ -3,6 +3,8 @@
 import os
 import re
 import time
+from collections.abc import Generator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from http import HTTPStatus
@@ -35,44 +37,52 @@ INDEX_UPDATE_INTERVAL_SECONDS = 60
 
 # Search database functions
 def get_search_db_path() -> SyncPath:
-    """Get the path to the search database."""
+    """Get the path to the search database.
+
+    Returns:
+        The path to the search database file.
+    """
     yak_dir = SyncPath(os.getenv("YAK_SHEARS_DIR", "~/Sync/yak-shears")).expanduser()
     return yak_dir / "yak_shears_search.db"
 
 
-def get_search_db() -> duckdb.DuckDBPyConnection:
+@contextmanager
+def get_search_db() -> Generator[duckdb.DuckDBPyConnection, None, None]:
     """Get connection to search database.
 
-    Returns:
+    Yields:
         A DuckDB connection to the search database.
     """
-    return duckdb.connect(str(get_search_db_path()))
+    con = duckdb.connect(str(get_search_db_path()))
+    try:
+        yield con
+    finally:
+        con.close()
 
 
 def init_search_db() -> None:
     """Initialize search database schema."""
-    con = get_search_db()
-    con.execute("""
-        CREATE TABLE IF NOT EXISTS metadata (
-            key TEXT PRIMARY KEY,
-            value TEXT
-        )
-    """)
-    con.execute("""
-        CREATE TABLE IF NOT EXISTS files (
-            path TEXT PRIMARY KEY,
-            mtime REAL
-        )
-    """)
-    con.execute("""
-        CREATE TABLE IF NOT EXISTS words (
-            path TEXT,
-            line_num INTEGER,
-            word TEXT,
-            PRIMARY KEY (path, line_num, word)
-        )
-    """)
-    con.close()
+    with get_search_db() as con:
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS metadata (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+        """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS files (
+                path TEXT PRIMARY KEY,
+                mtime REAL
+            )
+        """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS words (
+                path TEXT,
+                line_num INTEGER,
+                word TEXT,
+                PRIMARY KEY (path, line_num, word)
+            )
+        """)
 
 
 def get_last_update_time() -> float:
@@ -81,17 +91,15 @@ def get_last_update_time() -> float:
     Returns:
         The last update timestamp as a float.
     """
-    con = get_search_db()
-    result = con.execute("SELECT value FROM metadata WHERE key = 'last_update'").fetchone()
-    con.close()
+    with get_search_db() as con:
+        result = con.execute("SELECT value FROM metadata WHERE key = 'last_update'").fetchone()
     return float(result[0]) if result else 0
 
 
 def set_last_update_time(timestamp: float) -> None:
     """Set the last update timestamp."""
-    con = get_search_db()
-    con.execute("INSERT OR REPLACE INTO metadata (key, value) VALUES ('last_update', ?)", (str(timestamp),))
-    con.close()
+    with get_search_db() as con:
+        con.execute("INSERT OR REPLACE INTO metadata (key, value) VALUES ('last_update', ?)", (str(timestamp),))
 
 
 def get_stored_files() -> dict[str, float]:
@@ -100,9 +108,8 @@ def get_stored_files() -> dict[str, float]:
     Returns:
         Dictionary mapping file paths to modification times.
     """
-    con = get_search_db()
-    result = con.execute("SELECT path, mtime FROM files").fetchall()
-    con.close()
+    with get_search_db() as con:
+        result = con.execute("SELECT path, mtime FROM files").fetchall()
     return {row[0]: row[1] for row in result}
 
 
@@ -143,45 +150,44 @@ def update_search_index(yak_dir: SyncPath) -> None:
             mtime = dj_file.stat().st_mtime
             current_files[rel_path] = mtime
 
-    con = get_search_db()
-    con.execute("BEGIN")
+    with get_search_db() as con:
+        con.execute("BEGIN")
 
-    # Remove deleted files
-    stored_paths = set(stored_files.keys())
-    current_paths = set(current_files.keys())
-    deleted_paths = stored_paths - current_paths
-    if deleted_paths:
-        placeholders = ",".join("?" for _ in deleted_paths)
-        con.execute(f"DELETE FROM files WHERE path IN ({placeholders})", list(deleted_paths))  # noqa: S608
-        con.execute(f"DELETE FROM words WHERE path IN ({placeholders})", list(deleted_paths))  # noqa: S608
+        # Remove deleted files
+        stored_paths = set(stored_files.keys())
+        current_paths = set(current_files.keys())
+        deleted_paths = stored_paths - current_paths
+        if deleted_paths:
+            placeholders = ",".join("?" for _ in deleted_paths)
+            con.execute(f"DELETE FROM files WHERE path IN ({placeholders})", list(deleted_paths))  # noqa: S608
+            con.execute(f"DELETE FROM words WHERE path IN ({placeholders})", list(deleted_paths))  # noqa: S608
 
-    # Identify changed/new files
-    changed_paths = []
-    for path, mtime in current_files.items():
-        stored_mtime = stored_files.get(path)
-        if stored_mtime != mtime:
-            changed_paths.append(path)
+        # Identify changed/new files
+        changed_paths = []
+        for path, mtime in current_files.items():
+            stored_mtime = stored_files.get(path)
+            if stored_mtime != mtime:
+                changed_paths.append(path)
 
-    # Remove old words for changed files
-    if changed_paths:
-        placeholders = ",".join("?" for _ in changed_paths)
-        con.execute(f"DELETE FROM words WHERE path IN ({placeholders})", changed_paths)  # noqa: S608
+        # Remove old words for changed files
+        if changed_paths:
+            placeholders = ",".join("?" for _ in changed_paths)
+            con.execute(f"DELETE FROM words WHERE path IN ({placeholders})", changed_paths)  # noqa: S608
 
-    # Process and insert words for changed/new files
-    words_data = []
-    for path in changed_paths:
-        dj_file = yak_dir / path
-        words_data.extend(_process_file_words(dj_file, path))
+        # Process and insert words for changed/new files
+        words_data = []
+        for path in changed_paths:
+            dj_file = yak_dir / path
+            words_data.extend(_process_file_words(dj_file, path))
 
-    if words_data:
-        con.executemany("INSERT INTO words (path, line_num, word) VALUES (?, ?, ?)", words_data)
+        if words_data:
+            con.executemany("INSERT INTO words (path, line_num, word) VALUES (?, ?, ?)", words_data)
 
-    # Update files table
-    for path, mtime in current_files.items():
-        con.execute("INSERT OR REPLACE INTO files (path, mtime) VALUES (?, ?)", (path, mtime))
+        # Update files table
+        for path, mtime in current_files.items():
+            con.execute("INSERT OR REPLACE INTO files (path, mtime) VALUES (?, ?)", (path, mtime))
 
-    con.execute("COMMIT")
-    con.close()
+        con.execute("COMMIT")
 
     set_last_update_time(time.time())
 
@@ -444,10 +450,10 @@ async def edit_yak_handler(request: Request) -> Response:
     if request.headers.get("HX-Request") == "true":  # POST logic
         form_data = await request.form()
         yak_path_str = str(form_data.get("yak", ""))
-        query = str(form_data.get("q", ""))  # Not used yet
+        _query = str(form_data.get("q", ""))  # Not used yet
     else:
         yak_path_str = request.query_params.get("yak") or ""
-        query = request.query_params.get("query", "")  # Not used yet
+        _query = request.query_params.get("query", "")  # Not used yet
 
     if not yak_path_str:
         return render_error("No `yak` path specified")
@@ -470,6 +476,63 @@ async def edit_yak_handler(request: Request) -> Response:
         return render_yak_edit(relative_path, content, category)
     except Exception as exc:
         return render_error(f"An error occurred: {exc!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+def _ensure_search_index_updated(sync_yak_dir: SyncPath) -> None:
+    """Ensure the search index is up to date."""
+    try:
+        if should_update_index(sync_yak_dir):
+            update_search_index(sync_yak_dir)
+        else:
+            # Also update if database has no words (e.g., after reset)
+            with get_search_db() as con:
+                result = con.execute("SELECT COUNT(*) FROM words").fetchone()
+            if result and result[0] == 0:
+                update_search_index(sync_yak_dir)
+    except Exception as exc:
+        log(f"WARNING: Failed to update search index: {exc}")
+
+
+def _perform_search(query: str) -> list[tuple[str, int, str]]:
+    """Perform the search query and return raw results.
+
+    Returns:
+        List of tuples containing path, line number, and matched word.
+    """
+    with get_search_db() as con:
+        threshold = max(1, len(query) // 4)
+        sql = """
+            SELECT path, line_num, word
+            FROM words
+            WHERE levenshtein(word, lower(?)) <= ?
+            ORDER BY levenshtein(word, lower(?))
+            LIMIT 1000
+        """
+        return con.execute(sql, (query, threshold, query)).fetchall()
+
+
+def _process_search_results(search_results: list[tuple[str, int, str]], sync_yak_dir: SyncPath) -> list[SearchResult]:
+    """Process raw search results into SearchResult objects.
+
+    Returns:
+        List of SearchResult objects with previews.
+    """
+    results = []
+    seen = set()
+    for path, line_num, word in search_results:
+        key = (path, line_num)
+        if key not in seen:
+            seen.add(key)
+            file_path = sync_yak_dir / path
+            try:
+                content = file_path.read_text(encoding="utf-8")
+                lines = content.splitlines()
+                if 1 <= line_num <= len(lines):
+                    preview = lines[line_num - 1].strip()
+                    results.append(SearchResult(path=path, line_num=line_num, preview=preview, word=word))
+            except Exception as exc:
+                log(f"WARNING: Error reading file {file_path}: {exc}")
+    return results
 
 
 async def search_handler(request: Request) -> Response:
@@ -496,59 +559,21 @@ async def search_handler(request: Request) -> Response:
     yak_dir = await get_yak_dir()
     sync_yak_dir = SyncPath(yak_dir)
 
-    # Check if we need to update the index
-    try:
-        if should_update_index(sync_yak_dir):
-            update_search_index(sync_yak_dir)
-        else:
-            # Also update if database has no words (e.g., after reset)
-            con = get_search_db()
-            result = con.execute("SELECT COUNT(*) FROM words").fetchone()
-            con.close()
-            if result and result[0] == 0:
-                update_search_index(sync_yak_dir)
-    except Exception as exc:
-        log(f"WARNING: Failed to update search index: {exc}")
-        # Continue with search even if update fails
+    # Ensure index is updated
+    _ensure_search_index_updated(sync_yak_dir)
 
-    # Search the database
+    # Perform search
     try:
-        con = get_search_db()
-        threshold = max(1, len(query) // 4)
-        sql = """
-            SELECT path, line_num, word
-            FROM words
-            WHERE levenshtein(word, lower(?)) <= ?
-            ORDER BY levenshtein(word, lower(?))
-            LIMIT 1000
-        """
-        search_results = con.execute(sql, (query, threshold, query)).fetchall()
-        con.close()
+        search_results = _perform_search(query)
     except Exception as exc:
         log(f"ERROR: Search database query failed: {exc}")
         return render_error("Search is temporarily unavailable", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
-    # Group by path and line_num, take first match per line
-    results = []
-    seen = set()
-    for path, line_num, word in search_results:
-        key = (path, line_num)
-        if key not in seen:
-            seen.add(key)
-            # Get the line content (simplified - could cache this)
-            file_path = sync_yak_dir / path
-            try:
-                content = file_path.read_text(encoding="utf-8")
-                lines = content.splitlines()
-                if 1 <= line_num <= len(lines):
-                    preview = lines[line_num - 1].strip()
-                    results.append(SearchResult(path=path, line_num=line_num, preview=preview, word=word))
-            except Exception as exc:
-                log(f"WARNING: Error reading file {file_path}: {exc}")
-                continue
+    # Process results
+    results = _process_search_results(search_results, sync_yak_dir)
 
     if is_htmx:
-        return _render_template("search_results.html.jinja", results=results, query=query)
+        return _render_template("search/search_results.html.jinja", results=results, query=query)
 
     return render_search(results, query)
 

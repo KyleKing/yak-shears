@@ -4,7 +4,7 @@
 
 {% block extra_head %}
   <script>
-    window.setupResults = function() {};
+  window.setupResults = function() {};
   </script>
   <script src="/static/js/search.js"></script>
 {% endblock %}
@@ -12,7 +12,7 @@
 {% block content %}
   <div class="search-modal">
     <div class="search-input-container">
-       <form action="/search" method="get" class="search-form" hx-get="/search" hx-target="#search-results-container" hx-trigger="input changed delay:300ms, submit" hx-push-url="true">
+      <form action="/search" method="get" class="search-form" hx-get="/search" hx-target="#search-results-container" hx-trigger="input changed delay:300ms, submit" hx-push-url="true">
         <input
           type="text"
           name="query"

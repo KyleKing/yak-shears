@@ -1,5 +1,5 @@
 import pytest
-from playwright.async_api import BrowserContext, Page
+from playwright.async_api import BrowserContext, Page, expect
 
 from ._helpers import login
 
@@ -21,20 +21,16 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
     await search_input.fill("yak")
     # Wait for HTMX to trigger search (300ms delay)
     await page.wait_for_timeout(500)
-
-    # Wait for results
     await page.wait_for_selector(".search-results-list")
 
     # Check that results are displayed
     results = page.locator(".search-result")
     count = await results.count()
-    assert count > 0, "No search results found"
+    assert count > 1, "Expected at least two matches"
 
     # Check first result
     first_result = results.first
-    text = await first_result.text_content()
-    assert text is not None, "Result text should not be None"
-    assert "yak1.dj" in text, f"Expected yak1.dj in result, got: {text}"
+    await expect(first_result).to_contain_text("yak1.dj")
 
     # Check data attributes
     data_path = await first_result.get_attribute("data-path")
@@ -59,29 +55,19 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
     assert len(preview_text.strip()) > 0, "Preview should contain content"
 
     # Test arrow key navigation updates preview
-    if count > 1:
-        # Press arrow down to select second result
-        await page.keyboard.press("ArrowDown")
-
-        # Wait a bit for preview to update
-        await page.wait_for_timeout(100)
-
-        # Check that preview content changed (different line numbers or content)
-        new_preview_text = await preview_content.text_content()
-        # The preview should be different or at least exist
-        assert new_preview_text is not None, "New preview text should not be None"
-        assert len(new_preview_text.strip()) > 0, "Preview should still contain content after navigation"
+    await page.keyboard.press("ArrowDown")
+    await page.wait_for_timeout(100)
+    # Check that preview content changed (different line numbers or content)
+    new_preview_text = await preview_content.text_content()
+    # The preview should be different or at least exist
+    assert new_preview_text is not None, "New preview text should not be None"
+    assert len(new_preview_text.strip()) > 0, "Preview should still contain content after navigation"
 
     # Test arrow key navigation updates preview
-    if count > 1:
-        # Press arrow down to select second result
-        await page.keyboard.press("ArrowDown")
-
-        # Wait a bit for preview to update
-        await page.wait_for_timeout(100)
-
-        # Check that preview content changed (different line numbers or content)
-        new_preview_text = await preview_content.text_content()
-        # The preview should be different or at least exist
-        assert new_preview_text is not None, "New preview text should not be None after second navigation"
-        assert len(new_preview_text.strip()) > 0, "Preview should still contain content after second navigation"
+    await page.keyboard.press("ArrowDown")
+    await page.wait_for_timeout(100)
+    # Check that preview content changed (different line numbers or content)
+    new_preview_text = await preview_content.text_content()
+    # The preview should be different or at least exist
+    assert new_preview_text is not None, "New preview text should not be None after second navigation"
+    assert len(new_preview_text.strip()) > 0, "Preview should still contain content after second navigation"
