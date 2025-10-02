@@ -1,9 +1,11 @@
 {% extends "base.html.jinja" %}
 
 {% block extra_head %}
+  <link rel="stylesheet" href="/static/css/prism.min.css">
   <script src="https://unpkg.com/@djot/djot@0.3.2/dist/djot.js"></script>
   <script src="/static/js/codejar.min.js"></script>
   <script src="/static/js/highlight.js"></script>
+  <script src="/static/js/prism.min.js"></script>
 {% endblock %}
 
 {% block title %}Editing {{ yak_name }}{% endblock %}

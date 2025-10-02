@@ -12,11 +12,14 @@
     <link href="/static/css/main.css" rel="stylesheet"/>
     <script src="/static/js/htmx.min.js">
     </script>
+    <link href="/static/css/prism.min.css" rel="stylesheet"/>
     <script src="https://unpkg.com/@djot/djot@0.3.2/dist/djot.js">
     </script>
     <script src="/static/js/codejar.min.js">
     </script>
     <script src="/static/js/highlight.js">
+    </script>
+    <script src="/static/js/prism.min.js">
     </script>
    </head>
    <body class="layout">

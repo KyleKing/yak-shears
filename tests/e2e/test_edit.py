@@ -40,8 +40,6 @@ async def test_editor_highlight_behavior(context: BrowserContext, page: Page, se
     await _validate_highlight(page, "- [x] done", ".checkbox.checked", "[x]")
     await _validate_highlight(page, "- [ ] incomplete", ".checkbox.unchecked", "[ ]")
 
-    # PLANNED: Integrate with Prism.js (v2 on master) or Highlight.js for syntax highlighting within code blocks
-
     # TODO: Implement and test auto-completion for:
     # = List indention (tab and shift-tab to cycle list or not, and introduce newline above if indenting beyond prior)
     # - Ctrl-L to toggle checklist state (none, unchecked, checked)
@@ -123,6 +121,31 @@ async def test_delete_yak(context: BrowserContext, page: Page, server_lifecycle)
         # Clean up if not deleted
         if yak_path.exists():
             yak_path.unlink()
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_preview_syntax_highlighting(context: BrowserContext, page: Page, server_lifecycle):
+    """Test that code blocks in the preview are syntax highlighted using Prism.js."""
+    await login(context, page)
+
+    await page.goto("/edit?yak=yak1.dj")
+
+    # Switch to side-by-side view to show preview
+    await page.locator("button[data-view='side-by-side']").click()
+
+    # Fill editor with content containing a code block
+    test_content = "Some text\n\n```python\nimport os\nprint('hello')\n```"
+    await _fill_editor(page=page, fill=test_content)
+
+    # Wait for preview to update
+    await page.wait_for_timeout(1000)
+
+    # Check that the preview contains code block with correct language class
+    preview = page.locator("#preview-content")
+    code_block = preview.locator("pre code.language-python")
+    await expect(code_block).to_be_visible()
+    await expect(code_block).to_contain_text("import")
 
 
 @pytest.mark.playwright

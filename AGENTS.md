@@ -111,10 +111,12 @@ Now implemented with CodeJar
 - When typing enter from a bulleted or numbered list, the next line is automatically started with a continuation with matching indentation
 - Supports toggling italic and bold on the selected text. On mobile, the keyboard is extended with buttons to apply bullet or italic to highlighted text
 - Toggle between three view modes: Editor-only, Side-by-side (editor and preview), and Preview-only
+- Preview includes syntax highlighting for code blocks using Prism.js v1.29.0, with language detection from Djot AST "lang" attribute
 
 ### Note Preview
 
 - Renders with djot library (`djot.renderHTML(djot.parse("<content>"))`)
+- Includes syntax highlighting for code blocks using Prism.js v1.29.0 with language detection from Djot AST "lang" attribute
 
 ### Search
 

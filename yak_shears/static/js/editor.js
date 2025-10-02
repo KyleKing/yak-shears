@@ -17,6 +17,12 @@ function renderPreview(content) {
 		try {
 			const html = window.djot.renderHTML(window.djot.parse(content));
 			previewContent.innerHTML = html;
+			if (window.Prism) {
+				const codes = previewContent.querySelectorAll(
+					'code[class*="language-"]',
+				);
+				codes.forEach((code) => window.Prism.highlightElement(code));
+			}
 		} catch (error) {
 			console.error("Error rendering preview:", error);
 			previewContent.textContent = content;
