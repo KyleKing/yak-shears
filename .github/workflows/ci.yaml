@@ -36,11 +36,7 @@ jobs:
           mise run build
 
       - name: Create test user
-        run: |
-          uv run yak-shears-users create test@example.com <<EOF
-          Secure123
-          Secure123
-          EOF
+        run: uv run yak-shears-users create test@example.com --password=secure123
 
       - name: Type Typecheck
         run: mise run typecheck

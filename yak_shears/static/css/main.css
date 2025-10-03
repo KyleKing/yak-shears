@@ -60,6 +60,7 @@ input,
 textarea,
 select {
 	font: inherit;
+	color: inherit;
 }
 
 button {
@@ -280,6 +281,7 @@ button {
 	border: 1px solid var(--color-border);
 	border-radius: var(--radius-sm);
 	background: var(--color-surface);
+	color: var(--color-text);
 	font: inherit;
 	transition: border-color var(--transition-fast);
 }
@@ -327,6 +329,7 @@ button {
 	border: 1px solid var(--color-border);
 	border-radius: var(--radius-sm);
 	background: var(--color-surface);
+	color: var(--color-text);
 	font: inherit;
 	transition: border-color var(--transition-fast);
 }

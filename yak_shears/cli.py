@@ -34,14 +34,20 @@ async def _create_user_command(args: argparse.Namespace) -> None:
         log(f"Error: User with email '{email}' already exists", file=sys.stderr)
         sys.exit(1)
 
-    if not (password := Password(getpass.getpass("Enter password: "))):
-        log("Error: Password cannot be empty", file=sys.stderr)
-        sys.exit(1)
+    if args.password:
+        password = Password(args.password)
+        if not password:
+            log("Error: Password cannot be empty", file=sys.stderr)
+            sys.exit(1)
+    else:
+        if not (password := Password(getpass.getpass("Enter password: "))):
+            log("Error: Password cannot be empty", file=sys.stderr)
+            sys.exit(1)
 
-    password_confirm = getpass.getpass("Confirm password: ")
-    if password != password_confirm:
-        log("Error: Passwords do not match", file=sys.stderr)
-        sys.exit(1)
+        password_confirm = getpass.getpass("Confirm password: ")
+        if password != password_confirm:
+            log("Error: Passwords do not match", file=sys.stderr)
+            sys.exit(1)
 
     try:
         user = await create_user(email, display_name, password)
@@ -116,6 +122,7 @@ async def main() -> None:
     create_parser = subparsers.add_parser("create", help="Create a new user")
     create_parser.add_argument("email", help="User email address")
     create_parser.add_argument("--display-name", help="User display name (defaults to email)")
+    create_parser.add_argument("--password", help="User password intended only for CI")
     create_parser.set_defaults(func=_create_user_command)
 
     list_parser = subparsers.add_parser("list", help="List all users")
