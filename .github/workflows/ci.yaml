@@ -18,6 +18,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      # Override MISE_ENV=hk, which is local-only
       - uses: jdx/mise-action@v2
         with:
           mise_toml: |
@@ -28,18 +29,28 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+
       - name: Install dependencies
         run: |
           uv sync
           mise run build
+
+      - name: Create test user
+        run: |
+          uv run yak-shears-users create test@example.com <<EOF
+          Secure123
+          Secure123
+          EOF
 
       - name: Type Typecheck
         run: mise run typecheck
 
       - name: Install Playwright browser for headless Chrome (fastest install)
         run: uv run playwright install chromium --only-shell
+
       - name: Run Tests
         run: mise run test
+
       - name: Upload test artifacts on failure
         if: ${{ !cancelled() && failure() }}
         uses: actions/upload-artifact@v4
