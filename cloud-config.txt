@@ -1,0 +1,144 @@
+#cloud-config
+# https://community.hetzner.com/tutorials/basic-cloud-config
+# https://cloudinit.readthedocs.io/en/latest/reference/examples.html#
+users:
+  - name: yakshears
+    groups: users, admin
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - <public_ssh_key>
+packages:
+  - fail2ban
+  - ufw
+  - git
+  - curl
+  - gnupg2
+  - apt-transport-https
+  - debian-keyring
+  - debian-archive-keyring
+package_update: true
+package_upgrade: true
+write_files:
+  - path: /etc/ssh/sshd_config.d/ssh-hardening.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      Port 2222
+      KbdInteractiveAuthentication no
+      ChallengeResponseAuthentication no
+      MaxAuthTries 2
+      AllowTcpForwarding no
+      X11Forwarding no
+      AllowAgentForwarding no
+      AuthorizedKeysFile .ssh/authorized_keys
+      AllowUsers yakshears
+  - path: /etc/systemd/system/yak-shears.service
+    content: |
+      [Unit]
+      Description=Yak Shears Server
+      After=network.target
+
+      [Service]
+      User=yakshears
+      WorkingDirectory=/home/yakshears/yak-shears
+      ExecStart=/home/yakshears/.local/bin/uv run --no-sync serve
+      Restart=always
+      Environment=YAK_SHEARS_DIR=/home/yakshears/Sync/yak-shears
+
+      [Install]
+      WantedBy=multi-user.target
+  - path: /usr/local/bin/gitops-update.sh
+    content: |
+      #!/bin/bash
+      cd /home/yakshears/yak-shears || exit 1
+      git fetch origin main
+      LOCAL=$(git rev-parse HEAD)
+      REMOTE=$(git rev-parse origin/main)
+       if [ "$LOCAL" != "$REMOTE" ]; then
+         git pull origin main
+         mise install
+         uv sync
+         systemctl restart yak-shears
+       fi
+  - path: /etc/systemd/system/gitops-update.service
+    content: |
+      [Unit]
+      Description=Check for git updates and restart if needed
+
+      [Service]
+      User=yakshears
+      ExecStart=/usr/local/bin/gitops-update.sh
+  - path: /etc/systemd/system/gitops-update.timer
+    content: |
+      [Unit]
+      Description=Run GitOps update every 5 minutes
+
+      [Timer]
+      OnBootSec=5min
+      OnUnitActiveSec=5min
+
+      [Install]
+      WantedBy=timers.target
+  - path: /etc/caddy/Caddyfile
+    content: |
+      {
+          email dev.act.kyle+caddy@gmail.com
+      }
+
+      yak-shears.kyleking.me {
+          reverse_proxy localhost:8084 {
+              header_up Host {host}
+              header_up X-Real-IP {remote_host}
+              header_up X-Forwarded-For {remote_host}
+              header_up X-Forwarded-Proto {scheme}
+          }
+          header {
+              Strict-Transport-Security "max-age=31536000; includeSubDomains"
+              X-Content-Type-Options "nosniff"
+              X-Frame-Options "DENY"
+              Referrer-Policy "same-origin"
+          }
+      }
+runcmd:
+  # Configure Linux
+  - printf "[sshd]\nenabled = true\nport = ssh, 2222\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
+  - systemctl enable fail2ban
+  - ufw allow 2222/tcp
+  - ufw allow http/tcp
+  - ufw allow https/tcp
+  - ufw allow 22000/tcp
+  - ufw allow 22000/udp
+  - ufw allow 21027/udp
+  - ufw --force enable
+  - apt update
+  # Install uv
+  - curl -LsSf https://astral.sh/uv/install.sh | sh
+  # Install mise
+  - curl -fsSL https://mise.jdx.dev/install.sh | sh
+  # Install Syncthing
+  - mkdir -p /etc/apt/keyrings
+  - curl -L -o /etc/apt/keyrings/syncthing-archive-keyring.gpg https://syncthing.net/release-key.gpg
+  - echo "deb [signed-by=/etc/apt/keyrings/syncthing-archive-keyring.gpg] https://apt.syncthing.net/ syncthing stable" | tee /etc/apt/sources.list.d/syncthing.list
+  - apt install -y syncthing
+  # Install Caddy
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+  - apt install -y caddy
+  # Setup Yak-Shears
+  - mkdir -p /home/yakshears/Sync/yak-shears
+  - chown -R yakshears:yakshears /home/yakshears/Sync
+  - su - yakshears -c "git clone https://github.com/KyleKing/yak-shears-py.git /home/yakshears/yak-shears"
+  - su - yakshears -c "cd /home/yakshears/yak-shears && mise install && /home/yakshears/.local/bin/uv sync"
+  # Setup services
+  - systemctl enable syncthing@yakshears.service
+  - systemctl start syncthing@yakshears.service
+  - systemctl enable caddy
+  - systemctl start caddy
+  - systemctl enable yak-shears
+  - systemctl start yak-shears
+  - chmod +x /usr/local/bin/gitops-update.sh
+  - chown yakshears:yakshears /usr/local/bin/gitops-update.sh
+  - systemctl enable gitops-update.timer
+  - systemctl start gitops-update.timer
+  - reboot
