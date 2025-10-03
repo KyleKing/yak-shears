@@ -13,7 +13,7 @@ from pathlib import Path as SyncPath
 from typing import Self
 from urllib.parse import quote
 
-import duckdb  # type: ignore[import-untyped]
+import duckdb
 from anyio import Path
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -96,7 +96,7 @@ def get_last_update_time() -> float:
     """
     with get_search_db() as con:
         result = con.execute("SELECT value FROM metadata WHERE key = 'last_update'").fetchone()
-    return float(result[0]) if result else 0
+    return float(result[0]) if result else 0.0
 
 
 def set_last_update_time(timestamp: float) -> None:
