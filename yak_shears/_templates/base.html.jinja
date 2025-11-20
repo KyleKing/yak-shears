@@ -9,28 +9,29 @@
     {% block extra_head %}{% endblock %}
   </head>
   <body class="layout">
-    <header class="header">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <header class="header" role="banner">
       <div class="container">
         <div class="header__bar">
-          <a href="/yaks" class="brand">
-            <div class="brand__logo">YS</div>
+          <a href="/yaks" class="brand" aria-label="Yak Shears home">
+            <div class="brand__logo" aria-hidden="true">YS</div>
             <span>Yak Shears</span>
           </a>
           <div class="header__center">
             {% block header_center %}{% endblock %}
           </div>
-          <nav>
+          <nav role="navigation" aria-label="Main navigation">
             <ul class="nav__list">
-              <li><a href="/yaks" class="nav__link{% if current_route == 'yaks' %} nav__link--active{% endif %}">Yaks</a></li>
-              <li><a href="/search" class="nav__link{% if current_route == 'search' %} nav__link--active{% endif %}">Search</a></li>
-              <li><a href="/new" class="nav__link{% if current_route == 'new' %} nav__link--active{% endif %}">New</a></li>
+              <li><a href="/yaks" class="nav__link{% if current_route == 'yaks' %} nav__link--active{% endif %}" {% if current_route == 'yaks' %}aria-current="page"{% endif %}>Yaks</a></li>
+              <li><a href="/search" class="nav__link{% if current_route == 'search' %} nav__link--active{% endif %}" {% if current_route == 'search' %}aria-current="page"{% endif %}>Search</a></li>
+              <li><a href="/new" class="nav__link{% if current_route == 'new' %} nav__link--active{% endif %}" {% if current_route == 'new' %}aria-current="page"{% endif %}>New</a></li>
             </ul>
           </nav>
         </div>
       </div>
     </header>
 
-    <main class="layout__inner">
+    <main class="layout__inner" role="main" id="main-content">
       <div class="container">
         {% block content %}{% endblock %}
       </div>
