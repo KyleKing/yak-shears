@@ -49,7 +49,9 @@ ENV = Environment(
 
 
 def get_category_color(category: str) -> str:
-    """Get a unique color for a category based on its name.
+    """Get a subtle, muted color for a category based on its name.
+
+    Returns a Scandinavian-style muted color with low saturation for minimal design.
 
     Returns:
         A CSS color string.
@@ -58,7 +60,8 @@ def get_category_color(category: str) -> str:
         return "#d9d4cc"  # default border color
     # Use sum of ords for stable hash-like value
     hue = sum(ord(c) for c in category) % 360
-    return f"hsl({hue}, 70%, 50%)"
+    # Use subtle, muted colors with low saturation for Scandinavian minimalism
+    return f"hsl({hue}, 20%, 75%)"
 
 
 def _render_template(template_name: str, *, status_code: HTTPStatus = HTTPStatus.OK, **context: Any) -> HTMLResponse:
