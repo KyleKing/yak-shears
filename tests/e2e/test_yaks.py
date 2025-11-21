@@ -1,5 +1,7 @@
+import re
+
 import pytest
-from playwright.async_api import BrowserContext, Page
+from playwright.async_api import BrowserContext, Page, expect
 
 from ._helpers import login
 
@@ -46,9 +48,7 @@ async def test_yaks_sorting_by_name(context: BrowserContext, page: Page, server_
     await page.wait_for_url("**/yaks?sort_by=name")
 
     # Verify the button is marked as active
-    from playwright.async_api import expect
-
-    await expect(sort_by_name).to_have_class(/button--primary/)
+    await expect(sort_by_name).to_have_class(re.compile(r"button--primary"))
 
 
 @pytest.mark.playwright
@@ -67,9 +67,7 @@ async def test_yaks_sorting_by_modified_date(context: BrowserContext, page: Page
     await page.wait_for_url("**/yaks?sort_by=modified_date")
 
     # Verify the button is marked as active
-    from playwright.async_api import expect
-
-    await expect(sort_by_modified).to_have_class(/button--primary/)
+    await expect(sort_by_modified).to_have_class(re.compile(r"button--primary"))
 
 
 @pytest.mark.playwright

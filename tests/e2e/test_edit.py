@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from playwright.async_api import BrowserContext, Page, expect
 
@@ -192,14 +194,14 @@ async def test_view_mode_toggles(context: BrowserContext, page: Page, server_lif
     editor_btn = page.locator("button[data-view='editor-only']")
     await editor_btn.click()
     container = page.locator(".editor-container")
-    await expect(container).to_have_class(/editor-only/)
+    await expect(container).to_have_class(re.compile(r"editor-only"))
 
     # Test Side-by-side view
     sidebyside_btn = page.locator("button[data-view='side-by-side']")
     await sidebyside_btn.click()
-    await expect(container).to_have_class(/side-by-side/)
+    await expect(container).to_have_class(re.compile(r"side-by-side"))
 
     # Test Preview-only view
     preview_btn = page.locator("button[data-view='preview-only']")
     await preview_btn.click()
-    await expect(container).to_have_class(/preview-only/)
+    await expect(container).to_have_class(re.compile(r"preview-only"))

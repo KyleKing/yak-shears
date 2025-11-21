@@ -11,8 +11,8 @@ async def test_login_success(context: BrowserContext, page: Page, server_lifecyc
     await page.goto("/")
 
     # Should redirect to login page
-    await expect(page).to_have_url("/login")
-    await expect(page).to_have_title("Login")
+    await expect(page).to_have_url("/auth/login?redirect=http://127.0.0.1:8000/yaks")
+    await expect(page).to_have_title("Login to Yak-Shears")
 
     # Fill in credentials
     await page.fill("input[name='email']", "test@example.com")
@@ -30,7 +30,7 @@ async def test_login_success(context: BrowserContext, page: Page, server_lifecyc
 @pytest.mark.asyncio
 async def test_login_failure_wrong_password(context: BrowserContext, page: Page, server_lifecycle):
     """Test login failure with wrong password."""
-    await page.goto("/login")
+    await page.goto("/auth/login")
 
     # Fill in credentials with wrong password
     await page.fill("input[name='email']", "test@example.com")
@@ -40,7 +40,7 @@ async def test_login_failure_wrong_password(context: BrowserContext, page: Page,
     await page.click("button[type='submit']")
 
     # Should stay on login page and show error
-    await expect(page).to_have_url("/login")
+    await expect(page).to_have_url("/auth/login")
     error_message = page.locator(".alert, .error, [role='alert']")
     await expect(error_message).to_be_visible()
 
@@ -49,7 +49,7 @@ async def test_login_failure_wrong_password(context: BrowserContext, page: Page,
 @pytest.mark.asyncio
 async def test_login_failure_nonexistent_user(context: BrowserContext, page: Page, server_lifecycle):
     """Test login failure with nonexistent user."""
-    await page.goto("/login")
+    await page.goto("/auth/login")
 
     # Fill in credentials for nonexistent user
     await page.fill("input[name='email']", "nonexistent@example.com")
@@ -59,7 +59,7 @@ async def test_login_failure_nonexistent_user(context: BrowserContext, page: Pag
     await page.click("button[type='submit']")
 
     # Should stay on login page and show error
-    await expect(page).to_have_url("/login")
+    await expect(page).to_have_url("/auth/login")
     error_message = page.locator(".alert, .error, [role='alert']")
     await expect(error_message).to_be_visible()
 
@@ -73,8 +73,8 @@ async def test_redirect_to_login_when_not_authenticated(context: BrowserContext,
 
     for url in protected_urls:
         await page.goto(url)
-        # Should redirect to login
-        await expect(page).to_have_url("/login", timeout=3000)
+        # Should redirect to login with redirect parameter
+        await expect(page).to_have_url("**/auth/login?redirect=**", timeout=3000)
 
 
 @pytest.mark.playwright
@@ -82,7 +82,7 @@ async def test_redirect_to_login_when_not_authenticated(context: BrowserContext,
 async def test_session_persistence(context: BrowserContext, page: Page, server_lifecycle):
     """Test that session persists across page loads."""
     # Login
-    await page.goto("/login")
+    await page.goto("/auth/login")
     await page.fill("input[name='email']", "test@example.com")
     await page.fill("input[name='password']", "secure123")
     await page.click("button[type='submit']")
