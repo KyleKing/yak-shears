@@ -31,6 +31,22 @@
 		--color-text: #ffffff;
 		--color-text-dim: #c7c3ba;
 		--color-border: #2c2c2b;
+		--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+		--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+		--shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+	}
+
+	.button--primary:hover {
+		background: #f4c935;
+		filter: brightness(0.95);
+	}
+
+	.login-form {
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+	}
+
+	.card::before {
+		opacity: 0.8;
 	}
 }
 
@@ -868,6 +884,28 @@ pre code {
 	}
 }
 
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slideDown {
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
 .loading-message {
 	display: none;
 	color: var(--color-text-dim);
@@ -877,6 +915,74 @@ pre code {
 
 .htmx-request + .loading-message {
 	display: block;
+}
+
+/* Subtle page animations */
+.card {
+	animation: fadeIn 0.3s ease-out;
+}
+
+.card:nth-child(1) {
+	animation-delay: 0ms;
+}
+.card:nth-child(2) {
+	animation-delay: 50ms;
+}
+.card:nth-child(3) {
+	animation-delay: 100ms;
+}
+.card:nth-child(4) {
+	animation-delay: 150ms;
+}
+.card:nth-child(5) {
+	animation-delay: 200ms;
+}
+.card:nth-child(6) {
+	animation-delay: 250ms;
+}
+
+.empty-state {
+	animation: fadeIn 0.4s ease-out;
+}
+
+.alert {
+	animation: slideDown 0.3s ease-out;
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+
+	.card {
+		animation: none;
+	}
+
+	.empty-state {
+		animation: none;
+	}
+
+	.alert {
+		animation: none;
+	}
+}
+
+/* Performance optimizations */
+.card,
+.button,
+.nav__link {
+	will-change: transform;
+}
+
+.card:hover,
+.button:hover,
+.nav__link:hover {
+	will-change: auto;
 }
 
 /* Highlight matches */

@@ -178,3 +178,28 @@ async def test_text_stability_during_editing(context: BrowserContext, page: Page
     # Also verify the full content matches exactly
     actual_content = await editor.text_content()
     assert actual_content == expected_content
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_view_mode_toggles(context: BrowserContext, page: Page, server_lifecycle):
+    """Test view mode toggles work correctly."""
+    await login(context, page)
+
+    await page.goto("/edit?yak=yak1.dj")
+
+    # Test Editor-only view
+    editor_btn = page.locator("button[data-view='editor-only']")
+    await editor_btn.click()
+    container = page.locator(".editor-container")
+    await expect(container).to_have_class(/editor-only/)
+
+    # Test Side-by-side view
+    sidebyside_btn = page.locator("button[data-view='side-by-side']")
+    await sidebyside_btn.click()
+    await expect(container).to_have_class(/side-by-side/)
+
+    # Test Preview-only view
+    preview_btn = page.locator("button[data-view='preview-only']")
+    await preview_btn.click()
+    await expect(container).to_have_class(/preview-only/)
