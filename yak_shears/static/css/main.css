@@ -972,19 +972,6 @@ pre code {
 	}
 }
 
-/* Performance optimizations */
-.card,
-.button,
-.nav__link {
-	will-change: transform;
-}
-
-.card:hover,
-.button:hover,
-.nav__link:hover {
-	will-change: auto;
-}
-
 /* Highlight matches */
 .search-highlight {
 	background: var(--color-accent);

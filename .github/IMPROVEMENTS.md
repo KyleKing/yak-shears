@@ -171,15 +171,15 @@ All improvements were implemented across **4 phases** with a focus on:
 - Accessibility-first approach
 
 **CSS Performance:**
-- `will-change: transform` on animated elements
-- Automatic cleanup after hover (`will-change: auto`)
 - Optimized animation durations and timing functions
+- Efficient transforms using GPU-accelerated properties (transform, opacity)
+- No unnecessary performance hints (browser handles simple transforms efficiently)
 
 ### Results
 - Polished, professional feel with subtle motion
 - Respects user accessibility preferences
 - Better dark mode consistency
-- Performance-optimized animations
+- Performance-conscious animations
 
 ---
 
@@ -230,7 +230,7 @@ All improvements were implemented across **4 phases** with a focus on:
 
 ### Performance Conscious
 1. **Minimal animations**: Only where they add value
-2. **Optimized CSS**: will-change for GPU acceleration
+2. **Optimized CSS**: GPU-accelerated properties (transform, opacity)
 3. **Reduced motion support**: Accessibility over aesthetics
 4. **Smooth transitions**: ease-out timing for natural feel
 
