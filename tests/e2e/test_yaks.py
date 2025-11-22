@@ -83,9 +83,7 @@ async def test_yaks_card_navigation(context: BrowserContext, page: Page, server_
     await first_card.click()
 
     # Should navigate to edit page
-    from playwright.async_api import expect
-
-    await expect(page).to_have_url(/\/edit\?yak=.*/)
+    await expect(page).to_have_url(re.compile(r"/edit\?yak=.*"))
 
 
 @pytest.mark.playwright
@@ -98,8 +96,6 @@ async def test_yaks_displays_cards(context: BrowserContext, page: Page, server_l
 
     # Check that cards are present
     cards = page.locator(".card")
-    from playwright.async_api import expect
-
     await expect(cards.first).to_be_visible()
 
     # Check that cards have content
@@ -118,8 +114,6 @@ async def test_yaks_responsive_layout(context: BrowserContext, page: Page, serve
     await page.goto("/yaks")
 
     cards_container = page.locator(".cards")
-    from playwright.async_api import expect
-
     await expect(cards_container).to_be_visible()
 
     # Test on tablet

@@ -1,5 +1,7 @@
 """E2E tests for new yak creation functionality."""
 
+import re
+
 import pytest
 from playwright.async_api import BrowserContext, Page, expect
 
@@ -44,7 +46,7 @@ async def test_create_new_yak_with_existing_category(context: BrowserContext, pa
         await page.click("button[type='submit']")
 
         # Should redirect to edit page
-        await expect(page).to_have_url(/\/edit\?yak=.*/)
+        await expect(page).to_have_url(re.compile(r"/edit\?yak=.*"))
 
 
 @pytest.mark.playwright
@@ -63,7 +65,7 @@ async def test_create_new_yak_with_new_category(context: BrowserContext, page: P
     await page.click("button[type='submit']")
 
     # Should redirect to edit page
-    await expect(page).to_have_url(/\/edit\?yak=.*/)
+    await expect(page).to_have_url(re.compile(r"/edit\?yak=.*"))
 
 
 @pytest.mark.playwright
@@ -106,5 +108,5 @@ async def test_new_yak_requires_authentication(context: BrowserContext, page: Pa
     # Try to access without logging in
     await page.goto("/new")
 
-    # Should redirect to login
-    await expect(page).to_have_url("/login")
+    # Should redirect to login with redirect parameter
+    await expect(page).to_have_url("**/auth/login?redirect=**")
