@@ -72,6 +72,7 @@ addopts = "tests --strict-markers --durations=5 --browser=chromium --timeout=25"
 asyncio_default_test_loop_scope = "session"
 markers = [
   "playwright: e2e browser tests",
+  "allow_console_errors: allow console errors in browser tests (e.g., expected 400 responses)",
 ]
 
 [tool.pytest-watcher]

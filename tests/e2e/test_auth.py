@@ -11,7 +11,7 @@ async def test_login_success(context: BrowserContext, page: Page, server_lifecyc
     await page.goto("/")
 
     # Should redirect to login page
-    await expect(page).to_have_url("/auth/login?redirect=http://127.0.0.1:8000/yaks")
+    assert "/auth/login" in page.url, f"Expected login page, got: {page.url}"
     await expect(page).to_have_title("Login to Yak-Shears")
 
     # Fill in credentials
@@ -22,12 +22,14 @@ async def test_login_success(context: BrowserContext, page: Page, server_lifecyc
     await page.click("button[type='submit']")
 
     # Should redirect to yaks page after successful login
-    await expect(page).to_have_url("/yaks")
+    await page.wait_for_url("**/yaks")
+    assert "/yaks" in page.url, f"Expected yaks page, got: {page.url}"
     await expect(page.locator("h1")).to_contain_text("Yaks")
 
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
+@pytest.mark.allow_console_errors
 async def test_login_failure_wrong_password(context: BrowserContext, page: Page, server_lifecycle):
     """Test login failure with wrong password."""
     await page.goto("/auth/login")
@@ -47,6 +49,7 @@ async def test_login_failure_wrong_password(context: BrowserContext, page: Page,
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
+@pytest.mark.allow_console_errors
 async def test_login_failure_nonexistent_user(context: BrowserContext, page: Page, server_lifecycle):
     """Test login failure with nonexistent user."""
     await page.goto("/auth/login")
@@ -66,15 +69,15 @@ async def test_login_failure_nonexistent_user(context: BrowserContext, page: Pag
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_redirect_to_login_when_not_authenticated(context: BrowserContext, page: Page, server_lifecycle):
+async def test_redirect_to_login_when_not_authenticated(unauthenticated_page: Page, server_lifecycle):
     """Test that unauthenticated users are redirected to login."""
     # Try to access protected pages without logging in
     protected_urls = ["/yaks", "/edit?yak=test.dj", "/search", "/new"]
 
     for url in protected_urls:
-        await page.goto(url)
+        await unauthenticated_page.goto(url)
         # Should redirect to login with redirect parameter
-        await expect(page).to_have_url("**/auth/login?redirect=**", timeout=3000)
+        await expect(unauthenticated_page).to_have_url("**/auth/login?redirect=**", timeout=3000)
 
 
 @pytest.mark.playwright

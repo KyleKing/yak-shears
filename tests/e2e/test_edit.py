@@ -190,18 +190,18 @@ async def test_view_mode_toggles(context: BrowserContext, page: Page, server_lif
 
     await page.goto("/edit?yak=yak1.dj")
 
-    # Test Editor-only view
-    editor_btn = page.locator("button[data-view='editor-only']")
+    # Test Editor view
+    editor_btn = page.locator("button[data-view='editor']")
     await editor_btn.click()
     container = page.locator(".editor-container")
-    await expect(container).to_have_class(re.compile(r"editor-only"))
+    await expect(container).to_have_class(re.compile(r"editor\b"))
 
     # Test Side-by-side view
     sidebyside_btn = page.locator("button[data-view='side-by-side']")
     await sidebyside_btn.click()
-    await expect(container).to_have_class(re.compile(r"side-by-side"))
+    await expect(container).to_have_class(re.compile(r"sidebyside\b"))
 
-    # Test Preview-only view
-    preview_btn = page.locator("button[data-view='preview-only']")
+    # Test Preview view
+    preview_btn = page.locator("button[data-view='preview']")
     await preview_btn.click()
-    await expect(container).to_have_class(re.compile(r"preview-only"))
+    await expect(container).to_have_class(re.compile(r"preview\b"))

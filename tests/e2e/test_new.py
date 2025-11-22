@@ -103,10 +103,10 @@ async def test_new_yak_from_navigation(context: BrowserContext, page: Page, serv
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_new_yak_requires_authentication(context: BrowserContext, page: Page, server_lifecycle):
+async def test_new_yak_requires_authentication(unauthenticated_page: Page, server_lifecycle):
     """Test that new yak page requires authentication."""
     # Try to access without logging in
-    await page.goto("/new")
+    await unauthenticated_page.goto("/new")
 
     # Should redirect to login with redirect parameter
-    await expect(page).to_have_url("**/auth/login?redirect=**")
+    await expect(unauthenticated_page).to_have_url("**/auth/login?redirect=**")
