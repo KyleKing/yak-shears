@@ -1,0 +1,200 @@
+#cloud-config
+# Hetzner Cloud-Init Configuration for mdformat-plugin-template
+#
+# ⚠️  REQUIRED: Replace ALL variables in ALL CAPS before deployment
+#
+# CHECKLIST:
+# [ ] YOUR_USERNAME - Your preferred username (e.g., deploy)
+# [ ] YOUR_SSH_PUBLIC_KEY_HERE - Full SSH public key from ~/.ssh/id_rsa.pub
+# [ ] YOUR_GITHUB_USERNAME - GitHub username for repository access
+# [ ] Review passwordless sudo configuration (see security note below)
+
+# SECURITY NOTE: This configuration grants passwordless sudo for convenience.
+# For production, consider:
+#   1. Restrict sudo to specific commands: "sudo: /usr/bin/systemctl, /usr/local/bin/auto-deploy.sh"
+#   2. Require passwords: Remove NOPASSWD
+#   3. Use SSH key constraints: Add command= restrictions in authorized_keys
+
+users:
+  - name: YOUR_USERNAME
+    groups: users, admin, sudo
+    sudo: ALL=(ALL) NOPASSWD:ALL  # ⚠️  See security note above
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - YOUR_SSH_PUBLIC_KEY_HERE
+
+packages:
+  - git
+  - curl
+  - wget
+  - build-essential
+  - syncthing
+
+write_files:
+  # SSH hardening - drop-in configuration
+  - path: /etc/ssh/sshd_config.d/50-hardening.conf
+    permissions: '0644'
+    content: |
+      # Hardened SSH configuration
+      PasswordAuthentication no
+      PubkeyAuthentication yes
+      PermitRootLogin no
+      X11Forwarding no
+
+  # Auto-deploy script
+  - path: /usr/local/bin/auto-deploy.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      APP_USER="YOUR_USERNAME"
+      APP_DIR="/opt/mdformat-plugin-template"
+      LOG_DIR="/home/$APP_USER/.local/var/log"
+      LOG_FILE="$LOG_DIR/auto-deploy.log"
+
+      # Ensure log directory exists
+      mkdir -p "$LOG_DIR"
+
+      log() {
+        echo "[$(date -Iseconds)] $*" | tee -a "$LOG_FILE"
+      }
+
+      log "Starting auto-deploy"
+
+      if [ ! -d "$APP_DIR" ]; then
+        log "ERROR: App directory $APP_DIR does not exist"
+        exit 1
+      fi
+
+      cd "$APP_DIR" || { log "ERROR: Cannot cd to $APP_DIR"; exit 1; }
+
+      # Fetch latest changes
+      if ! git fetch origin main; then
+        log "ERROR: git fetch failed"
+        exit 1
+      fi
+
+      # Check if there are new commits
+      LOCAL=$(git rev-parse HEAD)
+      REMOTE=$(git rev-parse origin/main)
+
+      if [ "$LOCAL" != "$REMOTE" ]; then
+        log "New commits detected, updating..."
+
+        if ! git pull origin main; then
+          log "ERROR: git pull failed"
+          exit 1
+        fi
+
+        # Install/update dependencies with mise
+        log "Installing dependencies with mise..."
+        if ! /home/$APP_USER/.local/bin/mise install; then
+          log "ERROR: mise install failed"
+          exit 1
+        fi
+
+        log "Deploy complete"
+      else
+        log "Already up to date"
+      fi
+
+  # Auto-deploy systemd service
+  - path: /etc/systemd/system/auto-deploy.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Auto-deploy mdformat-plugin-template
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      User=YOUR_USERNAME
+      ExecStart=/usr/local/bin/auto-deploy.sh
+      StandardOutput=journal
+      StandardError=journal
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # Auto-deploy systemd timer (runs every 5 minutes)
+  - path: /etc/systemd/system/auto-deploy.timer
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Auto-deploy timer for mdformat-plugin-template
+
+      [Timer]
+      OnBootSec=2min
+      OnUnitActiveSec=5min
+      Persistent=true
+
+      [Install]
+      WantedBy=timers.target
+
+  # Syncthing systemd service
+  - path: /etc/systemd/system/syncthing@.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Syncthing for %i
+      After=network.target
+
+      [Service]
+      User=%i
+      ExecStart=/usr/bin/syncthing serve --no-browser --no-restart --logflags=0
+      Restart=on-failure
+      RestartSec=5
+      SuccessExitStatus=3 4
+      RestartForceExitStatus=3 4
+
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  # SECURITY NOTE: Installing mise via piped remote script
+  # This command downloads and executes code from the internet
+  # In production, consider:
+  #   1. Verifying checksums
+  #   2. Pinning specific versions
+  #   3. Self-hosting installation scripts
+
+  # Install mise (using explicit path to avoid tilde expansion issues)
+  - su - YOUR_USERNAME -c 'curl https://mise.run | sh'
+  - su - YOUR_USERNAME -c 'echo "eval \"\$(/home/YOUR_USERNAME/.local/bin/mise activate bash)\"" >> /home/YOUR_USERNAME/.bashrc'
+
+  # Clone repository with error handling
+  - >
+    if ! git clone https://github.com/YOUR_GITHUB_USERNAME/mdformat-plugin-template.git /opt/mdformat-plugin-template; then
+      echo "ERROR: Failed to clone repository" >&2;
+      exit 1;
+    fi
+  - chown -R YOUR_USERNAME:YOUR_USERNAME /opt/mdformat-plugin-template
+
+  # Setup mise for the project with error handling
+  - >
+    su - YOUR_USERNAME -c 'cd /opt/mdformat-plugin-template && /home/YOUR_USERNAME/.local/bin/mise install' ||
+    { echo "ERROR: mise install failed" >&2; exit 1; }
+
+  # Enable and start auto-deploy timer
+  - systemctl daemon-reload
+  - systemctl enable auto-deploy.timer
+  - systemctl start auto-deploy.timer
+
+  # Enable and start Syncthing
+  - systemctl enable syncthing@YOUR_USERNAME.service
+  - systemctl start syncthing@YOUR_USERNAME.service
+
+  # Restart SSH to apply hardening configuration
+  - systemctl restart sshd
+
+# Set timezone
+timezone: UTC
+
+# Auto-reboot if kernel is updated
+package_reboot_if_required: true
+
+# Run package updates on first boot
+package_update: true
+package_upgrade: true
