@@ -151,13 +151,21 @@ def render_yaks(
     )
 
 
-def render_yak_edit(yak_path: str, content: str, category: str) -> HTMLResponse:
+def render_yak_edit(
+    yak_path: str,
+    content: str,
+    category: str,
+    frontmatter: dict[str, Any] | None = None,
+    backlinks: list[tuple[str, str]] | None = None,
+) -> HTMLResponse:
     """Render the yak editor page.
 
     Args:
         yak_path: Path of the yak being edited
         content: Current content of the yak
         category: Category name
+        frontmatter: Frontmatter metadata dictionary
+        backlinks: List of (source_path, link_type) tuples
 
     Returns:
         HTMLResponse with the yak editor template
@@ -169,6 +177,8 @@ def render_yak_edit(yak_path: str, content: str, category: str) -> HTMLResponse:
         yak_path=yak_path,
         content=content,
         category=(category or "root").title(),
+        frontmatter=frontmatter or {},
+        backlinks=backlinks or [],
     )
 
 
