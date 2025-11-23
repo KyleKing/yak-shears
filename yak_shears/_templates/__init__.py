@@ -60,8 +60,8 @@ def get_category_color(category: str) -> str:
         return "#d9d4cc"  # default border color
     # Use sum of ords for stable hash-like value
     hue = sum(ord(c) for c in category) % 360
-    # Use subtle, muted colors with low saturation for Scandinavian minimalism
-    return f"hsl({hue}, 20%, 75%)"
+    # Use ultra-subtle colors with very low saturation for true Scandinavian minimalism
+    return f"hsl({hue}, 6%, 88%)"
 
 
 def _render_template(template_name: str, *, status_code: HTTPStatus = HTTPStatus.OK, **context: Any) -> HTMLResponse:
