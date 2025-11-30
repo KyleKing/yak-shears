@@ -5,7 +5,7 @@ from playwright.async_api import BrowserContext, Page, expect
 
 from tests.conftest import MOCK_YAK_DIR
 
-from ._helpers import login
+from ._helpers import login, maybe_screenshot
 
 
 async def _fill_editor(page: Page, fill: str) -> None:
@@ -31,7 +31,7 @@ async def test_editor_highlight_behavior(context: BrowserContext, page: Page, se
     await login(context, page)
 
     await page.goto("/edit?yak=yak1.dj")
-    await page.screenshot(path=".github/screenshots/edit-page.png")
+    await maybe_screenshot(page, ".github/screenshots/edit-page.png")
     editor = page.locator(".editor")
     await expect(editor).to_be_editable()
 

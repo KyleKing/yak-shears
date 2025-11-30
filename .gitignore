@@ -189,3 +189,5 @@ yak_shears_search.db
 .playwright-auth.json
 test-results/*
 tests/test_data/mock_djot_dir_0/*-untracked.dj
+tests/test_data/mock_djot_dir_0/mock_djot_dir_0/
+tests/test_data/mock_djot_dir_0/test-e2e-category/
