@@ -21,6 +21,7 @@ from yak_shears._templates import (
     render_yaks,
 )
 from yak_shears._yak.database import get_backlinks, get_frontmatter
+from yak_shears._yak.request_utils import extract_yak_path, is_htmx_request
 from yak_shears._yak.services import (
     create_yak,
     delete_yak,
@@ -124,12 +125,7 @@ async def new_yak_handler(request: Request) -> Response:
 async def edit_yak_handler(request: Request) -> Response:
     """Handle requests to /edit."""
     yak_dir = await get_yak_dir()
-
-    if request.headers.get("HX-Request") == "true":
-        form_data = await request.form()
-        yak_path_str = str(form_data.get("yak", ""))
-    else:
-        yak_path_str = request.query_params.get("yak") or ""
+    yak_path_str = await extract_yak_path(request)
 
     if not yak_path_str:
         return render_error("No `yak` path specified")
@@ -155,10 +151,9 @@ async def edit_yak_handler(request: Request) -> Response:
 async def search_handler(request: Request) -> Response:
     """Handle requests to /search."""
     query = request.query_params.get("query", "").strip()
-    is_htmx = request.headers.get("HX-Request") == "true"
 
     if not query:
-        if is_htmx:
+        if is_htmx_request(request):
             return HTMLResponse('<div class="search-empty"><p>Start typing to search your yaks...</p></div>')
         return render_search([], query)
 
@@ -175,7 +170,7 @@ async def search_handler(request: Request) -> Response:
         log(f"ERROR: Search database query failed: {exc}")
         return render_error("Search is temporarily unavailable", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
-    if is_htmx:
+    if is_htmx_request(request):
         return _render_template("search/search_results.html.jinja", results=results, query=query)
 
     return render_search(results, query)
@@ -184,12 +179,7 @@ async def search_handler(request: Request) -> Response:
 async def delete_yak_handler(request: Request) -> Response:
     """Handle requests to delete a yak."""
     yak_dir = await get_yak_dir()
-
-    if request.method == "POST":
-        form_data = await request.form()
-        yak_path_str = str(form_data.get("yak", ""))
-    else:
-        yak_path_str = request.query_params.get("yak") or ""
+    yak_path_str = await extract_yak_path(request)
 
     if not yak_path_str:
         return render_error("No `yak` path specified")
