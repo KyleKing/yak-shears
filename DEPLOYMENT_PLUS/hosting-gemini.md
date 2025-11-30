@@ -17,11 +17,32 @@ Caddy is known for its ease of use and automatic TLS certificate management. We'
     ```
 
 2.  **Install Caddy using the official repository:**
+
+    First, download and verify the GPG key:
     ```bash
     sudo apt update
     sudo apt install -y debian-keyring
-    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.sources
+
+    # Download the GPG key using TLS 1.2+ (enforced with --tlsv1.2)
+    curl --tlsv1.2 -sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' -o /tmp/caddy-gpg.key
+
+    # Verify the GPG key fingerprint
+    # Check the official Caddy repository for the expected fingerprint at:
+    # https://github.com/caddyserver/caddy/releases or https://caddyserver.com/docs/install
+    gpg --with-colons < /tmp/caddy-gpg.key | grep fpr | cut -d: -f10
+
+    # Compare the output fingerprint above with Caddy's official GPG key fingerprint.
+    # Only proceed if the fingerprint matches the official Caddy release.
+    # Once verified, import the key:
+    cat /tmp/caddy-gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+    rm /tmp/caddy-gpg.key
+    ```
+
+    Then add the repository and install:
+    ```bash
+    # Download sources list using TLS 1.2+
+    curl --tlsv1.2 -sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.sources
+
     sudo apt update
     sudo apt install caddy
     ```
@@ -120,6 +141,10 @@ To ensure traffic is routed to your VPS, you need to configure the DNS records i
 3.  **Verify that the connection is secure (HTTPS).** You should see a padlock icon in your browser's address bar. This indicates that Caddy automatically obtained and is serving a TLS certificate.
 
 **Security Considerations:**
+
+* **GPG Key Verification:** When installing Caddy from a repository, always verify the GPG key fingerprint against Caddy's official sources (GitHub releases or caddyserver.com) before importing. This protects against man-in-the-middle attacks and ensures you're using an authentic key.
+
+* **Enforced TLS Versions:** The installation commands use `--tlsv1.2` to enforce TLS 1.2 or higher, preventing connections with deprecated and insecure TLS versions (like TLS 1.0 and 1.1). This ensures secure downloads of the GPG key and repository metadata.
 
 * **CloudFlare Proxy:** By using CloudFlare's proxy, you benefit from:
     * **DDoS protection:** CloudFlare helps mitigate distributed denial-of-service attacks.

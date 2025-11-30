@@ -1,7 +1,11 @@
 ## ADD CLOUDFLARE A / CNAME RECORDS for ACME!
 ## Convert to Caddy? (https://www.programonaut.com/how-to-set-up-a-reverse-proxy-with-free-ssl-using-caddy)
 
-# Hosting
+# Hosting — Full Setup Guide (Canonical Reference)
+
+**This is the canonical, full reference guide for VPS hosting setup.**
+
+For shared setup instructions (Syncthing and Caddy installation/configuration), see **hosting-base.md**. For a quick-start overview, see **hosting-final.md**.
 
 Selected VPS for similarity to local usage and Hetzner because of cost and IaC support (<https://registry.terraform.io/providers/hetznercloud/hcloud/latest/docs/resources/server>). See notes on deployment saved in 1Password for Hetzner (and more info on SSH Keys if needed: <https://community.hetzner.com/tutorials/howto-ssh-key>)
 
@@ -13,38 +17,7 @@ Note: could use NixOS: <https://wrycode.com/reproducible-syncthing-deployments>
 
 *Hetzner Web Console requires Rescue>Reset to get a root password when created with SSH: <https://docs.hetzner.com/cloud/servers/getting-started/vnc-console>*
 
-Following: <https://idroot.us/install-syncthing-ubuntu-24-04>
-
-```sh
-sudo apt update -y && sudo apt upgrade -y && sudo apt autoremove
-
-sudo apt install gnupg2 curl apt-transport-https -y
-
-# Follow instructions from: https://apt.syncthing.net
-sudo mkdir -p /etc/apt/keyrings
-sudo curl -L -o /etc/apt/keyrings/syncthing-archive-keyring.gpg https://syncthing.net/release-key.gpg
-# Add the "stable" channel to your APT sources:
-echo "deb [signed-by=/etc/apt/keyrings/syncthing-archive-keyring.gpg] https://apt.syncthing.net/ syncthing stable" | sudo tee /etc/apt/sources.list.d/syncthing.list
-sudo apt update
-sudo apt install syncthing
-syncthing --version
-
-# Warning: consider making a non-root user for the application in a future iteration
-sudo systemctl enable syncthing@root.service
-sudo systemctl start syncthing@root.service
-sudo systemctl status syncthing@root.service
-
-# Keep SSH, turn on web, and allow ports for Syncthing
-sudo ufw allow ssh && sudo ufw allow http && sudo ufw allow https && \
-    sudo ufw allow 22000/tcp && sudo ufw allow 22000/udp && sudo ufw allow 21027/udp && sudo ufw enable && sudo ufw status
-```
-
-```sh
-# Port-Forward the UI to Sync (run on Laptop)
-ssh -L 9998:localhost:8384 ubuntu-4gb-hel1-1
-# Copy Laptop Device ID, accept from laptop, then edit the connection to check all three options (introducer, share, etc.), and confirm one more time from laptop
-# <https://docs.syncthing.net/intro/getting-started.html#configuring>
-```
+**See hosting-base.md for Syncthing installation and configuration instructions.**
 
 ## Configure Web Services
 
@@ -256,54 +229,7 @@ sudo systemctl daemon-reload
 
 ## Caddy
 
-Install: <https://caddyserver.com/docs/install#debian-ubuntu-raspbian>
-
-```sh
-sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-sudo apt update
-sudo apt install caddy
-```
-
-HTTPS: <https://caddyserver.com/docs/quick-starts/https> and Gemini
-
-```sh
-sudo ufw allow OpenSSH && sudo ufw allow http && sudo ufw allow https && sudo ufw enable && sudo ufw status
-# Check that the domain is configured
-curl "https://cloudflare-dns.com/dns-query?name=yak-shears.kyleking.me&type=A" \
-  -H "accept: application/dns-json"
-
-tee "Caddyfile" > /dev/null <<'EOF'
-{
-    email dev.act.kyle@gmail.com  # Recommended for Let's Encrypt notifications
-}
-
-yak-shears.kyleking.me {
-    # 8384 for Syncthing fails because of host check errors as designed
-    reverse_proxy localhost:8084 {
-        header_up Host {host}
-        header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
-    }
-    header {
-        # (HSTS): Forces browsers to always use HTTPS.
-        Strict-Transport-Security "max-age=31536000; includeSubDomains"
-        # Prevents browsers from MIME-sniffing
-        X-Content-Type-Options "nosniff"
-        # Helps prevent clickjacking attacks.
-        X-Frame-Options "DENY"
-        # Controls how much referrer information is sent with requests.
-        Referrer-Policy "same-origin"
-        # Content-Security-Policy "default-src 'self';" # Customize as needed
-    }
-}
-EOF
-
-# # Example reviewing logs:
-# sudo journalctl -u caddy --no-pager
-```
+**See hosting-base.md for Caddy installation and configuration instructions.**
 
 ## TODO
 
