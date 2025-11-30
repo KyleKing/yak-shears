@@ -66,41 +66,78 @@
     </header>
     <main class="layout__inner" id="main-content" role="main">
      <div class="container">
-      <div class="editor__header">
-       <div class="view-toggle">
-        <button class="button button--sm" data-view="editor" id="editor-only-btn">
-         Editor
-        </button>
-        <button class="button button--sm" data-view="side-by-side" id="side-by-side-btn">
-         Side-by-Side
-        </button>
-        <button class="button button--sm" data-view="preview" id="preview-only-btn">
-         Preview
-        </button>
-       </div>
-      </div>
-      <div class="editor-container" id="editor-container">
-       <form id="editor_form" method="post">
-        <input name="yak" type="hidden" value="test.dj"/>
-        <div class="editor" data-gramm="false" data-manual="">
+      <div class="editor-layout">
+       <div class="editor-main">
+        <div class="editor__header">
+         <div class="view-toggle">
+          <button class="button button--sm" data-view="editor" id="editor-only-btn">
+           Editor
+          </button>
+          <button class="button button--sm" data-view="side-by-side" id="side-by-side-btn">
+           Side-by-Side
+          </button>
+          <button class="button button--sm" data-view="preview" id="preview-only-btn">
+           Preview
+          </button>
+         </div>
         </div>
-       </form>
-       <div class="preview" id="preview">
-        <div class="preview-content" id="preview-content">
+        <div class="editor-container" id="editor-container">
+         <form id="editor_form" method="post">
+          <input name="yak" type="hidden" value="test.dj"/>
+          <div class="editor" data-gramm="false" data-manual="">
+          </div>
+         </form>
+         <div class="preview" id="preview">
+          <div class="preview-content" id="preview-content">
+          </div>
+         </div>
+        </div>
+        <div class="editor__actions">
+         <div class="container">
+          <button class="button button--primary" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent(), yak: 'test.dj'}" id="save-btn">
+           Save Changes
+          </button>
+          <button class="button button--danger" hx-confirm="Are you sure you want to delete this yak? This action cannot be undone." hx-post="/delete" hx-vals="js:{yak: 'test.dj'}">
+           Delete Yak
+          </button>
+          <span class="editor__status" id="save-status">
+          </span>
+         </div>
         </div>
        </div>
-      </div>
-      <div class="editor__actions">
-       <div class="container">
-        <button class="button button--primary" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent(), yak: 'test.dj'}" id="save-btn">
-         Save Changes
-        </button>
-        <button class="button button--danger" hx-confirm="Are you sure you want to delete this yak? This action cannot be undone." hx-post="/delete" hx-vals="js:{yak: 'test.dj'}">
-         Delete Yak
-        </button>
-        <span class="editor__status" id="save-status">
-        </span>
-       </div>
+       <aside class="metadata-panel">
+        <section class="metadata-section">
+         <h3 class="metadata-section__title">
+          🔗 Backlinks
+         </h3>
+         <p class="metadata-empty">
+          No backlinks
+         </p>
+        </section>
+        <section class="metadata-section">
+         <h3 class="metadata-section__title">
+          📊 Statistics
+         </h3>
+         <div class="stats-grid">
+          <div class="stat-item">
+           <div class="stat-item__label">
+            Backlinks
+           </div>
+           <div class="stat-item__value">
+            0
+           </div>
+          </div>
+          <div class="stat-item">
+           <div class="stat-item__label">
+            Category
+           </div>
+           <div class="stat-item__value">
+            Root
+           </div>
+          </div>
+         </div>
+        </section>
+       </aside>
       </div>
      </div>
     </main>
@@ -204,7 +241,7 @@
        </a>
       </div>
       <div class="cards">
-       <a class="card" href="/edit?yak=subdirectory-3/yak3.dj" style="--card-accent-color: hsl(327, 20%, 75%)">
+       <a class="card" href="/edit?yak=subdirectory-3/yak3.dj" style="--card-accent-color: hsl(327, 6%, 88%)">
         <div class="card__body">
          <p>
           # Yak 3  This is a test yak number 3  Unrelated to yak 1 or yak 2
@@ -218,7 +255,7 @@
          M: 2025-05-01 10:00:00
         </div>
        </a>
-       <a class="card" href="/edit?yak=subdirectory-2/yak2.dj" style="--card-accent-color: hsl(326, 20%, 75%)">
+       <a class="card" href="/edit?yak=subdirectory-2/yak2.dj" style="--card-accent-color: hsl(326, 6%, 88%)">
         <div class="card__body">
          <p>
           # Yak 2  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;  This is a test yak number 2
@@ -232,7 +269,7 @@
          M: 2025-05-01 10:00:00
         </div>
        </a>
-       <a class="card" href="/edit?yak=yak1.dj" style="--card-accent-color: hsl(71, 20%, 75%)">
+       <a class="card" href="/edit?yak=yak1.dj" style="--card-accent-color: hsl(71, 6%, 88%)">
         <div class="card__body">
          <p>
           # Yak 1  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;  This is a test yak number 1

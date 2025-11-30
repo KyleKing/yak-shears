@@ -52,10 +52,13 @@ This file provides guidance to AI agents when working with code in this reposito
 
 ```
 yak_shears/
-├── auth/           # Authentication system (password-based, JSON file storage)
-├── yak/            # yak management
+├── _auth/          # Authentication system (password-based, JSON file storage)
+├── _yak/           # Yak management
+│   ├── database.py # DuckDB operations for search index
+│   ├── handlers.py # HTTP request handlers
+│   └── routes.py   # Route definitions
+├── _templates/     # Jinja2 HTML templates
 ├── static/         # Static CSS and JS files
-├── templates/      # Jinja2 HTML templates
 └── cli.py          # CLI Tool for User management
 ```
 
@@ -122,9 +125,11 @@ Now implemented with CodeJar
 
 Implemented as a full page at /search with fuzzy search using persistent and lazily updated DuckDB database.
 
+- Database layer in `_yak/database.py` centralizes all DuckDB operations
 - Uses DuckDB levenshtein distance for fuzzy matching
 - Persistent database (`yak_shears_search.db`) stores indexed words from all yak files and updated lazily on search
     - Lazy updates: only re-indexes when files change and not more than once per minute
+- Also stores frontmatter metadata and yak links for backlink queries
 - UI is inspired by Telescope for nvim
     - There is a text input, which is full width
     - There is sidebar which is 40% of the browser width. The other 60% is a Yak preview window, which shows a preview of the currently selected Yak

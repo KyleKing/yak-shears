@@ -11,7 +11,7 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from yak_shears._constants import DEFAULT_REDIRECT
-from yak_shears._yak.handlers import get_search_db_path
+from yak_shears._yak.database import get_search_db_path
 from yak_shears.server._handlers import not_found
 from yak_shears.server._routes import ROUTES
 
@@ -91,7 +91,7 @@ def test_search_indexing_with_temp_db(tmp_path, client: TestClient, mock_user_se
 
     with (
         patch.dict("os.environ", {"YAK_SHEARS_DIR": str(yak_dir), "SEARCH_DB_DIR": str(db_dir)}),
-        patch("yak_shears._yak.handlers.time") as mock_time,
+        patch("yak_shears._yak.database.time") as mock_time,
     ):
         mock_time.time.return_value = 1000.0
 
