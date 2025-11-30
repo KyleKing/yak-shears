@@ -78,9 +78,9 @@ yak-shears.kyleking.me {
         # Prevents browsers from MIME-sniffing
         X-Content-Type-Options "nosniff"
         # Helps prevent clickjacking attacks.
-        X-Frame-Options "DENY
+        X-Frame-Options "DENY"
         # Controls how much referrer information is sent with requests.
-        Referrer-Policy "same-origin
+        Referrer-Policy "same-origin"
         # Content-Security-Policy "default-src 'self';" # Customize as needed
     }
 }

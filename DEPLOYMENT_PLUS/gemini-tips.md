@@ -55,7 +55,7 @@ To implement a file editor using Go and HTMX, consider the following approach:
     // Go (Backend)
     func handleEditFile(w http.ResponseWriter, r *http.Request) {
         filename := mux.Vars(r)["filename"]
-        content, err := ioutil.ReadFile(filename)
+        content, err := os.ReadFile(filename)
         if err != nil { /* handle error */ }
         tmpl.ExecuteTemplate(w, "edit_form.html", map[string]string{"Filename": filename, "Content": string(content)})
     }
@@ -63,7 +63,7 @@ To implement a file editor using Go and HTMX, consider the following approach:
     func handleSaveFile(w http.ResponseWriter, r *http.Request) {
         filename := mux.Vars(r)["filename"]
         content := r.FormValue("content")
-        err := ioutil.WriteFile(filename, []byte(content), 0644)
+        err := os.WriteFile(filename, []byte(content), 0644)
         if err != nil { /* handle error */ }
         // Return updated HTML or success message
         fmt.Fprint(w, "<div class='success'>File saved successfully!</div>")
