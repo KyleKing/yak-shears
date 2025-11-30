@@ -14,11 +14,14 @@
     </script>
    </head>
    <body class="layout">
-    <header class="header">
+    <a class="skip-link" href="#main-content">
+     Skip to main content
+    </a>
+    <header class="header" role="banner">
      <div class="container">
       <div class="header__bar">
-       <a class="brand" href="/yaks">
-        <div class="brand__logo">
+       <a aria-label="Yak Shears home" class="brand" href="/yaks">
+        <div aria-hidden="true" class="brand__logo">
          YS
         </div>
         <span>
@@ -27,7 +30,7 @@
        </a>
        <div class="header__center">
        </div>
-       <nav>
+       <nav aria-label="Main navigation" role="navigation">
         <ul class="nav__list">
          <li>
           <a class="nav__link" href="/yaks">
@@ -49,26 +52,26 @@
       </div>
      </div>
     </header>
-    <main class="layout__inner">
+    <main class="layout__inner" id="main-content" role="main">
      <div class="container">
       <h1>
        Login
       </h1>
-      <form action="/auth/login" class="login-form" method="post">
+      <form action="/auth/login" aria-label="Login form" class="login-form" method="post">
        <input name="redirect" type="hidden" value="/yaks"/>
        <div class="login-form__group">
         <label class="login-form__label" for="email">
          Email
         </label>
-        <input class="login-form__control" id="email" name="email" required="" type="email"/>
+        <input aria-required="true" autocomplete="email" class="login-form__control" id="email" name="email" required="" type="email"/>
        </div>
        <div class="login-form__group">
         <label class="login-form__label" for="password">
          Password
         </label>
-        <input class="login-form__control" id="password" name="password" required="" type="password"/>
+        <input aria-required="true" autocomplete="current-password" class="login-form__control" id="password" name="password" required="" type="password"/>
        </div>
-       <div class="alert alert--warn">
+       <div aria-live="polite" class="alert alert--warn" role="alert">
         <strong>
          Error:
         </strong>
@@ -103,11 +106,14 @@
     </script>
    </head>
    <body class="layout">
-    <header class="header">
+    <a class="skip-link" href="#main-content">
+     Skip to main content
+    </a>
+    <header class="header" role="banner">
      <div class="container">
       <div class="header__bar">
-       <a class="brand" href="/yaks">
-        <div class="brand__logo">
+       <a aria-label="Yak Shears home" class="brand" href="/yaks">
+        <div aria-hidden="true" class="brand__logo">
          YS
         </div>
         <span>
@@ -116,7 +122,7 @@
        </a>
        <div class="header__center">
        </div>
-       <nav>
+       <nav aria-label="Main navigation" role="navigation">
         <ul class="nav__list">
          <li>
           <a class="nav__link" href="/yaks">
@@ -138,23 +144,23 @@
       </div>
      </div>
     </header>
-    <main class="layout__inner">
+    <main class="layout__inner" id="main-content" role="main">
      <div class="container">
       <h1>
        Login
       </h1>
-      <form action="/auth/login" class="login-form" method="post">
+      <form action="/auth/login" aria-label="Login form" class="login-form" method="post">
        <div class="login-form__group">
         <label class="login-form__label" for="email">
          Email
         </label>
-        <input class="login-form__control" id="email" name="email" required="" type="email"/>
+        <input aria-required="true" autocomplete="email" class="login-form__control" id="email" name="email" required="" type="email"/>
        </div>
        <div class="login-form__group">
         <label class="login-form__label" for="password">
          Password
         </label>
-        <input class="login-form__control" id="password" name="password" required="" type="password"/>
+        <input aria-required="true" autocomplete="current-password" class="login-form__control" id="password" name="password" required="" type="password"/>
        </div>
        <button class="button button--primary" type="submit">
         Login

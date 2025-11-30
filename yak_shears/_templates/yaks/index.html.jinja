@@ -4,7 +4,7 @@
 
 {% block content %}
   <h1>Yaks in {{ yak_dir_label }}</h1>
-  <p>Showing {{ yaks | length }} of {{ total_yaks }} yaks (Page {{ current_page }} of {{ total_pages }})</p>
+  <p class="page-info">Showing {{ yaks | length }} of {{ total_yaks }} yaks (Page {{ current_page }} of {{ total_pages }})</p>
 
   <div class="sort-controls">
     <span class="sort-controls__label">Sort by:</span>
@@ -17,21 +17,38 @@
       <span class="filter-controls__label">Filter by category:</span>
       <a href="/yaks?sort_by={{ sort_by }}" class="button button--sm {% if not current_category %}button--primary{% endif %}">All</a>
       {% for cat in categories | sort %}
-        <a href="/yaks?sort_by={{ sort_by }}&category={{ cat }}" class="button button--sm {% if current_category == cat %}button--primary{% endif %}" style="border-color: {{ get_category_color(cat) }}">{{ cat | title }}</a>
+        <a href="/yaks?sort_by={{ sort_by }}&category={{ cat }}" class="button button--sm {% if current_category == cat %}button--primary{% endif %}">{{ cat | title }}</a>
       {% endfor %}
     </div>
   {% endif %}
 
-  <div class="cards">
-    {% for info in yaks %}
-      <a href="/edit?yak={{ info.path }}" class="card" style="border-color: {{ get_category_color( info.category) }}">
-        <div class="card__body">
-          <p>{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
-        </div>
-        <div class="card__tooltip">{{ info.category | title }}<br />C: {{ info.name }}<br />M: {{ info.last_modified }}</div>
-      </a>
-    {% endfor %}
-  </div>
+  {% if yaks %}
+    <div class="cards">
+      {% for info in yaks %}
+        <a href="/edit?yak={{ info.path }}" class="card" style="--card-accent-color: {{ get_category_color(info.category) }}">
+          <div class="card__body">
+            <p>{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
+          </div>
+          <div class="card__tooltip">{{ info.category | title }}<br />C: {{ info.name }}<br />M: {{ info.last_modified }}</div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state-container">
+      <div class="empty-state">
+        <div class="empty-state__icon">📝</div>
+        <h2 class="empty-state__title">No yaks found</h2>
+        <p class="empty-state__message">
+          {% if current_category %}
+            No yaks in the "{{ current_category | title }}" category. Try a different category or create a new yak.
+          {% else %}
+            Get started by creating your first yak
+          {% endif %}
+        </p>
+        <a href="/new" class="button button--primary" style="margin-top: var(--space-4);">Create New Yak</a>
+      </div>
+    </div>
+  {% endif %}
 
   {% if total_pages > 1 %}
     <div class="pagination">

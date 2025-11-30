@@ -1,5 +1,6 @@
 """Handlers for Yak Shears."""
 
+import json
 import os
 import re
 import time
@@ -30,6 +31,8 @@ from yak_shears._templates import (
     render_yak_new,
     render_yaks,
 )
+from yak_shears.frontmatter import parse_frontmatter
+from yak_shears.links import extract_all_links
 
 MAX_WORD_LENGTH = 1000
 INDEX_UPDATE_INTERVAL_SECONDS = 60
@@ -85,6 +88,32 @@ def init_search_db() -> None:
                 word TEXT,
                 PRIMARY KEY (path, line_num, word)
             )
+        """)
+        # Frontmatter metadata table
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS yak_frontmatter (
+                path TEXT PRIMARY KEY,
+                frontmatter_json TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # Links table (wikilinks and tags)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS yak_links (
+                source_path TEXT,
+                target_path TEXT,
+                link_type TEXT DEFAULT 'wikilink',
+                PRIMARY KEY (source_path, target_path, link_type)
+            )
+        """)
+        # Indexes for efficient backlink queries
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_links_target
+            ON yak_links(target_path)
+        """)
+        con.execute("""
+            CREATE INDEX IF NOT EXISTS idx_links_source
+            ON yak_links(source_path)
         """)
 
 
@@ -222,6 +251,88 @@ def should_update_index(yak_dir: SyncPath) -> bool:
     current_paths = {dj_file.relative_to(yak_dir).as_posix() for dj_file in yak_dir.rglob("*.dj") if dj_file.is_file()}
     stored_paths = set(stored_files.keys())
     return current_paths != stored_paths
+
+
+def index_yak_metadata(yak_path: SyncPath, yak_dir: SyncPath) -> None:
+    """Index frontmatter and links from a yak file.
+
+    Args:
+        yak_path: Full path to the yak file
+        yak_dir: Base directory for relative paths
+    """
+    try:
+        rel_path = yak_path.relative_to(yak_dir).as_posix()
+        content = yak_path.read_text(encoding="utf-8")
+
+        # Parse frontmatter
+        frontmatter, body = parse_frontmatter(content)
+
+        # Extract links from body
+        links = extract_all_links(body)
+
+        with get_search_db() as con:
+            con.execute("BEGIN")
+
+            # Store frontmatter
+            if frontmatter:
+                con.execute(
+                    "INSERT OR REPLACE INTO yak_frontmatter (path, frontmatter_json, updated_at) VALUES (?, ?, ?)",
+                    (rel_path, json.dumps(frontmatter), datetime.now(UTC)),
+                )
+            else:
+                # Remove frontmatter if empty
+                con.execute("DELETE FROM yak_frontmatter WHERE path = ?", (rel_path,))
+
+            # Remove old links for this file
+            con.execute("DELETE FROM yak_links WHERE source_path = ?", (rel_path,))
+
+            # Insert new links
+            if links:
+                links_data = [(rel_path, target, link_type) for target, link_type in links]
+                con.executemany(
+                    "INSERT INTO yak_links (source_path, target_path, link_type) VALUES (?, ?, ?)",
+                    links_data,
+                )
+
+            con.execute("COMMIT")
+    except Exception as exc:
+        log(f"WARNING: Failed to index metadata for {yak_path}: {exc}")
+
+
+def get_backlinks(yak_path: str) -> list[tuple[str, str]]:
+    """Get backlinks for a yak file.
+
+    Args:
+        yak_path: Relative path to the yak file
+
+    Returns:
+        List of (source_path, link_type) tuples
+    """
+    with get_search_db() as con:
+        result = con.execute(
+            "SELECT source_path, link_type FROM yak_links WHERE target_path = ? OR target_path = ?",
+            (yak_path, yak_path.replace(".dj", "")),
+        ).fetchall()
+    return result
+
+
+def get_frontmatter(yak_path: str) -> dict:
+    """Get frontmatter for a yak file.
+
+    Args:
+        yak_path: Relative path to the yak file
+
+    Returns:
+        Frontmatter dictionary (empty if no frontmatter)
+    """
+    with get_search_db() as con:
+        result = con.execute(
+            "SELECT frontmatter_json FROM yak_frontmatter WHERE path = ?",
+            (yak_path,),
+        ).fetchone()
+    if result:
+        return json.loads(result[0])
+    return {}
 
 
 PREVIEW_LENGTH = 200
@@ -471,12 +582,23 @@ async def edit_yak_handler(request: Request) -> Response:
             form_data = await request.form()
             content = str(form_data.get("content", ""))
             await yak_path.write_text(content, encoding="utf-8")
+
+            # Index frontmatter and links
+            sync_yak_path = SyncPath(yak_path)
+            sync_yak_dir = SyncPath(yak_dir)
+            index_yak_metadata(sync_yak_path, sync_yak_dir)
+
             return HTMLResponse("")  # Return empty response, JS handles the status update
 
         content = await yak_path.read_text(encoding="utf-8")
         relative_path = yak_path.relative_to(yak_dir).as_posix()
         category = yak_path.parent.name if yak_path.parent != yak_dir else ""
-        return render_yak_edit(relative_path, content, category)
+
+        # Get frontmatter and backlinks for metadata panel
+        frontmatter = get_frontmatter(relative_path)
+        backlinks = get_backlinks(relative_path)
+
+        return render_yak_edit(relative_path, content, category, frontmatter=frontmatter, backlinks=backlinks)
     except Exception as exc:
         return render_error(f"An error occurred: {exc!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
 

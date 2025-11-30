@@ -33,6 +33,16 @@ def browser_context_args(browser_context_args):
     }
 
 
+@pytest_asyncio.fixture
+async def unauthenticated_page(browser):
+    """Create a page without authentication."""
+    context = await browser.new_context(storage_state=None)
+    page = await context.new_page()
+    yield page
+    await page.close()
+    await context.close()
+
+
 @pytest.fixture(scope="session")
 def base_url():
     """Overrides https://github.com/pytest-dev/pytest-base-url."""
@@ -106,8 +116,11 @@ async def console_messages(page: Page):  # noqa: RUF029 - required to be async f
 
 
 @pytest.fixture(autouse=True)
-def check_console_errors(console_messages):
-    """Fail test if there are console errors."""
+def check_console_errors(console_messages, request):
+    """Fail test if there are console errors (unless explicitly allowed)."""
     yield
-    console_errors = [msg for msg in console_messages.captured if msg.startswith("error:")]
-    assert len(console_errors) == 0, f"Console errors: {console_errors}"
+    # Allow tests to mark themselves as allowing console errors
+    allow_console_errors = request.node.get_closest_marker("allow_console_errors")
+    if not allow_console_errors:
+        console_errors = [msg for msg in console_messages.captured if msg.startswith("error:")]
+        assert len(console_errors) == 0, f"Console errors: {console_errors}"

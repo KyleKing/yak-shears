@@ -49,7 +49,9 @@ ENV = Environment(
 
 
 def get_category_color(category: str) -> str:
-    """Get a unique color for a category based on its name.
+    """Get a subtle, muted color for a category based on its name.
+
+    Returns a Scandinavian-style muted color with low saturation for minimal design.
 
     Returns:
         A CSS color string.
@@ -58,7 +60,8 @@ def get_category_color(category: str) -> str:
         return "#d9d4cc"  # default border color
     # Use sum of ords for stable hash-like value
     hue = sum(ord(c) for c in category) % 360
-    return f"hsl({hue}, 70%, 50%)"
+    # Use ultra-subtle colors with very low saturation for true Scandinavian minimalism
+    return f"hsl({hue}, 6%, 88%)"
 
 
 def _render_template(template_name: str, *, status_code: HTTPStatus = HTTPStatus.OK, **context: Any) -> HTMLResponse:
@@ -148,13 +151,21 @@ def render_yaks(
     )
 
 
-def render_yak_edit(yak_path: str, content: str, category: str) -> HTMLResponse:
+def render_yak_edit(
+    yak_path: str,
+    content: str,
+    category: str,
+    frontmatter: dict[str, Any] | None = None,
+    backlinks: list[tuple[str, str]] | None = None,
+) -> HTMLResponse:
     """Render the yak editor page.
 
     Args:
         yak_path: Path of the yak being edited
         content: Current content of the yak
         category: Category name
+        frontmatter: Frontmatter metadata dictionary
+        backlinks: List of (source_path, link_type) tuples
 
     Returns:
         HTMLResponse with the yak editor template
@@ -166,6 +177,8 @@ def render_yak_edit(yak_path: str, content: str, category: str) -> HTMLResponse:
         yak_path=yak_path,
         content=content,
         category=(category or "root").title(),
+        frontmatter=frontmatter or {},
+        backlinks=backlinks or [],
     )
 
 

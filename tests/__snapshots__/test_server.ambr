@@ -23,11 +23,14 @@
     </script>
    </head>
    <body class="layout">
-    <header class="header">
+    <a class="skip-link" href="#main-content">
+     Skip to main content
+    </a>
+    <header class="header" role="banner">
      <div class="container">
       <div class="header__bar">
-       <a class="brand" href="/yaks">
-        <div class="brand__logo">
+       <a aria-label="Yak Shears home" class="brand" href="/yaks">
+        <div aria-hidden="true" class="brand__logo">
          YS
         </div>
         <span>
@@ -39,7 +42,7 @@
          Editing: test.dj (Root)
         </span>
        </div>
-       <nav>
+       <nav aria-label="Main navigation" role="navigation">
         <ul class="nav__list">
          <li>
           <a class="nav__link" href="/yaks">
@@ -61,7 +64,7 @@
       </div>
      </div>
     </header>
-    <main class="layout__inner">
+    <main class="layout__inner" id="main-content" role="main">
      <div class="container">
       <div class="editor__header">
        <div class="view-toggle">
@@ -126,11 +129,14 @@
     </script>
    </head>
    <body class="layout">
-    <header class="header">
+    <a class="skip-link" href="#main-content">
+     Skip to main content
+    </a>
+    <header class="header" role="banner">
      <div class="container">
       <div class="header__bar">
-       <a class="brand" href="/yaks">
-        <div class="brand__logo">
+       <a aria-label="Yak Shears home" class="brand" href="/yaks">
+        <div aria-hidden="true" class="brand__logo">
          YS
         </div>
         <span>
@@ -139,10 +145,10 @@
        </a>
        <div class="header__center">
        </div>
-       <nav>
+       <nav aria-label="Main navigation" role="navigation">
         <ul class="nav__list">
          <li>
-          <a class="nav__link nav__link--active" href="/yaks">
+          <a aria-current="page" class="nav__link nav__link--active" href="/yaks">
            Yaks
           </a>
          </li>
@@ -161,12 +167,12 @@
       </div>
      </div>
     </header>
-    <main class="layout__inner">
+    <main class="layout__inner" id="main-content" role="main">
      <div class="container">
       <h1>
        Yaks in ./test_data/mock_djot_dir_0
       </h1>
-      <p>
+      <p class="page-info">
        Showing 3 of 3 yaks (Page 1 of 1)
       </p>
       <div class="sort-controls">
@@ -187,18 +193,18 @@
        <a class="button button--sm button--primary" href="/yaks?sort_by=name">
         All
        </a>
-       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=mock_djot_dir_0" style="border-color: hsl(71, 70%, 50%)">
+       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=mock_djot_dir_0">
         Mock_djot_dir_0
        </a>
-       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=subdirectory-2" style="border-color: hsl(326, 70%, 50%)">
+       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=subdirectory-2">
         Subdirectory-2
        </a>
-       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=subdirectory-3" style="border-color: hsl(327, 70%, 50%)">
+       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=subdirectory-3">
         Subdirectory-3
        </a>
       </div>
       <div class="cards">
-       <a class="card" href="/edit?yak=subdirectory-3/yak3.dj" style="border-color: hsl(327, 70%, 50%)">
+       <a class="card" href="/edit?yak=subdirectory-3/yak3.dj" style="--card-accent-color: hsl(327, 20%, 75%)">
         <div class="card__body">
          <p>
           # Yak 3  This is a test yak number 3  Unrelated to yak 1 or yak 2
@@ -212,7 +218,7 @@
          M: 2025-05-01 10:00:00
         </div>
        </a>
-       <a class="card" href="/edit?yak=subdirectory-2/yak2.dj" style="border-color: hsl(326, 70%, 50%)">
+       <a class="card" href="/edit?yak=subdirectory-2/yak2.dj" style="--card-accent-color: hsl(326, 20%, 75%)">
         <div class="card__body">
          <p>
           # Yak 2  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;  This is a test yak number 2
@@ -226,7 +232,7 @@
          M: 2025-05-01 10:00:00
         </div>
        </a>
-       <a class="card" href="/edit?yak=yak1.dj" style="border-color: hsl(71, 70%, 50%)">
+       <a class="card" href="/edit?yak=yak1.dj" style="--card-accent-color: hsl(71, 20%, 75%)">
         <div class="card__body">
          <p>
           # Yak 1  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;  This is a test yak number 1

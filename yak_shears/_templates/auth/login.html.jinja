@@ -4,20 +4,20 @@
 
 {% block content %}
   <h1>Login</h1>
-  <form class="login-form" method="post" action="/auth/login">
+  <form class="login-form" method="post" action="/auth/login" aria-label="Login form">
     {% if redirect %}
       <input type="hidden" name="redirect" value="{{ redirect }}">
     {% endif %}
     <div class="login-form__group">
       <label class="login-form__label" for="email">Email</label>
-      <input class="login-form__control" type="email" id="email" name="email" required>
+      <input class="login-form__control" type="email" id="email" name="email" required autocomplete="email" aria-required="true">
     </div>
     <div class="login-form__group">
       <label class="login-form__label" for="password">Password</label>
-      <input class="login-form__control" type="password" id="password" name="password" required>
+      <input class="login-form__control" type="password" id="password" name="password" required autocomplete="current-password" aria-required="true">
     </div>
     {% if error %}
-      <div class="alert alert--warn">
+      <div class="alert alert--warn" role="alert" aria-live="polite">
         <strong>Error:</strong> {{ error }}
       </div>
     {% endif %}
