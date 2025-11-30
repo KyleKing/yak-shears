@@ -46,13 +46,13 @@ def insert_test_data(con: duckdb.DuckDBPyConnection) -> None:
         con: DuckDB connection
     """
     test_links = [
-        ('note-a.dj', 'note-b.dj', 'wikilink'),
-        ('note-a.dj', 'note-c.dj', 'wikilink'),
-        ('note-a.dj', 'note-d.dj', 'wikilink'),
-        ('note-c.dj', 'note-b.dj', 'wikilink'),
-        ('note-d.dj', 'note-b.dj', 'wikilink'),
-        ('note-e.dj', 'note-c.dj', 'wikilink'),
-        ('note-f.dj', 'note-a.dj', 'wikilink'),
+        ("note-a.dj", "note-b.dj", "wikilink"),
+        ("note-a.dj", "note-c.dj", "wikilink"),
+        ("note-a.dj", "note-d.dj", "wikilink"),
+        ("note-c.dj", "note-b.dj", "wikilink"),
+        ("note-d.dj", "note-b.dj", "wikilink"),
+        ("note-e.dj", "note-c.dj", "wikilink"),
+        ("note-f.dj", "note-a.dj", "wikilink"),
     ]
 
     con.execute("DELETE FROM yak_links")
@@ -66,7 +66,7 @@ def test_schema_creation():
     """Test that schema creates successfully."""
     print("Test 1: Schema creation")
 
-    con = duckdb.connect(':memory:')
+    con = duckdb.connect(":memory:")
     create_schema(con)
 
     # Verify table exists
@@ -84,7 +84,7 @@ def test_backlinks_query():
     """Test backlinks query accuracy and performance."""
     print("\nTest 2: Backlinks query")
 
-    con = duckdb.connect(':memory:')
+    con = duckdb.connect(":memory:")
     create_schema(con)
     insert_test_data(con)
 
@@ -95,14 +95,14 @@ def test_backlinks_query():
         FROM yak_links
         WHERE target_path = ?
         ORDER BY source_path
-    """, ['note-b.dj']).fetchall()
+    """, ["note-b.dj"]).fetchall()
     elapsed_ms = (time.perf_counter() - start) * 1000
 
     # Verify results
     sources = [row[0] for row in backlinks]
-    assert 'note-a.dj' in sources
-    assert 'note-c.dj' in sources
-    assert 'note-d.dj' in sources
+    assert "note-a.dj" in sources
+    assert "note-c.dj" in sources
+    assert "note-d.dj" in sources
     assert len(sources) == 3
 
     print(f"  ✅ Found {len(sources)} backlinks in {elapsed_ms:.3f}ms")
@@ -115,7 +115,7 @@ def test_outbound_links_query():
     """Test outbound links query."""
     print("\nTest 3: Outbound links query")
 
-    con = duckdb.connect(':memory:')
+    con = duckdb.connect(":memory:")
     create_schema(con)
     insert_test_data(con)
 
@@ -126,14 +126,14 @@ def test_outbound_links_query():
         FROM yak_links
         WHERE source_path = ?
         ORDER BY target_path
-    """, ['note-a.dj']).fetchall()
+    """, ["note-a.dj"]).fetchall()
     elapsed_ms = (time.perf_counter() - start) * 1000
 
     # Verify results
     targets = [row[0] for row in outbound]
-    assert 'note-b.dj' in targets
-    assert 'note-c.dj' in targets
-    assert 'note-d.dj' in targets
+    assert "note-b.dj" in targets
+    assert "note-c.dj" in targets
+    assert "note-d.dj" in targets
     assert len(targets) == 3
 
     print(f"  ✅ Found {len(targets)} outbound links in {elapsed_ms:.3f}ms")
@@ -146,7 +146,7 @@ def test_related_notes_query():
     """Test related notes query (notes sharing outbound links)."""
     print("\nTest 4: Related notes query")
 
-    con = duckdb.connect(':memory:')
+    con = duckdb.connect(":memory:")
     create_schema(con)
     insert_test_data(con)
 
@@ -163,14 +163,14 @@ def test_related_notes_query():
         GROUP BY l2.source_path
         ORDER BY shared_links DESC
         LIMIT 10
-    """, ['note-a.dj', 'note-a.dj']).fetchall()
+    """, ["note-a.dj", "note-a.dj"]).fetchall()
     elapsed_ms = (time.perf_counter() - start) * 1000
 
     # note-c.dj and note-d.dj both link to note-b.dj
     # so they should be related to note-a.dj
     related_notes = {row[0]: row[1] for row in related}
-    assert 'note-c.dj' in related_notes
-    assert 'note-d.dj' in related_notes
+    assert "note-c.dj" in related_notes
+    assert "note-d.dj" in related_notes
 
     print(f"  ✅ Found {len(related)} related notes in {elapsed_ms:.3f}ms")
     print(f"  📊 Related: {dict(related)}")
@@ -184,7 +184,7 @@ def test_backlink_count_aggregate():
     """Test aggregating backlink counts."""
     print("\nTest 5: Backlink count aggregation")
 
-    con = duckdb.connect(':memory:')
+    con = duckdb.connect(":memory:")
     create_schema(con)
     insert_test_data(con)
 
@@ -200,9 +200,9 @@ def test_backlink_count_aggregate():
 
     # note-b.dj should have 3 backlinks (most popular)
     counts_dict = {row[0]: row[1] for row in counts}
-    assert counts_dict['note-b.dj'] == 3
-    assert counts_dict['note-c.dj'] == 2  # from note-a and note-e
-    assert counts_dict['note-a.dj'] == 1  # from note-f
+    assert counts_dict["note-b.dj"] == 3
+    assert counts_dict["note-c.dj"] == 2  # from note-a and note-e
+    assert counts_dict["note-a.dj"] == 1  # from note-f
 
     print(f"  ✅ Aggregated backlinks in {elapsed_ms:.3f}ms")
     print(f"  📊 Counts: {dict(counts)}")
@@ -214,12 +214,12 @@ def test_orphan_notes_query():
     """Test finding orphan notes (no backlinks)."""
     print("\nTest 6: Orphan notes detection")
 
-    con = duckdb.connect(':memory:')
+    con = duckdb.connect(":memory:")
     create_schema(con)
     insert_test_data(con)
 
     # Add some orphan notes
-    con.execute("INSERT INTO yak_links VALUES (?, ?, ?)", ['orphan.dj', 'note-a.dj', 'wikilink'])
+    con.execute("INSERT INTO yak_links VALUES (?, ?, ?)", ["orphan.dj", "note-a.dj", "wikilink"])
 
     # Find notes with no backlinks
     start = time.perf_counter()
@@ -234,7 +234,7 @@ def test_orphan_notes_query():
     elapsed_ms = (time.perf_counter() - start) * 1000
 
     orphan_list = [row[0] for row in orphans]
-    assert 'orphan.dj' in orphan_list
+    assert "orphan.dj" in orphan_list
 
     print(f"  ✅ Found {len(orphans)} orphan notes in {elapsed_ms:.3f}ms")
     print(f"  📊 Orphans: {orphan_list}")
@@ -246,7 +246,7 @@ def test_performance_benchmark():
     """Test performance with realistic dataset."""
     print("\nTest 7: Performance benchmark (10K links)")
 
-    con = duckdb.connect(':memory:')
+    con = duckdb.connect(":memory:")
     create_schema(con)
 
     # Generate synthetic link graph
@@ -260,7 +260,7 @@ def test_performance_benchmark():
         source = f"note-{random.randint(0, num_notes - 1)}.dj"
         target = f"note-{random.randint(0, num_notes - 1)}.dj"
         if source != target:
-            synthetic_links.append((source, target, 'wikilink'))
+            synthetic_links.append((source, target, "wikilink"))
 
     # Deduplicate (PRIMARY KEY constraint)
     synthetic_links = list(set(synthetic_links))
@@ -322,7 +322,7 @@ def test_performance_benchmark():
 
     assert popular_elapsed_ms < 100, f"Popular notes query too slow: {popular_elapsed_ms}ms"
 
-    print(f"  ✅ All benchmark queries within performance targets")
+    print("  ✅ All benchmark queries within performance targets")
 
     con.close()
 
@@ -331,16 +331,16 @@ def test_link_type_filtering():
     """Test filtering by link type (wikilink vs tag)."""
     print("\nTest 8: Link type filtering")
 
-    con = duckdb.connect(':memory:')
+    con = duckdb.connect(":memory:")
     create_schema(con)
 
     # Insert mixed link types
     mixed_links = [
-        ('note-a.dj', 'note-b.dj', 'wikilink'),
-        ('note-a.dj', 'python.dj', 'tag'),
-        ('note-a.dj', 'tutorial.dj', 'tag'),
-        ('note-c.dj', 'note-b.dj', 'wikilink'),
-        ('note-c.dj', 'python.dj', 'tag'),
+        ("note-a.dj", "note-b.dj", "wikilink"),
+        ("note-a.dj", "python.dj", "tag"),
+        ("note-a.dj", "tutorial.dj", "tag"),
+        ("note-c.dj", "note-b.dj", "wikilink"),
+        ("note-c.dj", "python.dj", "tag"),
     ]
 
     con.executemany("INSERT INTO yak_links VALUES (?, ?, ?)", mixed_links)
@@ -371,17 +371,17 @@ def test_link_type_filtering():
     """).fetchall()
 
     sources = [row[0] for row in python_notes]
-    assert 'note-a.dj' in sources
-    assert 'note-c.dj' in sources
+    assert "note-a.dj" in sources
+    assert "note-c.dj" in sources
 
-    print(f"  ✅ Link type filtering works correctly")
+    print("  ✅ Link type filtering works correctly")
     print(f"  📊 Wikilinks: {len(wikilinks)}, Tags: {len(tags)}")
     print(f"  📊 Notes tagged #python: {sources}")
 
     con.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("=" * 60)
     print("SPIKE 3: DuckDB Link Graph Queries")
     print("=" * 60)

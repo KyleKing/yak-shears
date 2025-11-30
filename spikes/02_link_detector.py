@@ -11,13 +11,12 @@ Success Criteria:
 
 import re
 import time
-from pathlib import Path
 from difflib import get_close_matches
-
+from pathlib import Path
 
 # Link detection patterns
-WIKILINK_RE = re.compile(r'\[\[([^\]|]+)(?:\|([^\]]+))?\]\]')
-TAG_RE = re.compile(r'(?:^|\s)#([a-zA-Z0-9_-]+)')
+WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")
+TAG_RE = re.compile(r"(?:^|\s)#([a-zA-Z0-9_-]+)")
 
 
 def extract_wikilinks(content: str) -> list[tuple[str, str]]:
@@ -64,7 +63,7 @@ def resolve_link(target: str, yak_dir: Path) -> Path | None:
         Resolved Path or None if not found
     """
     # Normalize target (handle spaces, case)
-    target_lower = target.lower().replace(' ', '-')
+    target_lower = target.lower().replace(" ", "-")
 
     # Try exact match with .dj extension
     exact = yak_dir / f"{target_lower}.dj"
@@ -107,8 +106,8 @@ Also check [[other-note]] and [[third-note]].
     links = extract_wikilinks(content)
 
     assert len(links) == 3
-    assert ('implementation-plan', 'implementation-plan') in links
-    assert ('other-note', 'other-note') in links
+    assert ("implementation-plan", "implementation-plan") in links
+    assert ("other-note", "other-note") in links
 
     print(f"  ✅ Found {len(links)} wikilinks")
 
@@ -125,8 +124,8 @@ Also [[note-a|Note A]] and [[note-b|Note B]].
     links = extract_wikilinks(content)
 
     assert len(links) == 3
-    assert ('implementation-plan', 'the plan') in links
-    assert ('note-a', 'Note A') in links
+    assert ("implementation-plan", "the plan") in links
+    assert ("note-a", "Note A") in links
 
     print(f"  ✅ Found {len(links)} links with aliases")
 
@@ -144,10 +143,10 @@ Also #metadata and #yaml-frontmatter.
 
     tags = extract_tags(content)
 
-    assert 'python' in tags
-    assert 'parsing' in tags
-    assert 'metadata' in tags
-    assert 'yaml-frontmatter' in tags
+    assert "python" in tags
+    assert "parsing" in tags
+    assert "metadata" in tags
+    assert "yaml-frontmatter" in tags
 
     print(f"  ✅ Found {len(tags)} tags: {tags}")
 
@@ -160,13 +159,13 @@ def test_edge_cases():
     content1 = "Not a link: [single bracket] [[valid-link]]"
     links1 = extract_wikilinks(content1)
     assert len(links1) == 1
-    assert links1[0][0] == 'valid-link'
+    assert links1[0][0] == "valid-link"
 
     # Empty link
     content2 = "Empty: [[]] and valid: [[ok]]"
     links2 = extract_wikilinks(content2)
     # Empty links are captured but will have empty target
-    assert any(link[0] == 'ok' for link in links2)
+    assert any(link[0] == "ok" for link in links2)
 
     # Special characters
     content3 = "Special: [[note-with-dashes]] [[note_with_underscores]]"
@@ -303,16 +302,16 @@ Code block (should still be detected for now):
 
     # Should find 3 tags
     assert len(tags) == 3
-    assert 'tag1' in tags
-    assert 'tag2' in tags
-    assert 'tag-with-dashes' in tags
+    assert "tag1" in tags
+    assert "tag2" in tags
+    assert "tag-with-dashes" in tags
 
     print(f"  ✅ Found {len(links)} links, {len(tags)} tags")
-    print(f"  ℹ️  Note: Currently detects links in code blocks")
-    print(f"  ℹ️  Future: Could add code block filtering")
+    print("  ℹ️  Note: Currently detects links in code blocks")
+    print("  ℹ️  Future: Could add code block filtering")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("=" * 60)
     print("SPIKE 2: Link Detection & Resolution")
     print("=" * 60)

@@ -10,9 +10,9 @@ Success Criteria:
 """
 
 import time
-import yaml
-from pathlib import Path
 from typing import Any
+
+import yaml
 
 
 def parse_frontmatter(content: str) -> tuple[dict[str, Any], str]:
@@ -24,11 +24,11 @@ def parse_frontmatter(content: str) -> tuple[dict[str, Any], str]:
     Returns:
         (frontmatter_dict, content_without_frontmatter)
     """
-    if not content.startswith('---\n'):
+    if not content.startswith("---\n"):
         return {}, content
 
     try:
-        end_idx = content.index('\n---\n', 4)
+        end_idx = content.index("\n---\n", 4)
         yaml_str = content[4:end_idx]
         body = content[end_idx + 5:].lstrip()
 
@@ -78,9 +78,9 @@ Content here with [[wikilink]].
 
     fm, body = parse_frontmatter(test_content)
 
-    assert fm['title'] == 'Test Note'
-    assert fm['tags'] == ['python', 'parsing']
-    assert '# Test Note' in body
+    assert fm["title"] == "Test Note"
+    assert fm["tags"] == ["python", "parsing"]
+    assert "# Test Note" in body
 
     print("  ✅ Basic parsing works")
 
@@ -141,7 +141,7 @@ Content
 
     # Should return empty dict and full content
     assert fm == {}
-    assert '---' in body
+    assert "---" in body
 
     print("  ✅ Gracefully handles malformed YAML")
 
@@ -166,9 +166,9 @@ Content
 
     fm, body = parse_frontmatter(test_content)
 
-    assert 'colon' in fm['title']
-    assert 'multiline' in fm['multiline']
-    assert fm['nested']['key'] == 'value'
+    assert "colon" in fm["title"]
+    assert "multiline" in fm["multiline"]
+    assert fm["nested"]["key"] == "value"
 
     print("  ✅ Handles special YAML values correctly")
 
@@ -229,17 +229,17 @@ Content
 
     fm, body = parse_frontmatter(test_content)
 
-    assert '[[other-note]]' in fm['related']
-    assert '[[note-a]]' in fm['links'][0]
+    assert "[[other-note]]" in fm["related"]
+    assert "[[note-a]]" in fm["links"][0]
 
     # Round-trip
     reconstructed = write_frontmatter(fm, body)
-    assert '[[other-note]]' in reconstructed
+    assert "[[other-note]]" in reconstructed
 
     print("  ✅ Preserves wikilinks in frontmatter")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("=" * 60)
     print("SPIKE 1: YAML Frontmatter Parsing")
     print("=" * 60)

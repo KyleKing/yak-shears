@@ -15,8 +15,8 @@ from difflib import get_close_matches
 from pathlib import Path
 
 # Regex patterns
-WIKILINK_RE = re.compile(r'\[\[([^\]|]+)(?:\|([^\]]+))?\]\]')
-TAG_RE = re.compile(r'(?:^|\s)#([a-zA-Z0-9_-]+)')
+WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")
+TAG_RE = re.compile(r"(?:^|\s)#([a-zA-Z0-9_-]+)")
 
 
 def extract_wikilinks(content: str) -> list[tuple[str, str]]:
@@ -80,7 +80,7 @@ def resolve_link(target: str, yak_dir: Path) -> Path | None:
         >>> resolve_link("my-note", Path("/yaks"))
         Path("/yaks/category/my-note.dj")
     """
-    target_lower = target.lower().replace(' ', '-')
+    target_lower = target.lower().replace(" ", "-")
 
     # 1. Try exact match
     exact = yak_dir / f"{target_lower}.dj"
@@ -121,10 +121,10 @@ def extract_all_links(content: str) -> list[tuple[str, str]]:
 
     # Add wikilinks
     for target, _ in extract_wikilinks(content):
-        links.append((target, 'wikilink'))
+        links.append((target, "wikilink"))
 
     # Add tags
     for tag in extract_tags(content):
-        links.append((tag, 'tag'))
+        links.append((tag, "tag"))
 
     return links

@@ -52,22 +52,27 @@ This file provides guidance to AI agents when working with code in this reposito
 
 ```
 yak_shears/
-├── _auth/          # Authentication system (password-based, JSON file storage)
-├── _yak/           # Yak management
-│   ├── database.py # DuckDB operations for search index
-│   ├── services.py # Business logic (CRUD, search, pagination)
-│   ├── handlers.py # HTTP request handlers
-│   └── routes.py   # Route definitions
-├── _templates/     # Jinja2 HTML templates
-├── static/         # Static CSS and JS files
-└── cli.py          # CLI Tool for User management
+├── _auth/              # Authentication system
+│   ├── storage.py      # UserStore class for user/session management
+│   ├── handlers.py     # Auth HTTP handlers (login, logout)
+│   └── middleware.py   # Session middleware
+├── _yak/               # Yak management
+│   ├── database.py     # DuckDB operations for search index
+│   ├── services.py     # Business logic (CRUD, search, pagination)
+│   ├── request_utils.py# Request utilities (path extraction, HTMX detection)
+│   ├── handlers.py     # HTTP request handlers
+│   └── routes.py       # Route definitions
+├── _templates/         # Jinja2 HTML templates
+├── static/             # Static CSS and JS files
+└── cli.py              # CLI Tool for User management
 ```
 
 ### Authentication System
 
-- Password-based authentication stored in-memory by the server
-    - Session middleware enforces user authentication
-- User persistence in a JSON file (`.yak-shears-users.json`) written to by the CLI and read by the server
+- UserStore class manages users and sessions with JSON file persistence
+- Password-based authentication with PBKDF2 hashing
+- Session middleware enforces user authentication
+- User persistence in a JSON file (`.yak-shears-users.json`)
 
 ### Yak Management
 

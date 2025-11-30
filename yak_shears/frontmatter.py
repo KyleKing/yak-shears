@@ -38,12 +38,12 @@ def parse_frontmatter(content: str) -> tuple[dict[str, Any], str]:
         Frontmatter must start on the first line with '---' and end with '---'.
         Malformed YAML returns empty dict and full content.
     """
-    if not content.startswith('---\n'):
+    if not content.startswith("---\n"):
         return {}, content
 
     try:
         # Find the closing ---
-        end_idx = content.index('\n---\n', 4)
+        end_idx = content.index("\n---\n", 4)
         yaml_str = content[4:end_idx]
         body = content[end_idx + 5:].lstrip()
 

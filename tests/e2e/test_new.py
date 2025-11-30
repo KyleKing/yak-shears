@@ -5,8 +5,6 @@ import re
 import pytest
 from playwright.async_api import BrowserContext, Page, expect
 
-from tests.conftest import MOCK_YAK_DIR
-
 from ._helpers import login
 
 

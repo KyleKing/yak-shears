@@ -27,7 +27,7 @@ def validate_html_mockup():
 
     # Test 1: Valid HTML structure
     print("\nTest 1: Valid HTML structure")
-    required_tags = ['<!DOCTYPE html>', '<html', '<head>', '<body>', '</html>']
+    required_tags = ["<!DOCTYPE html>", "<html", "<head>", "<body>", "</html>"]
     for tag in required_tags:
         assert tag in content, f"Missing required tag: {tag}"
     print("  ✅ Contains all required HTML tags")
@@ -35,9 +35,9 @@ def validate_html_mockup():
     # Test 2: Metadata sections
     print("\nTest 2: Metadata panel sections")
     required_sections = [
-        '📋 Properties',  # Properties section
-        '🔗 Backlinks',   # Backlinks section
-        '📊 Statistics',  # Statistics section
+        "📋 Properties",  # Properties section
+        "🔗 Backlinks",   # Backlinks section
+        "📊 Statistics",  # Statistics section
     ]
     for section in required_sections:
         assert section in content, f"Missing section: {section}"
@@ -59,10 +59,10 @@ def validate_html_mockup():
     # Test 4: Interactive features
     print("\nTest 4: Interactive JavaScript features")
     required_js = [
-        'handleFieldChange',  # Field change handler
-        'removeTag',          # Tag removal
-        'handleTagKeypress',  # Tag addition
-        'performance.now()',  # Performance measurement
+        "handleFieldChange",  # Field change handler
+        "removeTag",          # Tag removal
+        "handleTagKeypress",  # Tag addition
+        "performance.now()",  # Performance measurement
     ]
     for js_func in required_js:
         assert js_func in content, f"Missing JS feature: {js_func}"
@@ -70,28 +70,28 @@ def validate_html_mockup():
 
     # Test 5: Responsive design
     print("\nTest 5: Responsive design CSS")
-    assert '@media (max-width: 768px)' in content
-    assert 'grid-template-columns' in content
-    assert 'grid-template-rows' in content
+    assert "@media (max-width: 768px)" in content
+    assert "grid-template-columns" in content
+    assert "grid-template-rows" in content
     print("  ✅ Responsive CSS media queries present")
 
     # Test 6: Performance monitoring
     print("\nTest 6: Performance monitoring")
-    assert 'renderTime' in content
-    assert 'performance-info' in content
+    assert "renderTime" in content
+    assert "performance-info" in content
     print("  ✅ Performance monitoring implemented")
 
     # Test 7: Scandinavian design colors
     print("\nTest 7: Scandinavian design system")
-    assert '#f5f3ef' in content  # Beige background
-    assert '#f7cf46' in content  # Yellow accent
-    assert '#d9d4cc' in content  # Border color
+    assert "#f5f3ef" in content  # Beige background
+    assert "#f7cf46" in content  # Yellow accent
+    assert "#d9d4cc" in content  # Border color
     print("  ✅ Design system colors applied")
 
     # Test 8: Backlinks list
     print("\nTest 8: Backlinks display")
-    assert 'backlinks-list' in content
-    assert 'architecture-design.dj' in content
+    assert "backlinks-list" in content
+    assert "architecture-design.dj" in content
     print("  ✅ Backlinks list implemented")
 
     print("\n" + "=" * 60)
@@ -117,7 +117,7 @@ def validate_html_mockup():
     return True
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         success = validate_html_mockup()
         exit(0 if success else 1)

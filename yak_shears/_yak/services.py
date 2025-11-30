@@ -5,6 +5,7 @@ and cleaner separation of concerns.
 """
 
 import os
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from operator import itemgetter
@@ -248,26 +249,33 @@ def _process_search_results(
             continue
         seen_paths.add(path)
 
-        file_path = sync_yak_dir / path
-        try:
-            content = file_path.read_text(encoding="utf-8")
-            lines = content.splitlines()
-            if 1 <= line_num <= len(lines):
-                preview = lines[line_num - 1].strip()
-                first_line = lines[0].strip() if lines else ""
-                results.append(
-                    SearchResult(
-                        path=path,
-                        line_num=line_num,
-                        preview=preview,
-                        word=word,
-                        first_line=first_line,
-                    )
-                )
-        except Exception as exc:
-            log(f"WARNING: Error reading file {file_path}: {exc}")
+        if result := _create_search_result(sync_yak_dir / path, path, line_num, word):
+            results.append(result)
 
     return results
+
+
+def _create_search_result(
+    file_path: SyncPath,
+    rel_path: str,
+    line_num: int,
+    word: str,
+) -> SearchResult | None:
+    """Create a SearchResult from a file path, returning None on error."""
+    try:
+        lines = file_path.read_text(encoding="utf-8").splitlines()
+        if not (1 <= line_num <= len(lines)):
+            return None
+        return SearchResult(
+            path=rel_path,
+            line_num=line_num,
+            preview=lines[line_num - 1].strip(),
+            word=word,
+            first_line=lines[0].strip() if lines else "",
+        )
+    except Exception as exc:
+        log(f"WARNING: Error reading file {file_path}: {exc}")
+        return None
 
 
 # -----------------------------------------------------------------------------
@@ -276,23 +284,20 @@ def _process_search_results(
 
 def highlight_content(content: str, query: str) -> str:
     """Highlight search query matches in content."""
-    import re
-
     if not query:
         return content
 
-    lines = content.splitlines()
-    highlighted_lines = []
+    words = [w for w in query.lower().split() if w.strip()]
+    if not words:
+        return content
 
-    for line in lines:
-        highlighted = line
-        for word in query.lower().split():
-            if word.strip():
-                pattern = re.compile(re.escape(word), re.IGNORECASE)
-                highlighted = pattern.sub(
-                    lambda m: f'<span class="search-highlight">{m.group(0)}</span>',
-                    highlighted,
-                )
-        highlighted_lines.append(highlighted)
+    def _highlight_line(line: str) -> str:
+        for word in words:
+            pattern = re.compile(re.escape(word), re.IGNORECASE)
+            line = pattern.sub(
+                lambda m: f'<span class="search-highlight">{m.group(0)}</span>',
+                line,
+            )
+        return line
 
-    return "\n".join(highlighted_lines)
+    return "\n".join(_highlight_line(line) for line in content.splitlines())
