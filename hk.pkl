@@ -2,6 +2,8 @@
 
 amends "package://github.com/jdx/hk/releases/download/v1.15.6/hk@1.15.6#/Config.pkl"
 import "package://github.com/jdx/hk/releases/download/v1.15.6/hk@1.15.6#/Builtins.pkl"
+// amends "package://github.com/jdx/hk/releases/download/v1.26.0/hk@1.26.0#/Config.pkl"
+// import "package://github.com/jdx/hk/releases/download/v1.26.0/hk@1.26.0#/Builtins.pkl"
 
 min_hk_version = "1.15.6"
 
@@ -15,6 +17,8 @@ local linters = new Mapping<String, Step> {
         glob = "*.pkl"
         check = "pkl eval {{files}} >/dev/null"
     }
+    // PLANNED: Pending v1.26.0
+    // ["pkl"] = Builtins.pkl_format
 
     ["pch-check-added-large-files"] {
         check = "check-added-large-files {{ files }}"
