@@ -1,200 +1,223 @@
 #cloud-config
-# Hetzner Cloud-Init Configuration for mdformat-plugin-template
-#
-# ⚠️  REQUIRED: Replace ALL variables in ALL CAPS before deployment
-#
-# CHECKLIST:
-# [ ] YOUR_USERNAME - Your preferred username (e.g., deploy)
-# [ ] YOUR_SSH_PUBLIC_KEY_HERE - Full SSH public key from ~/.ssh/id_rsa.pub
-# [ ] YOUR_GITHUB_USERNAME - GitHub username for repository access
-# [ ] Review passwordless sudo configuration (see security note below)
+# Hetzner Cloud VPS setup for Yak Shears
+# References:
+# - https://community.hetzner.com/tutorials/basic-cloud-config
+# - https://cloudinit.readthedocs.io/en/latest/reference/examples.html
 
-# SECURITY NOTE: This configuration grants passwordless sudo for convenience.
-# For production, consider:
-#   1. Restrict sudo to specific commands: "sudo: /usr/bin/systemctl, /usr/local/bin/auto-deploy.sh"
-#   2. Require passwords: Remove NOPASSWD
-#   3. Use SSH key constraints: Add command= restrictions in authorized_keys
+# IMPORTANT: Replace <public_ssh_key> with your actual SSH public key before deploying
+# Generate key: ssh-keygen -t ed25519 -C "your-email@example.com"
 
 users:
-  - name: YOUR_USERNAME
-    groups: users, admin, sudo
-    sudo: ALL=(ALL) NOPASSWD:ALL  # ⚠️  See security note above
+  - name: yakshears
+    groups: users, admin
+    sudo: ALL=(ALL) NOPASSWD:ALL  # Consider restricting for production: sudo: ['ALL=(ALL) ALL']
     shell: /bin/bash
     ssh_authorized_keys:
-      - YOUR_SSH_PUBLIC_KEY_HERE
+      - <public_ssh_key>  # REPLACE THIS
 
 packages:
+  - fail2ban
+  - ufw
   - git
   - curl
-  - wget
-  - build-essential
-  - syncthing
+  - gnupg2
+  - apt-transport-https
+  - debian-keyring
+  - debian-archive-keyring
+
+package_update: true
+package_upgrade: true
 
 write_files:
-  # SSH hardening - drop-in configuration
-  - path: /etc/ssh/sshd_config.d/50-hardening.conf
-    permissions: '0644'
+  # SSH hardening configuration (drop-in file for sshd_config)
+  - path: /etc/ssh/sshd_config.d/99-ssh-hardening.conf
     content: |
-      # Hardened SSH configuration
-      PasswordAuthentication no
-      PubkeyAuthentication yes
+      # SSH hardening for yak-shears deployment
       PermitRootLogin no
+      PasswordAuthentication no
+      Port 2222
+      KbdInteractiveAuthentication no
+      ChallengeResponseAuthentication no
+      MaxAuthTries 2
+      AllowTcpForwarding no
       X11Forwarding no
+      AllowAgentForwarding no
+      AuthorizedKeysFile .ssh/authorized_keys
+      AllowUsers yakshears
 
-  # Auto-deploy script
-  - path: /usr/local/bin/auto-deploy.sh
+  # Yak Shears systemd service
+  - path: /etc/systemd/system/yak-shears.service
+    content: |
+      [Unit]
+      Description=Yak Shears Server
+      After=network.target
+
+      [Service]
+      User=yakshears
+      WorkingDirectory=/home/yakshears/yak-shears
+      ExecStart=/home/yakshears/.local/bin/uv run --no-sync serve
+      Restart=always
+      RestartSec=10
+      Environment=YAK_SHEARS_DIR=/home/yakshears/Sync/yak-shears
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # GitOps update script
+  - path: /usr/local/bin/gitops-update.sh
     permissions: '0755'
     content: |
       #!/bin/bash
       set -euo pipefail
 
-      APP_USER="YOUR_USERNAME"
-      APP_DIR="/opt/mdformat-plugin-template"
-      LOG_DIR="/home/$APP_USER/.local/var/log"
-      LOG_FILE="$LOG_DIR/auto-deploy.log"
-
-      # Ensure log directory exists
-      mkdir -p "$LOG_DIR"
-
-      log() {
-        echo "[$(date -Iseconds)] $*" | tee -a "$LOG_FILE"
-      }
-
-      log "Starting auto-deploy"
-
-      if [ ! -d "$APP_DIR" ]; then
-        log "ERROR: App directory $APP_DIR does not exist"
-        exit 1
-      fi
-
-      cd "$APP_DIR" || { log "ERROR: Cannot cd to $APP_DIR"; exit 1; }
+      cd /home/yakshears/yak-shears || exit 1
 
       # Fetch latest changes
-      if ! git fetch origin main; then
-        log "ERROR: git fetch failed"
-        exit 1
-      fi
+      git fetch origin main || exit 1
 
-      # Check if there are new commits
       LOCAL=$(git rev-parse HEAD)
       REMOTE=$(git rev-parse origin/main)
 
       if [ "$LOCAL" != "$REMOTE" ]; then
-        log "New commits detected, updating..."
+        echo "Updates detected. Pulling changes..."
+        git pull origin main || exit 1
 
-        if ! git pull origin main; then
-          log "ERROR: git pull failed"
-          exit 1
-        fi
+        echo "Installing dependencies..."
+        /home/yakshears/.local/bin/mise install || exit 1
+        /home/yakshears/.local/bin/uv sync || exit 1
 
-        # Install/update dependencies with mise
-        log "Installing dependencies with mise..."
-        if ! /home/$APP_USER/.local/bin/mise install; then
-          log "ERROR: mise install failed"
-          exit 1
-        fi
+        echo "Restarting service..."
+        systemctl restart yak-shears || exit 1
 
-        log "Deploy complete"
+        echo "Update completed successfully"
       else
-        log "Already up to date"
+        echo "No updates available"
       fi
 
-  # Auto-deploy systemd service
-  - path: /etc/systemd/system/auto-deploy.service
-    permissions: '0644'
+  # GitOps systemd service
+  - path: /etc/systemd/system/gitops-update.service
     content: |
       [Unit]
-      Description=Auto-deploy mdformat-plugin-template
-      After=network-online.target
-      Wants=network-online.target
+      Description=Check for git updates and restart if needed
 
       [Service]
       Type=oneshot
-      User=YOUR_USERNAME
-      ExecStart=/usr/local/bin/auto-deploy.sh
+      User=yakshears
+      ExecStart=/usr/local/bin/gitops-update.sh
       StandardOutput=journal
       StandardError=journal
 
-      [Install]
-      WantedBy=multi-user.target
-
-  # Auto-deploy systemd timer (runs every 5 minutes)
-  - path: /etc/systemd/system/auto-deploy.timer
-    permissions: '0644'
+  # GitOps systemd timer (runs every 5 minutes)
+  - path: /etc/systemd/system/gitops-update.timer
     content: |
       [Unit]
-      Description=Auto-deploy timer for mdformat-plugin-template
+      Description=Run GitOps update every 5 minutes
 
       [Timer]
-      OnBootSec=2min
+      OnBootSec=5min
       OnUnitActiveSec=5min
       Persistent=true
 
       [Install]
       WantedBy=timers.target
 
-  # Syncthing systemd service
-  - path: /etc/systemd/system/syncthing@.service
-    permissions: '0644'
+  # Caddy reverse proxy configuration
+  - path: /etc/caddy/Caddyfile
     content: |
-      [Unit]
-      Description=Syncthing for %i
-      After=network.target
+      {
+          email dev.act.kyle+caddy@gmail.com  # REPLACE with your email for Let's Encrypt
+      }
 
-      [Service]
-      User=%i
-      ExecStart=/usr/bin/syncthing serve --no-browser --no-restart --logflags=0
-      Restart=on-failure
-      RestartSec=5
-      SuccessExitStatus=3 4
-      RestartForceExitStatus=3 4
+      yak-shears.kyleking.me {  # REPLACE with your domain
+          reverse_proxy localhost:8084 {
+              header_up Host {host}
+              header_up X-Real-IP {remote_host}
+              header_up X-Forwarded-For {remote_host}
+              header_up X-Forwarded-Proto {scheme}
+          }
 
-      [Install]
-      WantedBy=multi-user.target
+          # Security headers
+          header {
+              Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+              X-Content-Type-Options "nosniff"
+              X-Frame-Options "DENY"
+              Referrer-Policy "same-origin"
+              X-XSS-Protection "1; mode=block"
+              Permissions-Policy "geolocation=(), microphone=(), camera=()"
+          }
+
+          # Logging
+          log {
+              output file /var/log/caddy/yak-shears.log
+          }
+      }
 
 runcmd:
-  # SECURITY NOTE: Installing mise via piped remote script
-  # This command downloads and executes code from the internet
-  # In production, consider:
-  #   1. Verifying checksums
-  #   2. Pinning specific versions
-  #   3. Self-hosting installation scripts
+  # Configure fail2ban for SSH protection
+  - printf "[sshd]\nenabled = true\nport = ssh, 2222\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local || exit 1
+  - systemctl enable fail2ban || exit 1
+  - systemctl start fail2ban || exit 1
 
-  # Install mise (using explicit path to avoid tilde expansion issues)
-  - su - YOUR_USERNAME -c 'curl https://mise.run | sh'
-  - su - YOUR_USERNAME -c 'echo "eval \"\$(/home/YOUR_USERNAME/.local/bin/mise activate bash)\"" >> /home/YOUR_USERNAME/.bashrc'
+  # Configure UFW firewall
+  - ufw allow 2222/tcp || exit 1    # SSH
+  - ufw allow http/tcp || exit 1    # HTTP (for ACME challenge)
+  - ufw allow https/tcp || exit 1   # HTTPS
+  - ufw allow 22000/tcp || exit 1   # Syncthing data
+  - ufw allow 22000/udp || exit 1   # Syncthing data
+  - ufw allow 21027/udp || exit 1   # Syncthing discovery
+  - ufw --force enable || exit 1
 
-  # Clone repository with error handling
-  - >
-    if ! git clone https://github.com/YOUR_GITHUB_USERNAME/mdformat-plugin-template.git /opt/mdformat-plugin-template; then
-      echo "ERROR: Failed to clone repository" >&2;
-      exit 1;
-    fi
-  - chown -R YOUR_USERNAME:YOUR_USERNAME /opt/mdformat-plugin-template
+  # Update package lists
+  - apt update || exit 1
 
-  # Setup mise for the project with error handling
-  - >
-    su - YOUR_USERNAME -c 'cd /opt/mdformat-plugin-template && /home/YOUR_USERNAME/.local/bin/mise install' ||
-    { echo "ERROR: mise install failed" >&2; exit 1; }
+  # Install uv (Python package manager)
+  - sudo -u yakshears sh -c 'curl -LsSf https://astral.sh/uv/install.sh | sh' || exit 1
 
-  # Enable and start auto-deploy timer
-  - systemctl daemon-reload
-  - systemctl enable auto-deploy.timer
-  - systemctl start auto-deploy.timer
+  # Install mise (tool version manager)
+  - sudo -u yakshears sh -c 'curl -fsSL https://mise.jdx.dev/install.sh | sh' || exit 1
+
+  # Install Syncthing
+  - mkdir -p /etc/apt/keyrings || exit 1
+  - curl -L -o /etc/apt/keyrings/syncthing-archive-keyring.gpg https://syncthing.net/release-key.gpg || exit 1
+  - echo "deb [signed-by=/etc/apt/keyrings/syncthing-archive-keyring.gpg] https://apt.syncthing.net/ syncthing stable" | tee /etc/apt/sources.list.d/syncthing.list || exit 1
+  - apt update || exit 1
+  - apt install -y syncthing || exit 1
+
+  # Install Caddy
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg || exit 1
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list || exit 1
+  - apt update || exit 1
+  - apt install -y caddy || exit 1
+
+  # Setup Yak Shears directories
+  - mkdir -p /home/yakshears/Sync/yak-shears || exit 1
+  - chown -R yakshears:yakshears /home/yakshears/Sync || exit 1
+
+  # Clone repository and install dependencies
+  # NOTE: For private repos, add SSH deploy key to GitHub and update URL to git@github.com:...
+  - sudo -u yakshears git clone https://github.com/KyleKing/yak-shears.git /home/yakshears/yak-shears || exit 1
+  - sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/mise install' || exit 1
+  - sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/uv sync' || exit 1
 
   # Enable and start Syncthing
-  - systemctl enable syncthing@YOUR_USERNAME.service
-  - systemctl start syncthing@YOUR_USERNAME.service
+  - systemctl enable syncthing@yakshears.service || exit 1
+  - systemctl start syncthing@yakshears.service || exit 1
 
-  # Restart SSH to apply hardening configuration
-  - systemctl restart sshd
+  # Enable and start Caddy
+  - systemctl enable caddy || exit 1
+  - systemctl start caddy || exit 1
 
-# Set timezone
-timezone: UTC
+  # Enable and start Yak Shears
+  - systemctl enable yak-shears || exit 1
+  - systemctl start yak-shears || exit 1
 
-# Auto-reboot if kernel is updated
-package_reboot_if_required: true
+  # Setup GitOps timer
+  - systemctl daemon-reload || exit 1
+  - systemctl enable gitops-update.timer || exit 1
+  - systemctl start gitops-update.timer || exit 1
 
-# Run package updates on first boot
-package_update: true
-package_upgrade: true
+  # Restart SSH to apply hardened config
+  - systemctl restart sshd || exit 1
+
+  # Reboot to ensure clean state
+  - sleep 10 && reboot

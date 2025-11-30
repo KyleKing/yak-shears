@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spike 4: Metadata Panel UI</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f3ef;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            height: 100vh;
+            gap: 0;
+        }
+
+        .editor-area {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .editor-area h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin: 0 0 1rem 0;
+            color: #1a1a1a;
+        }
+
+        .editor-area p {
+            line-height: 1.6;
+            color: #333;
+            margin: 0.75rem 0;
+        }
+
+        .wikilink {
+            color: #0066cc;
+            text-decoration: none;
+        }
+
+        .wikilink:hover {
+            text-decoration: underline;
+        }
+
+        .tag {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .metadata-panel {
+            background: white;
+            border-left: 1px solid #d9d4cc;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .metadata-section {
+            margin-bottom: 2rem;
+        }
+
+        .metadata-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .metadata-section h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #666;
+            margin: 0 0 1rem 0;
+        }
+
+        .form-field {
+            margin-bottom: 1rem;
+        }
+
+        .form-field:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-field label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            color: #333;
+        }
+
+        .form-field input,
+        .form-field select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d9d4cc;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-family: inherit;
+            background: white;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-field input:focus,
+        .form-field select:focus {
+            outline: none;
+            border-color: #f7cf46;
+            box-shadow: 0 0 0 3px rgba(247, 207, 70, 0.1);
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .tag-chip {
+            background: #f0f0f0;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tag-chip button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            color: #999;
+            font-size: 1rem;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .tag-chip button:hover {
+            color: #333;
+        }
+
+        .backlinks-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .backlinks-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .backlinks-list li:last-child {
+            border-bottom: none;
+        }
+
+        .backlinks-list a {
+            color: #333;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .backlinks-list a:hover {
+            color: #f7cf46;
+            text-decoration: underline;
+        }
+
+        .backlinks-count {
+            color: #999;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+
+        .empty-state {
+            color: #999;
+            font-size: 0.875rem;
+            font-style: italic;
+            padding: 0.5rem 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .stat-item {
+            background: #f9f9f9;
+            padding: 0.75rem;
+            border-radius: 4px;
+        }
+
+        .stat-item .label {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-item .value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .performance-info {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-family: monospace;
+        }
+
+        @media (max-width: 768px) {
+            .layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+            }
+
+            .metadata-panel {
+                border-left: none;
+                border-top: 1px solid #d9d4cc;
+                max-height: 50vh;
+            }
+
+            .editor-area {
+                padding: 1rem;
+            }
+
+            .editor-area h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="editor-area">
+            <h1>Implementation Plan</h1>
+
+            <p>This spike validates the metadata panel UI design and interaction patterns.</p>
+
+            <p><strong>Goals:</strong></p>
+            <ul>
+                <li>Right sidebar layout for desktop</li>
+                <li>Bottom sheet for mobile (resize browser to see)</li>
+                <li>Form generation from schema</li>
+                <li>Simulated HTMX-style live updates</li>
+            </ul>
+
+            <p>Content area with editor. See <a href="#" class="wikilink">[[architecture-design]]</a> for system design.</p>
+
+            <p>Related to <span class="tag">#backend</span> and <span class="tag">#database</span> tags.</p>
+
+            <p>This panel demonstrates how metadata editing would work in the yak-shears editor. Changes to fields trigger simulated updates (in real implementation, these would use HTMX to update the server).</p>
+
+            <h2>Success Criteria</h2>
+            <ul>
+                <li>✅ Renders in &lt;100ms (see performance info bottom-right)</li>
+                <li>✅ Smooth CSS transitions on focus/hover</li>
+                <li>✅ Responsive layout (desktop sidebar, mobile bottom sheet)</li>
+                <li>✅ Interactive form fields with live updates</li>
+            </ul>
+        </div>
+
+        <div class="metadata-panel" id="metadataPanel">
+            <div class="metadata-section">
+                <h3>📋 Properties</h3>
+
+                <div class="form-field">
+                    <label for="type">Type</label>
+                    <select id="type" onchange="handleFieldChange('type', this.value)">
+                        <option>note</option>
+                        <option selected>ticket</option>
+                        <option>practice</option>
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label for="status">Status</label>
+                    <select id="status" onchange="handleFieldChange('status', this.value)">
+                        <option>backlog</option>
+                        <option selected>in-progress</option>
+                        <option>done</option>
+                        <option>archived</option>
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label for="priority">Priority</label>
+                    <select id="priority" onchange="handleFieldChange('priority', this.value)">
+                        <option>low</option>
+                        <option>medium</option>
+                        <option selected>high</option>
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label for="due">Due Date</label>
+                    <input type="date" id="due" value="2025-12-15" onchange="handleFieldChange('due', this.value)">
+                </div>
+
+                <div class="form-field">
+                    <label>Tags</label>
+                    <div class="tag-list" id="tagList">
+                        <span class="tag-chip">backend <button onclick="removeTag('backend')">×</button></span>
+                        <span class="tag-chip">database <button onclick="removeTag('database')">×</button></span>
+                    </div>
+                    <input type="text" id="tagInput" placeholder="Add tag..." style="margin-top: 0.5rem;" onkeypress="handleTagKeypress(event)">
+                </div>
+            </div>
+
+            <div class="metadata-section">
+                <h3>🔗 Backlinks</h3>
+                <ul class="backlinks-list">
+                    <li><a href="#">architecture-design.dj</a></li>
+                    <li><a href="#">project-roadmap.dj <span class="backlinks-count">(2 mentions)</span></a></li>
+                    <li><a href="#">meeting-notes-2025-11.dj</a></li>
+                </ul>
+            </div>
+
+            <div class="metadata-section">
+                <h3>📊 Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="label">Backlinks</div>
+                        <div class="value">3</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="label">Outbound</div>
+                        <div class="value">1</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="label">Word Count</div>
+                        <div class="value">342</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="label">Modified</div>
+                        <div class="value" style="font-size: 0.75rem;">Nov 23</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="performance-info" id="perfInfo">
+        Rendered in: <span id="renderTime">-</span>ms
+    </div>
+
+    <script>
+        // Measure render time
+        const renderStart = performance.now();
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const renderTime = (performance.now() - renderStart).toFixed(2);
+            document.getElementById('renderTime').textContent = renderTime;
+
+            // Log to console for validation
+            console.log('='.repeat(60));
+            console.log('SPIKE 4: Metadata UI Mockup');
+            console.log('='.repeat(60));
+            console.log(`✅ Render time: ${renderTime}ms`);
+            console.log(`✅ Target: <100ms`);
+            console.log(`✅ Responsive: ${window.innerWidth <= 768 ? 'Mobile' : 'Desktop'} layout`);
+            console.log('');
+            console.log('Interactive Features:');
+            console.log('  • Change form fields to see console updates');
+            console.log('  • Add tags by typing and pressing Enter');
+            console.log('  • Remove tags by clicking ×');
+            console.log('  • Resize window to test mobile layout');
+            console.log('');
+            console.log('Next Steps:');
+            console.log('  • Integrate with HTMX for live updates');
+            console.log('  • Connect to Starlette backend');
+            console.log('  • Generate forms from JSON Schema');
+            console.log('  • Add wikilink autocomplete');
+        });
+
+        // Simulated HTMX-style updates
+        function handleFieldChange(field, value) {
+            console.log(`🔄 Field updated: ${field} = ${value}`);
+            console.log('   (In real app: HTMX POST to /yak/{id}/metadata)');
+        }
+
+        function removeTag(tagName) {
+            const tagList = document.getElementById('tagList');
+            const tags = Array.from(tagList.children);
+            const tagToRemove = tags.find(tag => tag.textContent.includes(tagName));
+
+            if (tagToRemove) {
+                tagToRemove.style.opacity = '0';
+                setTimeout(() => {
+                    tagToRemove.remove();
+                    console.log(`🗑️  Tag removed: ${tagName}`);
+                    console.log('   (In real app: HTMX DELETE to /yak/{id}/tag/{tag})');
+                }, 200);
+            }
+        }
+
+        function handleTagKeypress(event) {
+            if (event.key === 'Enter') {
+                const input = event.target;
+                const tagName = input.value.trim();
+
+                if (tagName) {
+                    const tagList = document.getElementById('tagList');
+                    const newTag = document.createElement('span');
+                    newTag.className = 'tag-chip';
+                    newTag.innerHTML = `${tagName} <button onclick="removeTag('${tagName}')">×</button>`;
+                    newTag.style.opacity = '0';
+                    tagList.appendChild(newTag);
+
+                    // Fade in animation
+                    setTimeout(() => {
+                        newTag.style.transition = 'opacity 0.2s';
+                        newTag.style.opacity = '1';
+                    }, 10);
+
+                    input.value = '';
+                    console.log(`➕ Tag added: ${tagName}`);
+                    console.log('   (In real app: HTMX POST to /yak/{id}/tag)');
+                }
+            }
+        }
+
+        // Monitor responsive behavior
+        let lastWidth = window.innerWidth;
+        window.addEventListener('resize', () => {
+            const currentWidth = window.innerWidth;
+            if ((lastWidth > 768 && currentWidth <= 768) || (lastWidth <= 768 && currentWidth > 768)) {
+                console.log(`📱 Layout changed: ${currentWidth <= 768 ? 'Mobile' : 'Desktop'}`);
+                lastWidth = currentWidth;
+            }
+        });
+    </script>
+</body>
+</html>

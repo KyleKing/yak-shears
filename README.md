@@ -61,6 +61,10 @@ My personal note taking app, but you probably want to use one of these primarily
 
 ![Search Page](.github/screenshots/search-page.png)
 
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for production deployment instructions to Hetzner Cloud VPS.
+
 ## Quick Start
 
 If still interested, these are the high-level commands necessary to run locally

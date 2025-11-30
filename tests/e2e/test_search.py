@@ -4,7 +4,6 @@ from playwright.async_api import BrowserContext, Page, expect
 from ._helpers import login
 
 
-@pytest.mark.skip
 @pytest.mark.playwright
 @pytest.mark.asyncio
 async def test_search_with_query(context: BrowserContext, page: Page, server_lifecycle, console_messages):
@@ -73,7 +72,6 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
     assert len(new_preview_text.strip()) > 0, "Preview should still contain content after second navigation"
 
 
-@pytest.mark.skip
 @pytest.mark.playwright
 @pytest.mark.asyncio
 async def test_search_modal_on_small_screen(context: BrowserContext, page: Page, server_lifecycle, console_messages):
