@@ -1,5 +1,7 @@
 # Yak Shears Metadata & Linking: Spikes & MVP Plan
 
+> **Reference**: Spikes completed. See [spikes/SPIKE_RESULTS.md](../spikes/SPIKE_RESULTS.md) for results and [ROADMAP.md](../ROADMAP.md) for current progress.
+
 **Goal**: Validate core technical concepts and deliver a minimal but functional linking system.
 
 ---

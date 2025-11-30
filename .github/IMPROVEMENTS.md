@@ -1,5 +1,7 @@
 # Yak Shears - Application Improvements Summary
 
+> **Archive Note**: This documents completed work. For current status, see [STATUS.md](../STATUS.md).
+
 This document summarizes the comprehensive improvements made to Yak Shears following Scandinavian minimalist design principles.
 
 ## Overview

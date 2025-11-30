@@ -1,5 +1,7 @@
 # Yak Shears: Metadata, Linking, and Data Models - Comprehensive Plan
 
+> **Reference**: This is the detailed technical plan. For a summary, see [ROADMAP.md](../ROADMAP.md).
+
 **Date**: November 23, 2025
 **Status**: Planning Phase
 **Goal**: Evolve yak-shears from simple note-taking to flexible knowledge management

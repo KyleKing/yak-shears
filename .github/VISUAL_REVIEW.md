@@ -1,5 +1,7 @@
 # Visual Design Review - Yak Shears App
 
+> **Archive Note**: Design recommendations from this review have been implemented. See [IMPROVEMENTS.md](IMPROVEMENTS.md) for details.
+
 **Date**: November 23, 2025
 **Reviewer**: Claude (AI Design Review)
 **Goal**: Evaluate Scandinavian/Minimal Design Implementation

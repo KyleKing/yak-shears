@@ -168,9 +168,8 @@ Implemented as a full page at /search with fuzzy search using persistent and laz
 - There is a feature to see similar yaks (*TBD*)
 - There is a feature to support configuring yak metadata during edit and to view when viewing (*TBD*)
 
-## Future Features
+## Related Documentation
 
-- Best tiny model for plain text RAG (https://www.baseten.com/blog/the-best-open-source-embedding-models/#the-best-reward-model-allanai-llama-31-tulu-3-8b-reward) or run something slightly better on my laptop? For the latter, would track new and modified yaks removed from RAG until I can next ingest them from my laptop.
-- Revisit tests to ensure that private features aren't being tested
-    - Consider revisiting automatic coverage overlap. See last item, which was too specific at line level when function level would be more useful: https://github.com/KyleKing/yak-shears/commit/ddc8b0c535b79317a13ef5accf32f0aa5018f49b
-- Consider adding mutation testing, such as with https://github.com/boxed/mutmut or the more complicated https://github.com/sixty-north/cosmic-ray
+- **[STATUS.md](STATUS.md)** - Current implementation status
+- **[ROADMAP.md](ROADMAP.md)** - Vision and planned features
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
