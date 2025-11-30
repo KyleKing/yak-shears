@@ -1,11 +1,11 @@
-# Base Hosting Setup: Syncthing & Caddy
+# Manual Hosting Reference: Syncthing & Caddy
 
-This document contains the shared installation and configuration steps for Syncthing and Caddy that are used across multiple hosting scenarios (new setup, final deployment, etc.).
+Manual installation steps for Syncthing and Caddy. This is a **supplementary reference** for cases where you need to set up or debug these services manually.
+
+> **Primary Guide**: See **[DEPLOYMENT.md](../DEPLOYMENT.md)** for the automated cloud-init deployment (recommended).
 
 **See also:**
-- **hosting-new.md** — Full, detailed guide for new VPS setup (canonical reference)
-- **hosting-final.md** — Quick-start guide with links to full instructions
-- **hosting-gemini.md** — Gemini-specific hosting notes
+- **hosting-gemini.md** — Gemini variant configuration
 
 ---
 
