@@ -53,10 +53,11 @@ def test_yaks_endpoint(client: TestClient, mock_user_session, snapshot) -> None:
     """Test the yaks endpoint."""
     with (
         set_yak_shears_dir(MOCK_YAK_DIR),
-        patch("yak_shears._yak.handlers.datetime") as mock_datetime,
+        patch("yak_shears._yak.services.datetime") as mock_datetime,
     ):
         mock_datetime.fromtimestamp.return_value = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC)
         mock_datetime.UTC = UTC
+        mock_datetime.now.return_value = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC)
 
         response = client.get("/yaks")
         assert response.status_code == HTTPStatus.OK

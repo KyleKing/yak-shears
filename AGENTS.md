@@ -55,6 +55,7 @@ yak_shears/
 ├── _auth/          # Authentication system (password-based, JSON file storage)
 ├── _yak/           # Yak management
 │   ├── database.py # DuckDB operations for search index
+│   ├── services.py # Business logic (CRUD, search, pagination)
 │   ├── handlers.py # HTTP request handlers
 │   └── routes.py   # Route definitions
 ├── _templates/     # Jinja2 HTML templates
