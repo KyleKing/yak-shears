@@ -1,8 +1,11 @@
+from pathlib import Path as SyncPath
+
 import pytest
 
 from yak_shears._auth.models import Password
 from yak_shears._auth.password import generate_salt, hash_password, verify_password
 from yak_shears._auth.storage import (
+    UserStore,
     authenticate_user,
     create_session,
     create_user,
@@ -223,3 +226,39 @@ def test_get_user_id_from_nonexistent_session(temp_user_file):
 async def test_field_validation(temp_user_file, email, display_name, password):
     with pytest.raises(ValueError, match=r".+ cannot be empty or whitespace-only"):
         await create_user(email, display_name, password)
+
+
+class TestUserStore:
+    """Tests for the UserStore class directly."""
+
+    @pytest.fixture
+    def store(self, tmp_path) -> UserStore:
+        return UserStore(tmp_path / "users.json")
+
+    @pytest.mark.asyncio
+    async def test_create_and_get_user(self, store):
+        user = await store.create_user("test@test.com", "Test", Password("pass123"))
+        assert store.get_user_by_email("test@test.com") == user
+        assert store.get_user_by_id(user["id"]) == user
+
+    @pytest.mark.asyncio
+    async def test_persistence(self, tmp_path):
+        path = tmp_path / "users.json"
+        store1 = UserStore(path)
+        await store1.create_user("test@test.com", "Test", Password("pass123"))
+
+        store2 = UserStore.load_sync(path)
+        assert store2.get_user_by_email("test@test.com") is not None
+
+    def test_session_management(self, store):
+        session_id = store.create_session("user123")
+        assert store.get_user_id_from_session(session_id) == "user123"
+
+        store.delete_session(session_id)
+        assert store.get_user_id_from_session(session_id) is None
+
+    def test_clear(self, store):
+        store.create_session("user123")
+        store.clear()
+        assert store.list_all_users() == []
+        assert store.get_user_id_from_session("any") is None
