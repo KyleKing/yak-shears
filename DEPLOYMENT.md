@@ -59,13 +59,38 @@ nslookup yak-shears.yourdomain.com 8.8.8.8
 
 ## Quick Deployment
 
-1. **Create VPS via Hetzner Cloud Console or API**
+### Option A: Hetzner Cloud Console
+
+1. **Create VPS via Hetzner Cloud Console**
    - OS: Ubuntu 22.04 or later
    - Server type: CX22 or larger (4GB+ RAM recommended)
    - Location: Your preference
    - SSH key: Add your public key
    - Cloud-init: Paste contents of `cloud-config.yaml` (replace `<public_ssh_key>` placeholder)
    - **Note the VPS IP address** assigned after creation
+
+### Option B: hcloud CLI
+
+```sh
+# Install hcloud CLI
+brew install hcloud  # macOS
+# or download from https://github.com/hetznercloud/cli/releases
+
+# Authenticate (create API token in Hetzner Cloud Console)
+hcloud context create yak-shears
+
+# Create server with cloud-config
+hcloud server create \
+  --name yak-shears \
+  --type cx22 \
+  --image ubuntu-22.04 \
+  --location nbg1 \
+  --ssh-key YOUR_KEY_NAME \
+  --user-data-from-file cloud-config.yaml
+
+# Get server IP
+hcloud server ip yak-shears
+```
 
 2. **Configure DNS immediately** (see DNS Configuration section above)
    - Add A record in Cloudflare: `yak-shears.yourdomain.com` → `<vps-ip>`
@@ -168,6 +193,33 @@ htop
 - **HTTPS**: Caddy auto-provisions Let's Encrypt certificates (see below)
 - **Passwordless sudo**: Enabled for automation; consider restricting for production
 - **Hetzner Cloud Firewall**: Recommended as additional layer (separate from UFW)
+
+### Passwordless Sudo Risks
+
+The default configuration grants passwordless sudo for convenience:
+
+```yaml
+sudo: ALL=(ALL) NOPASSWD:ALL
+```
+
+**Risks:**
+- If the GitOps script is compromised, attacker gains root
+- If the repository is compromised, attacker can execute arbitrary code
+- If SSH key is stolen, attacker has unrestricted access
+
+**Mitigations:**
+
+1. **Restrict sudo commands** (edit `cloud-config.yaml`):
+   ```yaml
+   sudo: /usr/bin/systemctl restart yak-shears, /usr/local/bin/gitops-update.sh
+   ```
+
+2. **Require passwords** (edit `cloud-config.yaml`):
+   ```yaml
+   sudo: ALL=(ALL) ALL  # Remove NOPASSWD
+   ```
+
+3. **Use deploy keys**: Create GitHub deploy key with read-only access instead of full SSH key
 
 ### How Let's Encrypt Works with Caddy
 
@@ -300,6 +352,61 @@ sudo -u yakshears cat /home/yakshears/.ssh/id_ed25519.pub
 1. Deploy fresh VPS with same `cloud-config.yaml`
 2. Restore `.yak-shears-users.json`
 3. Configure Syncthing to sync yak files
+
+### Hetzner Snapshots
+
+```sh
+# Install hcloud CLI
+brew install hcloud  # macOS
+# or: apt install hcloud-cli  # Linux
+
+# Authenticate (use API token from Hetzner Cloud Console)
+hcloud context create yak-shears
+
+# Manual snapshot
+hcloud server create-image \
+  --description "yak-shears-$(date +%Y%m%d-%H%M)" \
+  --type snapshot \
+  <server-name>
+
+# List snapshots
+hcloud image list --type snapshot
+```
+
+### Health Check Script
+
+Create `/usr/local/bin/health-check.sh`:
+
+```sh
+#!/bin/bash
+# Simple health check for yak-shears
+
+# Check if service is running
+if ! systemctl is-active --quiet yak-shears; then
+    echo "ERROR: yak-shears service not running"
+    exit 1
+fi
+
+# Check if port 8084 is listening
+if ! ss -tlnp | grep -q ':8084'; then
+    echo "ERROR: Port 8084 not listening"
+    exit 1
+fi
+
+# Check recent GitOps errors
+if journalctl -u gitops-update -n 10 --no-pager | grep -q "ERROR"; then
+    echo "WARNING: Recent GitOps errors detected"
+    exit 1
+fi
+
+echo "OK: Yak Shears healthy"
+```
+
+Add to cron for regular checks:
+```sh
+chmod +x /usr/local/bin/health-check.sh
+echo "*/15 * * * * /usr/local/bin/health-check.sh" | crontab -
+```
 
 ## Maintenance
 

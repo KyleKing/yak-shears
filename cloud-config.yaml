@@ -3,17 +3,25 @@
 # References:
 # - https://community.hetzner.com/tutorials/basic-cloud-config
 # - https://cloudinit.readthedocs.io/en/latest/reference/examples.html
+#
+# ⚠️  REQUIRED: Replace placeholders before deployment
+#
+# CHECKLIST:
+# [ ] <public_ssh_key> - Full SSH public key from ~/.ssh/id_ed25519.pub
+# [ ] yak-shears.kyleking.me - Your domain (in Caddyfile section)
+# [ ] dev.act.kyle+caddy@gmail.com - Your email for Let's Encrypt
+# [ ] Review passwordless sudo (see DEPLOYMENT.md Security Notes)
 
-# IMPORTANT: Replace <public_ssh_key> with your actual SSH public key before deploying
-# Generate key: ssh-keygen -t ed25519 -C "your-email@example.com"
+# SECURITY NOTE: This configuration grants passwordless sudo for convenience.
+# For production, consider restricting to specific commands. See DEPLOYMENT.md.
 
 users:
   - name: yakshears
     groups: users, admin
-    sudo: ALL=(ALL) NOPASSWD:ALL  # Consider restricting for production: sudo: ['ALL=(ALL) ALL']
+    sudo: ALL=(ALL) NOPASSWD:ALL  # ⚠️  See security note above
     shell: /bin/bash
     ssh_authorized_keys:
-      - <public_ssh_key>  # REPLACE THIS
+      - <public_ssh_key>  # ⚠️  REPLACE with your SSH public key
 
 packages:
   - fail2ban
