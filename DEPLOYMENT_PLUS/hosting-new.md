@@ -186,46 +186,99 @@ sudo systemctl disable traefik.service
 <https://github.com/filebrowser/filebrowser>
 
 ```sh
+# Install FileBrowser
 curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash
-filebrowser config init --port 8084
-/usr/local/bin/filebrowser -r /root/Sync
-# While the above is running (TODO: because the systemctl configuration isn't working)
-ssh -L 8084:localhost:8084 ubuntu-4gb-hel1-1
 
-# Create a systemd service for FileBrowser
+# Create FileBrowser user and group (run as root)
+sudo groupadd filebrowser
+sudo useradd \
+    -g filebrowser --no-user-group \
+    -d /var/lib/filebrowser --no-create-home \
+    -s /usr/sbin/nologin \
+    -r filebrowser
+
+# Create directories for FileBrowser data and config
+sudo mkdir -p /var/lib/filebrowser
+sudo mkdir -p /etc/filebrowser
+
+# Move Sync directory to a location accessible by filebrowser user
+# Option 1 (Recommended): Use dedicated directory
+sudo mkdir -p /srv/filebrowser-data
+sudo mv /root/Sync/* /srv/filebrowser-data/
+sudo chown -R filebrowser:filebrowser /srv/filebrowser-data
+
+# Option 2 (If you must use /root/Sync):
+# sudo chmod 755 /root
+# sudo chown -R filebrowser:filebrowser /root/Sync
+
+# Initialize FileBrowser config with filebrowser user
+sudo -u filebrowser filebrowser config init --port 8084 --database /var/lib/filebrowser/database.db --config /etc/filebrowser/config.json
+sudo chown -R filebrowser:filebrowser /var/lib/filebrowser
+sudo chown -R filebrowser:filebrowser /etc/filebrowser
+```
+
+```sh
+# Create hardened systemd service for FileBrowser
 sudo tee "/lib/systemd/system/filebrowser.service" > /dev/null <<'EOF'
-# Adapted from: /lib/systemd/system/traefik.service
 # /lib/systemd/system/filebrowser.service
 [Unit]
-Description=Run Filebrowser at startup
-# After=network-online.target
-# Wants=network-online.target systemd-networkd-wait-online.service
+Description=FileBrowser web-based file management service
+After=network-online.target
+Wants=network-online.target systemd-networkd-wait-online.service
 
 [Service]
 Restart=on-failure
+RestartSec=5
 
-# TODO: run as non-root
-User=root
+User=filebrowser
+Group=filebrowser
 
-# ProtectHome=true
-# ProtectSystem=full
-# ReadWriteDirectories=/etc/traefik/acme
-# CapabilityBoundingSet=CAP_NET_BIND_SERVICE
-# AmbientCapabilities=CAP_NET_BIND_SERVICE
-# NoNewPrivileges=true
+# Security hardening
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/srv/filebrowser-data /var/lib/filebrowser
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
 
-# TimeoutStopSec=300
-# EnvironmentFile=/etc/traefik/.env
-ExecStart=/usr/local/bin/filebrowser -r /root/Sync
+TimeoutStopSec=30
+
+# Update paths as needed - using recommended /srv/filebrowser-data
+ExecStart=/usr/local/bin/filebrowser -r /srv/filebrowser-data --database /var/lib/filebrowser/database.db --config /etc/filebrowser/config.json
 Type=simple
 
 [Install]
 WantedBy=multi-user.target
 EOF
+
 sudo chown root:root /lib/systemd/system/filebrowser.service
 sudo chmod 644 /lib/systemd/system/filebrowser.service
 sudo systemctl daemon-reload
+sudo systemctl enable filebrowser.service
+sudo systemctl start filebrowser.service
+sudo systemctl status filebrowser.service
 ```
+
+**Key security improvements:**
+
+1. **Non-root execution**: Runs as dedicated `filebrowser` user/group
+2. **Filesystem protection**: `ProtectSystem=strict` with explicit `ReadWritePaths`
+3. **Namespace isolation**: `PrivateTmp`, `PrivateDevices`, and other isolation directives
+4. **System call filtering**: Restricts to safe system calls only
+5. **No privilege escalation**: `NoNewPrivileges=true` prevents gaining additional privileges
+
+**Note:** Adjust the data directory path (`/srv/filebrowser-data`) in the ExecStart line if you prefer a different location. The current configuration uses `/srv/filebrowser-data` instead of `/root/Sync` for better security separation.
 
 ## Caddy
 
