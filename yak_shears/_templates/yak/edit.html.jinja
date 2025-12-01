@@ -15,6 +15,18 @@
 {% endblock %}
 
 {% block content %}
+  <button
+    class="metadata-toggle"
+    type="button"
+    aria-label="Toggle metadata panel"
+    aria-expanded="false"
+    aria-controls="metadata-panel"
+  >
+    <span class="metadata-toggle__bar"></span>
+    <span class="metadata-toggle__bar"></span>
+    <span class="metadata-toggle__bar"></span>
+  </button>
+
   <div class="editor-layout">
     <div class="editor-main">
       <div class="editor__header">
@@ -45,7 +57,7 @@
       </div>
     </div>
 
-    <aside class="metadata-panel">
+    <aside class="metadata-panel" id="metadata-panel">
       {% if frontmatter %}
         <section class="metadata-section">
           <h3 class="metadata-section__title">📋 Properties</h3>

@@ -10,6 +10,22 @@ const maxRetries = 50; // 5 seconds at 100ms intervals
 let retries = 0;
 let jar; // Global reference to CodeJar instance
 let currentView = "editor"; // Current view mode
+let metadataPanelVisible = false; // Track metadata panel visibility
+
+function toggleMetadataPanel(forceState = null) {
+	const layout = document.querySelector('.editor-layout');
+	const toggle = document.querySelector('.metadata-toggle');
+
+	metadataPanelVisible = forceState !== null ? forceState : !metadataPanelVisible;
+
+	layout.classList.toggle('metadata-visible', metadataPanelVisible);
+	toggle.classList.toggle('active', metadataPanelVisible);
+	toggle.setAttribute('aria-expanded', metadataPanelVisible.toString());
+
+	localStorage.setItem('metadataPanelVisible', metadataPanelVisible);
+}
+
+window.toggleMetadataPanel = toggleMetadataPanel;
 
 function renderPreview(content) {
 	const previewContent = document.getElementById("preview-content");
@@ -44,9 +60,20 @@ function setViewMode(mode) {
 	}
 
 	// Update container classes
-	container.className = "editor-container " + mode.replace("-", "");
+	// Map view modes to CSS class names
+	const modeClassMap = {
+		"editor": "editoronly",
+		"side-by-side": "sidebyside",
+		"preview": "previewonly"
+	};
+	container.className = "editor-container " + modeClassMap[mode];
 
 	currentView = mode;
+
+	// Auto-show metadata panel in preview mode
+	if (mode === "preview") {
+		toggleMetadataPanel(true);
+	}
 
 	// Update preview if switching to a mode that shows it
 	if (mode === "side-by-side" || mode === "preview") {
@@ -82,6 +109,19 @@ function initEditor() {
 		const serverContent = window.serverContent;
 		editor.textContent = serverContent;
 		highlight(editor); // Highlight on load rather than waiting for key press
+
+		// Auto-focus the editor on page load
+		requestAnimationFrame(() => {
+			editor.focus();
+			const range = document.createRange();
+			const sel = window.getSelection();
+			if (editor.lastChild) {
+				range.selectNodeContents(editor);
+				range.collapse(false);
+				sel.removeAllRanges();
+				sel.addRange(range);
+			}
+		});
 
 		const saved = localStorage.getItem(storageKey);
 		if (saved && saved !== serverContent) {
@@ -159,10 +199,20 @@ function initEditor() {
 			});
 		});
 
-		// Set initial view mode (default to editor-only for mobile, side-by-side for desktop)
+		// Set initial view mode (default to editor-only)
 		const isMobile = window.innerWidth <= 768;
-		const initialView = isMobile ? "editor" : "side-by-side";
+		const initialView = "editor";
 		setViewMode(initialView);
+
+		// Initialize metadata panel toggle
+		const metadataToggle = document.querySelector('.metadata-toggle');
+		if (metadataToggle) {
+			metadataToggle.addEventListener('click', () => toggleMetadataPanel());
+
+			const savedPref = localStorage.getItem('metadataPanelVisible');
+			const shouldShow = savedPref === 'true' || (savedPref === null && initialView === 'preview');
+			toggleMetadataPanel(shouldShow);
+		}
 
 		// Handle window resize to switch modes
 		let lastWidth = window.innerWidth;
