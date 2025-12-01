@@ -11,21 +11,80 @@ let retries = 0;
 let jar; // Global reference to CodeJar instance
 let currentView = "editor"; // Current view mode
 let metadataPanelVisible = false; // Track metadata panel visibility
+let panelPinned = false; // Track if panel is pinned (desktop only)
 
 function toggleMetadataPanel(forceState = null) {
+	const panel = document.querySelector('.metadata-panel');
+	const menuBtn = document.getElementById('menu-btn');
+	const backdrop = document.querySelector('.metadata-backdrop');
 	const layout = document.querySelector('.editor-layout');
-	const toggle = document.querySelector('.metadata-toggle');
+	const pinBtn = document.querySelector('.panel-pin');
+	const editor = document.querySelector('.editor');
 
 	metadataPanelVisible = forceState !== null ? forceState : !metadataPanelVisible;
 
-	layout.classList.toggle('metadata-visible', metadataPanelVisible);
-	toggle.classList.toggle('active', metadataPanelVisible);
-	toggle.setAttribute('aria-expanded', metadataPanelVisible.toString());
+	// Clear pinned state when toggling via menu button
+	if (panelPinned && !metadataPanelVisible) {
+		panelPinned = false;
+		layout.classList.remove('panel-pinned');
+		if (pinBtn) pinBtn.setAttribute('aria-pressed', 'false');
+		localStorage.setItem('panelPinned', 'false');
+	}
+
+	panel.classList.toggle('visible', metadataPanelVisible);
+	if (menuBtn) {
+		menuBtn.classList.toggle('active', metadataPanelVisible);
+		menuBtn.setAttribute('aria-expanded', metadataPanelVisible.toString());
+	}
+
+	// Show backdrop when panel is open and not pinned
+	if (backdrop && !panelPinned) {
+		backdrop.classList.toggle('visible', metadataPanelVisible);
+	}
+
+	// Focus management
+	if (metadataPanelVisible) {
+		// Focus first interactive element in panel
+		const firstFocusable = panel.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+		if (firstFocusable) {
+			requestAnimationFrame(() => firstFocusable.focus());
+		}
+	} else {
+		// Return focus to editor
+		if (editor) {
+			requestAnimationFrame(() => editor.focus());
+		}
+	}
 
 	localStorage.setItem('metadataPanelVisible', metadataPanelVisible);
 }
 
+function togglePanelPin() {
+	const layout = document.querySelector('.editor-layout');
+	const panel = document.querySelector('.metadata-panel');
+	const pinBtn = document.querySelector('.panel-pin');
+	const backdrop = document.querySelector('.metadata-backdrop');
+
+	// Only allow pinning on desktop
+	if (window.innerWidth <= 768) return;
+
+	panelPinned = !panelPinned;
+
+	layout.classList.toggle('panel-pinned', panelPinned);
+	pinBtn.setAttribute('aria-pressed', panelPinned.toString());
+
+	// When pinned, panel should be visible and backdrop hidden
+	if (panelPinned) {
+		panel.classList.add('visible');
+		metadataPanelVisible = true;
+		if (backdrop) backdrop.classList.remove('visible');
+	}
+
+	localStorage.setItem('panelPinned', panelPinned);
+}
+
 window.toggleMetadataPanel = toggleMetadataPanel;
+window.togglePanelPin = togglePanelPin;
 
 function renderPreview(content) {
 	const previewContent = document.getElementById("preview-content");
@@ -69,11 +128,6 @@ function setViewMode(mode) {
 	container.className = "editor-container " + modeClassMap[mode];
 
 	currentView = mode;
-
-	// Auto-show metadata panel in preview mode
-	if (mode === "preview") {
-		toggleMetadataPanel(true);
-	}
 
 	// Update preview if switching to a mode that shows it
 	if (mode === "side-by-side" || mode === "preview") {
@@ -125,28 +179,8 @@ function initEditor() {
 
 		const saved = localStorage.getItem(storageKey);
 		if (saved && saved !== serverContent) {
-			// TODO: Make this part of the jinja template instead of added dynamically!
-			const toggleDiv = document.createElement("div");
-			toggleDiv.className = "editor__toggle";
-			toggleDiv.innerHTML = `
-       <button id="server-btn" class="active">Server Version</button>
-       <button id="local-btn">Unsaved Local Changes</button>
-     `;
-			document.querySelector(".editor__header").appendChild(toggleDiv);
-
-			document.getElementById("server-btn").addEventListener("click", () => {
-				editor.textContent = serverContent;
-				jar.updateCode(serverContent);
-				document.getElementById("server-btn").classList.add("active");
-				document.getElementById("local-btn").classList.remove("active");
-			});
-
-			document.getElementById("local-btn").addEventListener("click", () => {
-				editor.textContent = saved;
-				jar.updateCode(saved);
-				document.getElementById("local-btn").classList.add("active");
-				document.getElementById("server-btn").classList.remove("active");
-			});
+			// TODO: Show UI for switching between server/local versions
+			console.log("Unsaved local changes detected for this file");
 		}
 
 		// Set initial status
@@ -204,24 +238,73 @@ function initEditor() {
 		const initialView = "editor";
 		setViewMode(initialView);
 
-		// Initialize metadata panel toggle
-		const metadataToggle = document.querySelector('.metadata-toggle');
-		if (metadataToggle) {
-			metadataToggle.addEventListener('click', () => toggleMetadataPanel());
+		// Initialize menu button toggle
+		const menuBtn = document.getElementById('menu-btn');
+		const pinBtn = document.querySelector('.panel-pin');
+		const backdrop = document.querySelector('.metadata-backdrop');
 
-			const savedPref = localStorage.getItem('metadataPanelVisible');
-			const shouldShow = savedPref === 'true' || (savedPref === null && initialView === 'preview');
-			toggleMetadataPanel(shouldShow);
+		if (menuBtn) {
+			menuBtn.addEventListener('click', () => toggleMetadataPanel());
 		}
 
-		// Handle window resize to switch modes
+		// Pin button click
+		if (pinBtn) {
+			pinBtn.addEventListener('click', () => togglePanelPin());
+		}
+
+		// Backdrop click closes panel (when not pinned)
+		if (backdrop) {
+			backdrop.addEventListener('click', () => {
+				if (!panelPinned) {
+					toggleMetadataPanel(false);
+				}
+			});
+		}
+
+		// Keyboard shortcuts for menu panel
+		document.addEventListener('keydown', (e) => {
+			// Cmd/Ctrl+M to toggle menu
+			if ((e.metaKey || e.ctrlKey) && e.key === 'm') {
+				e.preventDefault();
+				toggleMetadataPanel();
+			}
+			// Escape to close menu (when open and not pinned)
+			if (e.key === 'Escape' && metadataPanelVisible && !panelPinned) {
+				e.preventDefault();
+				toggleMetadataPanel(false);
+			}
+		});
+
+		// Restore panel state from localStorage
+		const savedPinned = localStorage.getItem('panelPinned');
+		const savedVisible = localStorage.getItem('metadataPanelVisible');
+
+		// On desktop, restore pin state
+		if (window.innerWidth > 768 && savedPinned === 'true') {
+			togglePanelPin();
+		} else if (savedVisible === 'true') {
+			toggleMetadataPanel(true);
+		}
+
+		// Handle window resize
 		let lastWidth = window.innerWidth;
 		window.addEventListener("resize", () => {
 			const wasMobile = lastWidth <= 768;
 			const nowMobile = window.innerWidth <= 768;
 			lastWidth = window.innerWidth;
+
+			// Switch view mode if needed
 			if (wasMobile !== nowMobile && currentView === "side-by-side") {
 				setViewMode(nowMobile ? "editor" : "side-by-side");
+			}
+
+			// Unpin panel when switching to mobile
+			if (!wasMobile && nowMobile && panelPinned) {
+				const layout = document.querySelector('.editor-layout');
+				layout.classList.remove('panel-pinned');
+				panelPinned = false;
+				const pinBtn = document.querySelector('.panel-pin');
+				if (pinBtn) pinBtn.setAttribute('aria-pressed', 'false');
 			}
 		});
 	} else if (retries < maxRetries) {
