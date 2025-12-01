@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Spike 2: Link Detection & Resolution
+"""Spike 2: Link Detection & Resolution.
 
 Goal: Validate that we can accurately detect and resolve wikilinks.
 
@@ -10,6 +10,7 @@ Success Criteria:
 """
 
 import re
+import sys
 import time
 from difflib import get_close_matches
 from pathlib import Path
@@ -92,7 +93,7 @@ def resolve_link(target: str, yak_dir: Path) -> Path | None:
     return None
 
 
-def test_basic_wikilink_detection():
+def test_basic_wikilink_detection() -> None:
     """Test basic wikilink extraction."""
     print("Test 1: Basic wikilink detection")
 
@@ -112,7 +113,7 @@ Also check [[other-note]] and [[third-note]].
     print(f"  ✅ Found {len(links)} wikilinks")
 
 
-def test_wikilink_with_alias():
+def test_wikilink_with_alias() -> None:
     """Test wikilink with alias syntax."""
     print("\nTest 2: Wikilinks with aliases")
 
@@ -130,7 +131,7 @@ Also [[note-a|Note A]] and [[note-b|Note B]].
     print(f"  ✅ Found {len(links)} links with aliases")
 
 
-def test_tag_detection():
+def test_tag_detection() -> None:
     """Test #tag extraction."""
     print("\nTest 3: Tag detection")
 
@@ -151,7 +152,7 @@ Also #metadata and #yaml-frontmatter.
     print(f"  ✅ Found {len(tags)} tags: {tags}")
 
 
-def test_edge_cases():
+def test_edge_cases() -> None:
     """Test edge cases in link detection."""
     print("\nTest 4: Edge cases")
 
@@ -175,7 +176,7 @@ def test_edge_cases():
     print("  ✅ Handles edge cases correctly")
 
 
-def test_link_resolution():
+def test_link_resolution() -> None:
     """Test link resolution in actual directory."""
     print("\nTest 5: Link resolution")
 
@@ -208,7 +209,7 @@ def test_link_resolution():
     print("  ✅ Returns None for missing files")
 
 
-def test_performance():
+def test_performance() -> None:
     """Test link detection performance."""
     print("\nTest 6: Performance benchmark")
 
@@ -225,8 +226,8 @@ More tags: #python #javascript #rust #go #java
 
     start = time.perf_counter()
     for _ in range(num_iterations):
-        links = extract_wikilinks(content)
-        tags = extract_tags(content)
+        extract_wikilinks(content)
+        extract_tags(content)
     elapsed = time.perf_counter() - start
 
     avg_time_ms = (elapsed / num_iterations) * 1000
@@ -240,7 +241,7 @@ More tags: #python #javascript #rust #go #java
     print(f"  ✅ Performance excellent ({avg_time_ms:.3f}ms per file)")
 
 
-def test_link_resolution_performance():
+def test_link_resolution_performance() -> None:
     """Test link resolution performance."""
     print("\nTest 7: Link resolution performance")
 
@@ -256,7 +257,7 @@ def test_link_resolution_performance():
     start = time.perf_counter()
     for _ in range(num_iterations):
         for target in targets:
-            resolved = resolve_link(target, test_dir)
+            _ = resolve_link(target, test_dir)
     elapsed = time.perf_counter() - start
 
     avg_per_link_ms = (elapsed / (num_iterations * len(targets))) * 1000
@@ -270,7 +271,7 @@ def test_link_resolution_performance():
     print(f"  ✅ Performance acceptable ({avg_per_link_ms:.3f}ms per link)")
 
 
-def test_accuracy():
+def test_accuracy() -> None:
     """Test overall accuracy of link detection."""
     print("\nTest 8: Accuracy test")
 
@@ -343,4 +344,4 @@ if __name__ == "__main__":
 
     except AssertionError as e:
         print(f"\n❌ TEST FAILED: {e}")
-        exit(1)
+        sys.exit(1)

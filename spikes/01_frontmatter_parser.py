@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Spike 1: YAML Frontmatter Parsing
+"""Spike 1: YAML Frontmatter Parsing.
 
 Goal: Validate that we can reliably parse and write YAML frontmatter in Djot files.
 
@@ -9,6 +9,7 @@ Success Criteria:
 - Graceful handling of bad YAML
 """
 
+import sys
 import time
 from typing import Any
 
@@ -30,13 +31,14 @@ def parse_frontmatter(content: str) -> tuple[dict[str, Any], str]:
     try:
         end_idx = content.index("\n---\n", 4)
         yaml_str = content[4:end_idx]
-        body = content[end_idx + 5:].lstrip()
+        body = content[end_idx + 5 :].lstrip()
 
         fm = yaml.safe_load(yaml_str) or {}
-        return fm, body
     except (ValueError, yaml.YAMLError) as e:
         print(f"⚠️  Parse error: {e}")
         return {}, content
+    else:
+        return fm, body
 
 
 def write_frontmatter(frontmatter: dict, body: str) -> str:
@@ -52,16 +54,11 @@ def write_frontmatter(frontmatter: dict, body: str) -> str:
     if not frontmatter:
         return body
 
-    yaml_str = yaml.dump(
-        frontmatter,
-        default_flow_style=False,
-        allow_unicode=True,
-        sort_keys=False
-    )
+    yaml_str = yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True, sort_keys=False)
     return f"---\n{yaml_str}---\n\n{body}"
 
 
-def test_basic_parsing():
+def test_basic_parsing() -> None:
     """Test basic frontmatter parsing."""
     print("Test 1: Basic parsing")
 
@@ -85,7 +82,7 @@ Content here with [[wikilink]].
     print("  ✅ Basic parsing works")
 
 
-def test_round_trip():
+def test_round_trip() -> None:
     """Test that we can parse and write without data loss."""
     print("\nTest 2: Round-trip (parse → write → parse)")
 
@@ -111,7 +108,7 @@ Some content.
     print("  ✅ Round-trip successful, no data loss")
 
 
-def test_no_frontmatter():
+def test_no_frontmatter() -> None:
     """Test files without frontmatter."""
     print("\nTest 3: No frontmatter")
 
@@ -125,7 +122,7 @@ def test_no_frontmatter():
     print("  ✅ Handles missing frontmatter gracefully")
 
 
-def test_malformed_yaml():
+def test_malformed_yaml() -> None:
     """Test handling of malformed YAML."""
     print("\nTest 4: Malformed YAML")
 
@@ -146,7 +143,7 @@ Content
     print("  ✅ Gracefully handles malformed YAML")
 
 
-def test_special_values():
+def test_special_values() -> None:
     """Test special YAML values."""
     print("\nTest 5: Special YAML values")
 
@@ -164,7 +161,7 @@ nested:
 Content
 """
 
-    fm, body = parse_frontmatter(test_content)
+    fm, _ = parse_frontmatter(test_content)
 
     assert "colon" in fm["title"]
     assert "multiline" in fm["multiline"]
@@ -173,11 +170,10 @@ Content
     print("  ✅ Handles special YAML values correctly")
 
 
-def test_performance():
+def test_performance() -> None:
     """Test parsing performance with many files."""
     print("\nTest 6: Performance benchmark")
 
-    # Create test content
     test_content = """---
 title: Performance Test
 tags: [benchmark, test]
@@ -192,10 +188,11 @@ This is test content with some [[links]] and #tags.
 """
 
     num_files = 1000
+    max_time_ms = 500
 
     start = time.perf_counter()
     for _ in range(num_files):
-        fm, body = parse_frontmatter(test_content)
+        _, _ = parse_frontmatter(test_content)
     elapsed = time.perf_counter() - start
 
     avg_time_ms = (elapsed / num_files) * 1000
@@ -205,14 +202,12 @@ This is test content with some [[links]] and #tags.
     print(f"  📊 Average: {avg_time_ms:.3f}ms per file")
 
     # Realistic target: <500ms for 1000 files (<0.5ms per file)
-    assert total_time_ms < 500, f"Too slow: {total_time_ms}ms (target: <500ms)"
 
     print(f"  ✅ Performance acceptable ({total_time_ms:.1f}ms < 500ms)")
-    if avg_time_ms < 0.5:
-        print(f"  🚀 Excellent: {avg_time_ms:.3f}ms per file")
+    assert total_time_ms < max_time_ms, f"Too slow: {total_time_ms}ms (target: <{max_time_ms}ms)"
 
 
-def test_links_in_frontmatter():
+def test_links_in_frontmatter() -> None:
     """Test that we preserve wikilinks in frontmatter."""
     print("\nTest 7: Links in frontmatter")
 
@@ -265,4 +260,4 @@ if __name__ == "__main__":
 
     except AssertionError as e:
         print(f"\n❌ TEST FAILED: {e}")
-        exit(1)
+        sys.exit(1)

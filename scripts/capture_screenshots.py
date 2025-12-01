@@ -7,7 +7,7 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 
 
-async def capture_screenshots():
+async def capture_screenshots() -> None:
     """Capture screenshots of all major pages."""
     screenshots_dir = Path(".github/screenshots")
     screenshots_dir.mkdir(parents=True, exist_ok=True)

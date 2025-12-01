@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Spike 3: DuckDB Link Graph Queries
+"""Spike 3: DuckDB Link Graph Queries.
 
 Goal: Validate that DuckDB can efficiently query link graphs.
 
@@ -10,6 +10,7 @@ Success Criteria:
 """
 
 import random
+import sys
 import time
 
 import duckdb
@@ -62,7 +63,7 @@ def insert_test_data(con: duckdb.DuckDBPyConnection) -> None:
     )
 
 
-def test_schema_creation():
+def test_schema_creation() -> None:
     """Test that schema creates successfully."""
     print("Test 1: Schema creation")
 
@@ -80,7 +81,7 @@ def test_schema_creation():
     con.close()
 
 
-def test_backlinks_query():
+def test_backlinks_query() -> None:
     """Test backlinks query accuracy and performance."""
     print("\nTest 2: Backlinks query")
 
@@ -111,7 +112,7 @@ def test_backlinks_query():
     con.close()
 
 
-def test_outbound_links_query():
+def test_outbound_links_query() -> None:
     """Test outbound links query."""
     print("\nTest 3: Outbound links query")
 
@@ -142,7 +143,7 @@ def test_outbound_links_query():
     con.close()
 
 
-def test_related_notes_query():
+def test_related_notes_query() -> None:
     """Test related notes query (notes sharing outbound links)."""
     print("\nTest 4: Related notes query")
 
@@ -180,7 +181,7 @@ def test_related_notes_query():
     con.close()
 
 
-def test_backlink_count_aggregate():
+def test_backlink_count_aggregate() -> None:
     """Test aggregating backlink counts."""
     print("\nTest 5: Backlink count aggregation")
 
@@ -210,7 +211,7 @@ def test_backlink_count_aggregate():
     con.close()
 
 
-def test_orphan_notes_query():
+def test_orphan_notes_query() -> None:
     """Test finding orphan notes (no backlinks)."""
     print("\nTest 6: Orphan notes detection")
 
@@ -242,7 +243,7 @@ def test_orphan_notes_query():
     con.close()
 
 
-def test_performance_benchmark():
+def test_performance_benchmark() -> None:
     """Test performance with realistic dataset."""
     print("\nTest 7: Performance benchmark (10K links)")
 
@@ -327,7 +328,7 @@ def test_performance_benchmark():
     con.close()
 
 
-def test_link_type_filtering():
+def test_link_type_filtering() -> None:
     """Test filtering by link type (wikilink vs tag)."""
     print("\nTest 8: Link type filtering")
 
@@ -419,4 +420,4 @@ if __name__ == "__main__":
 
     except AssertionError as e:
         print(f"\n❌ TEST FAILED: {e}")
-        exit(1)
+        sys.exit(1)

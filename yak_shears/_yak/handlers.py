@@ -6,7 +6,6 @@ from pathlib import Path as SyncPath
 from typing import Self
 from urllib.parse import quote
 
-from anyio import Path
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
