@@ -18,8 +18,14 @@ async def maybe_screenshot(page: Page, path: str | Path) -> None:
         await page.screenshot(path=path)
 
 
-async def login(context: BrowserContext, page: Page) -> None:
-    """When run as a fixture, this function stalls, but fine as a function."""
+async def login(context: BrowserContext, page: Page, *, save_state: bool = False) -> None:
+    """Login helper that authenticates the user.
+
+    Args:
+        context: Browser context
+        page: Page instance
+        save_state: If True, save authentication state to file for session reuse
+    """
     await page.goto("/")
 
     if "/auth/login" in page.url:
@@ -35,4 +41,5 @@ async def login(context: BrowserContext, page: Page) -> None:
         await page.wait_for_url("/yaks")
         await page.wait_for_load_state("load")
 
-        await context.storage_state(path=PLAYWRIGHT_AUTH_PATH)
+        if save_state:
+            await context.storage_state(path=PLAYWRIGHT_AUTH_PATH)

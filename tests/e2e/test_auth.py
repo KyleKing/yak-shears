@@ -77,7 +77,9 @@ async def test_redirect_to_login_when_not_authenticated(unauthenticated_page: Pa
     for url in protected_urls:
         await unauthenticated_page.goto(url)
         # Should redirect to login with redirect parameter
-        await expect(unauthenticated_page).to_have_url("**/auth/login?redirect=**", timeout=3000)
+        assert "/auth/login?redirect=" in unauthenticated_page.url, (
+            f"Expected redirect to login with redirect param, got: {unauthenticated_page.url}"
+        )
 
 
 @pytest.mark.playwright
