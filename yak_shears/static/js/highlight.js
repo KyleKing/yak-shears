@@ -43,7 +43,7 @@ function highlight(editor) {
 
 	if (!globalThis.djot) throw new Error("Could not find djot library");
 
-	const events = globalThis.djot.parseEvents(src);
+	const events = [...globalThis.djot.parseEvents(src)];
 	for (const ev of events) {
 		const { annot } = ev;
 		const start = Math.max(0, Math.min(ev.startpos, src.length));
@@ -97,11 +97,15 @@ function highlight(editor) {
 				}
 				break;
 			}
-			case "+code_block":
-				// TODO: Add syntax highlighting!
-				const lang = "TBD";
-				add(opens, start, `<pre><code class="language-${lang}">`);
+			case "+code_block": {
+				add(opens, start, "<pre>");
 				break;
+			}
+			case "code_language": {
+				const lang = src.substring(start, end);
+				add(opens, start, `<code class="language-${lang}">`);
+				break;
+		   }
 			case "-code_block":
 				add(closes, closeIndex, "</code></pre>");
 				break;
@@ -143,6 +147,7 @@ function highlight(editor) {
 			sel.addRange(newRange);
 		}
 	}
+
 }
 
 // Helper function to get text offset from a DOM node and offset

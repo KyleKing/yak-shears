@@ -134,14 +134,19 @@ async def test_preview_syntax_highlighting(context: BrowserContext, page: Page, 
     test_content = "Some text\n\n```python\nimport os\nprint('hello')\n```"
     await _fill_editor(page=page, fill=test_content)
 
-    # Wait for preview to update
-    await page.wait_for_timeout(1000)
+    # Check that the editor contains code block with correct language class
+    editor = page.locator("#editor-form")
+    await expect(editor).to_be_editable()
+    code_block = editor.locator("code.language-python")
+    await expect(code_block).to_be_visible()
+    await expect(code_block).to_contain_text("```python")
+    await expect(code_block).to_contain_text("import os")
 
     # Check that the preview contains code block with correct language class
     preview = page.locator("#preview-content")
     code_block = preview.locator("pre code.language-python")
     await expect(code_block).to_be_visible()
-    await expect(code_block).to_contain_text("import")
+    await expect(code_block).to_contain_text("import os")
 
 
 @pytest.mark.playwright
