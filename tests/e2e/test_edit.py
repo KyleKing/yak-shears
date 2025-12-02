@@ -42,12 +42,6 @@ async def test_editor_highlight_behavior(context: BrowserContext, page: Page, se
     await _validate_highlight(page, "- [x] done", ".checkbox.checked", "[x]")
     await _validate_highlight(page, "- [ ] incomplete", ".checkbox.unchecked", "[ ]")
 
-    # TODO: Implement and test auto-completion for:
-    # = List indention (tab and shift-tab to cycle list or not, and introduce newline above if indenting beyond prior)
-    # - Ctrl-L to toggle checklist state (none, unchecked, checked)
-    # - List items (on enter, auto-complete `-`, `1.`, or `- [ ]`)
-    # = Doesn't autocomplete brackets, parenthesis, or `
-
     # PLANNED: Test HTML Escaping
     await editor.fill("<tag>")
     await expect(editor).to_contain_text("<tag>")
@@ -205,3 +199,208 @@ async def test_view_mode_toggles(context: BrowserContext, page: Page, server_lif
     preview_btn = page.locator("button[data-view='preview']")
     await preview_btn.click()
     await expect(container).to_have_class(re.compile(r"preview\b"))
+
+
+# ============================================================================
+# List Continuation Tests
+# ============================================================================
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_list_continuation_bullet(context: BrowserContext, page: Page, server_lifecycle):
+    """Test bullet list auto-continues on Enter."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await _fill_editor(page, "- item 1")
+    await page.keyboard.press("Enter")
+
+    content = await editor.text_content()
+    assert content == "- item 1\n- ", f"Expected '- item 1\\n- ' but got {content!r}"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_list_continuation_numbered(context: BrowserContext, page: Page, server_lifecycle):
+    """Test numbered list increments on Enter."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await _fill_editor(page, "1. first item")
+    await page.keyboard.press("Enter")
+
+    content = await editor.text_content()
+    assert content == "1. first item\n2. ", f"Expected '1. first item\\n2. ' but got {content!r}"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_list_continuation_checklist(context: BrowserContext, page: Page, server_lifecycle):
+    """Test checklist continues with unchecked box."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await _fill_editor(page, "- [ ] task 1")
+    await page.keyboard.press("Enter")
+
+    content = await editor.text_content()
+    assert content == "- [ ] task 1\n- [ ] ", f"Expected checklist continuation but got {content!r}"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_list_continuation_exit_on_empty(context: BrowserContext, page: Page, server_lifecycle):
+    """Test empty list item removes marker and exits list mode."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    # Type a list item, press Enter to get continuation, then Enter again to exit
+    await _fill_editor(page, "- item")
+    await page.keyboard.press("Enter")
+    # Now we have "- item\n- ", pressing Enter should remove the empty marker
+    await page.keyboard.press("Enter")
+
+    content = await editor.text_content()
+    assert content == "- item\n", f"Expected '- item\\n' but got {content!r}"
+
+
+# ============================================================================
+# Checklist Toggle Tests (Ctrl+L)
+# ============================================================================
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_checklist_toggle_plain_to_unchecked(context: BrowserContext, page: Page, server_lifecycle):
+    """Test Ctrl+L adds unchecked checkbox to plain line."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await _fill_editor(page, "some text")
+    await page.keyboard.press("Control+l")
+
+    content = await editor.text_content()
+    assert content == "- [ ] some text", f"Expected '- [ ] some text' but got {content!r}"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_checklist_toggle_bullet_to_unchecked(context: BrowserContext, page: Page, server_lifecycle):
+    """Test Ctrl+L converts bullet to unchecked checkbox."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await _fill_editor(page, "- bullet item")
+    await page.keyboard.press("Control+l")
+
+    content = await editor.text_content()
+    assert content == "- [ ] bullet item", f"Expected '- [ ] bullet item' but got {content!r}"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_checklist_toggle_unchecked_to_checked(context: BrowserContext, page: Page, server_lifecycle):
+    """Test Ctrl+L checks an unchecked checkbox."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await _fill_editor(page, "- [ ] task")
+    await page.keyboard.press("Control+l")
+
+    content = await editor.text_content()
+    assert content == "- [x] task", f"Expected '- [x] task' but got {content!r}"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_checklist_toggle_checked_to_bullet(context: BrowserContext, page: Page, server_lifecycle):
+    """Test Ctrl+L on checked removes checkbox."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await _fill_editor(page, "- [x] done task")
+    await page.keyboard.press("Control+l")
+
+    content = await editor.text_content()
+    assert content == "- done task", f"Expected '- done task' but got {content!r}"
+
+
+# ============================================================================
+# List Indentation Tests (Tab/Shift+Tab)
+# ============================================================================
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_list_indent_tab(context: BrowserContext, page: Page, server_lifecycle):
+    """Test Tab indents list item."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await _fill_editor(page, "- item")
+    await page.keyboard.press("Tab")
+
+    content = await editor.text_content()
+    assert content == "    - item", f"Expected '    - item' but got {content!r}"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_list_outdent_shift_tab(context: BrowserContext, page: Page, server_lifecycle):
+    """Test Shift+Tab outdents list item."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await _fill_editor(page, "    - indented item")
+    await page.keyboard.press("Shift+Tab")
+
+    content = await editor.text_content()
+    assert content == "- indented item", f"Expected '- indented item' but got {content!r}"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_list_indent_preserves_content(context: BrowserContext, page: Page, server_lifecycle):
+    """Test indentation preserves list content on numbered lists."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await _fill_editor(page, "1. numbered item")
+    await page.keyboard.press("Tab")
+
+    content = await editor.text_content()
+    assert content == "    1. numbered item", f"Expected '    1. numbered item' but got {content!r}"

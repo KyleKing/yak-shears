@@ -6,6 +6,14 @@
  * - "Saving...": In the process of sending changes to the server
  */
 
+// List patterns for auto-continuation (order matters: more specific first)
+const LIST_PATTERNS = {
+	checklistUnchecked: /^(\s*)- \[ \] (.*)$/,
+	checklistChecked: /^(\s*)- \[x\] (.*)$/,
+	numbered: /^(\s*)(\d+)\. (.*)$/,
+	bullet: /^(\s*)- (.*)$/,
+};
+
 const maxRetries = 50; // 5 seconds at 100ms intervals
 let retries = 0;
 let jar; // Global reference to CodeJar instance
@@ -148,9 +156,34 @@ function initEditor() {
 		editor.addEventListener(
 			"keydown",
 			function (e) {
+				// Cmd/Meta + Enter to save
 				if (e.metaKey && e.key === "Enter") {
 					e.preventDefault();
 					document.getElementById("save-btn").click();
+					return;
+				}
+
+				// Plain Enter for list continuation
+				if (e.key === "Enter" && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+					if (_handleListContinuation(editor, jar)) {
+						e.preventDefault();
+						return;
+					}
+				}
+
+				// Tab/Shift+Tab for list indentation
+				if (e.key === "Tab") {
+					if (_handleListIndentation(editor, jar, e.shiftKey)) {
+						e.preventDefault();
+						return;
+					}
+				}
+
+				// Ctrl+L to toggle checklist state
+				if (e.ctrlKey && e.key === "l") {
+					e.preventDefault();
+					_toggleChecklistState(editor, jar);
+					return;
 				}
 			},
 			true,
@@ -311,6 +344,151 @@ function initEditor() {
 		retries++;
 		setTimeout(initEditor, 100);
 	}
+}
+
+function _getCursorPosition(editorEl) {
+	const sel = window.getSelection();
+	if (!sel.rangeCount) return 0;
+	const range = sel.getRangeAt(0);
+	return getTextOffset(editorEl, range.startContainer, range.startOffset);
+}
+
+function _setCursorPosition(editorEl, offset) {
+	const { node, offset: nodeOffset } = getNodeAtOffset(editorEl, offset);
+	if (node) {
+		const range = document.createRange();
+		range.setStart(node, nodeOffset);
+		range.collapse(true);
+		const sel = window.getSelection();
+		sel.removeAllRanges();
+		sel.addRange(range);
+	}
+}
+
+function _getCurrentLine(text, cursorPos) {
+	const lineStart = text.lastIndexOf("\n", cursorPos - 1) + 1;
+	let lineEnd = text.indexOf("\n", cursorPos);
+	if (lineEnd === -1) lineEnd = text.length;
+	const lineText = text.substring(lineStart, lineEnd);
+	return { lineStart, lineEnd, lineText };
+}
+
+function _handleListContinuation(editorEl, jarInstance) {
+	const text = jarInstance.toString();
+	const cursorPos = _getCursorPosition(editorEl);
+	const { lineStart, lineEnd, lineText } = _getCurrentLine(text, cursorPos);
+
+	// Check each pattern in order of specificity
+	for (const [patternName, pattern] of Object.entries(LIST_PATTERNS)) {
+		const match = lineText.match(pattern);
+		if (match) {
+			const indent = match[1];
+			const content = match[patternName === "numbered" ? 3 : 2];
+
+			// If content is empty, remove the list marker and exit list mode
+			if (content === "") {
+				const newText = text.substring(0, lineStart) + text.substring(lineEnd);
+				jarInstance.updateCode(newText);
+				requestAnimationFrame(() => _setCursorPosition(editorEl, lineStart));
+				return true;
+			}
+
+			// Generate continuation marker
+			let continuation;
+			switch (patternName) {
+				case "checklistUnchecked":
+				case "checklistChecked":
+					continuation = `${indent}- [ ] `;
+					break;
+				case "numbered":
+					const nextNum = parseInt(match[2], 10) + 1;
+					continuation = `${indent}${nextNum}. `;
+					break;
+				case "bullet":
+					continuation = `${indent}- `;
+					break;
+			}
+
+			// Insert newline and continuation at cursor position
+			const newText =
+				text.substring(0, cursorPos) + "\n" + continuation + text.substring(cursorPos);
+			const newCursorPos = cursorPos + 1 + continuation.length;
+			jarInstance.updateCode(newText);
+			requestAnimationFrame(() => _setCursorPosition(editorEl, newCursorPos));
+			return true;
+		}
+	}
+	return false;
+}
+
+function _handleListIndentation(editorEl, jarInstance, outdent) {
+	const text = jarInstance.toString();
+	const cursorPos = _getCursorPosition(editorEl);
+	const { lineStart, lineEnd, lineText } = _getCurrentLine(text, cursorPos);
+	const indentSize = 4;
+	const indentStr = " ".repeat(indentSize);
+
+	// Check if current line is a list item
+	const isListItem = Object.values(LIST_PATTERNS).some((p) => p.test(lineText));
+	if (!isListItem) return false;
+
+	let newLineText;
+	let cursorDelta;
+
+	if (outdent) {
+		// Remove up to indentSize spaces from start
+		const leadingSpaces = lineText.match(/^(\s*)/)[1];
+		const spacesToRemove = Math.min(indentSize, leadingSpaces.length);
+		if (spacesToRemove === 0) return false;
+		newLineText = lineText.substring(spacesToRemove);
+		cursorDelta = -spacesToRemove;
+	} else {
+		// Add indent at start
+		newLineText = indentStr + lineText;
+		cursorDelta = indentSize;
+	}
+
+	const newText = text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
+	const newCursorPos = Math.max(lineStart, cursorPos + cursorDelta);
+	jarInstance.updateCode(newText);
+	requestAnimationFrame(() => _setCursorPosition(editorEl, newCursorPos));
+	return true;
+}
+
+function _toggleChecklistState(editorEl, jarInstance) {
+	const text = jarInstance.toString();
+	const cursorPos = _getCursorPosition(editorEl);
+	const { lineStart, lineEnd, lineText } = _getCurrentLine(text, cursorPos);
+
+	let newLineText;
+	let cursorDelta = 0;
+
+	// Cycle: checked -> bullet -> unchecked -> checked
+	if (LIST_PATTERNS.checklistChecked.test(lineText)) {
+		// Checked -> bullet (remove [x])
+		newLineText = lineText.replace(/^(\s*)- \[x\] /, "$1- ");
+		cursorDelta = -5;
+	} else if (LIST_PATTERNS.checklistUnchecked.test(lineText)) {
+		// Unchecked -> checked
+		newLineText = lineText.replace(/^(\s*)- \[ \] /, "$1- [x] ");
+		cursorDelta = 0;
+	} else if (LIST_PATTERNS.bullet.test(lineText)) {
+		// Bullet -> unchecked (add [ ])
+		newLineText = lineText.replace(/^(\s*)- /, "$1- [ ] ");
+		cursorDelta = 5;
+	} else {
+		// Plain text -> unchecked checklist
+		const indent = lineText.match(/^(\s*)/)[1];
+		const content = lineText.substring(indent.length);
+		newLineText = `${indent}- [ ] ${content}`;
+		cursorDelta = 6 + indent.length - indent.length;
+		cursorDelta = 6;
+	}
+
+	const newText = text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
+	const newCursorPos = Math.max(lineStart, cursorPos + cursorDelta);
+	jarInstance.updateCode(newText);
+	requestAnimationFrame(() => _setCursorPosition(editorEl, newCursorPos));
 }
 
 // Function to update save status
