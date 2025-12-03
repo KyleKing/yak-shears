@@ -20,9 +20,8 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
     # Enter search query
     search_input = page.locator(".search-input")
     await search_input.fill("yak")
-    # Wait for HTMX to trigger search (300ms delay)
-    await page.wait_for_timeout(500)
-    await page.wait_for_selector(".search-results-list")
+    # Wait for HTMX to trigger search and results to load
+    await page.wait_for_selector(".search-results-list", timeout=5000)
 
     # Check that results are displayed
     results = page.locator(".search-result")
@@ -44,18 +43,26 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
     # Test clicking on result shows preview
     await first_result.click()
 
-    # Wait for preview to load
-    await page.wait_for_timeout(500)  # Give time for API call
-
-    # Check that preview content is loaded
+    # Wait for preview content to load (API call)
     preview_content = page.locator("#search-preview-content")
+    await expect(preview_content).not_to_be_empty(timeout=5000)
+
+    # Check that preview content is loaded and contains expected content
     preview_text = await preview_content.text_content()
     assert preview_text is not None, "Preview text should not be None"
     assert len(preview_text.strip()) > 0, "Preview should contain content"
+    # Preview should show content from a yak file that matches the search
+    await expect(preview_content).to_contain_text("yak", ignore_case=True)
 
     # Test arrow key navigation updates preview
+    initial_text = preview_text
     await page.keyboard.press("ArrowDown")
-    await page.wait_for_timeout(100)
+    # Wait for preview to update by waiting for network response or content change
+    await page.wait_for_function(
+        "initialText => document.querySelector('#search-preview-content')?.textContent !== initialText",
+        initial_text,
+        timeout=5000,
+    )
     # Check that preview content changed (different line numbers or content)
     new_preview_text = await preview_content.text_content()
     # The preview should be different or at least exist
@@ -64,12 +71,17 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
 
     # Test arrow key navigation updates preview
     await page.keyboard.press("ArrowDown")
-    await page.wait_for_timeout(100)
+    # Wait for next preview update
+    await page.wait_for_function(
+        "prevText => document.querySelector('#search-preview-content')?.textContent !== prevText",
+        new_preview_text,
+        timeout=5000,
+    )
     # Check that preview content changed (different line numbers or content)
-    new_preview_text = await preview_content.text_content()
+    final_preview_text = await preview_content.text_content()
     # The preview should be different or at least exist
-    assert new_preview_text is not None, "New preview text should not be None after second navigation"
-    assert len(new_preview_text.strip()) > 0, "Preview should still contain content after second navigation"
+    assert final_preview_text is not None, "New preview text should not be None after second navigation"
+    assert len(final_preview_text.strip()) > 0, "Preview should still contain content after second navigation"
 
 
 @pytest.mark.playwright
@@ -86,8 +98,8 @@ async def test_search_modal_on_small_screen(context: BrowserContext, page: Page,
     # Enter search query
     search_input = page.locator(".search-input")
     await search_input.fill("yak")
-    await page.wait_for_timeout(500)
-    await page.wait_for_selector(".search-results-list")
+    # Wait for HTMX to trigger search and results to load
+    await page.wait_for_selector(".search-results-list", timeout=5000)
 
     # Check that results are displayed
     results = page.locator(".search-result")
@@ -106,9 +118,9 @@ async def test_search_modal_on_small_screen(context: BrowserContext, page: Page,
     modal = page.locator("#search-preview-modal")
     await expect(modal).to_be_visible()
 
-    # Check that modal content is loaded
+    # Check that modal content is loaded (wait for API call)
     modal_content = page.locator("#search-preview-modal-content")
-    await page.wait_for_timeout(500)  # Wait for API call
+    await expect(modal_content).not_to_be_empty(timeout=5000)
     modal_text = await modal_content.text_content()
     assert modal_text is not None
     assert len(modal_text.strip()) > 0

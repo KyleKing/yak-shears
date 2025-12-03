@@ -55,7 +55,11 @@ async def test_editor_highlight_behavior(context: BrowserContext, page: Page, se
 @pytest.mark.playwright
 @pytest.mark.asyncio
 async def test_edit_save_persistence(context: BrowserContext, page: Page, server_lifecycle):
-    """Test that edits are saved and persist after page refresh."""
+    """Test that edits are saved and persist after page refresh.
+
+    NOT SAFE FOR PARALLEL: Modifies shared MOCK_YAK_DIR.
+    TODO: Refactor to use worker-specific test directories.
+    """
     await login(context, page)
 
     # TODO: Find a way for server_lifecycle with configurable directories
@@ -92,7 +96,11 @@ async def test_edit_save_persistence(context: BrowserContext, page: Page, server
 @pytest.mark.playwright
 @pytest.mark.asyncio
 async def test_delete_yak(context: BrowserContext, page: Page, server_lifecycle):
-    """Test that a yak can be deleted with confirmation."""
+    """Test that a yak can be deleted with confirmation.
+
+    NOT SAFE FOR PARALLEL: Modifies shared MOCK_YAK_DIR.
+    TODO: Refactor to use worker-specific test directories.
+    """
     await login(context, page)
 
     # Create a test yak

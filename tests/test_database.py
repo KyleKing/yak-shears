@@ -3,6 +3,7 @@
 from unittest.mock import patch
 
 import pytest
+from freezegun import freeze_time
 
 from yak_shears._yak.database import (
     check_tables_exist,
@@ -26,10 +27,13 @@ from yak_shears._yak.database import (
 
 
 @pytest.fixture
-def temp_db(tmp_path):
-    """Create a temporary database for testing."""
-    db_dir = tmp_path / "db"
-    db_dir.mkdir()
+def temp_db(tmp_path, worker_id):
+    """Create a temporary database for testing.
+
+    Uses worker-specific directory for parallel test isolation.
+    """
+    db_dir = tmp_path / "db" / worker_id
+    db_dir.mkdir(parents=True)
     with patch.dict("os.environ", {"SEARCH_DB_DIR": str(db_dir)}):
         init_search_db()
         yield db_dir
@@ -37,7 +41,11 @@ def temp_db(tmp_path):
 
 @pytest.fixture
 def temp_yak_dir(tmp_path):
-    """Create a temporary yak directory with test files."""
+    """Create a temporary yak directory with test files for database indexing tests.
+
+    Note: test_services.py has a similar fixture with different structure (categorized files).
+    These are intentionally separate to match their specific test requirements.
+    """
     yak_dir = tmp_path / "yaks"
     yak_dir.mkdir()
     (yak_dir / "file1.dj").write_text("hello world\ntest content")
@@ -100,8 +108,11 @@ class TestWordIndexing:
             ("file2.dj", 2, "hello"),
         ])
         results = search_words("hello")
-        assert len(results) >= 2
+        assert len(results) == 2
         assert all(word == "hello" for _, _, word in results)
+        # Verify both files are in results
+        file_paths = {file_path for file_path, _, _ in results}
+        assert file_paths == {"file1.dj", "file2.dj"}
 
     def test_get_word_count(self, temp_db):
         assert get_word_count() == 0
@@ -182,20 +193,18 @@ class TestSearchIndex:
     def test_should_update_index_after_recent_update(self, temp_db, temp_yak_dir):
         with (
             patch.dict("os.environ", {"YAK_SHEARS_DIR": str(temp_yak_dir)}),
-            patch("yak_shears._yak.database.time") as mock_time,
+            freeze_time("2025-01-01 00:00:00") as frozen_time,
         ):
-            mock_time.time.return_value = 1000.0
             update_search_index(temp_yak_dir)
-            mock_time.time.return_value = 1030.0
+            frozen_time.move_to("2025-01-01 00:00:30")
             assert not should_update_index(temp_yak_dir)
 
     def test_should_update_index_after_file_change(self, temp_db, temp_yak_dir):
         with (
             patch.dict("os.environ", {"YAK_SHEARS_DIR": str(temp_yak_dir)}),
-            patch("yak_shears._yak.database.time") as mock_time,
+            freeze_time("2025-01-01 00:00:00") as frozen_time,
         ):
-            mock_time.time.return_value = 1000.0
             update_search_index(temp_yak_dir)
-            mock_time.time.return_value = 1100.0
+            frozen_time.move_to("2025-01-01 00:01:40")
             (temp_yak_dir / "file1.dj").write_text("modified content")
             assert should_update_index(temp_yak_dir)

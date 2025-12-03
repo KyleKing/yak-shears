@@ -83,17 +83,18 @@ def test_no_links_in_plain_text() -> None:
 
 def test_wikilink_edge_cases() -> None:
     """Test edge cases for wikilink extraction."""
-    # Nested brackets (should not match)
+    # Nested brackets (should extract outer wikilink)
     content1 = "[[outer [[inner]]]]"
     links1 = extract_wikilinks(content1)
-    # Should extract what's parseable
-    assert len(links1) > 0
+    # Should extract the outer wikilink "outer [[inner"
+    assert len(links1) == 1
+    assert links1[0][0] == "outer [[inner"
 
     # Empty wikilink
     content2 = "[[]]"
     links2 = extract_wikilinks(content2)
-    # Empty target should be filtered or handled
-    assert all(target.strip() for target, _ in links2) or len(links2) == 0
+    # Empty wikilinks should be filtered out
+    assert len(links2) == 0
 
 
 def test_tag_edge_cases() -> None:
@@ -111,8 +112,8 @@ def test_tag_edge_cases() -> None:
     # Not a tag (no space before #)
     content3 = "HTML color#ff0000"
     tags3 = extract_tags(content3)
-    # Should not match since # is not preceded by space or start
-    assert "ff0000" not in tags3 or len(tags3) == 0
+    # Should not match since # is not preceded by space or line start
+    assert len(tags3) == 0
 
 
 def test_unicode_in_links() -> None:

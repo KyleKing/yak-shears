@@ -14,11 +14,25 @@ from playwright.async_api import ConsoleMessage, Page
 
 from tests.conftest import MOCK_YAK_DIR
 
-PORT = "8081"
+
+def _get_worker_port() -> str:
+    """Get port for this worker to enable parallel E2E tests."""
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
+    worker_num = 0 if worker_id == "master" else int(worker_id.replace("gw", ""))
+    return str(8081 + worker_num)
+
+
+def _get_playwright_auth_path() -> SyncPath:
+    """Get worker-specific Playwright auth file path."""
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
+    return SyncPath(__file__).absolute().parents[2] / f".playwright-auth-{worker_id}.json"
+
+
+PORT = _get_worker_port()
 BASE_URL = f"http://localhost:{PORT}"
 
-PLAYWRIGHT_AUTH_PATH = ".playwright-auth.json"
-(SyncPath(__file__).absolute().parents[2] / PLAYWRIGHT_AUTH_PATH).write_text("{}")
+PLAYWRIGHT_AUTH_PATH = _get_playwright_auth_path()
+PLAYWRIGHT_AUTH_PATH.write_text("{}")
 
 
 @pytest.fixture(scope="session", autouse=True)

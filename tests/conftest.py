@@ -19,6 +19,29 @@ from yak_shears._auth.storage import UserStore, _set_default_store, create_user
 MOCK_YAK_DIR = SyncPath(__file__).parent / "test_data/mock_djot_dir_0"
 
 
+@pytest.fixture(scope="session")
+def worker_id() -> str:
+    """Get the pytest-xdist worker ID for parallel test isolation.
+
+    Returns:
+        str: Worker ID (e.g., 'gw0', 'gw1') or 'master' for non-parallel runs
+    """
+    return os.environ.get("PYTEST_XDIST_WORKER", "master")
+
+
+@pytest.fixture(scope="session")
+def worker_num(worker_id: str) -> int:
+    """Get the numeric worker index for parallel test isolation.
+
+    Args:
+        worker_id: The worker ID from pytest-xdist
+
+    Returns:
+        int: Worker number (0 for master, 1+ for parallel workers)
+    """
+    return 0 if worker_id == "master" else int(worker_id.replace("gw", ""))
+
+
 @contextmanager
 def set_yak_shears_dir(dir_path: SyncPath) -> Generator[None, None, None]:
     """Context manager to temporarily set the `YAK_SHEARS_DIR` environment variable."""
@@ -27,13 +50,23 @@ def set_yak_shears_dir(dir_path: SyncPath) -> Generator[None, None, None]:
 
 
 @pytest_asyncio.fixture
-async def temp_user_file() -> AsyncGenerator[Path, None]:
+async def temp_user_file(worker_id: str) -> AsyncGenerator[Path, None]:
     """Create a temporary user store for testing.
+
+    Uses worker-specific file for parallel test isolation.
+
+    Args:
+        worker_id: The worker ID from pytest-xdist
 
     Yields:
         Path: The path to the temporary user file
     """
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as _f:
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        suffix=f"_{worker_id}.json",
+        delete=False,
+        encoding="utf-8",
+    ) as _f:
         temp_path = Path(_f.name)
         _f.write('{"users": {}, "email_to_user_id": {}}')
 

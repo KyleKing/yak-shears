@@ -65,7 +65,11 @@ def test_yaks_endpoint(client: TestClient, mock_user_session, snapshot) -> None:
 
 
 def test_search_endpoint(client: TestClient, mock_user_session) -> None:
-    """Test the search endpoint."""
+    """Test the search endpoint.
+
+    NOT SAFE FOR PARALLEL: Deletes shared database file.
+    TODO: Refactor to use isolated tmp_path with proper DB fixture.
+    """
     Path(get_search_db_path()).unlink(missing_ok=True)
     with set_yak_shears_dir(MOCK_YAK_DIR):
         response = client.get("/search?query=test")
@@ -73,40 +77,70 @@ def test_search_endpoint(client: TestClient, mock_user_session) -> None:
         assert "Search Yaks" in response.text
 
 
-def test_search_indexing_with_temp_db(tmp_path, client: TestClient, mock_user_session) -> None:
-    """Test search indexing with temporary database and generated test data."""
-    # Create test yak files with specific content
+def test_search_initial_indexing(tmp_path, client: TestClient, mock_user_session) -> None:
+    """Test that search performs initial indexing on first query."""
     yak_dir = tmp_path / "yaks"
     yak_dir.mkdir()
     db_dir = tmp_path / "db"
     db_dir.mkdir()
 
-    # Create test files
     (yak_dir / "file1.dj").write_text("apple banana\ncherry")
     (yak_dir / "file2.dj").write_text("apple dog\nbanana")
-    (yak_dir / "subdir").mkdir()
-    (yak_dir / "subdir" / "file3.dj").write_text("elephant apple")
+
+    with (
+        patch.dict("os.environ", {"YAK_SHEARS_DIR": str(yak_dir), "SEARCH_DB_DIR": str(db_dir)}),
+        freeze_time("2025-01-01 00:00:00"),
+    ):
+        response = client.get("/search?query=apple")
+        assert response.status_code == HTTPStatus.OK
+
+
+def test_search_reindexes_modified_files(tmp_path, client: TestClient, mock_user_session) -> None:
+    """Test that search reindexes files when they are modified."""
+    yak_dir = tmp_path / "yaks"
+    yak_dir.mkdir()
+    db_dir = tmp_path / "db"
+    db_dir.mkdir()
+
+    (yak_dir / "file1.dj").write_text("apple banana\ncherry")
 
     with (
         patch.dict("os.environ", {"YAK_SHEARS_DIR": str(yak_dir), "SEARCH_DB_DIR": str(db_dir)}),
         freeze_time("2025-01-01 00:00:00") as frozen_time,
     ):
-        # First search - should index
-        response = client.get("/search?query=apple")
-        assert response.status_code == HTTPStatus.OK
+        # Initial indexing
+        client.get("/search?query=apple")
 
-        # Modify a file
+        # Modify file
         (yak_dir / "file1.dj").write_text("apple banana\nmodified")
 
-        # Second search - should update index
+        # Search should reindex and find new content
         frozen_time.tick()
         response = client.get("/search?query=modified")
         assert response.status_code == HTTPStatus.OK
 
-        # Delete a file
+
+def test_search_removes_deleted_files_from_index(tmp_path, client: TestClient, mock_user_session) -> None:
+    """Test that search removes deleted files from the index."""
+    yak_dir = tmp_path / "yaks"
+    yak_dir.mkdir()
+    db_dir = tmp_path / "db"
+    db_dir.mkdir()
+
+    (yak_dir / "file1.dj").write_text("apple banana")
+    (yak_dir / "file2.dj").write_text("apple dog")
+
+    with (
+        patch.dict("os.environ", {"YAK_SHEARS_DIR": str(yak_dir), "SEARCH_DB_DIR": str(db_dir)}),
+        freeze_time("2025-01-01 00:00:00") as frozen_time,
+    ):
+        # Initial indexing
+        client.get("/search?query=apple")
+
+        # Delete file
         (yak_dir / "file2.dj").unlink()
 
-        # Third search - should remove deleted
+        # Search should update index to remove deleted file
         frozen_time.tick()
         response = client.get("/search?query=dog")
         assert response.status_code == HTTPStatus.OK
@@ -151,19 +185,48 @@ def test_edit_yak_post(client: TestClient, mock_user_session, tmp_path) -> None:
         assert test_yak.read_text() == "Updated content"
 
 
-def test_edit_yak_not_found(client: TestClient, mock_user_session, tmp_path) -> None:
-    """Test the edit yak endpoint with non-existent yak."""
-    with set_yak_shears_dir(tmp_path):
-        response = client.get("/edit?yak=nonexistent.dj")
-        assert response.status_code == HTTPStatus.NOT_FOUND
-        assert "Yak not found: " in response.text
-
-
-def test_edit_yak_no_yak_specified(client: TestClient, mock_user_session) -> None:
-    """Test the edit yak endpoint with no yak specified."""
-    response = client.get("/edit")
-    assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert "No `yak` path specified" in response.text
+@pytest.mark.parametrize(
+    ("endpoint", "method", "query_or_data", "use_tmp_path", "expected_status", "expected_text"),
+    [
+        ("/edit", "get", "yak=nonexistent.dj", True, HTTPStatus.NOT_FOUND, "Yak not found: "),
+        ("/edit", "get", "", False, HTTPStatus.BAD_REQUEST, "No `yak` path specified"),
+        ("/delete", "post", "yak=nonexistent.dj", True, HTTPStatus.NOT_FOUND, "Yak not found"),
+        ("/delete", "post", "", False, HTTPStatus.BAD_REQUEST, "No `yak` path specified"),
+    ],
+    ids=["edit_not_found", "edit_no_yak", "delete_not_found", "delete_no_yak"],
+)
+def test_yak_endpoint_errors(
+    client: TestClient,
+    mock_user_session,
+    tmp_path,
+    endpoint,
+    method,
+    query_or_data,
+    use_tmp_path,
+    expected_status,
+    expected_text,
+) -> None:
+    """Test edit and delete endpoint error cases (not found, missing yak param)."""
+    context = set_yak_shears_dir(tmp_path) if use_tmp_path else None
+    if context:
+        with context:
+            if method == "get":
+                url = f"{endpoint}?{query_or_data}" if query_or_data else endpoint
+                response = client.get(url)
+            else:
+                data = {"yak": query_or_data.split("=")[1]} if query_or_data else {}
+                response = client.post(endpoint, data=data)
+            assert response.status_code == expected_status
+            assert expected_text in response.text
+    else:
+        if method == "get":
+            url = f"{endpoint}?{query_or_data}" if query_or_data else endpoint
+            response = client.get(url)
+        else:
+            data = {"yak": query_or_data.split("=")[1]} if query_or_data else {}
+            response = client.post(endpoint, data=data)
+        assert response.status_code == expected_status
+        assert expected_text in response.text
 
 
 def test_new_yak_get(client: TestClient, mock_user_session) -> None:
@@ -303,18 +366,3 @@ def test_delete_yak(client: TestClient, mock_user_session, tmp_path) -> None:
         assert "HX-Redirect" in response.headers
         assert response.headers["HX-Redirect"] == "/yaks"
         assert not test_yak.exists()
-
-
-def test_delete_yak_not_found(client: TestClient, mock_user_session, tmp_path) -> None:
-    """Test the delete yak endpoint with nonexistent yak."""
-    with set_yak_shears_dir(tmp_path):
-        response = client.post("/delete", data={"yak": "nonexistent.dj"})
-        assert response.status_code == HTTPStatus.NOT_FOUND
-        assert "Yak not found" in response.text
-
-
-def test_delete_yak_no_yak_specified(client: TestClient, mock_user_session) -> None:
-    """Test the delete yak endpoint with no yak specified."""
-    response = client.post("/delete", data={})
-    assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert "No `yak` path specified" in response.text

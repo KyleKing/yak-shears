@@ -22,7 +22,11 @@ from yak_shears._yak.services import (
 
 @pytest.fixture
 def temp_yak_dir(tmp_path):
-    """Create a temporary yak directory with test files."""
+    """Create a temporary yak directory with categorized test files for service layer tests.
+
+    Note: test_database.py has a similar fixture with different structure (flat files).
+    These are intentionally separate to match their specific test requirements.
+    """
     yak_dir = tmp_path / "yaks"
     yak_dir.mkdir()
     (yak_dir / "category1").mkdir()

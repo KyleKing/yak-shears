@@ -89,19 +89,24 @@ def test_get_user_by_email(email, expected, temp_user_file, sample_user):
         assert user is None
 
 
-def test_get_user_by_id(sample_user):
-    """Test retrieving user by ID."""
-    user = get_user_by_id(sample_user["id"])
+@pytest.mark.parametrize(
+    ("user_id_fn", "expected_found"),
+    [
+        (lambda sample_user: sample_user["id"], True),
+        (lambda _: "nonexistent-id", False),
+    ],
+    ids=["existing_user", "nonexistent_user"],
+)
+def test_get_user_by_id(sample_user, user_id_fn, expected_found):
+    """Test retrieving user by ID (existing and non-existent)."""
+    user = get_user_by_id(user_id_fn(sample_user))
 
-    assert user is not None
-    assert user["email"] == SAMPLE_USER_EMAIL
-    assert user["id"] == sample_user["id"]
-
-
-def test_get_user_by_id_nonexistent(sample_user):
-    """Test retrieving non-existent user by ID."""
-    user = get_user_by_id("nonexistent-id")
-    assert user is None
+    if expected_found:
+        assert user is not None
+        assert user["email"] == SAMPLE_USER_EMAIL
+        assert user["id"] == sample_user["id"]
+    else:
+        assert user is None
 
 
 @pytest.mark.asyncio
