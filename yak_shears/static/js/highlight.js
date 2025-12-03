@@ -102,7 +102,7 @@ function highlight(editor) {
 				break;
 			}
 			case "code_language": {
-				const lang = src.substring(start, end);
+				const lang = src.substring(start, end + 1);
 				add(opens, start, `<code class="language-${lang}">`);
 				break;
 		   }

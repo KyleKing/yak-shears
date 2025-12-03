@@ -19,9 +19,9 @@
     </script>
     <script src="/static/js/highlight.js">
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js">
+    <script defer="" src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js">
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js">
+    <script defer="" src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js">
     </script>
    </head>
    <body class="layout">
@@ -314,7 +314,7 @@
          M: 2025-05-01 10:00:00
         </div>
        </a>
-       <a class="card" href="/edit?yak=test-e2e-category/20251202_123308.dj" style="--card-accent-color: hsl(212, 6%, 88%)">
+       <a class="card" href="/edit?yak=test-e2e-category/20251203_010159.dj" style="--card-accent-color: hsl(212, 6%, 88%)">
         <div class="card__body">
          <p>
          </p>
@@ -322,12 +322,12 @@
         <div class="card__tooltip">
          Test-E2e-Category
          <br/>
-         C: 20251202_123308.dj
+         C: 20251203_010159.dj
          <br/>
          M: 2025-05-01 10:00:00
         </div>
        </a>
-       <a class="card" href="/edit?yak=mock_djot_dir_0/20251202_123308.dj" style="--card-accent-color: hsl(71, 6%, 88%)">
+       <a class="card" href="/edit?yak=mock_djot_dir_0/20251203_010159.dj" style="--card-accent-color: hsl(71, 6%, 88%)">
         <div class="card__body">
          <p>
          </p>
@@ -335,7 +335,7 @@
         <div class="card__tooltip">
          Mock_djot_dir_0
          <br/>
-         C: 20251202_123308.dj
+         C: 20251203_010159.dj
          <br/>
          M: 2025-05-01 10:00:00
         </div>

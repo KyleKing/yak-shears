@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 from bs4 import BeautifulSoup
+from freezegun import freeze_time
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
@@ -53,12 +54,8 @@ def test_yaks_endpoint(client: TestClient, mock_user_session, snapshot) -> None:
     """Test the yaks endpoint."""
     with (
         set_yak_shears_dir(MOCK_YAK_DIR),
-        patch("yak_shears._yak.services.datetime") as mock_datetime,
+        freeze_time("2025-05-01 10:00:00", tz_offset=0),
     ):
-        mock_datetime.fromtimestamp.return_value = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC)
-        mock_datetime.UTC = UTC
-        mock_datetime.now.return_value = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC)
-
         response = client.get("/yaks")
         assert response.status_code == HTTPStatus.OK
         assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
@@ -92,10 +89,8 @@ def test_search_indexing_with_temp_db(tmp_path, client: TestClient, mock_user_se
 
     with (
         patch.dict("os.environ", {"YAK_SHEARS_DIR": str(yak_dir), "SEARCH_DB_DIR": str(db_dir)}),
-        patch("yak_shears._yak.database.time") as mock_time,
+        freeze_time("2025-01-01 00:00:00") as frozen_time,
     ):
-        mock_time.time.return_value = 1000.0
-
         # First search - should index
         response = client.get("/search?query=apple")
         assert response.status_code == HTTPStatus.OK
@@ -104,7 +99,7 @@ def test_search_indexing_with_temp_db(tmp_path, client: TestClient, mock_user_se
         (yak_dir / "file1.dj").write_text("apple banana\nmodified")
 
         # Second search - should update index
-        mock_time.time.return_value = 1001.0  # After interval
+        frozen_time.tick()
         response = client.get("/search?query=modified")
         assert response.status_code == HTTPStatus.OK
 
@@ -112,7 +107,7 @@ def test_search_indexing_with_temp_db(tmp_path, client: TestClient, mock_user_se
         (yak_dir / "file2.dj").unlink()
 
         # Third search - should remove deleted
-        mock_time.time.return_value = 1002.0
+        frozen_time.tick()
         response = client.get("/search?query=dog")
         assert response.status_code == HTTPStatus.OK
 

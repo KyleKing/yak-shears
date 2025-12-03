@@ -70,7 +70,7 @@ pythonVersion = "3.12"
 
 [tool.pytest.ini_options]
 # FYI: browser is required for non-E2E test as well
-addopts = "tests --strict-markers --durations=5 --browser=chromium --timeout=25"
+addopts = "tests --strict-markers --durations=5 --browser=chromium --timeout=10"
 asyncio_default_test_loop_scope = "session"
 markers = [
   "playwright: e2e browser tests",

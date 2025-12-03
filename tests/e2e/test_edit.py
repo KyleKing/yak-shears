@@ -5,7 +5,7 @@ from playwright.async_api import BrowserContext, Page, expect
 
 from tests.conftest import MOCK_YAK_DIR
 
-from ._helpers import login, maybe_screenshot
+from ._helpers import login, maybe_screenshot, open_menu
 
 
 async def _fill_editor(page: Page, fill: str) -> None:
@@ -101,13 +101,13 @@ async def test_delete_yak(context: BrowserContext, page: Page, server_lifecycle)
     try:
         await page.goto(f"/edit?yak={yak_path}")
 
-        # Click delete button and confirm
+        await open_menu(page)
+
+        # Register handler for confirm dialog
+        page.on("dialog", lambda dialog: dialog.accept())
+        # Then click delete
         delete_button = page.locator("button:has-text('Delete Yak')")
         await expect(delete_button).to_be_visible()
-
-        # Handle the confirm dialog
-        page.on("dialog", lambda dialog: dialog.accept())
-
         await delete_button.click()
 
         # Should redirect to /yaks
@@ -127,26 +127,27 @@ async def test_preview_syntax_highlighting(context: BrowserContext, page: Page, 
 
     await page.goto("/edit?yak=yak1.dj")
 
+    await open_menu(page, pin=True)
+
     # Switch to side-by-side view to show preview
     await page.locator("button[data-view='side-by-side']").click()
 
     # Fill editor with content containing a code block
-    test_content = "Some text\n\n```python\nimport os\nprint('hello')\n```"
+    test_content = "Some text\n\n```python\nimport os\nprint('hello')\n```\n"
     await _fill_editor(page=page, fill=test_content)
 
     # Check that the editor contains code block with correct language class
     editor = page.locator("#editor-form")
-    await expect(editor).to_be_editable()
-    code_block = editor.locator("code.language-python")
+    code_block = editor.locator("pre code.language-python")
     await expect(code_block).to_be_visible()
-    await expect(code_block).to_contain_text("```python")
-    await expect(code_block).to_contain_text("import os")
+    await expect(code_block).to_contain_text("python\nimport os")
 
     # Check that the preview contains code block with correct language class
     preview = page.locator("#preview-content")
     code_block = preview.locator("pre code.language-python")
     await expect(code_block).to_be_visible()
-    await expect(code_block).to_contain_text("import os")
+    await expect(code_block.locator(".token.keyword").first).to_contain_text("import")
+    await expect(code_block.locator(".token.punctuation").first).to_contain_text("(")
 
 
 @pytest.mark.playwright
@@ -189,6 +190,8 @@ async def test_view_mode_toggles(context: BrowserContext, page: Page, server_lif
 
     await page.goto("/edit?yak=yak1.dj")
 
+    await open_menu(page, pin=True)
+
     # Test Editor view
     editor_btn = page.locator("button[data-view='editor']")
     await editor_btn.click()
@@ -203,7 +206,7 @@ async def test_view_mode_toggles(context: BrowserContext, page: Page, server_lif
     # Test Preview view
     preview_btn = page.locator("button[data-view='preview']")
     await preview_btn.click()
-    await expect(container).to_have_class(re.compile(r"preview\b"))
+    await expect(container).to_have_class(re.compile(r"previewonly\b"))
 
 
 # ============================================================================
