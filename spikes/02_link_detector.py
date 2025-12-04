@@ -308,8 +308,8 @@ Code block (should still be detected for now):
     assert "tag-with-dashes" in tags
 
     print(f"  ✅ Found {len(links)} links, {len(tags)} tags")
-    print("  ℹ️  Note: Currently detects links in code blocks")
-    print("  ℹ️  Future: Could add code block filtering")
+    print("  Note: Currently detects links in code blocks")
+    print("  Future: Could add code block filtering")
 
 
 if __name__ == "__main__":

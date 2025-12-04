@@ -29,12 +29,16 @@ class UserStore:
 
     @classmethod
     def load_sync(cls, data_path: SyncPath | None = None) -> Self:
-        """Load store synchronously (for module initialization)."""
+        """Load store synchronously (for module initialization).
+
+        Returns:
+            Initialized UserStore instance with data loaded from disk if available.
+        """
         store = cls(data_path)
         sync_path = SyncPath(store._data_path)
         if sync_path.exists():
             try:
-                data = json.loads(sync_path.read_text())
+                data = json.loads(sync_path.read_text(encoding="utf-8"))
                 store._users = data.get("users", {})
                 store._email_to_user_id = data.get("email_to_user_id", {})
             except (OSError, json.JSONDecodeError):
@@ -68,6 +72,9 @@ class UserStore:
     async def create_user(self, email: str, display_name: str, password: Password) -> User:
         """Create a new user with email and password.
 
+        Returns:
+            Newly created User dict.
+
         Raises:
             ValueError: If email, display_name, or password is empty/whitespace,
                        or if email is already taken.
@@ -82,7 +89,8 @@ class UserStore:
             raise ValueError("Password cannot be empty or whitespace-only")
 
         if email in self._email_to_user_id:
-            raise ValueError(f"Email {email} is already taken")
+            msg = f"Email {email} is already taken"
+            raise ValueError(msg)
 
         user_id = secrets.token_hex(16)
         salt, password_hash = create_password_hash(password)
@@ -104,7 +112,11 @@ class UserStore:
         return user
 
     async def authenticate_user(self, email: str, password: Password) -> User | None:
-        """Authenticate a user with email and password."""
+        """Authenticate a user with email and password.
+
+        Returns:
+            User dict if authentication successful, None otherwise.
+        """
         user = self.get_user_by_email(email)
         if not user:
             return None
@@ -117,22 +129,38 @@ class UserStore:
         return None
 
     def get_user_by_email(self, email: str) -> User | None:
-        """Get a user by email address."""
+        """Get a user by email address.
+
+        Returns:
+            User dict if found, None otherwise.
+        """
         if email not in self._email_to_user_id:
             return None
         user_id = self._email_to_user_id[email]
         return self._users.get(user_id)
 
     def get_user_by_id(self, user_id: str) -> User | None:
-        """Get a user by ID."""
+        """Get a user by ID.
+
+        Returns:
+            User dict if found, None otherwise.
+        """
         return self._users.get(user_id)
 
     def list_all_users(self) -> list[User]:
-        """Get a list of all users."""
+        """Get a list of all users.
+
+        Returns:
+            List of all User dicts.
+        """
         return list(self._users.values())
 
     async def delete_user(self, email: str) -> bool:
-        """Delete a user by email."""
+        """Delete a user by email.
+
+        Returns:
+            True if user was deleted, False if user not found.
+        """
         if email not in self._email_to_user_id:
             return False
 
@@ -152,7 +180,11 @@ class UserStore:
     # Session Management
 
     def create_session(self, user_id: str) -> SessionId:
-        """Create a session for a user."""
+        """Create a session for a user.
+
+        Returns:
+            New session ID.
+        """
         session_id = SessionId(secrets.token_hex(32))
         self._session_store[session_id] = user_id
         return session_id
@@ -162,7 +194,11 @@ class UserStore:
         self._session_store.pop(session_id, None)
 
     def get_user_id_from_session(self, session_id: str) -> str | None:
-        """Get the user ID from a session."""
+        """Get the user ID from a session.
+
+        Returns:
+            User ID if session exists, None otherwise.
+        """
         return self._session_store.get(session_id)
 
     # -------------------------------------------------------------------------
@@ -183,37 +219,65 @@ _default_store = UserStore.load_sync()
 
 # Module-level functions that delegate to default store
 async def create_user(email: str, display_name: str, password: Password) -> User:
-    """Create a new user with email and password."""
+    """Create a new user with email and password.
+
+    Returns:
+        Newly created User dict.
+    """
     return await _default_store.create_user(email, display_name, password)
 
 
 async def authenticate_user(email: str, password: Password) -> User | None:
-    """Authenticate a user with email and password."""
+    """Authenticate a user with email and password.
+
+    Returns:
+        User dict if authentication successful, None otherwise.
+    """
     return await _default_store.authenticate_user(email, password)
 
 
 def get_user_by_email(email: str) -> User | None:
-    """Get a user by email address."""
+    """Get a user by email address.
+
+    Returns:
+        User dict if found, None otherwise.
+    """
     return _default_store.get_user_by_email(email)
 
 
 def get_user_by_id(user_id: str) -> User | None:
-    """Get a user by ID."""
+    """Get a user by ID.
+
+    Returns:
+        User dict if found, None otherwise.
+    """
     return _default_store.get_user_by_id(user_id)
 
 
 def list_all_users() -> list[User]:
-    """Get a list of all users."""
+    """Get a list of all users.
+
+    Returns:
+        List of all User dicts.
+    """
     return _default_store.list_all_users()
 
 
 async def delete_user(email: str) -> bool:
-    """Delete a user by email."""
+    """Delete a user by email.
+
+    Returns:
+        True if user was deleted, False if user not found.
+    """
     return await _default_store.delete_user(email)
 
 
 def create_session(user_id: str) -> SessionId:
-    """Create a session for a user."""
+    """Create a session for a user.
+
+    Returns:
+        New session ID.
+    """
     return _default_store.create_session(user_id)
 
 
@@ -223,12 +287,20 @@ def delete_session(session_id: str) -> None:
 
 
 def get_user_id_from_session(session_id: str) -> str | None:
-    """Get the user ID from a session."""
+    """Get the user ID from a session.
+
+    Returns:
+        User ID if session exists, None otherwise.
+    """
     return _default_store.get_user_id_from_session(session_id)
 
 
 def _get_default_store() -> UserStore:
-    """Get the default store instance (for testing)."""
+    """Get the default store instance (for testing).
+
+    Returns:
+        The module-level default UserStore instance.
+    """
     return _default_store
 
 

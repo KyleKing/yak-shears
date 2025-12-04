@@ -49,12 +49,12 @@ async def list_yak_paths(yak_dir: Path) -> list[Path]:
     """Return all djot yak paths in directory."""
     if not await yak_dir.exists() or not await yak_dir.is_dir():
         return []
-    return [_f async for _f in yak_dir.rglob("*.dj") if await _f.is_file()]
+    return [f async for f in yak_dir.rglob("*.dj") if await f.is_file()]
 
 
 async def get_categories(all_paths: list[Path]) -> set[str]:
     """Get available categories (parent directory names)."""
-    return {_f.parent.name for _f in all_paths if await _f.is_file()}
+    return {f.parent.name for f in all_paths if await f.is_file()}
 
 
 @dataclass(frozen=True)
@@ -78,7 +78,7 @@ async def paginate_yaks(
         return PaginationResult(paths=[], total_count=0, total_pages=0)
 
     if category:
-        paths = [_f for _f in paths if _f.parent.name == category]
+        paths = [f for f in paths if f.parent.name == category]
 
     if sort_by == SortBy.MODIFIED_DATE:
         path_mtimes = [(pth, (await pth.stat()).st_mtime) for pth in paths]
@@ -153,7 +153,8 @@ async def read_yak(yak_dir: Path, relative_path: str) -> tuple[str, str]:
     """
     yak_path = yak_dir / relative_path
     if not await yak_path.is_file():
-        raise FileNotFoundError(f"Yak not found: {yak_path}")
+        msg = f"Yak not found: {yak_path}"
+        raise FileNotFoundError(msg)
 
     content = await yak_path.read_text(encoding="utf-8")
     category = yak_path.parent.name if yak_path.parent != yak_dir else ""
@@ -168,7 +169,8 @@ async def save_yak(yak_dir: Path, relative_path: str, content: str) -> None:
     """
     yak_path = yak_dir / relative_path
     if not await yak_path.is_file():
-        raise FileNotFoundError(f"Yak not found: {yak_path}")
+        msg = f"Yak not found: {yak_path}"
+        raise FileNotFoundError(msg)
 
     await yak_path.write_text(content, encoding="utf-8")
     index_yak_metadata(SyncPath(yak_path), SyncPath(yak_dir))
@@ -182,7 +184,8 @@ async def delete_yak(yak_dir: Path, relative_path: str) -> None:
     """
     yak_path = yak_dir / relative_path
     if not await yak_path.is_file():
-        raise FileNotFoundError(f"Yak not found: {yak_path}")
+        msg = f"Yak not found: {yak_path}"
+        raise FileNotFoundError(msg)
 
     await yak_path.unlink()
 

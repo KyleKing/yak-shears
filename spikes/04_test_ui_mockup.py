@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Spike 4 Validation: Test Metadata UI Mockup
+"""Spike 4 Validation: Test Metadata UI Mockup.
 
 This script validates that the HTML mockup:
 1. Is valid HTML
@@ -8,11 +8,16 @@ This script validates that the HTML mockup:
 4. Has responsive design CSS
 """
 
+import sys
 from pathlib import Path
 
 
-def validate_html_mockup():
-    """Validate the metadata UI mockup HTML file."""
+def validate_html_mockup() -> bool:
+    """Validate the metadata UI mockup HTML file.
+
+    Returns:
+        True if all validation tests pass, False otherwise.
+    """
     print("=" * 60)
     print("SPIKE 4: Metadata UI Mockup Validation")
     print("=" * 60)
@@ -120,7 +125,7 @@ def validate_html_mockup():
 if __name__ == "__main__":
     try:
         success = validate_html_mockup()
-        exit(0 if success else 1)
+        sys.exit(0 if success else 1)
     except AssertionError as e:
         print(f"\n❌ VALIDATION FAILED: {e}")
-        exit(1)
+        sys.exit(1)
