@@ -7,7 +7,6 @@ if (document.body) {
 	});
 }
 
-const resultsList = document.getElementById("search-results-list");
 let selectedIndex = -1;
 
 // Update visual selection
@@ -131,9 +130,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // Keyboard navigation
 document.addEventListener("keydown", function (e) {
+	const resultsList = document.getElementById("search-results-list");
 	if (!resultsList) return;
 	const resultItems = resultsList.querySelectorAll(".search-result");
 	if (resultItems.length === 0) return;
+
+	const modal = document.getElementById("search-preview-modal");
+	const modalIsOpen = modal && modal.style.display === "flex";
 
 	switch (e.key) {
 		case "ArrowDown":
@@ -141,7 +144,7 @@ document.addEventListener("keydown", function (e) {
 			if (selectedIndex < resultItems.length - 1) {
 				selectedIndex++;
 				updateSelection(resultItems);
-				loadPreview(resultItems[selectedIndex]);
+				loadPreview(resultItems[selectedIndex], modalIsOpen);
 			}
 			break;
 		case "ArrowUp":
@@ -149,7 +152,7 @@ document.addEventListener("keydown", function (e) {
 			if (selectedIndex > 0) {
 				selectedIndex--;
 				updateSelection(resultItems);
-				loadPreview(resultItems[selectedIndex]);
+				loadPreview(resultItems[selectedIndex], modalIsOpen);
 			}
 			break;
 		case "Enter":
@@ -167,7 +170,10 @@ document.addEventListener("keydown", function (e) {
 			}
 			break;
 		case "Escape":
-			searchInput.blur();
+			const searchInput = document.querySelector(".search-input");
+			if (searchInput) {
+				searchInput.blur();
+			}
 			break;
 	}
 });

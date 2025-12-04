@@ -5,10 +5,12 @@ requires = ["hatchling"]
 [dependency-groups]
 dev = [
   "beautifulsoup4>=4.13.4",
+  "freezegun>=1.5.5",
   "httpx>=0.28.1",
   "mypy>=1.15.0",
   "pytest-cov>=6.2.1",
   "pytest-playwright-asyncio>=0.7.1",
+  "pytest-randomly>=4.0.1",
   "pytest-timeout>=2.4.0",
   "pytest-watcher>=0.4.3",
   "ruff>=0.11.10",

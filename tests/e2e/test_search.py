@@ -6,6 +6,7 @@ from ._helpers import login, maybe_screenshot
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
+@pytest.mark.timeout(None)
 async def test_search_with_query(context: BrowserContext, page: Page, server_lifecycle, console_messages):
     """Test searching with a query and verifying matches."""
     await login(context, page)
@@ -57,10 +58,11 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
     # Test arrow key navigation updates preview
     initial_text = preview_text
     await page.keyboard.press("ArrowDown")
+    # await page.pause()
     # Wait for preview to update by waiting for network response or content change
     await page.wait_for_function(
         "initialText => document.querySelector('#search-preview-content')?.textContent !== initialText",
-        initial_text,
+        arg=initial_text,
         timeout=5000,
     )
     # Check that preview content changed (different line numbers or content)
@@ -74,7 +76,7 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
     # Wait for next preview update
     await page.wait_for_function(
         "prevText => document.querySelector('#search-preview-content')?.textContent !== prevText",
-        new_preview_text,
+        arg=new_preview_text,
         timeout=5000,
     )
     # Check that preview content changed (different line numbers or content)

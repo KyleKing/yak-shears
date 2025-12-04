@@ -225,6 +225,18 @@ wheels = [
 ]
 
 [[package]]
+name = "freezegun"
+version = "1.5.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/95/dd/23e2f4e357f8fd3bdff613c1fe4466d21bfb00a6177f238079b17f7b1c84/freezegun-1.5.5.tar.gz", hash = "sha256:ac7742a6cc6c25a2c35e9292dfd554b897b517d2dec26891a2e8debf205cb94a", size = 35914, upload-time = "2025-08-09T10:39:08.338Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/2e/b41d8a1a917d6581fc27a35d05561037b048e47df50f27f8ac9c7e27a710/freezegun-1.5.5-py3-none-any.whl", hash = "sha256:cd557f4a75cf074e84bc374249b9dd491eaeacd61376b9eb3c423282211619d2", size = 19266, upload-time = "2025-08-09T10:39:06.636Z" },
+]
+
+[[package]]
 name = "greenlet"
 version = "3.2.4"
 source = { registry = "https://pypi.org/simple" }
@@ -627,6 +639,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-randomly"
+version = "4.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c4/1d/258a4bf1109258c00c35043f40433be5c16647387b6e7cd5582d638c116b/pytest_randomly-4.0.1.tar.gz", hash = "sha256:174e57bb12ac2c26f3578188490bd333f0e80620c3f47340158a86eca0593cd8", size = 14130, upload-time = "2025-09-12T15:23:00.085Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/33/3e/a4a9227807b56869790aad3e24472a554b585974fe7e551ea350f50897ae/pytest_randomly-4.0.1-py3-none-any.whl", hash = "sha256:e0dfad2fd4f35e07beff1e47c17fbafcf98f9bf4531fd369d9260e2f858bfcb7", size = 8304, upload-time = "2025-09-12T15:22:58.946Z" },
+]
+
+[[package]]
 name = "pytest-timeout"
 version = "2.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -648,6 +672,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/72/72/a2a1e81f1b272ddd9a1848af4959c87c39aa95c0bbfb3007cacb86c47fa9/pytest_watcher-0.4.3.tar.gz", hash = "sha256:0cb0e4661648c8c0ff2b2d25efa5a8e421784b9e4c60fcecbf9b7c30b2d731b3", size = 10386, upload-time = "2024-08-28T17:37:46.662Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5b/3a/c44a76c6bb5e9e896d9707fb1c704a31a0136950dec9514373ced0684d56/pytest_watcher-0.4.3-py3-none-any.whl", hash = "sha256:d59b1e1396f33a65ea4949b713d6884637755d641646960056a90b267c3460f9", size = 11852, upload-time = "2024-08-28T17:37:45.731Z" },
+]
+
+[[package]]
+name = "python-dateutil"
+version = "2.9.0.post0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3", size = 342432, upload-time = "2024-03-01T18:36:20.211Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427", size = 229892, upload-time = "2024-03-01T18:36:18.57Z" },
 ]
 
 [[package]]
@@ -756,6 +792,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/69/82/251d5f1aa4dcad30aed491b4657cecd9fb4274214da6960ffec144c260f7/ruff-0.14.7-py3-none-win32.whl", hash = "sha256:e33052c9199b347c8937937163b9b149ef6ab2e4bb37b042e593da2e6f6cccfa", size = 13126751, upload-time = "2025-11-28T20:55:03.47Z" },
     { url = "https://files.pythonhosted.org/packages/a8/b5/d0b7d145963136b564806f6584647af45ab98946660d399ec4da79cae036/ruff-0.14.7-py3-none-win_amd64.whl", hash = "sha256:e17a20ad0d3fad47a326d773a042b924d3ac31c6ca6deb6c72e9e6b5f661a7c6", size = 14531726, upload-time = "2025-11-28T20:54:59.121Z" },
     { url = "https://files.pythonhosted.org/packages/1d/d2/1637f4360ada6a368d3265bf39f2cf737a0aaab15ab520fc005903e883f8/ruff-0.14.7-py3-none-win_arm64.whl", hash = "sha256:be4d653d3bea1b19742fcc6502354e32f65cd61ff2fbdb365803ef2c2aec6228", size = 13609215, upload-time = "2025-11-28T20:55:15.375Z" },
+]
+
+[[package]]
+name = "six"
+version = "1.17.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
 ]
 
 [[package]]
@@ -883,10 +928,12 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "beautifulsoup4" },
+    { name = "freezegun" },
     { name = "httpx" },
     { name = "mypy" },
     { name = "pytest-cov" },
     { name = "pytest-playwright-asyncio" },
+    { name = "pytest-randomly" },
     { name = "pytest-timeout" },
     { name = "pytest-watcher" },
     { name = "ruff" },
@@ -909,10 +956,12 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "beautifulsoup4", specifier = ">=4.13.4" },
+    { name = "freezegun", specifier = ">=1.5.5" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "mypy", specifier = ">=1.15.0" },
     { name = "pytest-cov", specifier = ">=6.2.1" },
     { name = "pytest-playwright-asyncio", specifier = ">=0.7.1" },
+    { name = "pytest-randomly", specifier = ">=4.0.1" },
     { name = "pytest-timeout", specifier = ">=2.4.0" },
     { name = "pytest-watcher", specifier = ">=0.4.3" },
     { name = "ruff", specifier = ">=0.11.10" },

@@ -24,9 +24,9 @@ def worker_id() -> str:
     """Get the pytest-xdist worker ID for parallel test isolation.
 
     Returns:
-        str: Worker ID (e.g., 'gw0', 'gw1') or 'master' for non-parallel runs
+        str: Worker ID (e.g., 'gw0', 'gw1') or 'main' for non-parallel runs
     """
-    return os.environ.get("PYTEST_XDIST_WORKER", "master")
+    return os.environ.get("PYTEST_XDIST_WORKER", "main")
 
 
 @pytest.fixture(scope="session")
@@ -37,9 +37,9 @@ def worker_num(worker_id: str) -> int:
         worker_id: The worker ID from pytest-xdist
 
     Returns:
-        int: Worker number (0 for master, 1+ for parallel workers)
+        int: Worker number (0 for main, 1+ for parallel workers)
     """
-    return 0 if worker_id == "master" else int(worker_id.replace("gw", ""))
+    return 0 if worker_id == "main" else int(worker_id.replace("gw", ""))
 
 
 @contextmanager

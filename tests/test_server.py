@@ -20,6 +20,26 @@ from .conftest import MOCK_YAK_DIR, set_yak_shears_dir
 
 
 @pytest.fixture
+def isolated_yak_dir(tmp_path: Path) -> Path:
+    """Create an isolated yak directory for snapshot testing.
+
+    Returns:
+        Path: Temporary directory with 3 test yak files
+    """
+    test_dir = tmp_path / "yak_test_dir"
+    test_dir.mkdir()
+
+    (test_dir / "subdirectory-2").mkdir()
+    (test_dir / "subdirectory-3").mkdir()
+
+    (test_dir / "yak1.dj").write_text("# Yak 1\n\n<https://www.ecosia.org/search?method=index&q=yak>", encoding="utf-8")
+    (test_dir / "subdirectory-2" / "yak2.dj").write_text("# Yak 2\n\n<https://www.ecosia.org/search?method=index&q=yak>", encoding="utf-8")
+    (test_dir / "subdirectory-3" / "yak3.dj").write_text("# Yak 3\n\nThis is a test yak number 3", encoding="utf-8")
+
+    return test_dir
+
+
+@pytest.fixture
 def app() -> Starlette:
     """Create a test Starlette application.
 
@@ -50,12 +70,16 @@ def test_root_endpoint(client: TestClient) -> None:
     assert response.headers["location"] == DEFAULT_REDIRECT
 
 
-def test_yaks_endpoint(client: TestClient, mock_user_session, snapshot) -> None:
+def test_yaks_endpoint(client: TestClient, mock_user_session, isolated_yak_dir: Path, snapshot) -> None:
     """Test the yaks endpoint."""
     with (
-        set_yak_shears_dir(MOCK_YAK_DIR),
+        set_yak_shears_dir(isolated_yak_dir),
         freeze_time("2025-05-01 10:00:00", tz_offset=0),
+        patch("yak_shears._yak.services.datetime") as mock_datetime,
     ):
+        mock_datetime.fromtimestamp.return_value.strftime.return_value = "2025-05-01 10:00:00"
+        mock_datetime.fromtimestamp.return_value = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC)
+
         response = client.get("/yaks")
         assert response.status_code == HTTPStatus.OK
         assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
