@@ -22,7 +22,7 @@ def _get_worker_port() -> str:
     return str(8081 + worker_num)
 
 
-def _get_playwright_auth_path() -> SyncPath:
+def get_playwright_auth_path() -> SyncPath:
     """Get worker-specific Playwright auth file path."""
     worker_id = os.environ.get("PYTEST_XDIST_WORKER", "main")
     return SyncPath(__file__).absolute().parents[2] / f".playwright-auth-{worker_id}.json"

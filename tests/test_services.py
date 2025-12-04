@@ -235,3 +235,64 @@ class TestHighlighting:
         lines = result.split("\n")
         assert '<span class="search-highlight">one</span>' in lines[0]
         assert "two" in lines[1]
+
+    def test_highlight_content_whitespace_only_query(self):
+        """Test that query with only whitespace returns content unchanged."""
+        result = highlight_content("hello world", "   ")
+        assert result == "hello world"
+
+    def test_highlight_content_empty_words_after_strip(self):
+        """Test that empty words after stripping are handled."""
+        result = highlight_content("hello world", " ")
+        assert result == "hello world"
+
+
+class TestServiceEdgeCases:
+    """Test edge cases in service layer."""
+
+    def test_ensure_search_index_handles_exceptions(self, tmp_path):
+        """Test that ensure_search_index_updated handles exceptions gracefully."""
+        from unittest.mock import patch
+
+        from yak_shears._yak.services import ensure_search_index_updated
+
+        yak_dir = tmp_path / "yaks"
+        yak_dir.mkdir()
+
+        with patch("yak_shears._yak.services.should_update_index", side_effect=RuntimeError("Test error")):
+            # Should not raise, just log warning
+            ensure_search_index_updated(yak_dir)
+
+    def test_create_search_result_invalid_line_number(self, tmp_path):
+        """Test that _create_search_result handles invalid line numbers."""
+        from yak_shears._yak.services import _create_search_result
+
+        test_file = tmp_path / "test.dj"
+        test_file.write_text("line 1\nline 2\nline 3")
+
+        # Line number out of range
+        result = _create_search_result(test_file, "test.dj", 10, "test")
+        assert result is None
+
+        # Line number 0 (invalid)
+        result = _create_search_result(test_file, "test.dj", 0, "test")
+        assert result is None
+
+    def test_process_search_results_deduplication(self, tmp_path):
+        """Test that search results are deduplicated by path."""
+        from yak_shears._yak.services import _process_search_results
+
+        test_file = tmp_path / "test.dj"
+        test_file.write_text("hello world test")
+
+        # Multiple results for same file (should only return first)
+        raw_results = [
+            ("test.dj", 1, "hello"),
+            ("test.dj", 1, "world"),  # Duplicate path, should be skipped
+            ("test.dj", 1, "test"),  # Duplicate path, should be skipped
+        ]
+
+        results = _process_search_results(raw_results, tmp_path)
+        # Should only have one result despite multiple matches
+        assert len(results) == 1
+        assert results[0].path == "test.dj"

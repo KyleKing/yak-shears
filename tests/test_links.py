@@ -1,6 +1,8 @@
 """Tests for link extraction."""
 
-from yak_shears.links import extract_all_links, extract_tags, extract_wikilinks
+from pathlib import Path
+
+from yak_shears.links import extract_all_links, extract_tags, extract_wikilinks, resolve_link
 
 
 def test_extract_simple_wikilink() -> None:
@@ -166,3 +168,95 @@ Tags: #backend #api #database
     assert "django" in tags
     assert "postgresql" in tags
     assert "backend" in tags
+
+
+class TestLinkResolution:
+    """Tests for resolve_link functionality."""
+
+    def test_resolve_link_exact_match(self, tmp_path: Path) -> None:
+        """Test resolving a link with exact match in root directory."""
+        yak_dir = tmp_path / "yaks"
+        yak_dir.mkdir()
+        test_file = yak_dir / "my-note.dj"
+        test_file.write_text("content")
+
+        result = resolve_link("my-note", yak_dir)
+        assert result == test_file
+
+    def test_resolve_link_recursive_search(self, tmp_path: Path) -> None:
+        """Test resolving a link with recursive search in subdirectories."""
+        yak_dir = tmp_path / "yaks"
+        yak_dir.mkdir()
+        category_dir = yak_dir / "category"
+        category_dir.mkdir()
+        test_file = category_dir / "nested-note.dj"
+        test_file.write_text("content")
+
+        result = resolve_link("nested-note", yak_dir)
+        assert result == test_file
+
+    def test_resolve_link_fuzzy_match(self, tmp_path: Path) -> None:
+        """Test resolving a link with fuzzy matching."""
+        yak_dir = tmp_path / "yaks"
+        yak_dir.mkdir()
+        test_file = yak_dir / "my-document.dj"
+        test_file.write_text("content")
+
+        # Fuzzy match with typo (70% similarity threshold)
+        result = resolve_link("my-documnt", yak_dir)
+        assert result == test_file
+
+    def test_resolve_link_no_match_returns_none(self, tmp_path: Path) -> None:
+        """Test that resolve_link returns None when no match is found."""
+        yak_dir = tmp_path / "yaks"
+        yak_dir.mkdir()
+        (yak_dir / "other-note.dj").write_text("content")
+
+        result = resolve_link("nonexistent-note", yak_dir)
+        assert result is None
+
+    def test_resolve_link_case_insensitive(self, tmp_path: Path) -> None:
+        """Test that link resolution is case-insensitive."""
+        yak_dir = tmp_path / "yaks"
+        yak_dir.mkdir()
+        test_file = yak_dir / "my-note.dj"
+        test_file.write_text("content")
+
+        result = resolve_link("MY-NOTE", yak_dir)
+        assert result == test_file
+
+    def test_resolve_link_space_to_dash_conversion(self, tmp_path: Path) -> None:
+        """Test that spaces in target are converted to dashes."""
+        yak_dir = tmp_path / "yaks"
+        yak_dir.mkdir()
+        test_file = yak_dir / "my-note.dj"
+        test_file.write_text("content")
+
+        result = resolve_link("my note", yak_dir)
+        assert result == test_file
+
+    def test_resolve_link_exact_match_priority_over_fuzzy(self, tmp_path: Path) -> None:
+        """Test that exact match takes priority over fuzzy match."""
+        yak_dir = tmp_path / "yaks"
+        yak_dir.mkdir()
+        exact_file = yak_dir / "note.dj"
+        exact_file.write_text("exact")
+        similar_file = yak_dir / "notes.dj"
+        similar_file.write_text("similar")
+
+        result = resolve_link("note", yak_dir)
+        assert result == exact_file
+
+    def test_resolve_link_recursive_priority_over_fuzzy(self, tmp_path: Path) -> None:
+        """Test that recursive exact match takes priority over fuzzy match."""
+        yak_dir = tmp_path / "yaks"
+        yak_dir.mkdir()
+        fuzzy_file = yak_dir / "my-document.dj"
+        fuzzy_file.write_text("fuzzy")
+        subdir = yak_dir / "category"
+        subdir.mkdir()
+        exact_file = subdir / "my-doc.dj"
+        exact_file.write_text("exact")
+
+        result = resolve_link("my-doc", yak_dir)
+        assert result == exact_file

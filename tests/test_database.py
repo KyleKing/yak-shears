@@ -6,8 +6,10 @@ import pytest
 from freezegun import freeze_time
 
 from yak_shears._yak.database import (
+    MAX_WORD_LENGTH,
     check_tables_exist,
     delete_files,
+    delete_words_for_paths,
     get_backlinks,
     get_frontmatter,
     get_last_update_time,
@@ -22,6 +24,7 @@ from yak_shears._yak.database import (
     should_update_index,
     update_index_batch,
     update_search_index,
+    upsert_file,
     upsert_frontmatter,
 )
 
@@ -208,3 +211,107 @@ class TestSearchIndex:
             frozen_time.move_to("2025-01-01 00:01:40")
             (temp_yak_dir / "file1.dj").write_text("modified content")
             assert should_update_index(temp_yak_dir)
+
+    def test_should_update_index_detects_deleted_files(self, temp_db, temp_yak_dir):
+        """Test that should_update_index detects when files are deleted."""
+        with (
+            patch.dict("os.environ", {"YAK_SHEARS_DIR": str(temp_yak_dir)}),
+            freeze_time("2025-01-01 00:00:00") as frozen_time,
+        ):
+            # Initial index
+            update_search_index(temp_yak_dir)
+            frozen_time.move_to("2025-01-01 00:02:00")  # Move past update threshold
+
+            # Delete a file
+            (temp_yak_dir / "file1.dj").unlink()
+
+            # Should detect missing file
+            assert should_update_index(temp_yak_dir)
+
+
+class TestDatabaseEdgeCases:
+    """Test edge cases and error handling in database operations."""
+
+    def test_delete_files_empty_list(self, temp_db):
+        """Test that delete_files handles empty list gracefully."""
+        delete_files([])
+        # Should not raise error
+
+    def test_delete_words_for_paths_empty_list(self, temp_db):
+        """Test that delete_words_for_paths handles empty list gracefully."""
+        delete_words_for_paths([])
+        # Should not raise error
+
+    def test_insert_words_empty_list(self, temp_db):
+        """Test that insert_words handles empty list gracefully."""
+        insert_words([])
+        assert get_word_count() == 0
+
+    def test_upsert_file_basic(self, temp_db):
+        """Test upserting file metadata."""
+        upsert_file("test.dj", 123.456)
+        stored = get_stored_files()
+        assert "test.dj" in stored
+        assert abs(stored["test.dj"] - 123.456) < 0.01  # Float precision tolerance
+
+        # Update with new mtime
+        upsert_file("test.dj", 789.012)
+        stored = get_stored_files()
+        assert abs(stored["test.dj"] - 789.012) < 0.01  # Float precision tolerance
+
+    def test_process_file_with_very_long_words(self, temp_db, tmp_path):
+        """Test that very long words are truncated to MAX_WORD_LENGTH."""
+        yak_dir = tmp_path / "yaks"
+        yak_dir.mkdir()
+        long_word = "a" * (MAX_WORD_LENGTH + 50)
+        (yak_dir / "file1.dj").write_text(f"short {long_word} normal")
+
+        with patch.dict("os.environ", {"YAK_SHEARS_DIR": str(yak_dir)}):
+            update_search_index(yak_dir)
+
+        # Search for truncated word
+        results = search_words("a" * MAX_WORD_LENGTH)
+        assert len(results) > 0
+
+    def test_process_file_unreadable_encoding(self, temp_db, tmp_path):
+        """Test that unreadable files are skipped gracefully."""
+        yak_dir = tmp_path / "yaks"
+        yak_dir.mkdir()
+        # Create a file with valid content
+        good_file = yak_dir / "good.dj"
+        good_file.write_text("readable content")
+        # Create a file with binary content (will cause read error)
+        bad_file = yak_dir / "bad.dj"
+        bad_file.write_bytes(b"\x80\x81\x82\x83")
+
+        with patch.dict("os.environ", {"YAK_SHEARS_DIR": str(yak_dir)}):
+            # Should not raise, just skip bad file
+            update_search_index(yak_dir)
+
+        # Good file should still be indexed
+        stored = get_stored_files()
+        assert "good.dj" in stored
+
+    def test_update_index_batch_with_transaction(self, temp_db):
+        """Test that update_index_batch uses transactions."""
+        # Add initial data
+        insert_words([("old.dj", 1, "oldword")])
+        update_index_batch([], [], [], {"old.dj": 100.0})
+        assert get_word_count() == 1
+
+        # Update in batch
+        update_index_batch(
+            deleted_paths=["old.dj"],
+            changed_paths=[],
+            words_data=[
+                ("new1.dj", 1, "word1"),
+                ("new2.dj", 1, "word2"),
+            ],
+            file_mtimes={"new1.dj": 200.0, "new2.dj": 300.0},
+        )
+
+        assert get_word_count() == 2
+        stored = get_stored_files()
+        assert "old.dj" not in stored
+        assert "new1.dj" in stored
+        assert "new2.dj" in stored
