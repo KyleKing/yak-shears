@@ -47,6 +47,29 @@ version = "0.0.0"
 serve = "yak_shears.server:cli"
 yak-shears-users = "yak_shears.cli:main_sync"
 
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "class .*\\bProtocol\\):",
+  "@(abc\\.)?abstractmethod",
+]
+precision = 2
+show_missing = true
+skip_covered = false
+
+[tool.coverage.run]
+branch = true
+omit = ["*/tests/*", "*/__pycache__/*", "*/.venv/*"]
+source = ["yak_shears"]
+
 [tool.mypy]
 check_untyped_defs = true
 disallow_any_generics = true
@@ -78,29 +101,6 @@ markers = [
   "playwright: e2e browser tests",
   "allow_console_errors: allow console errors in browser tests (e.g., expected 400 responses)",
 ]
-
-[tool.coverage.run]
-branch = true
-omit = ["*/tests/*", "*/__pycache__/*", "*/.venv/*"]
-source = ["yak_shears"]
-
-[tool.coverage.report]
-exclude_lines = [
-  "pragma: no cover",
-  "def __repr__",
-  "raise AssertionError",
-  "raise NotImplementedError",
-  "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:",
-  "class .*\\bProtocol\\):",
-  "@(abc\\.)?abstractmethod",
-]
-precision = 2
-show_missing = true
-skip_covered = false
-
-[tool.coverage.html]
-directory = "htmlcov"
 
 [tool.pytest-watcher]
 clear = true
