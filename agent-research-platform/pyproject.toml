@@ -1,0 +1,21 @@
+[project]
+name = "agent-research-platform"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.17.2",
+    "asyncpg>=0.30.0",
+    "faker>=38.2.0",
+    "httpx>=0.28.1",
+    "logfire>=4.15.1",
+    "pgvector>=0.4.1",
+    "pydantic-ai>=1.22.0",
+    "pydantic-evals>=1.22.0",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-recording>=0.13.4",
+    "python-dotenv>=1.2.1",
+    "sqlalchemy>=2.0.44",
+]
