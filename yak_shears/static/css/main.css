@@ -510,6 +510,24 @@ pre code {
 	background: none;
 }
 
+/* ============================================================================
+   EDITOR COMPONENT STYLES
+   
+   The editor uses a complex flex layout system with three view modes:
+   1. "editoronly" - Shows only CodeJar editor (default on mobile)
+   2. "sidebyside" - 50/50 split: editor on left, preview on right (default desktop)
+   3. "previewonly" - Shows only rendered Djot preview
+   
+   CRITICAL LAYOUT RULES:
+   - Form wrapper MUST be a flex container (min-height: 0 fixes overflow in nested flex)
+   - Each mode uses different flex/width values to show/hide editor and preview
+   - Mobile breakpoint at 768px changes behavior (see @media queries at bottom)
+   
+   Related files:
+   - yak_shears/static/js/editor.js (setViewMode function)
+   - yak_shears/_templates/yak/edit.html.jinja (HTML structure)
+   ============================================================================ */
+
 .editor__header {
 	display: flex;
 	justify-content: space-between;
@@ -517,6 +535,7 @@ pre code {
 	margin-bottom: var(--space-4);
 }
 
+/* View Mode Toggle - appears in metadata panel */
 .view-toggle {
 	display: flex;
 	gap: var(--space-2);
@@ -544,24 +563,30 @@ pre code {
 	font-weight: 600;
 }
 
+/* Main editor container - holds form (with editor) and preview */
 .editor-container {
 	display: flex;
 	gap: var(--space-4);
 	margin: 0;
 	padding: var(--space-4);
 	flex: 1;
-	min-height: 0;
+	min-height: 0; /* Critical: allows overflow scrolling in flex children */
 	overflow: hidden;
 }
 
-/* Form wrapper needs to be a flex item */
+/* Form wrapper needs to be a flex item to participate in layout */
+/* min-height: 0 is REQUIRED for nested flex children to respect overflow */
 .editor-container form {
 	display: flex;
 	flex: 1;
-	min-height: 0;
+	min-height: 0; /* Without this, nested .editor won't scroll properly */
 }
 
-/* Editor-only mode */
+/* ============================================================================
+   VIEW MODE 1: Editor-only (mobile default)
+   Shows: CodeJar editor only
+   Hides: Preview pane
+   ============================================================================ */
 .editor-container.editoronly form {
 	width: 100%;
 }
@@ -575,7 +600,11 @@ pre code {
 	display: none;
 }
 
-/* Preview-only mode */
+/* ============================================================================
+   VIEW MODE 2: Preview-only
+   Shows: Rendered Djot preview only
+   Hides: CodeJar editor and form
+   ============================================================================ */
 .editor-container.previewonly .preview {
 	flex: 1;
 	width: 100%;
@@ -586,11 +615,15 @@ pre code {
 	display: none;
 }
 
-/* Side-by-side mode: 50/50 */
+/* ============================================================================
+   VIEW MODE 3: Side-by-side (desktop default)
+   Shows: 50/50 split with editor on left, preview on right
+   Note: min-width: 0 prevents flex items from overflowing container
+   ============================================================================ */
 .editor-container.sidebyside form {
 	flex: 1;
 	width: 50%;
-	min-width: 0;
+	min-width: 0; /* Prevents flex item from growing beyond 50% */
 }
 
 .editor-container.sidebyside .editor {
@@ -601,9 +634,13 @@ pre code {
 .editor-container.sidebyside .preview {
 	flex: 1;
 	width: 50%;
-	min-width: 0;
+	min-width: 0; /* Prevents flex item from growing beyond 50% */
 }
 
+/* ============================================================================
+   CodeJar Editor Element
+   The actual contenteditable div where users type
+   ============================================================================ */
 .editor {
 	background: var(--color-surface);
 	border-radius: var(--radius-sm);
@@ -621,9 +658,13 @@ pre code {
 .editor:focus {
 	outline: none;
 	border-color: var(--color-accent);
-	box-shadow: 0 0 0 3px rgba(247, 207, 70, 0.2);
+	box-shadow: 0 0 0 3px rgba(247, 207, 70, 0.2); /* Accent color with 20% opacity */
 }
 
+/* ============================================================================
+   Djot Preview Pane
+   Shows rendered HTML from Djot parser (via editor.js:renderPreview)
+   ============================================================================ */
 .preview {
 	background: #fff;
 	border-radius: var(--radius-sm);
@@ -685,6 +726,11 @@ pre code {
 	padding: 0;
 }
 
+/* ============================================================================
+   Fixed Bottom Action Bar
+   Contains Save button, Menu button, and status indicator
+   Fixed position ensures it's always visible during scrolling
+   ============================================================================ */
 .editor__actions {
 	display: flex;
 	gap: var(--space-3);
@@ -693,40 +739,44 @@ pre code {
 	bottom: 0;
 	left: 0;
 	right: 0;
-	background: rgba(245, 243, 239, 0.95);
-	backdrop-filter: blur(10px);
+	background: rgba(245, 243, 239, 0.95); /* Semi-transparent light theme */
+	backdrop-filter: blur(10px); /* Blur content behind the bar */
 	padding: var(--space-4);
 	border-top: 1px solid var(--color-border);
 	box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
-	z-index: 10;
+	z-index: 10; /* Above editor content, below modals */
 }
 
 @media (prefers-color-scheme: dark) {
 	.editor__actions {
-		background: rgba(18, 18, 18, 0.95);
+		background: rgba(18, 18, 18, 0.95); /* Semi-transparent dark theme */
 	}
 }
 
+/* Save status indicator text */
 .editor__status {
 	font-size: 0.8rem;
 	padding: var(--space-2);
 	border-radius: var(--radius-sm);
 }
 
+/* "Saved" status gets green background */
 .editor__status.saved {
 	background: #e8f5e8;
 	color: #2e7d32;
 }
 
+/* "Error saving!" status gets red background */
 .editor__status.error {
 	background: #ffebee;
 	color: var(--color-danger);
 }
 
+/* Syntax highlighting for editor content (applied by highlight.js) */
+/* TODO: Pick more appropriate colors for these tokens */
 .editor .heading {
 	font-weight: 600;
 }
-/* TOOD: Pick more appropriate colors for these */
 .editor .quote {
 	color: var(--color-text-dim);
 }
@@ -1171,8 +1221,17 @@ pre code {
 	padding-top: var(--space-6);
 }
 
-/* Responsive */
+/* ============================================================================
+   RESPONSIVE BREAKPOINT: Mobile (max-width: 768px)
+   Major layout changes for smaller screens:
+   - Search: Stack sidebar + preview vertically, hide preview by default
+   - Editor: Force column layout for all view modes
+   - Metadata panel: Unpin if pinned, show as full-screen modal
+   
+   IMPORTANT: This 768px breakpoint is referenced in editor.js as MOBILE_BREAKPOINT
+   ============================================================================ */
 @media (max-width: 768px) {
+	/* Search page adjustments */
 	.search-content {
 		flex-direction: column;
 	}
@@ -1185,13 +1244,15 @@ pre code {
 	}
 
 	.search-preview {
-		display: none;
+		display: none; /* Show via modal instead (see search.js) */
 	}
 
+	/* Force vertical stacking for editor on mobile */
 	.editor-container {
 		flex-direction: column;
 	}
 
+	/* Override all view modes to stack vertically */
 	.editor-container.editoronly,
 	.editor-container.previewonly,
 	.editor-container.sidebyside {
@@ -1205,17 +1266,31 @@ pre code {
 	.editor-container .editor,
 	.editor-container .preview {
 		width: 100%;
-		min-height: 200px;
+		min-height: 200px; /* Shorter than desktop 300px */
 	}
 }
 
-/* ========================================
-   Metadata Panel
-   ======================================== */
+/* ============================================================================
+   METADATA/PROPERTIES PANEL
+   
+   A sidebar that shows yak metadata, backlinks, and controls
+   
+   BEHAVIOR BY SCREEN SIZE:
+   - Desktop (>768px): Can be toggled or pinned. When pinned, becomes part of grid.
+   - Mobile (≤768px): Always shows as slide-in modal over content (cannot be pinned)
+   
+   STATES:
+   - Hidden: transform: translateX(100%) - off-screen to the right
+   - Visible: transform: translateX(0) - slides in from right
+   - Pinned (desktop only): position: relative, part of grid layout
+   
+   Controlled by: editor.js (toggleMetadataPanel, togglePanelPin functions)
+   ============================================================================ */
 
+/* Main layout container - uses CSS Grid */
 .editor-layout {
 	display: grid;
-	grid-template-columns: 1fr;
+	grid-template-columns: 1fr; /* Default: single column (panel hidden) */
 	gap: 0;
 	min-height: calc(100vh - var(--header-height, 60px));
 	transition: grid-template-columns 0.3s ease-in-out;
@@ -1223,19 +1298,22 @@ pre code {
 	overflow: hidden;
 }
 
-.editor-layout.metadata-visible {
-	grid-template-columns: 1fr 320px;
+/* When panel is pinned (desktop only), grid shows two columns */
+.editor-layout.panel-pinned {
+	grid-template-columns: 1fr 320px; /* Editor area + 320px panel */
 }
 
+/* Main editor area (left side or full width when panel hidden) */
 .editor-main {
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
-	min-height: 0;
+	min-height: 0; /* Critical for nested flex overflow */
 	flex: 1;
-	padding-bottom: calc(var(--action-bar-height) + var(--space-3));
+	padding-bottom: calc(var(--action-bar-height) + var(--space-3)); /* Space for fixed action bar */
 }
 
+/* The metadata panel itself - starts off-screen */
 .metadata-panel {
 	background: var(--color-surface);
 	border-left: 1px solid var(--color-border);
@@ -1243,34 +1321,31 @@ pre code {
 	overflow-y: auto;
 	max-height: calc(100vh - var(--header-height, 60px));
 	transition: transform 0.3s ease-in-out;
-	position: fixed;
+	position: fixed; /* Floats over content by default */
 	top: var(--header-height, 60px);
 	right: 0;
 	bottom: 0;
 	width: 320px;
-	z-index: 100;
-	transform: translateX(100%);
+	z-index: 100; /* Above editor, below backdrop */
+	transform: translateX(100%); /* Hidden: off-screen to the right */
 }
 
+/* Visible state - slides in from right */
 .metadata-panel.visible {
 	transform: translateX(0);
 }
 
-/* Pinned state - becomes part of grid layout */
-.editor-layout.panel-pinned {
-	grid-template-columns: 1fr 320px;
-}
-
+/* Pinned state - becomes part of grid layout instead of floating */
 .editor-layout.panel-pinned .metadata-panel {
-	position: relative;
+	position: relative; /* No longer floats */
 	top: auto;
 	right: auto;
 	bottom: auto;
-	transform: none;
+	transform: none; /* No slide animation when pinned */
 	z-index: auto;
 }
 
-/* Panel Header */
+/* Panel Header - shows filename and pin button */
 .panel-header {
 	display: flex;
 	justify-content: space-between;
@@ -1283,7 +1358,7 @@ pre code {
 
 .panel-header__info {
 	flex: 1;
-	min-width: 0;
+	min-width: 0; /* Allows text truncation */
 }
 
 .panel-header__filename {
@@ -1299,7 +1374,7 @@ pre code {
 	margin-top: var(--space-1);
 }
 
-/* Pin Button */
+/* Pin Button - only functional on desktop */
 .panel-pin {
 	flex-shrink: 0;
 	width: 32px;
@@ -1321,30 +1396,31 @@ pre code {
 	color: var(--color-text);
 }
 
+/* Pinned state - button appears pressed */
 .panel-pin[aria-pressed="true"] {
 	background: var(--color-accent);
 	border-color: var(--color-accent);
 	color: #000;
 }
 
-/* Backdrop */
+/* Backdrop - dimmed overlay when panel is visible but not pinned */
 .metadata-backdrop {
 	position: fixed;
 	inset: 0;
 	top: var(--header-height, 60px);
-	background: rgba(0, 0, 0, 0.3);
+	background: rgba(0, 0, 0, 0.3); /* 30% black overlay */
 	opacity: 0;
-	pointer-events: none;
+	pointer-events: none; /* Doesn't block clicks when invisible */
 	transition: opacity 0.3s ease;
-	z-index: 90;
+	z-index: 90; /* Below panel, above editor */
 }
 
 .metadata-backdrop.visible {
 	opacity: 1;
-	pointer-events: auto;
+	pointer-events: auto; /* Captures clicks to dismiss panel */
 }
 
-/* Hide backdrop when pinned */
+/* Hide backdrop when pinned (panel is part of layout, not overlay) */
 .editor-layout.panel-pinned ~ .metadata-backdrop {
 	display: none;
 }
