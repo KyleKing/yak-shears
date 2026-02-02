@@ -14,36 +14,50 @@
 {% block header_center %}{% endblock %}
 
 {% block content %}
+  {# Backdrop overlay - shown when metadata panel is open on mobile or unpinned desktop #}
   <div class="metadata-backdrop" id="metadata-backdrop"></div>
 
   <div class="editor-layout">
     <div class="editor-main">
       <div class="editor-container" id="editor-container">
-        <form id="editor-form" method="post">
+        {# Form wrapper required for HTMX POST - see handlers.py:edit_yak_handler #}
+        <form id="editor_form" method="post">
           <input type="hidden" name="yak" value="{{ yak_path }}">
+          {# 
+            CodeJar editor element
+            - data-manual: Prevents auto-init (we control initialization timing)
+            - data-gramm="false": Disables Grammarly browser extension interference
+            Initialized in editor.js:initEditor()
+          #}
           <div class="editor" data-manual data-gramm="false"></div>
         </form>
 
+        {# Live preview pane - rendered from Djot via editor.js:renderPreview() #}
         <div class="preview" id="preview">
           <div class="preview-content" id="preview-content"></div>
         </div>
       </div>
 
+      {# Fixed bottom action bar with save button and status #}
       <div class="editor__actions">
         <div class="container">
+          {# HTMX-powered save button - JS injects editor content via hx-vals #}
           <button class="button button--primary" id="save-btn" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent(), yak: '{{ yak_path }}'}">Save</button>
           <button class="button button--secondary" id="menu-btn" type="button" aria-label="Toggle menu" aria-expanded="false" aria-controls="metadata-panel" title="Toggle menu (⌘M)">Menu</button>
+          {# Status indicator: "Synced" | "Modified" | "Saving..." | "Saved" #}
           <span id="save-status" class="editor__status"></span>
         </div>
       </div>
     </div>
 
+    {# Metadata/properties sidebar - modal on mobile, pinnable on desktop #}
     <aside class="metadata-panel" id="metadata-panel">
       <div class="panel-header">
         <div class="panel-header__info">
           <div class="panel-header__filename">{{ yak_name }}</div>
           <div class="panel-header__category">{{ category }}</div>
         </div>
+        {# Pin button (desktop only) - keeps panel open alongside editor #}
         <button
           class="panel-pin"
           type="button"
@@ -57,9 +71,11 @@
         </button>
       </div>
 
+      {# View mode toggle: Editor | Split | Preview #}
       <section class="metadata-section">
         <h3 class="metadata-section__title">View Mode</h3>
         <div class="view-toggle">
+          {# data-view values: "editor" | "side-by-side" | "preview" - see editor.js:setViewMode() #}
           <button class="button button--sm" id="editor-only-btn" data-view="editor">Editor</button>
           <button class="button button--sm" id="side-by-side-btn" data-view="side-by-side">Split</button>
           <button class="button button--sm" id="preview-only-btn" data-view="preview">Preview</button>
