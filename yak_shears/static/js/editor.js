@@ -127,9 +127,6 @@ function togglePanelPin() {
 	localStorage.setItem('panelPinned', panelPinned);
 }
 
-window.toggleMetadataPanel = toggleMetadataPanel;
-window.togglePanelPin = togglePanelPin;
-
 /**
  * Render Djot content as HTML preview with syntax highlighting
  * 
