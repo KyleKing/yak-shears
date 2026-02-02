@@ -2,6 +2,19 @@
 
 This file provides guidance to AI agents when working with code in this repository.
 
+## Code Organization for LLM Readability
+
+The codebase has been optimized for LLM editing, particularly the editor page:
+
+- **Comprehensive inline documentation**: All complex functions have JSDoc comments explaining purpose, behavior, and side effects
+- **Named constants**: Magic numbers extracted (e.g., `MOBILE_BREAKPOINT = 768` instead of hardcoded values)
+- **Section headers in CSS**: Major component groups clearly delineated with visual separators
+- **Cross-file references**: Comments link related code across HTML, JS, and CSS files
+- **Architecture documentation**: File headers explain state systems and initialization flows
+- **Critical rules highlighted**: Complex CSS properties (like `min-height: 0` for flex) are explained inline
+
+See `IMPROVEMENTS_FOR_LLM.md` for detailed rationale and examples.
+
 ## Development Commands
 
 ### General
