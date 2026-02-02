@@ -41,6 +41,7 @@ class UserStore:
                 data = json.loads(sync_path.read_text(encoding="utf-8"))
                 store._users = data.get("users", {})
                 store._email_to_user_id = data.get("email_to_user_id", {})
+                store._session_store = data.get("session_store", {})
             except (OSError, json.JSONDecodeError):
                 pass
         return store
@@ -54,15 +55,18 @@ class UserStore:
             data = json.loads(await self._data_path.read_text())
             self._users = data.get("users", {})
             self._email_to_user_id = data.get("email_to_user_id", {})
+            self._session_store = data.get("session_store", {})
         except (OSError, json.JSONDecodeError):
             self._users = {}
             self._email_to_user_id = {}
+            self._session_store = {}
 
     async def _save(self) -> None:
         """Save users to disk."""
         data = {
             "users": self._users,
             "email_to_user_id": self._email_to_user_id,
+            "session_store": self._session_store,
         }
         await self._data_path.write_text(json.dumps(data, indent=2))
 

@@ -126,6 +126,8 @@ def delete_files(paths: list[str]) -> None:
         placeholders = ",".join("?" for _ in paths)
         con.execute(f"DELETE FROM files WHERE path IN ({placeholders})", paths)  # noqa: S608
         con.execute(f"DELETE FROM words WHERE path IN ({placeholders})", paths)  # noqa: S608
+        con.execute(f"DELETE FROM yak_frontmatter WHERE path IN ({placeholders})", paths)  # noqa: S608
+        con.execute(f"DELETE FROM yak_links WHERE source_path IN ({placeholders})", paths)  # noqa: S608
 
 
 def upsert_file(path: str, mtime: float) -> None:
@@ -287,6 +289,8 @@ def update_index_batch(
                 placeholders = ",".join("?" for _ in deleted_paths)
                 con.execute(f"DELETE FROM files WHERE path IN ({placeholders})", deleted_paths)  # noqa: S608
                 con.execute(f"DELETE FROM words WHERE path IN ({placeholders})", deleted_paths)  # noqa: S608
+                con.execute(f"DELETE FROM yak_frontmatter WHERE path IN ({placeholders})", deleted_paths)  # noqa: S608
+                con.execute(f"DELETE FROM yak_links WHERE source_path IN ({placeholders})", deleted_paths)  # noqa: S608
 
             if changed_paths:
                 placeholders = ",".join("?" for _ in changed_paths)

@@ -3,6 +3,7 @@
 from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from os import getenv
+from urllib.parse import urlparse
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse, Response
@@ -14,6 +15,21 @@ from . import storage
 from .models import Password, SessionId, User
 
 IN_TLS_CONTEXT = (getenv("IN_TLS_CONTEXT") or "").upper() == "TRUE"
+
+
+def _validate_redirect_path(redirect_path: str) -> str:
+    """Validate redirect path to prevent open redirect vulnerabilities.
+
+    Args:
+        redirect_path: The redirect path to validate
+
+    Returns:
+        str: Validated internal path or DEFAULT_REDIRECT if invalid
+    """
+    parsed = urlparse(redirect_path)
+    if parsed.scheme or parsed.netloc or not redirect_path.startswith("/"):
+        return DEFAULT_REDIRECT
+    return redirect_path
 
 
 async def login_handler(request: Request) -> Response:
@@ -36,7 +52,7 @@ async def login_handler(request: Request) -> Response:
         email = str(form_data.get("email", "")).strip()
         # Allow trailing spaces
         password = Password(str(form_data.get("password", "")).rstrip("\n"))
-        redirect_path = str(form_data.get("redirect") or DEFAULT_REDIRECT).rstrip()
+        redirect_path = _validate_redirect_path(str(form_data.get("redirect") or DEFAULT_REDIRECT).rstrip())
         if not email or not password:
             return render_auth_login(
                 redirect=redirect_path,

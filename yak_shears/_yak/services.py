@@ -287,6 +287,8 @@ def _create_search_result(
 
 def highlight_content(content: str, query: str) -> str:
     """Highlight search query matches in content."""
+    import html
+
     if not query:
         return content
 
@@ -295,12 +297,31 @@ def highlight_content(content: str, query: str) -> str:
         return content
 
     def _highlight_line(line: str) -> str:
+        matches = []
         for word in words:
             pattern = re.compile(re.escape(word), re.IGNORECASE)
-            line = pattern.sub(
-                lambda m: f'<span class="search-highlight">{m.group(0)}</span>',
-                line,
-            )
-        return line
+            for match in pattern.finditer(line):
+                matches.append((match.start(), match.end(), match.group(0)))
+
+        if not matches:
+            return html.escape(line)
+
+        matches.sort()
+        merged = []
+        for start, end, text in matches:
+            if merged and start < merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(end, merged[-1][1]), line[merged[-1][0]:max(end, merged[-1][1])])
+            else:
+                merged.append((start, end, text))
+
+        result = []
+        last_end = 0
+        for start, end, text in merged:
+            result.append(html.escape(line[last_end:start]))
+            result.append(f'<span class="search-highlight">{html.escape(text)}</span>')
+            last_end = end
+        result.append(html.escape(line[last_end:]))
+
+        return "".join(result)
 
     return "\n".join(_highlight_line(line) for line in content.splitlines())

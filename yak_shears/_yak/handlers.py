@@ -87,7 +87,7 @@ async def yaks_handler(request: Request) -> Response:
         category=query_params.category,
     )
     yaks = await prepare_yak_info(result.paths, yak_dir)
-    yak_dir_label = "./" + yak_dir.relative_to(yak_dir.parents[1]).as_posix()
+    yak_dir_label = f"./{yak_dir.name}"
 
     return render_yaks(
         yaks=yaks,

@@ -44,7 +44,8 @@ def verify_password(password: Password, salt: str, hashed_password: HashedPasswo
     Returns:
         bool: True if the password is correct, False otherwise
     """
-    return hash_password(password, salt) == hashed_password
+    computed_hash = hash_password(password, salt)
+    return secrets.compare_digest(computed_hash, hashed_password)
 
 
 def create_password_hash(password: Password) -> tuple[str, HashedPassword]:

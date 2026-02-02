@@ -85,7 +85,8 @@ def start(
             reload_dirs=["yak_shears"],
         )
     else:
-        uvicorn.run(create_app(), host=host, port=port)
+        app = create_app_without_auth() if no_auth else create_app()
+        uvicorn.run(app, host=host, port=port)
 
 
 def cli() -> None:
