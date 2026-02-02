@@ -14,9 +14,32 @@ from anyio import Path
 
 from yak_shears._auth import handlers
 from yak_shears._auth.models import HashedPassword, Password, User
-from yak_shears._auth.storage import create_user
+from yak_shears._auth.storage import UserStore, _set_default_store, create_user
 
 MOCK_YAK_DIR = SyncPath(__file__).parent / "test_data/mock_djot_dir_0"
+
+
+@pytest.fixture(scope="session")
+def worker_id() -> str:
+    """Get the pytest-xdist worker ID for parallel test isolation.
+
+    Returns:
+        str: Worker ID (e.g., 'gw0', 'gw1') or 'main' for non-parallel runs
+    """
+    return os.environ.get("PYTEST_XDIST_WORKER", "main")
+
+
+@pytest.fixture(scope="session")
+def worker_num(worker_id: str) -> int:
+    """Get the numeric worker index for parallel test isolation.
+
+    Args:
+        worker_id: The worker ID from pytest-xdist
+
+    Returns:
+        int: Worker number (0 for main, 1+ for parallel workers)
+    """
+    return 0 if worker_id == "main" else int(worker_id.replace("gw", ""))
 
 
 @contextmanager
@@ -27,23 +50,30 @@ def set_yak_shears_dir(dir_path: SyncPath) -> Generator[None, None, None]:
 
 
 @pytest_asyncio.fixture
-async def temp_user_file() -> AsyncGenerator[Path, None]:
-    """Create a temporary user file for testing.
+async def temp_user_file(worker_id: str) -> AsyncGenerator[Path, None]:
+    """Create a temporary user store for testing.
+
+    Uses worker-specific file for parallel test isolation.
+
+    Args:
+        worker_id: The worker ID from pytest-xdist
 
     Yields:
         Path: The path to the temporary user file
     """
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as _f:
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        suffix=f"_{worker_id}.json",
+        delete=False,
+        encoding="utf-8",
+    ) as _f:
         temp_path = Path(_f.name)
-        _f.write('{"users": {}, "email_to_user_id": {}, "sessions": {}}')
+        _f.write('{"users": {}, "email_to_user_id": {}}')
 
-    with (
-        patch("yak_shears._auth.storage._USER_DATA_PATH", temp_path),
-        patch("yak_shears._auth.storage._USERS", {}),
-        patch("yak_shears._auth.storage._EMAIL_TO_USER_ID", {}),
-        patch("yak_shears._auth.storage._SESSION_STORE", {}),
-    ):
-        yield temp_path
+    test_store = UserStore(SyncPath(temp_path))
+    _set_default_store(test_store)
+
+    yield temp_path
 
     await temp_path.unlink(missing_ok=True)
 

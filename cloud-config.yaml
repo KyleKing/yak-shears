@@ -1,0 +1,231 @@
+#cloud-config
+# Hetzner Cloud VPS setup for Yak Shears
+# References:
+# - https://community.hetzner.com/tutorials/basic-cloud-config
+# - https://cloudinit.readthedocs.io/en/latest/reference/examples.html
+#
+# ⚠️  REQUIRED: Replace placeholders before deployment
+#
+# CHECKLIST:
+# [ ] <public_ssh_key> - Full SSH public key from ~/.ssh/id_ed25519.pub
+# [ ] yak-shears.kyleking.me - Your domain (in Caddyfile section)
+# [ ] dev.act.kyle+caddy@gmail.com - Your email for Let's Encrypt
+# [ ] Review passwordless sudo (see DEPLOYMENT.md Security Notes)
+
+# SECURITY NOTE: This configuration grants passwordless sudo for convenience.
+# For production, consider restricting to specific commands. See DEPLOYMENT.md.
+
+users:
+  - name: yakshears
+    groups: users, admin
+    sudo: ALL=(ALL) NOPASSWD:ALL  # ⚠️  See security note above
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - <public_ssh_key>  # ⚠️  REPLACE with your SSH public key
+
+packages:
+  - fail2ban
+  - ufw
+  - git
+  - curl
+  - gnupg2
+  - apt-transport-https
+  - debian-keyring
+  - debian-archive-keyring
+
+package_update: true
+package_upgrade: true
+
+write_files:
+  # SSH hardening configuration (drop-in file for sshd_config)
+  - path: /etc/ssh/sshd_config.d/99-ssh-hardening.conf
+    content: |
+      # SSH hardening for yak-shears deployment
+      PermitRootLogin no
+      PasswordAuthentication no
+      Port 2222
+      KbdInteractiveAuthentication no
+      ChallengeResponseAuthentication no
+      MaxAuthTries 2
+      AllowTcpForwarding no
+      X11Forwarding no
+      AllowAgentForwarding no
+      AuthorizedKeysFile .ssh/authorized_keys
+      AllowUsers yakshears
+
+  # Yak Shears systemd service
+  - path: /etc/systemd/system/yak-shears.service
+    content: |
+      [Unit]
+      Description=Yak Shears Server
+      After=network.target
+
+      [Service]
+      User=yakshears
+      WorkingDirectory=/home/yakshears/yak-shears
+      ExecStart=/home/yakshears/.local/bin/uv run --no-sync serve
+      Restart=always
+      RestartSec=10
+      Environment=YAK_SHEARS_DIR=/home/yakshears/Sync/yak-shears
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # GitOps update script
+  - path: /usr/local/bin/gitops-update.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      cd /home/yakshears/yak-shears || exit 1
+
+      # Fetch latest changes
+      git fetch origin main || exit 1
+
+      LOCAL=$(git rev-parse HEAD)
+      REMOTE=$(git rev-parse origin/main)
+
+      if [ "$LOCAL" != "$REMOTE" ]; then
+        echo "Updates detected. Pulling changes..."
+        git pull origin main || exit 1
+
+        echo "Installing dependencies..."
+        /home/yakshears/.local/bin/mise install || exit 1
+        /home/yakshears/.local/bin/uv sync || exit 1
+
+        echo "Restarting service..."
+        systemctl restart yak-shears || exit 1
+
+        echo "Update completed successfully"
+      else
+        echo "No updates available"
+      fi
+
+  # GitOps systemd service
+  - path: /etc/systemd/system/gitops-update.service
+    content: |
+      [Unit]
+      Description=Check for git updates and restart if needed
+
+      [Service]
+      Type=oneshot
+      User=yakshears
+      ExecStart=/usr/local/bin/gitops-update.sh
+      StandardOutput=journal
+      StandardError=journal
+
+  # GitOps systemd timer (runs every 5 minutes)
+  - path: /etc/systemd/system/gitops-update.timer
+    content: |
+      [Unit]
+      Description=Run GitOps update every 5 minutes
+
+      [Timer]
+      OnBootSec=5min
+      OnUnitActiveSec=5min
+      Persistent=true
+
+      [Install]
+      WantedBy=timers.target
+
+  # Caddy reverse proxy configuration
+  - path: /etc/caddy/Caddyfile
+    content: |
+      {
+          email dev.act.kyle+caddy@gmail.com  # REPLACE with your email for Let's Encrypt
+      }
+
+      yak-shears.kyleking.me {  # REPLACE with your domain
+          reverse_proxy localhost:8084 {
+              header_up Host {host}
+              header_up X-Real-IP {remote_host}
+              header_up X-Forwarded-For {remote_host}
+              header_up X-Forwarded-Proto {scheme}
+          }
+
+          # Security headers
+          header {
+              Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+              X-Content-Type-Options "nosniff"
+              X-Frame-Options "DENY"
+              Referrer-Policy "same-origin"
+              X-XSS-Protection "1; mode=block"
+              Permissions-Policy "geolocation=(), microphone=(), camera=()"
+          }
+
+          # Logging
+          log {
+              output file /var/log/caddy/yak-shears.log
+          }
+      }
+
+runcmd:
+  # Configure fail2ban for SSH protection
+  - printf "[sshd]\nenabled = true\nport = ssh, 2222\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local || exit 1
+  - systemctl enable fail2ban || exit 1
+  - systemctl start fail2ban || exit 1
+
+  # Configure UFW firewall
+  - ufw allow 2222/tcp || exit 1    # SSH
+  - ufw allow http/tcp || exit 1    # HTTP (for ACME challenge)
+  - ufw allow https/tcp || exit 1   # HTTPS
+  - ufw allow 22000/tcp || exit 1   # Syncthing data
+  - ufw allow 22000/udp || exit 1   # Syncthing data
+  - ufw allow 21027/udp || exit 1   # Syncthing discovery
+  - ufw --force enable || exit 1
+
+  # Update package lists
+  - apt update || exit 1
+
+  # Install uv (Python package manager)
+  - sudo -u yakshears sh -c 'curl -LsSf https://astral.sh/uv/install.sh | sh' || exit 1
+
+  # Install mise (tool version manager)
+  - sudo -u yakshears sh -c 'curl -fsSL https://mise.jdx.dev/install.sh | sh' || exit 1
+
+  # Install Syncthing
+  - mkdir -p /etc/apt/keyrings || exit 1
+  - curl -L -o /etc/apt/keyrings/syncthing-archive-keyring.gpg https://syncthing.net/release-key.gpg || exit 1
+  - echo "deb [signed-by=/etc/apt/keyrings/syncthing-archive-keyring.gpg] https://apt.syncthing.net/ syncthing stable" | tee /etc/apt/sources.list.d/syncthing.list || exit 1
+  - apt update || exit 1
+  - apt install -y syncthing || exit 1
+
+  # Install Caddy
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg || exit 1
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list || exit 1
+  - apt update || exit 1
+  - apt install -y caddy || exit 1
+
+  # Setup Yak Shears directories
+  - mkdir -p /home/yakshears/Sync/yak-shears || exit 1
+  - chown -R yakshears:yakshears /home/yakshears/Sync || exit 1
+
+  # Clone repository and install dependencies
+  # NOTE: For private repos, add SSH deploy key to GitHub and update URL to git@github.com:...
+  - sudo -u yakshears git clone https://github.com/KyleKing/yak-shears.git /home/yakshears/yak-shears || exit 1
+  - sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/mise install' || exit 1
+  - sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/uv sync' || exit 1
+
+  # Enable and start Syncthing
+  - systemctl enable syncthing@yakshears.service || exit 1
+  - systemctl start syncthing@yakshears.service || exit 1
+
+  # Enable and start Caddy
+  - systemctl enable caddy || exit 1
+  - systemctl start caddy || exit 1
+
+  # Enable and start Yak Shears
+  - systemctl enable yak-shears || exit 1
+  - systemctl start yak-shears || exit 1
+
+  # Setup GitOps timer
+  - systemctl daemon-reload || exit 1
+  - systemctl enable gitops-update.timer || exit 1
+  - systemctl start gitops-update.timer || exit 1
+
+  # Restart SSH to apply hardened config
+  - systemctl restart sshd || exit 1
+
+  # Reboot to ensure clean state
+  - sleep 10 && reboot

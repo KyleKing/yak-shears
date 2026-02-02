@@ -103,6 +103,23 @@ def test_login_get_shows_form(auth_client, snapshot: SnapshotAssertion):
     assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
 
 
+def test_login_get_when_already_logged_in(auth_client, sample_user):
+    """Test that GET /auth/login redirects if already logged in."""
+    post_login(auth_client)
+
+    response = auth_client.get("/auth/login")
+
+    # Should redirect to default page instead of showing login form
+    assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
+    assert response.headers["location"] == DEFAULT_REDIRECT
+
+
+def test_login_unsupported_method(auth_client):
+    """Test that unsupported HTTP methods return 405 Method Not Allowed."""
+    response = auth_client.request("PATCH", "/auth/login")
+    assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
+
+
 def test_login_handles_newlines_in_input(auth_client, sample_user):
     """Test that login handles newlines in email/password input."""
     response = auth_client.post(
@@ -224,3 +241,11 @@ def test_middleware_allows_authenticated_users(sample_user):
     response = client.get("/protected")
     assert response.status_code == HTTPStatus.OK
     assert b"Protected content" in response.content
+
+
+def test_middleware_validates_public_paths_format(temp_user_file):
+    """Test that middleware raises ValueError when public paths don't start with '^'."""
+    app = Starlette(routes=AUTH_ROUTES)
+
+    with pytest.raises(ValueError, match=r"Public paths must be regular expressions and start with '\^'"):
+        AuthMiddleware(app=app, public_paths={"/auth/login", "^/auth/status"})

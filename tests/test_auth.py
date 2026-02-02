@@ -1,8 +1,11 @@
+
+
 import pytest
 
 from yak_shears._auth.models import Password
 from yak_shears._auth.password import generate_salt, hash_password, verify_password
 from yak_shears._auth.storage import (
+    UserStore,
     authenticate_user,
     create_session,
     create_user,
@@ -87,19 +90,24 @@ def test_get_user_by_email(email, expected, temp_user_file, sample_user):
         assert user is None
 
 
-def test_get_user_by_id(sample_user):
-    """Test retrieving user by ID."""
-    user = get_user_by_id(sample_user["id"])
+@pytest.mark.parametrize(
+    ("user_id_fn", "expected_found"),
+    [
+        (lambda sample_user: sample_user["id"], True),
+        (lambda _: "nonexistent-id", False),
+    ],
+    ids=["existing_user", "nonexistent_user"],
+)
+def test_get_user_by_id(sample_user, user_id_fn, expected_found):
+    """Test retrieving user by ID (existing and non-existent)."""
+    user = get_user_by_id(user_id_fn(sample_user))
 
-    assert user is not None
-    assert user["email"] == SAMPLE_USER_EMAIL
-    assert user["id"] == sample_user["id"]
-
-
-def test_get_user_by_id_nonexistent(sample_user):
-    """Test retrieving non-existent user by ID."""
-    user = get_user_by_id("nonexistent-id")
-    assert user is None
+    if expected_found:
+        assert user is not None
+        assert user["email"] == SAMPLE_USER_EMAIL
+        assert user["id"] == sample_user["id"]
+    else:
+        assert user is None
 
 
 @pytest.mark.asyncio
@@ -223,3 +231,111 @@ def test_get_user_id_from_nonexistent_session(temp_user_file):
 async def test_field_validation(temp_user_file, email, display_name, password):
     with pytest.raises(ValueError, match=r".+ cannot be empty or whitespace-only"):
         await create_user(email, display_name, password)
+
+
+class TestUserStore:
+    """Tests for the UserStore class directly."""
+
+    @pytest.fixture
+    def store(self, tmp_path) -> UserStore:
+        return UserStore(tmp_path / "users.json")
+
+    @pytest.mark.asyncio
+    async def test_create_and_get_user(self, store):
+        user = await store.create_user("test@test.com", "Test", Password("pass123"))
+        assert store.get_user_by_email("test@test.com") == user
+        assert store.get_user_by_id(user["id"]) == user
+
+    @pytest.mark.asyncio
+    async def test_persistence(self, tmp_path):
+        path = tmp_path / "users.json"
+        store1 = UserStore(path)
+        await store1.create_user("test@test.com", "Test", Password("pass123"))
+
+        store2 = UserStore.load_sync(path)
+        assert store2.get_user_by_email("test@test.com") is not None
+
+    def test_session_management(self, store):
+        session_id = store.create_session("user123")
+        assert store.get_user_id_from_session(session_id) == "user123"
+
+        store.delete_session(session_id)
+        assert store.get_user_id_from_session(session_id) is None
+
+    def test_clear(self, store):
+        store.create_session("user123")
+        store.clear()
+        assert store.list_all_users() == []
+        assert store.get_user_id_from_session("any") is None
+
+    def test_load_sync_corrupted_json(self, tmp_path):
+        """Test that load_sync handles corrupted JSON gracefully."""
+        path = tmp_path / "corrupted.json"
+        path.write_text("{invalid json content")
+
+        store = UserStore.load_sync(path)
+        # Should create empty store instead of crashing
+        assert store.list_all_users() == []
+
+    def test_load_sync_missing_file(self, tmp_path):
+        """Test that load_sync handles missing file gracefully."""
+        path = tmp_path / "nonexistent.json"
+
+        store = UserStore.load_sync(path)
+        # Should create empty store
+        assert store.list_all_users() == []
+
+    @pytest.mark.asyncio
+    async def test_load_corrupted_json(self, tmp_path):
+        """Test that async load handles corrupted JSON gracefully."""
+        path = tmp_path / "corrupted.json"
+        path.write_text("{invalid json")
+
+        store = UserStore(path)
+        await store.load()
+        # Should have empty store after failed load
+        assert store.list_all_users() == []
+
+    @pytest.mark.asyncio
+    async def test_delete_user_with_active_sessions(self, tmp_path):
+        """Test that deleting a user also deletes their active sessions."""
+        path = tmp_path / "users.json"
+        store = UserStore(path)
+
+        # Create user and session
+        user = await store.create_user("test@example.com", "Test", Password("pass123"))
+        user_id = user["id"]
+        session_id = store.create_session(user_id)
+
+        # Verify session exists
+        assert store.get_user_id_from_session(session_id) == user_id
+
+        # Delete user
+        result = await store.delete_user("test@example.com")
+        assert result is True
+
+        # Verify session is also deleted
+        assert store.get_user_id_from_session(session_id) is None
+
+    @pytest.mark.asyncio
+    async def test_load_nonexistent_file(self, tmp_path):
+        """Test that async load handles nonexistent file gracefully."""
+        path = tmp_path / "nonexistent.json"
+        store = UserStore(path)
+        await store.load()
+        assert store.list_all_users() == []
+
+    @pytest.mark.asyncio
+    async def test_load_handles_read_error(self, tmp_path):
+        """Test that async load handles file read errors gracefully."""
+        from unittest.mock import AsyncMock, patch
+
+        path = tmp_path / "unreadable.json"
+        path.write_text('{"users": {}}')
+
+        store = UserStore(path)
+
+        with patch("anyio.Path.read_text", new_callable=AsyncMock, side_effect=OSError("Read error")):
+            await store.load()
+
+        assert store.list_all_users() == []

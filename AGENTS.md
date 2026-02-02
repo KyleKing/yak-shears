@@ -52,18 +52,27 @@ This file provides guidance to AI agents when working with code in this reposito
 
 ```
 yak_shears/
-├── auth/           # Authentication system (password-based, JSON file storage)
-├── yak/            # yak management
-├── static/         # Static CSS and JS files
-├── templates/      # Jinja2 HTML templates
-└── cli.py          # CLI Tool for User management
+├── _auth/              # Authentication system
+│   ├── storage.py      # UserStore class for user/session management
+│   ├── handlers.py     # Auth HTTP handlers (login, logout)
+│   └── middleware.py   # Session middleware
+├── _yak/               # Yak management
+│   ├── database.py     # DuckDB operations for search index
+│   ├── services.py     # Business logic (CRUD, search, pagination)
+│   ├── request_utils.py# Request utilities (path extraction, HTMX detection)
+│   ├── handlers.py     # HTTP request handlers
+│   └── routes.py       # Route definitions
+├── _templates/         # Jinja2 HTML templates
+├── static/             # Static CSS and JS files
+└── cli.py              # CLI Tool for User management
 ```
 
 ### Authentication System
 
-- Password-based authentication stored in-memory by the server
-    - Session middleware enforces user authentication
-- User persistence in a JSON file (`.yak-shears-users.json`) written to by the CLI and read by the server
+- UserStore class manages users and sessions with JSON file persistence
+- Password-based authentication with PBKDF2 hashing
+- Session middleware enforces user authentication
+- User persistence in a JSON file (`.yak-shears-users.json`)
 
 ### Yak Management
 
@@ -122,9 +131,11 @@ Now implemented with CodeJar
 
 Implemented as a full page at /search with fuzzy search using persistent and lazily updated DuckDB database.
 
+- Database layer in `_yak/database.py` centralizes all DuckDB operations
 - Uses DuckDB levenshtein distance for fuzzy matching
 - Persistent database (`yak_shears_search.db`) stores indexed words from all yak files and updated lazily on search
     - Lazy updates: only re-indexes when files change and not more than once per minute
+- Also stores frontmatter metadata and yak links for backlink queries
 - UI is inspired by Telescope for nvim
     - There is a text input, which is full width
     - There is sidebar which is 40% of the browser width. The other 60% is a Yak preview window, which shows a preview of the currently selected Yak
@@ -157,9 +168,8 @@ Implemented as a full page at /search with fuzzy search using persistent and laz
 - There is a feature to see similar yaks (*TBD*)
 - There is a feature to support configuring yak metadata during edit and to view when viewing (*TBD*)
 
-## Future Features
+## Related Documentation
 
-- Best tiny model for plain text RAG (https://www.baseten.com/blog/the-best-open-source-embedding-models/#the-best-reward-model-allanai-llama-31-tulu-3-8b-reward) or run something slightly better on my laptop? For the latter, would track new and modified yaks removed from RAG until I can next ingest them from my laptop.
-- Revisit tests to ensure that private features aren't being tested
-    - Consider revisiting automatic coverage overlap. See last item, which was too specific at line level when function level would be more useful: https://github.com/KyleKing/yak-shears/commit/ddc8b0c535b79317a13ef5accf32f0aa5018f49b
-- Consider adding mutation testing, such as with https://github.com/boxed/mutmut or the more complicated https://github.com/sixty-north/cosmic-ray
+- **[STATUS.md](STATUS.md)** - Current implementation status
+- **[ROADMAP.md](ROADMAP.md)** - Vision and planned features
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide

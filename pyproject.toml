@@ -5,14 +5,17 @@ requires = ["hatchling"]
 [dependency-groups]
 dev = [
   "beautifulsoup4>=4.13.4",
+  "freezegun>=1.5.5",
   "httpx>=0.28.1",
   "mypy>=1.15.0",
   "pytest-cov>=6.2.1",
   "pytest-playwright-asyncio>=0.7.1",
+  "pytest-randomly>=4.0.1",
   "pytest-timeout>=2.4.0",
   "pytest-watcher>=0.4.3",
   "ruff>=0.11.10",
   "syrupy>=4.9.1",
+  "types-pyyaml>=6.0.12.20250915",
 ]
 
 [project]
@@ -24,10 +27,11 @@ classifiers = [
 ] # https://pypi.org/classifiers/
 dependencies = [
   "anyio>=4.11.0",
-  "beartype >=0.21.0",
-  "duckdb==1.4.1.dev135",
+  "beartype>=0.22.2",
+  "duckdb==1.4.2",
   "jinja2>=3.1.4",
   "python-multipart>=0.0.20",
+  "pyyaml>=6.0.2",
   "starlette>=0.47.0",
   "uvicorn>=0.34.2",
 ]
@@ -42,6 +46,29 @@ version = "0.0.0"
 [project.scripts] # Docs: https://setuptools.pypa.io/en/latest/userguide/entry_point.html#console-scripts
 serve = "yak_shears.server:cli"
 yak-shears-users = "yak_shears.cli:main_sync"
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "class .*\\bProtocol\\):",
+  "@(abc\\.)?abstractmethod",
+]
+precision = 2
+show_missing = true
+skip_covered = false
+
+[tool.coverage.run]
+branch = true
+omit = ["*/tests/*", "*/__pycache__/*", "*/.venv/*"]
+source = ["yak_shears"]
 
 [tool.mypy]
 check_untyped_defs = true
@@ -68,10 +95,11 @@ pythonVersion = "3.12"
 
 [tool.pytest.ini_options]
 # FYI: browser is required for non-E2E test as well
-addopts = "tests --strict-markers --durations=5 --browser=chromium --timeout=25"
+addopts = "tests --strict-markers --durations=5 --browser=chromium --timeout=10"
 asyncio_default_test_loop_scope = "session"
 markers = [
   "playwright: e2e browser tests",
+  "allow_console_errors: allow console errors in browser tests (e.g., expected 400 responses)",
 ]
 
 [tool.pytest-watcher]
@@ -116,12 +144,17 @@ preview = true
 select = ['ALL']
 unfixable = [
   'ERA001', # Commented out code
+  'T201', # print
 ]
 
 [tool.ruff.lint.isort]
 known-first-party = ['yak_shears']
 
 [tool.ruff.lint.per-file-ignores]
+'spikes/*.py' = [
+  'S101', # Use of `assert` detected
+  'T201', # print
+]
 'tests/*.py' = [
   'ANN001', # Missing type annotation for function argument
   'ANN201', # Missing return type annotation for public function
@@ -172,5 +205,5 @@ torch = [
 
 [tool.uv.workspace]
 members = [
-    "agent-research-platform",
+  "agent-research-platform",
 ]

@@ -12,7 +12,7 @@
 {% block content %}
   <div class="search-modal">
     <div class="search-input-container">
-      <form action="/search" method="get" class="search-form" hx-get="/search" hx-target="#search-results-container" hx-trigger="input changed delay:300ms, submit" hx-push-url="true">
+      <form action="/search" method="get" class="search-form" hx-get="/search" hx-target="#search-results-container" hx-trigger="input changed delay:300ms, submit" hx-push-url="true" role="search" aria-label="Search yaks">
         <input
           type="text"
           name="query"
@@ -20,17 +20,18 @@
           placeholder="Search yaks..."
           class="search-input"
           autofocus
+          aria-label="Search query"
         >
       </form>
     </div>
 
     <div class="search-content" id="search-results-container" hx-on:htmx:afterSwap="window.setupResults()">
       {% if query %}
-        <div class="search-results-sidebar">
-          <div class="search-results-count">Found {{ results | length }} matches for "{{ query }}"</div>
-          <div class="search-results-list" id="search-results-list">
+        <div class="search-results-sidebar" role="region" aria-label="Search results">
+          <div class="search-results-count" role="status" aria-live="polite">Found {{ results | length }} matches for "{{ query }}"</div>
+          <div class="search-results-list" id="search-results-list" role="list">
             {% for result in results %}
-              <div class="search-result" data-path="{{ result.path }}">
+              <div class="search-result" data-path="{{ result.path }}" role="listitem" tabindex="0">
                 <div class="search-result__first-line">{{ result.first_line }}</div>
                 <div class="search-result__path">{{ result.path }}</div>
               </div>
@@ -38,7 +39,7 @@
           </div>
         </div>
 
-        <div class="search-preview" id="search-preview">
+        <div class="search-preview" id="search-preview" role="region" aria-label="Preview">
           {% if results %}
             <div class="search-preview-content" id="search-preview-content">
               <!-- Preview will be loaded here -->
@@ -46,10 +47,10 @@
           {% endif %}
         </div>
 
-        <div class="search-preview-modal" id="search-preview-modal" style="display: none;">
+        <div class="search-preview-modal" id="search-preview-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-title">
           <div class="search-preview-modal__overlay"></div>
           <div class="search-preview-modal__content">
-            <button class="search-preview-modal__close" id="search-preview-modal-close">&times;</button>
+            <button class="search-preview-modal__close" id="search-preview-modal-close" aria-label="Close preview">&times;</button>
             <div class="search-preview-content" id="search-preview-modal-content">
               <!-- Modal preview will be loaded here -->
             </div>
@@ -57,7 +58,15 @@
         </div>
       {% else %}
         <div class="search-empty">
-          <p>Start typing to search your yaks...</p>
+          <div class="empty-state">
+            <div class="empty-state__icon">🔍</div>
+            <h2 class="empty-state__title">Search your yaks</h2>
+            <p class="empty-state__message">Start typing above to find notes by content, titles, or keywords</p>
+            <div class="empty-state__hints">
+              <p class="empty-state__hint"><strong>Tip:</strong> Use arrow keys to navigate results</p>
+              <p class="empty-state__hint"><strong>Tip:</strong> Press Enter to open the selected yak</p>
+            </div>
+          </div>
         </div>
       {% endif %}
     </div>

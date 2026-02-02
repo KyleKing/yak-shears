@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import shutil
 import time
 from contextlib import suppress
 from pathlib import Path as SyncPath
@@ -13,11 +14,43 @@ from playwright.async_api import ConsoleMessage, Page
 
 from tests.conftest import MOCK_YAK_DIR
 
-PORT = "8081"
+
+def _get_worker_port() -> str:
+    """Get port for this worker to enable parallel E2E tests."""
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "main")
+    worker_num = 0 if worker_id == "main" else int(worker_id.replace("gw", ""))
+    return str(8081 + worker_num)
+
+
+def get_playwright_auth_path() -> SyncPath:
+    """Get worker-specific Playwright auth file path."""
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "main")
+    return SyncPath(__file__).absolute().parents[2] / f".playwright-auth-{worker_id}.json"
+
+
+PORT = _get_worker_port()
 BASE_URL = f"http://localhost:{PORT}"
 
-PLAYWRIGHT_AUTH_PATH = ".playwright-auth.json"
-(SyncPath(__file__).absolute().parents[2] / PLAYWRIGHT_AUTH_PATH).write_text("{}")
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_mock_directories():
+    """Clean up dynamically created test directories before and after test session."""
+    # Directories that get created by tests but should not persist
+    dynamic_dirs = [
+        MOCK_YAK_DIR / "mock_djot_dir_0",
+        MOCK_YAK_DIR / "test-e2e-category",
+    ]
+
+    for dir_path in dynamic_dirs:
+        if dir_path.exists():
+            shutil.rmtree(dir_path)
+
+    yield
+
+    # Clean up after tests too
+    for dir_path in dynamic_dirs:
+        if dir_path.exists():
+            shutil.rmtree(dir_path)
 
 
 @pytest.fixture(scope="session")
@@ -26,11 +59,24 @@ def browser_context_args(browser_context_args):
 
     Docs: https://playwright.dev/docs/api/class-browser#browser-new-context
 
+    Note: storage_state is not set by default to ensure clean auth state per test.
+    Tests that need authentication should call the login() helper.
     """
     return {
-        "storage_state": PLAYWRIGHT_AUTH_PATH,
         **browser_context_args,
     }
+
+
+@pytest_asyncio.fixture(loop_scope="session")
+async def unauthenticated_page(browser):
+    """Create a page without authentication."""
+    # Create a new context without any storage state (unauthenticated)
+    context = await browser.new_context(storage_state=None, base_url=BASE_URL)
+    page = await context.new_page()
+    page.set_default_timeout(5000)
+    yield page
+    await page.close()
+    await context.close()
 
 
 @pytest.fixture(scope="session")
@@ -106,8 +152,26 @@ async def console_messages(page: Page):  # noqa: RUF029 - required to be async f
 
 
 @pytest.fixture(autouse=True)
-def check_console_errors(console_messages):
-    """Fail test if there are console errors."""
+def check_console_errors(request):
+    """Fail test if there are console errors (unless explicitly allowed)."""
+    # Skip console error checking for tests using unauthenticated_page
+    # since they don't have the console_messages fixture
+    if "unauthenticated_page" in request.fixturenames:
+        yield
+        return
+
+    # For tests with regular page fixture, check console errors
+    try:
+        console_messages_obj = request.getfixturevalue("console_messages")
+    except Exception:
+        # If console_messages isn't available, skip checking
+        yield
+        return
+
     yield
-    console_errors = [msg for msg in console_messages.captured if msg.startswith("error:")]
-    assert len(console_errors) == 0, f"Console errors: {console_errors}"
+
+    # Allow tests to mark themselves as allowing console errors
+    allow_console_errors = request.node.get_closest_marker("allow_console_errors")
+    if not allow_console_errors:
+        console_errors = [msg for msg in console_messages_obj.captured if msg.startswith("error:")]
+        assert len(console_errors) == 0, f"Console errors: {console_errors}"

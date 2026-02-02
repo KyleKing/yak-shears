@@ -30,7 +30,7 @@ class _RuntimeTypeCheckingModes(Enum):
         try:
             return cls(rtc_mode)
         except ValueError:
-            modes = [_e.value for _e in cls]
+            modes = [e.value for e in cls]
             msg = f"'RUNTIME_TYPE_CHECKING_MODE={rtc_mode}' is not from {modes}"
             raise ValueError(msg) from None
 

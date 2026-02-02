@@ -1,45 +1,128 @@
 {% extends "base.html.jinja" %}
 
 {% block extra_head %}
-  <link rel="stylesheet" href="/static/css/prism.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
   <script src="https://unpkg.com/@djot/djot@0.3.2/dist/djot.js"></script>
   <script src="/static/js/codejar.min.js"></script>
   <script src="/static/js/highlight.js"></script>
-  <script src="/static/js/prism.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 {% endblock %}
 
 {% block title %}Editing {{ yak_name }}{% endblock %}
 
-{% block header_center %}
-  <span>Editing: {{ yak_name }} ({{ category }})</span>
-{% endblock %}
+{% block header_center %}{% endblock %}
 
 {% block content %}
-  <div class="editor__header">
-    <div class="view-toggle">
-      <button class="button button--sm" id="editor-only-btn" data-view="editor">Editor</button>
-      <button class="button button--sm" id="side-by-side-btn" data-view="side-by-side">Side-by-Side</button>
-      <button class="button button--sm" id="preview-only-btn" data-view="preview">Preview</button>
-    </div>
-  </div>
+  <div class="metadata-backdrop" id="metadata-backdrop"></div>
 
-  <div class="editor-container" id="editor-container">
-    <form id="editor_form" method="post">
-      <input type="hidden" name="yak" value="{{ yak_path }}">
-      <div class="editor" data-manual data-gramm="false"></div>
-    </form>
+  <div class="editor-layout">
+    <div class="editor-main">
+      <div class="editor-container" id="editor-container">
+        <form id="editor-form" method="post">
+          <input type="hidden" name="yak" value="{{ yak_path }}">
+          <div class="editor" data-manual data-gramm="false"></div>
+        </form>
 
-    <div class="preview" id="preview">
-      <div class="preview-content" id="preview-content"></div>
-    </div>
-  </div>
+        <div class="preview" id="preview">
+          <div class="preview-content" id="preview-content"></div>
+        </div>
+      </div>
 
-  <div class="editor__actions">
-    <div class="container">
-      <button class="button button--primary" id="save-btn" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent(), yak: '{{ yak_path }}'}">Save Changes</button>
-      <button class="button button--danger" hx-post="/delete" hx-vals="js:{yak: '{{ yak_path }}'}" hx-confirm="Are you sure you want to delete this yak? This action cannot be undone.">Delete Yak</button>
-      <span id="save-status" class="editor__status"></span>
+      <div class="editor__actions">
+        <div class="container">
+          <button class="button button--primary" id="save-btn" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent(), yak: '{{ yak_path }}'}">Save</button>
+          <button class="button button--secondary" id="menu-btn" type="button" aria-label="Toggle menu" aria-expanded="false" aria-controls="metadata-panel" title="Toggle menu (⌘M)">Menu</button>
+          <span id="save-status" class="editor__status"></span>
+        </div>
+      </div>
     </div>
+
+    <aside class="metadata-panel" id="metadata-panel">
+      <div class="panel-header">
+        <div class="panel-header__info">
+          <div class="panel-header__filename">{{ yak_name }}</div>
+          <div class="panel-header__category">{{ category }}</div>
+        </div>
+        <button
+          class="panel-pin"
+          type="button"
+          id="panel-pin-btn"
+          aria-label="Pin panel"
+          aria-pressed="false"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M9.5 1L10.5 2L9 5.5L12 8.5L11 14L8 11L5 14L4 8.5L7 5.5L5.5 2L6.5 1L8 3L9.5 1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <section class="metadata-section">
+        <h3 class="metadata-section__title">View Mode</h3>
+        <div class="view-toggle">
+          <button class="button button--sm" id="editor-only-btn" data-view="editor">Editor</button>
+          <button class="button button--sm" id="side-by-side-btn" data-view="side-by-side">Split</button>
+          <button class="button button--sm" id="preview-only-btn" data-view="preview">Preview</button>
+        </div>
+      </section>
+
+      {% if frontmatter %}
+        <section class="metadata-section">
+          <h3 class="metadata-section__title">Properties</h3>
+          <div class="metadata-properties">
+            {% for key, value in frontmatter.items() %}
+              <div class="metadata-property">
+                <span class="metadata-property__key">{{ key }}:</span>
+                <span class="metadata-property__value">
+                  {% if value is iterable and value is not string %}
+                    {{ value | join(', ') }}
+                  {% else %}
+                    {{ value }}
+                  {% endif %}
+                </span>
+              </div>
+            {% endfor %}
+          </div>
+        </section>
+      {% endif %}
+
+      <section class="metadata-section">
+        <h3 class="metadata-section__title">Backlinks</h3>
+        {% if backlinks %}
+          <ul class="backlinks-list">
+            {% for source_path, link_type in backlinks %}
+              <li class="backlink-item">
+                <a href="/edit?yak={{ source_path }}" class="backlink-link">
+                  {{ source_path }}
+                </a>
+                <span class="backlink-type">{{ link_type }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="metadata-empty">No backlinks</p>
+        {% endif %}
+      </section>
+
+      <section class="metadata-section">
+        <h3 class="metadata-section__title">Statistics</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-item__label">Backlinks</div>
+            <div class="stat-item__value">{{ backlinks | length }}</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-item__label">Category</div>
+            <div class="stat-item__value">{{ category }}</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="metadata-section metadata-section--danger">
+        <h3 class="metadata-section__title">Danger Zone</h3>
+        <button class="button button--danger button--full" hx-post="/delete" hx-vals="js:{yak: '{{ yak_path }}'}" hx-confirm="Are you sure you want to delete this yak? This action cannot be undone.">Delete Yak</button>
+      </section>
+    </aside>
   </div>
 {% endblock %}
 

@@ -1,0 +1,15 @@
+engine marzano(0.1)
+language python
+
+// PERF401: Convert for-loop with append to list comprehension
+//
+// Replaces the pattern:
+//   var = []
+//   for item in iterable:
+//       var.append(expr)
+// With:
+//   var = [expr for item in iterable]
+
+`$var = []
+for $item in $iterable:
+    $var.append($expr)` => `$var = [$expr for $item in $iterable]`

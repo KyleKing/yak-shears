@@ -186,6 +186,6 @@ yak_shears/static/**/*.min.*
 yak_shears_search.db
 
 ## Playwright
-.playwright-auth.json
+.playwright/auth*.json
 test-results/*
-tests/test_data/mock_djot_dir_0/*-untracked.dj
+tests/test_data/mock_djot_dir_0/*
