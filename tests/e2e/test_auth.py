@@ -30,35 +30,27 @@ async def test_login_success(context: BrowserContext, page: Page, server_lifecyc
 @pytest.mark.playwright
 @pytest.mark.asyncio
 @pytest.mark.allow_console_errors
-async def test_login_failure_wrong_password(context: BrowserContext, page: Page, server_lifecycle):
-    """Test login failure with wrong password."""
+@pytest.mark.parametrize(
+    ("email", "password"),
+    [
+        ("test@example.com", "wrongpassword"),
+        ("nonexistent@example.com", "anypassword"),
+    ],
+    ids=["wrong_password", "nonexistent_user"],
+)
+async def test_login_failure(
+    context: BrowserContext,
+    page: Page,
+    server_lifecycle,
+    email,
+    password,
+):
+    """Test login failure (wrong password and nonexistent user)."""
     await page.goto("/auth/login")
 
-    # Fill in credentials with wrong password
-    await page.fill("input[name='email']", "test@example.com")
-    await page.fill("input[name='password']", "wrongpassword")
+    await page.fill("input[name='email']", email)
+    await page.fill("input[name='password']", password)
 
-    # Submit login form
-    await page.click("button[type='submit']")
-
-    # Should stay on login page and show error
-    await expect(page).to_have_url("/auth/login")
-    error_message = page.locator(".alert, .error, [role='alert']")
-    await expect(error_message).to_be_visible()
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
-@pytest.mark.allow_console_errors
-async def test_login_failure_nonexistent_user(context: BrowserContext, page: Page, server_lifecycle):
-    """Test login failure with nonexistent user."""
-    await page.goto("/auth/login")
-
-    # Fill in credentials for nonexistent user
-    await page.fill("input[name='email']", "nonexistent@example.com")
-    await page.fill("input[name='password']", "anypassword")
-
-    # Submit login form
     await page.click("button[type='submit']")
 
     # Should stay on login page and show error

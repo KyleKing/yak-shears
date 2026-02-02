@@ -84,6 +84,51 @@ async def test_create_user_errors(temp_user_file, password, confirm_pass, expect
 
 
 @pytest.mark.asyncio
+async def test_create_user_with_password_flag(temp_user_file):
+    """Test creating user with --password flag."""
+    test_args = ["yak-shears-users", "create", "test@example.com", "--password", "secure123"]
+
+    with patch("sys.argv", test_args), patch(LOG_IMPORT) as mock_log:
+        await main()
+
+    assert_logged_messages(mock_log, ["Successfully created user: test@example.com"])
+
+
+@pytest.mark.asyncio
+async def test_create_user_empty_password_via_flag(temp_user_file):
+    """Test that --password flag with empty string is rejected."""
+    test_args = ["yak-shears-users", "create", "test@example.com", "--password", ""]
+
+    with (
+        patch("sys.argv", test_args),
+        patch("getpass.getpass", return_value=""),  # Mock to prevent stdin reading
+        patch(LOG_IMPORT) as mock_log,
+        pytest.raises(SystemExit) as excinfo,
+    ):
+        await main()
+
+    assert excinfo.value.code == 1
+    assert_logged_messages(mock_log, ["Password cannot be empty"])
+
+
+@pytest.mark.asyncio
+async def test_create_user_value_error_handling(temp_user_file):
+    """Test that ValueError from create_user is handled gracefully."""
+    test_args = ["yak-shears-users", "create", "test@example.com", "--password", "secure123"]
+
+    with (
+        patch("sys.argv", test_args),
+        patch("yak_shears.cli.create_user", side_effect=ValueError("Custom validation error")),
+        patch(LOG_IMPORT) as mock_log,
+        pytest.raises(SystemExit) as excinfo,
+    ):
+        await main()
+
+    assert excinfo.value.code == 1
+    assert_logged_messages(mock_log, ["Error: Custom validation error"])
+
+
+@pytest.mark.asyncio
 async def test_create_duplicate_user(sample_user):
     test_args = ["yak-shears-users", "create", SAMPLE_USER_EMAIL, "--display-name", "Another User"]
 
@@ -139,6 +184,24 @@ async def test_delete_user_cancelled(sample_user):
         await main()
 
     assert_logged_messages(mock_log, ["Deletion cancelled"])
+
+
+@pytest.mark.asyncio
+async def test_delete_user_failure(sample_user):
+    """Test CLI handling when delete_user returns False."""
+    test_args = ["yak-shears-users", "delete", SAMPLE_USER_EMAIL]
+
+    with (
+        patch("sys.argv", test_args),
+        patch("builtins.input", return_value="yes"),
+        patch("yak_shears.cli.delete_user", return_value=False),
+        patch(LOG_IMPORT) as mock_log,
+        pytest.raises(SystemExit) as excinfo,
+    ):
+        await main()
+
+    assert excinfo.value.code == 1
+    assert_logged_messages(mock_log, ["Error: Failed to delete user"])
 
 
 @pytest.mark.asyncio

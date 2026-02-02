@@ -254,11 +254,10 @@ def get_backlinks(yak_path: str) -> list[tuple[str, str]]:
     """
     try:
         with get_search_db() as con:
-            result = con.execute(
+            return con.execute(
                 "SELECT source_path, link_type FROM yak_links WHERE target_path = ? OR target_path = ?",
                 (yak_path, yak_path.replace(".dj", "")),
             ).fetchall()
-        return result
     except Exception:
         return []
 

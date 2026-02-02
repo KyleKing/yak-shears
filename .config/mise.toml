@@ -26,7 +26,7 @@ run = ["hk fix --quiet"]
 
 [tasks.test]
 description = 'Run all tests'
-run = "uv run pytest --cov=yak_shears --cov-report=html:.cover --cov-report=term-missing --cov-fail-under=85"
+run = "uv run pytest --cov=yak_shears --cov-report=html:.cover --cov-report=term-missing --no-cov-on-fail --cov-fail-under=85"
 
 [tasks."test:e2e"]
 description = 'Run only E2E tests'

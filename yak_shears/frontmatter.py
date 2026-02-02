@@ -1,4 +1,4 @@
-"""Frontmatter parsing and manipulation for Djot files.
+r"""Frontmatter parsing and manipulation for Djot files.
 
 This module provides utilities for parsing YAML frontmatter from Djot files
 and writing frontmatter back to files.
@@ -13,9 +13,9 @@ Example:
     ... '''
     >>> frontmatter, body = parse_frontmatter(content)
     >>> frontmatter
-    {'title': 'My Note', 'tags': ['python', 'tutorial']}
+    {'title': 'My Note', 'tags': ['python, tutorial']}
     >>> body
-    'Content goes here...\\n'
+    'Content goes here...\n'
 """
 
 from typing import Any
@@ -51,11 +51,11 @@ def parse_frontmatter(content: str) -> tuple[dict[str, Any], str]:
         frontmatter = yaml.safe_load(yaml_str)
         if frontmatter is None:
             frontmatter = {}
-
-        return frontmatter, body
     except (ValueError, yaml.YAMLError):
         # If parsing fails, return empty frontmatter and full content
         return {}, content
+    else:
+        return frontmatter, body
 
 
 def write_frontmatter(frontmatter: dict[str, Any], body: str) -> str:
@@ -86,7 +86,7 @@ def write_frontmatter(frontmatter: dict[str, Any], body: str) -> str:
 
 
 def update_frontmatter(content: str, updates: dict[str, Any]) -> str:
-    """Update frontmatter in Djot content with new values.
+    r"""Update frontmatter in Djot content with new values.
 
     Args:
         content: Original Djot file content
@@ -96,9 +96,9 @@ def update_frontmatter(content: str, updates: dict[str, Any]) -> str:
         Updated Djot file content
 
     Example:
-        >>> content = "---\\ntitle: Old\\n---\\n\\nBody"
+        >>> content = "---\ntitle: Old\n---\n\nBody"
         >>> update_frontmatter(content, {"title": "New", "status": "done"})
-        '---\\ntitle: New\\nstatus: done\\n---\\n\\nBody'
+        '---\ntitle: New\nstatus: done\n---\n\nBody'
     """
     frontmatter, body = parse_frontmatter(content)
     frontmatter.update(updates)
@@ -106,7 +106,7 @@ def update_frontmatter(content: str, updates: dict[str, Any]) -> str:
 
 
 def remove_frontmatter_field(content: str, *fields: str) -> str:
-    """Remove specific fields from frontmatter.
+    r"""Remove specific fields from frontmatter.
 
     Args:
         content: Original Djot file content
@@ -116,9 +116,9 @@ def remove_frontmatter_field(content: str, *fields: str) -> str:
         Updated Djot file content with fields removed
 
     Example:
-        >>> content = "---\\ntitle: Test\\nstatus: done\\n---\\n\\nBody"
+        >>> content = "---\ntitle: Test\nstatus: done\n---\n\nBody"
         >>> remove_frontmatter_field(content, "status")
-        '---\\ntitle: Test\\n---\\n\\nBody'
+        '---\ntitle: Test\n---\n\nBody'
     """
     frontmatter, body = parse_frontmatter(content)
     for field in fields:

@@ -141,3 +141,32 @@ Content"""
     result = write_frontmatter(frontmatter, body)
     frontmatter2, _ = parse_frontmatter(result)
     assert frontmatter == frontmatter2
+
+
+def test_parse_empty_yaml_frontmatter() -> None:
+    """Test parsing frontmatter with empty YAML section."""
+    content = """---
+---
+
+Body content"""
+
+    frontmatter, body = parse_frontmatter(content)
+
+    # Empty YAML is treated as malformed, returns full content
+    assert frontmatter == {}
+    assert body == content
+
+
+def test_parse_whitespace_only_frontmatter() -> None:
+    """Test parsing frontmatter with only whitespace in YAML section."""
+    content = """---
+
+---
+
+Body content"""
+
+    frontmatter, body = parse_frontmatter(content)
+
+    # Whitespace-only YAML is parsed as None by YAML, which becomes empty dict
+    assert frontmatter == {}
+    assert body == "Body content"

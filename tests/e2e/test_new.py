@@ -107,4 +107,5 @@ async def test_new_yak_requires_authentication(unauthenticated_page: Page, serve
     await unauthenticated_page.goto("/new")
 
     # Should redirect to login with redirect parameter
-    await expect(unauthenticated_page).to_have_url("**/auth/login?redirect=**")
+    re_auth_redirect = re.compile(r".+/auth/login\?redirect=.+")
+    await expect(unauthenticated_page).to_have_url(re_auth_redirect)

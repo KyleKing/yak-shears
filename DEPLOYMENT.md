@@ -36,25 +36,25 @@ This guide covers deploying Yak Shears to a Hetzner VPS using cloud-init automat
 4. **Alternative: Use Cloudflare Proxy from the start**
    If you want to use Cloudflare proxy (orange cloud) immediately:
    - Change SSL/TLS mode to **Full** or **Full (strict)**
-   - Caddy will still provision certificates, but via TLS-ALPN-01 challenge instead
+   - Caddy will still provision certificates, but via **TLS-ALPN-01** challenge instead
    - Ensure port 443 is not blocked
 
 ### Other DNS Providers
 
 For non-Cloudflare providers:
-- Add A record: `yak-shears.yourdomain.com` → `<vps-ip>`
+- Add A record: `yak-shears.kyleking.me` → `<vps-ip>`
 - TTL: 300-3600 seconds
-- Wait for DNS propagation (check with `dig yak-shears.yourdomain.com +short`)
+- Wait for DNS propagation (check with `dig yak-shears.kyleking.me +short`)
 
 ### Verify DNS Before Deployment
 
 ```sh
 # After creating VPS and configuring DNS, verify resolution
-dig yak-shears.yourdomain.com +short
+dig yak-shears.kyleking.me +short
 # Should return your VPS IP address
 
 # Also test from a different network/location
-nslookup yak-shears.yourdomain.com 8.8.8.8
+nslookup yak-shears.kyleking.me 8.8.8.8
 ```
 
 ## Quick Deployment

@@ -55,10 +55,7 @@ def extract_tags(content: str) -> list[str]:
         >>> extract_tags("This is #python and #django content")
         ['python', 'django']
     """
-    tags = []
-    for match in TAG_RE.finditer(content):
-        tags.append(match.group(1))
-    return tags
+    return [match.group(1) for match in TAG_RE.finditer(content)]
 
 
 def resolve_link(target: str, yak_dir: Path) -> Path | None:
@@ -120,11 +117,9 @@ def extract_all_links(content: str) -> list[tuple[str, str]]:
     links = []
 
     # Add wikilinks
-    for target, _ in extract_wikilinks(content):
-        links.append((target, "wikilink"))
+    links.extend((target, "wikilink") for target, _ in extract_wikilinks(content))
 
     # Add tags
-    for tag in extract_tags(content):
-        links.append((tag, "tag"))
+    links.extend((tag, "tag") for tag in extract_tags(content))
 
     return links
