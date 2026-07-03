@@ -420,3 +420,53 @@ async def test_list_indent_preserves_content(context: BrowserContext, page: Page
 
     content = await editor.text_content()
     assert content == "    1. numbered item", f"Expected '    1. numbered item' but got {content!r}"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_list_indent_inserts_blank_before_nested(context: BrowserContext, page: Page, server_lifecycle):
+    """Indenting an item under a parent inserts the blank line Djot needs to nest it."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await _fill_editor(page, "- parent")
+    await page.keyboard.press("Enter")
+    await page.keyboard.type("child")
+    await page.keyboard.press("Tab")
+
+    content = await editor.text_content()
+    assert content == "- parent\n\n    - child", f"Expected nested list with blank line but got {content!r}"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_list_outdent_removes_nested_blank(context: BrowserContext, page: Page, server_lifecycle):
+    """Outdenting a nested item removes the blank separator that indenting added."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    # Set the nested state directly with the caret at the end of the child line so
+    # this exercises only the outdent path (chaining Tab+Shift+Tab races the caret).
+    await page.evaluate(
+        """() => {
+            window.jar.updateCode("- parent\\n\\n    - child");
+            const ed = document.querySelector(".editor");
+            ed.focus();
+            const range = document.createRange();
+            range.selectNodeContents(ed);
+            range.collapse(false);
+            const sel = getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }"""
+    )
+    await page.keyboard.press("Shift+Tab")
+
+    content = await editor.text_content()
+    assert content == "- parent\n- child", f"Expected flat list without blank line but got {content!r}"

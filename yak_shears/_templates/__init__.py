@@ -194,6 +194,7 @@ def render_yak_edit(
         yak_path=yak_path,
         content=content,
         category=(category or "root").title(),
+        category_color=get_category_color(category or ""),
         frontmatter=frontmatter or {},
         backlinks=backlinks or [],
     )

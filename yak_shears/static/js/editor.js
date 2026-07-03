@@ -209,7 +209,9 @@ function setViewMode(mode) {
 		"side-by-side": "sidebyside",
 		"preview": "previewonly"
 	};
-	container.className = "editor-container " + modeClassMap[mode];
+	// Use classList so unrelated state (e.g. the .wrap toggle) is preserved
+	container.classList.remove("editoronly", "sidebyside", "previewonly");
+	container.classList.add(modeClassMap[mode]);
 
 	currentView = mode;
 
@@ -395,6 +397,31 @@ function initEditor() {
 		const initialView = isMobile ? "editor" : "side-by-side";
 		setViewMode(initialView);
 
+		// Word wrap toggle (default off; persisted per browser)
+		const wrapToggle = document.getElementById("wrap-toggle");
+		const applyWrap = (on) => {
+			const container = document.getElementById("editor-container");
+			container.classList.toggle("wrap", on);
+			// CodeJar sets white-space inline, which beats a CSS class, so set it directly.
+			const editorEl = document.querySelector(".editor");
+			if (editorEl) {
+				editorEl.style.whiteSpace = on ? "pre-wrap" : "pre";
+				editorEl.style.overflowWrap = on ? "break-word" : "normal";
+			}
+			if (wrapToggle) {
+				wrapToggle.textContent = on ? "on" : "off";
+				wrapToggle.setAttribute("aria-pressed", on.toString());
+				wrapToggle.classList.toggle("active", on);
+			}
+			localStorage.setItem("editorWrap", on ? "true" : "false");
+		};
+		if (wrapToggle) {
+			wrapToggle.addEventListener("click", () => {
+				applyWrap(!document.getElementById("editor-container").classList.contains("wrap"));
+			});
+		}
+		applyWrap(localStorage.getItem("editorWrap") === "true");
+
 		// Initialize menu button toggle
 		const menuBtn = document.getElementById('menu-btn');
 		const pinBtn = document.querySelector('.panel-pin');
@@ -547,6 +574,18 @@ function _handleListContinuation(editorEl, jarInstance) {
 	return false;
 }
 
+function _leadingSpaces(line) {
+	return (line.match(/^ */) || [""])[0].length;
+}
+
+// Return the line immediately above `lineStart` (without its newline), or null.
+function _getPreviousLine(text, lineStart) {
+	if (lineStart <= 0) return null;
+	const prevEnd = lineStart - 1; // index of the '\n' terminating the previous line
+	const prevStart = text.lastIndexOf("\n", prevEnd - 1) + 1;
+	return { start: prevStart, text: text.substring(prevStart, prevEnd) };
+}
+
 function _handleListIndentation(editorEl, jarInstance, outdent) {
 	const text = jarInstance.toString();
 	const cursorPos = _getCursorPosition(editorEl);
@@ -558,27 +597,48 @@ function _handleListIndentation(editorEl, jarInstance, outdent) {
 	const isListItem = Object.values(LIST_PATTERNS).some((p) => p.test(lineText));
 	if (!isListItem) return false;
 
-	let newLineText;
-	let cursorDelta;
+	const apply = (newText, newCursorPos) => {
+		jarInstance.updateCode(newText);
+		requestAnimationFrame(() => _setCursorPosition(editorEl, Math.max(0, newCursorPos)));
+		return true;
+	};
 
 	if (outdent) {
 		// Remove up to indentSize spaces from start
-		const leadingSpaces = lineText.match(/^(\s*)/)[1];
-		const spacesToRemove = Math.min(indentSize, leadingSpaces.length);
+		const spacesToRemove = Math.min(indentSize, _leadingSpaces(lineText));
 		if (spacesToRemove === 0) return false;
-		newLineText = lineText.substring(spacesToRemove);
-		cursorDelta = -spacesToRemove;
-	} else {
-		// Add indent at start
-		newLineText = indentStr + lineText;
-		cursorDelta = indentSize;
+		const newLineText = lineText.substring(spacesToRemove);
+		const newIndent = _leadingSpaces(newLineText);
+
+		// Drop the blank separator that a matching indent inserted, once this item
+		// is no longer nested deeper than the line above the blank (Djot nesting).
+		const prev = _getPreviousLine(text, lineStart);
+		if (prev && prev.text.trim() === "") {
+			const grand = _getPreviousLine(text, prev.start);
+			if (grand && grand.text.trim() !== "" && _leadingSpaces(grand.text) <= newIndent) {
+				const newText = text.substring(0, prev.start) + newLineText + text.substring(lineEnd);
+				return apply(newText, cursorPos - spacesToRemove - 1);
+			}
+		}
+
+		const newText = text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
+		return apply(newText, cursorPos - spacesToRemove);
+	}
+
+	// Indent
+	const newLineText = indentStr + lineText;
+	const newIndent = _leadingSpaces(newLineText);
+
+	// Djot only renders a nested list when a blank line precedes it, so insert one
+	// when this item becomes indented under a non-blank parent line.
+	const prev = _getPreviousLine(text, lineStart);
+	if (prev && prev.text.trim() !== "" && _leadingSpaces(prev.text) < newIndent) {
+		const newText = text.substring(0, lineStart) + "\n" + newLineText + text.substring(lineEnd);
+		return apply(newText, cursorPos + indentSize + 1);
 	}
 
 	const newText = text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
-	const newCursorPos = Math.max(lineStart, cursorPos + cursorDelta);
-	jarInstance.updateCode(newText);
-	requestAnimationFrame(() => _setCursorPosition(editorEl, newCursorPos));
-	return true;
+	return apply(newText, cursorPos + indentSize);
 }
 
 function _toggleChecklistState(editorEl, jarInstance) {
