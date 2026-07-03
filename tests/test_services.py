@@ -7,6 +7,7 @@ import pytest
 from yak_shears._templates import SortBy
 from yak_shears._yak.services import (
     PaginationResult,
+    YakPathError,
     create_yak,
     delete_yak,
     get_categories,
@@ -209,6 +210,38 @@ class TestYakCRUD:
 
         with pytest.raises(FileNotFoundError):
             await delete_yak(Path(temp_yak_dir), "nonexistent.dj")
+
+
+class TestPathSafety:
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "unsafe_path",
+        ["../outside.dj", "../../etc/passwd", "category1/../../outside.dj", "/etc/passwd", ""],
+    )
+    async def test_read_yak_rejects_traversal(self, temp_yak_dir, unsafe_path):
+        from anyio import Path
+
+        (temp_yak_dir.parent / "outside.dj").write_text("secret")
+        with pytest.raises(YakPathError):
+            await read_yak(Path(temp_yak_dir), unsafe_path)
+
+    @pytest.mark.asyncio
+    async def test_delete_yak_rejects_traversal(self, temp_yak_dir):
+        from anyio import Path
+
+        outside = temp_yak_dir.parent / "outside.dj"
+        outside.write_text("secret")
+        with pytest.raises(YakPathError):
+            await delete_yak(Path(temp_yak_dir), "../outside.dj")
+        assert outside.exists()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("unsafe_category", ["../evil", "a/b", "..", "with\x00null"])
+    async def test_create_yak_rejects_unsafe_category(self, tmp_path, unsafe_category):
+        from anyio import Path
+
+        with pytest.raises(YakPathError):
+            await create_yak(Path(tmp_path), unsafe_category)
 
 
 class TestHighlighting:

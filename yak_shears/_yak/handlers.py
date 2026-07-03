@@ -22,6 +22,7 @@ from yak_shears._templates import (
 from yak_shears._yak.database import get_backlinks, get_frontmatter
 from yak_shears._yak.request_utils import extract_yak_path, is_htmx_request
 from yak_shears._yak.services import (
+    YakPathError,
     create_yak,
     delete_yak,
     ensure_search_db_ready,
@@ -34,6 +35,7 @@ from yak_shears._yak.services import (
     perform_search,
     prepare_yak_info,
     read_yak,
+    resolve_yak_path,
     save_yak,
 )
 
@@ -114,7 +116,10 @@ async def new_yak_handler(request: Request) -> Response:
         if not category:
             return render_error("Category is required")
 
-        yak_path = await create_yak(yak_dir, category)
+        try:
+            yak_path = await create_yak(yak_dir, category)
+        except YakPathError:
+            return render_error("Invalid category name")
         relative_path = yak_path.relative_to(yak_dir).as_posix()
         return RedirectResponse(f"/edit?yak={relative_path}", status_code=HTTPStatus.SEE_OTHER)
 
@@ -141,7 +146,7 @@ async def edit_yak_handler(request: Request) -> Response:
         backlinks = get_backlinks(yak_path_str)
 
         return render_yak_edit(yak_path_str, content, category, frontmatter=frontmatter, backlinks=backlinks)
-    except FileNotFoundError:
+    except (FileNotFoundError, YakPathError):
         return render_error(f"Yak not found: {yak_path_str}", status_code=HTTPStatus.NOT_FOUND)
     except Exception as exc:
         return render_error(f"An error occurred: {exc!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -186,7 +191,7 @@ async def delete_yak_handler(request: Request) -> Response:
     try:
         await delete_yak(yak_dir, yak_path_str)
         return Response("", status_code=HTTPStatus.OK, headers={"HX-Redirect": "/yaks"})
-    except FileNotFoundError:
+    except (FileNotFoundError, YakPathError):
         return render_error(f"Yak not found: {yak_path_str}", status_code=HTTPStatus.NOT_FOUND)
     except Exception as exc:
         return render_error(f"An error occurred: {exc!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -201,9 +206,12 @@ async def yak_preview_handler(request: Request) -> Response:
         return JSONResponse({"error": "Path required"}, status_code=400)
 
     yak_dir = await get_yak_dir()
-    yak_path = yak_dir / path
+    try:
+        yak_path = await resolve_yak_path(yak_dir, path)
+    except YakPathError:
+        return JSONResponse({"error": "File not found"}, status_code=404)
 
-    if not await yak_path.exists():
+    if not await yak_path.is_file():
         return JSONResponse({"error": "File not found"}, status_code=404)
 
     try:

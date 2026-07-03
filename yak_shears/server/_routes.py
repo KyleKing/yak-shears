@@ -5,8 +5,10 @@ import os
 
 import uvicorn
 from starlette.applications import Starlette
+from starlette.responses import Response
 from starlette.routing import Route
 from starlette.staticfiles import StaticFiles
+from starlette.types import Scope
 
 from yak_shears._auth.middleware import AuthMiddleware
 from yak_shears._auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
@@ -24,6 +26,19 @@ ROUTES = [
 ]
 
 
+class RevalidateStaticFiles(StaticFiles):
+    """Static files that must be revalidated so edits are picked up immediately.
+
+    Responses keep their ETag/Last-Modified for cheap 304s, but `no-cache`
+    forces the browser to revalidate rather than serve a stale cached asset.
+    """
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 def create_app_without_auth() -> Starlette:  # pragma: no cover
     """Only used for local development and testing.
 
@@ -35,7 +50,7 @@ def create_app_without_auth() -> Starlette:  # pragma: no cover
         debug=True,
         exception_handlers={404: not_found},
     )
-    app.mount("/static", StaticFiles(directory="yak_shears/static"), name="static")
+    app.mount("/static", RevalidateStaticFiles(directory="yak_shears/static"), name="static")
     return app
 
 

@@ -41,6 +41,43 @@ async def get_yak_dir() -> Path:
     return await Path(os.getenv("YAK_SHEARS_DIR", "~/Sync/yak-shears")).expanduser()
 
 
+class YakPathError(ValueError):
+    """Raised when a user-supplied yak path is unsafe or malformed."""
+
+
+async def resolve_yak_path(yak_dir: Path, relative_path: str) -> Path:
+    """Resolve a user-supplied relative path strictly within `yak_dir`.
+
+    Prevents path traversal (e.g. `../../etc/passwd`) and absolute paths from
+    escaping the notes directory.
+
+    Raises:
+        YakPathError: If the path is empty, absolute, or escapes `yak_dir`.
+    """
+    if not relative_path or SyncPath(relative_path).is_absolute():
+        msg = f"Invalid yak path: {relative_path!r}"
+        raise YakPathError(msg)
+
+    base = await yak_dir.resolve()
+    resolved = await (yak_dir / relative_path).resolve()
+    if resolved != base and base not in resolved.parents:
+        msg = f"Yak path escapes notes directory: {relative_path!r}"
+        raise YakPathError(msg)
+    return resolved
+
+
+def _validate_category(category: str) -> str:
+    """Validate that a category is a single safe path segment.
+
+    Raises:
+        YakPathError: If the category contains path separators or traversal.
+    """
+    if category in {".", ".."} or "/" in category or "\\" in category or "\x00" in category:
+        msg = f"Invalid category: {category!r}"
+        raise YakPathError(msg)
+    return category
+
+
 # -----------------------------------------------------------------------------
 # Yak listing operations
 
@@ -107,7 +144,9 @@ async def prepare_yak_info(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
         yak_stats = await yak_path.stat()
         last_modified = datetime.fromtimestamp(yak_stats.st_mtime, tz=UTC).strftime("%Y-%m-%d %H:%M:%S")
         content = await yak_path.read_text(encoding="utf-8")
-        preview = content[:PREVIEW_LENGTH].replace("\n", " ")
+        _, body = parse_frontmatter(content)
+        body = body.strip()
+        preview = body[:PREVIEW_LENGTH].replace("\n", " ")
 
         info = YakInfo(
             category=yak_path.parent.name,
@@ -115,7 +154,7 @@ async def prepare_yak_info(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
             name=yak_path.name,
             path=yak_path.relative_to(yak_dir).as_posix(),
             preview=preview,
-            truncated=len(content) > PREVIEW_LENGTH,
+            truncated=len(body) > PREVIEW_LENGTH,
         )
         yaks.append(info)
     return yaks
@@ -131,6 +170,7 @@ async def create_yak(yak_dir: Path, category: str) -> Path:
     Returns:
         Path to the newly created yak file.
     """
+    _validate_category(category)
     category_dir = yak_dir / category
     await category_dir.mkdir(parents=True, exist_ok=True)
 
@@ -151,7 +191,7 @@ async def read_yak(yak_dir: Path, relative_path: str) -> tuple[str, str]:
     Raises:
         FileNotFoundError: If yak doesn't exist
     """
-    yak_path = yak_dir / relative_path
+    yak_path = await resolve_yak_path(yak_dir, relative_path)
     if not await yak_path.is_file():
         msg = f"Yak not found: {yak_path}"
         raise FileNotFoundError(msg)
@@ -167,7 +207,7 @@ async def save_yak(yak_dir: Path, relative_path: str, content: str) -> None:
     Raises:
         FileNotFoundError: If yak doesn't exist
     """
-    yak_path = yak_dir / relative_path
+    yak_path = await resolve_yak_path(yak_dir, relative_path)
     if not await yak_path.is_file():
         msg = f"Yak not found: {yak_path}"
         raise FileNotFoundError(msg)
@@ -182,7 +222,7 @@ async def delete_yak(yak_dir: Path, relative_path: str) -> None:
     Raises:
         FileNotFoundError: If yak doesn't exist
     """
-    yak_path = yak_dir / relative_path
+    yak_path = await resolve_yak_path(yak_dir, relative_path)
     if not await yak_path.is_file():
         msg = f"Yak not found: {yak_path}"
         raise FileNotFoundError(msg)
@@ -258,6 +298,18 @@ def _process_search_results(
     return results
 
 
+def _derive_title(content: str, rel_path: str) -> str:
+    """Derive a human-readable title from frontmatter, a heading, or the filename."""
+    frontmatter, body = parse_frontmatter(content)
+    title = frontmatter.get("title")
+    if isinstance(title, str) and title.strip():
+        return title.strip()
+    for line in body.splitlines():
+        if stripped := line.strip():
+            return stripped.lstrip("#").strip() or stripped
+    return SyncPath(rel_path).name
+
+
 def _create_search_result(
     file_path: SyncPath,
     rel_path: str,
@@ -266,7 +318,8 @@ def _create_search_result(
 ) -> SearchResult | None:
     """Create a SearchResult from a file path, returning None on error."""
     try:
-        lines = file_path.read_text(encoding="utf-8").splitlines()
+        content = file_path.read_text(encoding="utf-8")
+        lines = content.splitlines()
         if not (1 <= line_num <= len(lines)):
             return None
         return SearchResult(
@@ -274,7 +327,7 @@ def _create_search_result(
             line_num=line_num,
             preview=lines[line_num - 1].strip(),
             word=word,
-            first_line=lines[0].strip() if lines else "",
+            first_line=_derive_title(content, rel_path),
         )
     except Exception as exc:
         log(f"WARNING: Error reading file {file_path}: {exc}")

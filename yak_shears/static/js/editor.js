@@ -1,23 +1,23 @@
 /**
  * Yak Editor - Djot content editor with live preview
- * 
+ *
  * ARCHITECTURE:
  * This module manages three interconnected state systems:
  * 1. CodeJar Editor State: The actual text content and cursor position
  * 2. UI View State: Which view mode is active (editor/preview/split)
  * 3. Persistence State: localStorage sync for unsaved changes
- * 
+ *
  * STATE TRANSITIONS:
  * - "Synced": Content matches server (no local changes or successful save)
  * - "Modified": Local edits exist that haven't been saved
  * - "Saving...": HTTP POST in progress
  * - "Saved": Recently saved (transitions to "Synced" after 2s)
- * 
+ *
  * VIEW MODES:
  * - "editor": Show only the CodeJar editor (default on mobile)
  * - "side-by-side": Split view with editor + live preview (default on desktop)
  * - "preview": Show only rendered Djot preview
- * 
+ *
  * CONSTANTS
  */
 const MOBILE_BREAKPOINT = 768; // px - matches CSS media query
@@ -46,12 +46,12 @@ let panelPinned = false; // Desktop-only: panel stays open alongside editor
 
 /**
  * Toggle the metadata/properties panel visibility
- * 
+ *
  * BEHAVIOR:
  * - Mobile (≤768px): Panel appears as full-screen modal with backdrop
  * - Desktop (>768px): Panel can be toggled or pinned alongside editor
  * - Pinned state only available on desktop; auto-unpins on resize to mobile
- * 
+ *
  * @param {boolean|null} forceState - Explicit show (true) or hide (false), or toggle (null)
  */
 function toggleMetadataPanel(forceState = null) {
@@ -102,13 +102,13 @@ function toggleMetadataPanel(forceState = null) {
 
 /**
  * Toggle pinned state for metadata panel (desktop only)
- * 
+ *
  * PINNED BEHAVIOR:
  * - Panel becomes permanent part of layout (doesn't overlay)
  * - Backdrop is hidden (no need to click outside to dismiss)
  * - State persists in localStorage across page loads
  * - Automatically unpinned on resize to mobile
- * 
+ *
  * @returns {void}
  */
 function togglePanelPin() {
@@ -137,21 +137,28 @@ function togglePanelPin() {
 
 /**
  * Render Djot content as HTML preview with syntax highlighting
- * 
+ *
  * DEPENDENCIES:
  * - window.djot: Djot parser/renderer library (loaded via CDN in template)
  * - window.Prism: Code syntax highlighting (loaded from static files)
- * 
+ *
  * @param {string} content - Raw Djot/Markdown text content
  */
+function stripFrontmatter(content) {
+	if (!content.startsWith("---\n")) return content;
+	const end = content.indexOf("\n---\n", 4);
+	if (end === -1) return content;
+	return content.slice(end + 5);
+}
+
 function renderPreview(content) {
 	const previewContent = document.getElementById("preview-content");
 	if (previewContent && window.djot) {
 		try {
-			// Parse Djot → AST → HTML
-			const html = window.djot.renderHTML(window.djot.parse(content));
+			// Parse Djot → AST → HTML, excluding YAML frontmatter
+			const html = window.djot.renderHTML(window.djot.parse(stripFrontmatter(content)));
 			previewContent.innerHTML = html;
-			
+
 			// Apply Prism syntax highlighting to code blocks
 			if (window.Prism) {
 				const codes = previewContent.querySelectorAll(
@@ -169,17 +176,17 @@ function renderPreview(content) {
 
 /**
  * Switch between editor view modes
- * 
+ *
  * CSS CLASS MAPPING:
  * - "editor" → "editoronly" class: Shows only CodeJar editor
  * - "side-by-side" → "sidebyside" class: 50/50 split editor + preview
  * - "preview" → "previewonly" class: Shows only rendered preview
- * 
+ *
  * SIDE EFFECTS:
  * - Updates button active states in view toggle
  * - Re-renders preview if switching to a mode that displays it
  * - Updates global currentView state
- * 
+ *
  * @param {"editor"|"side-by-side"|"preview"} mode - Target view mode
  */
 function setViewMode(mode) {
@@ -214,7 +221,7 @@ function setViewMode(mode) {
 
 /**
  * Initialize the CodeJar editor with all event handlers and state management
- * 
+ *
  * INITIALIZATION FLOW:
  * 1. Wait for DOM element '.editor' to be available (retry up to 5s)
  * 2. Create CodeJar instance with syntax highlighting
@@ -229,15 +236,15 @@ function setViewMode(mode) {
  *    - Keyboard shortcuts (Cmd+Enter = save, Cmd+M = toggle panel, Esc = close panel)
  * 7. Restore panel state from localStorage (desktop only)
  * 8. Set initial view mode based on screen size
- * 
+ *
  * RETRY MECHANISM:
  * If .editor element isn't in DOM, retries every 100ms up to 50 times (5 seconds total).
  * This handles race conditions with external script loading.
- * 
+ *
  * CRITICAL DATA ATTRIBUTES:
  * - data-manual: Prevents CodeJar from auto-initializing (we control initialization)
  * - data-gramm="false": Disables Grammarly extension interference
- * 
+ *
  * @returns {void}
  */
 function initEditor() {
@@ -601,14 +608,14 @@ function _toggleChecklistState(editorEl, jarInstance) {
 
 /**
  * Update the save status indicator text
- * 
+ *
  * STATUS VALUES:
  * - "Synced": Content matches server (green background in CSS)
  * - "Modified": Unsaved local changes exist
  * - "Saving...": HTTP request in progress
  * - "Saved": Recently saved successfully (transitions to "Synced" after 2s)
  * - "Error saving!": HTTP request failed
- * 
+ *
  * @param {string} status - New status text to display
  */
 function updateSaveStatus(status) {
@@ -617,10 +624,10 @@ function updateSaveStatus(status) {
 
 /**
  * Get current editor content for HTMX form submission
- * 
+ *
  * Called by HTMX via hx-vals="js:{content: getEditorContent(), yak: '...'}"
  * See edit.html.jinja line 33
- * 
+ *
  * @returns {string} Current editor text content
  */
 function getEditorContent() {

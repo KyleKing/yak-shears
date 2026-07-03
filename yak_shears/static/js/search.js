@@ -112,8 +112,13 @@ function setupResults() {
 // Expose function to window for HTMX
 window.setupResults = setupResults;
 
-// Handle initial results
-setupResults();
+// Handle initial results. This script is loaded in <head>, so on a full-page
+// load the results are not in the DOM yet; wait for DOMContentLoaded.
+if (document.readyState === "loading") {
+	document.addEventListener("DOMContentLoaded", setupResults);
+} else {
+	setupResults();
+}
 
 // Modal event listeners
 document.addEventListener("DOMContentLoaded", function () {
