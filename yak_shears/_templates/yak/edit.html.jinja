@@ -21,9 +21,9 @@
     <div class="editor-main">
       <div class="editor-container" id="editor-container">
         {# Form wrapper required for HTMX POST - see handlers.py:edit_yak_handler #}
-        <form id="editor_form" method="post">
+        <form id="editor-form" method="post">
           <input type="hidden" name="yak" value="{{ yak_path }}">
-          {# 
+          {#
             CodeJar editor element
             - data-manual: Prevents auto-init (we control initialization timing)
             - data-gramm="false": Disables Grammarly browser extension interference

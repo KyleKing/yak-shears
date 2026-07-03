@@ -223,7 +223,7 @@ def test_middleware_redirects_unauthenticated_users(temp_user_file):
 
     response = client.get("/protected", follow_redirects=False)
     assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
-    assert response.headers["location"] == "/auth/login?redirect=http://testserver/protected"
+    assert response.headers["location"] == "/auth/login?redirect=/protected"
 
 
 def test_middleware_allows_authenticated_users(sample_user):

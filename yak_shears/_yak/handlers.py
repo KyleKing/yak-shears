@@ -19,7 +19,7 @@ from yak_shears._templates import (
     render_yak_new,
     render_yaks,
 )
-from yak_shears._yak.database import get_backlinks, get_frontmatter
+from yak_shears._yak.database import get_backlinks
 from yak_shears._yak.request_utils import extract_yak_path, is_htmx_request
 from yak_shears._yak.services import (
     YakPathError,
@@ -29,15 +29,16 @@ from yak_shears._yak.services import (
     ensure_search_index_updated,
     get_categories,
     get_yak_dir,
-    highlight_content,
     list_yak_paths,
     paginate_yaks,
     perform_search,
     prepare_yak_info,
     read_yak,
+    read_yak_body,
     resolve_yak_path,
     save_yak,
 )
+from yak_shears.frontmatter import parse_frontmatter
 
 
 @dataclass(frozen=True)
@@ -142,7 +143,7 @@ async def edit_yak_handler(request: Request) -> Response:
             return HTMLResponse("")
 
         content, category = await read_yak(yak_dir, yak_path_str)
-        frontmatter = get_frontmatter(yak_path_str)
+        frontmatter, _ = parse_frontmatter(content)
         backlinks = get_backlinks(yak_path_str)
 
         return render_yak_edit(yak_path_str, content, category, frontmatter=frontmatter, backlinks=backlinks)
@@ -215,22 +216,13 @@ async def yak_preview_handler(request: Request) -> Response:
         return JSONResponse({"error": "File not found"}, status_code=404)
 
     try:
-        content = await yak_path.read_text(encoding="utf-8")
+        body = await read_yak_body(yak_dir, path)
     except Exception as exc:
         log(f"ERROR: Failed to read file {yak_path}: {exc}")
         return JSONResponse({"error": "Failed to read file"}, status_code=500)
 
-    highlighted_content = highlight_content(content, query)
     edit_url = f"/edit?yak={quote(path)}&query={quote(query)}"
-
-    html = (
-        f'<div class="search-preview-header">'
-        f'<a href="{edit_url}" class="button button--primary">Edit</a>'
-        f"</div>"
-        f'<pre class="search-preview-content">{highlighted_content}</pre>'
-    )
-
-    return JSONResponse({"html": html})
+    return JSONResponse({"source": body, "query": query, "edit_url": edit_url})
 
 
 # Re-export for backwards compatibility with tests

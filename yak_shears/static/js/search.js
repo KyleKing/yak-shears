@@ -46,13 +46,91 @@ async function loadPreview(resultElement, useModal = false) {
 		);
 		if (response.ok) {
 			const data = await response.json();
-			previewPane.innerHTML = data.html;
+			renderPreviewInto(previewPane, data);
 			if (useModal) {
 				scrollToFirstMatch(previewPane);
 			}
 		}
 	} catch (error) {
 		console.error("Failed to load preview:", error);
+	}
+}
+
+// Render the Djot source into the pane and highlight query matches
+function renderPreviewInto(previewPane, data) {
+	const rendered = window.djot
+		? window.djot.renderHTML(window.djot.parse(data.source))
+		: escapeHtml(data.source);
+
+	previewPane.innerHTML =
+		`<div class="search-preview-header">` +
+		`<a href="${data.edit_url}" class="button button--primary">Edit</a></div>` +
+		`<div class="search-preview-content djot-rendered"></div>`;
+
+	const body = previewPane.querySelector(".djot-rendered");
+	if (window.djot) {
+		body.innerHTML = rendered;
+	} else {
+		body.textContent = data.source;
+	}
+	highlightTextNodes(body, data.query);
+}
+
+function escapeRegExp(text) {
+	return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function escapeHtml(text) {
+	return text.replace(
+		/[&<>]/g,
+		(c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c],
+	);
+}
+
+// Wrap query matches in <span class="search-highlight"> without corrupting
+// markup: only text nodes are mutated, and code/pre are skipped.
+function highlightTextNodes(root, query) {
+	const terms = (query || "")
+		.toLowerCase()
+		.split(/\s+/)
+		.filter(Boolean);
+	if (!terms.length) return;
+
+	const re = new RegExp(`(${terms.map(escapeRegExp).join("|")})`, "gi");
+	const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+		acceptNode(node) {
+			const parent = node.parentElement;
+			if (!parent || parent.closest("code, pre, .search-highlight")) {
+				return NodeFilter.FILTER_REJECT;
+			}
+			return re.test(node.nodeValue)
+				? NodeFilter.FILTER_ACCEPT
+				: NodeFilter.FILTER_REJECT;
+		},
+	});
+
+	const targets = [];
+	while (walker.nextNode()) targets.push(walker.currentNode);
+
+	for (const node of targets) {
+		const value = node.nodeValue;
+		const frag = document.createDocumentFragment();
+		let last = 0;
+		value.replace(re, (match, _group, offset) => {
+			if (offset > last) {
+				frag.appendChild(document.createTextNode(value.slice(last, offset)));
+			}
+			const span = document.createElement("span");
+			span.className = "search-highlight";
+			span.textContent = match;
+			frag.appendChild(span);
+			last = offset + match.length;
+			return match;
+		});
+		if (last < value.length) {
+			frag.appendChild(document.createTextNode(value.slice(last)));
+		}
+		node.parentNode.replaceChild(frag, node);
 	}
 }
 

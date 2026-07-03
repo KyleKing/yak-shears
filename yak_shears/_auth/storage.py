@@ -13,9 +13,12 @@ from typing import Self
 from anyio import Path
 
 from .models import HashedPassword, Password, SessionId, User
-from .password import create_password_hash, verify_password
+from .password import create_password_hash, hash_password, verify_password
 
 DEFAULT_USER_DATA_PATH = SyncPath(__file__).parents[1] / ".yak-shears-users.json"
+
+_DUMMY_SALT = secrets.token_hex(32)
+_DUMMY_HASH = hash_password(Password(secrets.token_hex(16)), _DUMMY_SALT)
 
 
 class UserStore:
@@ -41,7 +44,6 @@ class UserStore:
                 data = json.loads(sync_path.read_text(encoding="utf-8"))
                 store._users = data.get("users", {})
                 store._email_to_user_id = data.get("email_to_user_id", {})
-                store._session_store = data.get("session_store", {})
             except (OSError, json.JSONDecodeError):
                 pass
         return store
@@ -55,18 +57,15 @@ class UserStore:
             data = json.loads(await self._data_path.read_text())
             self._users = data.get("users", {})
             self._email_to_user_id = data.get("email_to_user_id", {})
-            self._session_store = data.get("session_store", {})
         except (OSError, json.JSONDecodeError):
             self._users = {}
             self._email_to_user_id = {}
-            self._session_store = {}
 
     async def _save(self) -> None:
         """Save users to disk."""
         data = {
             "users": self._users,
             "email_to_user_id": self._email_to_user_id,
-            "session_store": self._session_store,
         }
         await self._data_path.write_text(json.dumps(data, indent=2))
 
@@ -123,6 +122,7 @@ class UserStore:
         """
         user = self.get_user_by_email(email)
         if not user:
+            verify_password(password, _DUMMY_SALT, _DUMMY_HASH)
             return None
 
         if verify_password(password, user["salt"], HashedPassword(user["password_hash"])):

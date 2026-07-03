@@ -29,7 +29,19 @@
           <div class="card__body">
             <p>{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
           </div>
-          <div class="card__tooltip">{{ info.category | title }}<br />C: {{ info.name }}<br />M: {{ info.last_modified }}</div>
+          {% if info.tags %}
+            <div class="card__tags">
+              {% for tag in info.tags %}<span class="card__tag">#{{ tag }}</span>{% endfor %}
+            </div>
+          {% endif %}
+          <div class="card__meta">
+            <span class="card__chip">{{ info.category | title }}</span>
+            <span class="card__stats">
+              <span class="card__stat">{{ info.last_modified[:10] }}</span>
+              <span class="card__stat">{{ info.word_count }} words</span>
+              {% if info.backlink_count %}<span class="card__stat">{{ info.backlink_count }} links</span>{% endif %}
+            </span>
+          </div>
         </a>
       {% endfor %}
     </div>

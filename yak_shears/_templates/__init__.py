@@ -21,12 +21,15 @@ class SortBy(StrEnum):
 class YakInfo:
     """Yak information for template rendering."""
 
+    backlink_count: int
     category: str
     last_modified: str
     name: str
     path: str
     preview: str
+    tags: list[str]
     truncated: bool
+    word_count: int
 
 
 @dataclass(frozen=True)

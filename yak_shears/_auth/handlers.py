@@ -13,6 +13,7 @@ from yak_shears._templates import render_auth_login
 
 from . import storage
 from .models import Password, SessionId, User
+from .rate_limit import login_limiter
 
 IN_TLS_CONTEXT = (getenv("IN_TLS_CONTEXT") or "").upper() == "TRUE"
 
@@ -53,16 +54,25 @@ async def login_handler(request: Request) -> Response:
         # Allow trailing spaces
         password = Password(str(form_data.get("password", "")).rstrip("\n"))
         redirect_path = _validate_redirect_path(str(form_data.get("redirect") or DEFAULT_REDIRECT).rstrip())
+        client_ip = request.client.host if request.client else "unknown"
+        limit_key = f"{client_ip}:{email}"
+        if login_limiter.is_blocked(limit_key):
+            return render_auth_login(
+                redirect=redirect_path,
+                error="Too many attempts. Try again in a few minutes.",
+            )
         if not email or not password:
             return render_auth_login(
                 redirect=redirect_path,
                 error="Email and password are required",
             )
         if not (user := await storage.authenticate_user(email, password)):
+            login_limiter.register_failure(limit_key)
             return render_auth_login(
                 redirect=redirect_path,
                 error="Invalid email or password",
             )
+        login_limiter.reset(limit_key)
         response = RedirectResponse(url=redirect_path, status_code=HTTPStatus.SEE_OTHER)
         session_id = storage.create_session(SessionId(user["id"]))
         expires = datetime.now(tz=UTC) + timedelta(weeks=1)

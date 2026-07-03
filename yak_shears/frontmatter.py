@@ -46,6 +46,8 @@ def parse_frontmatter(content: str) -> tuple[dict[str, Any], str]:
         end_idx = content.index("\n---\n", 4)
         yaml_str = content[4:end_idx]
         body = content[end_idx + 5:]
+        if body.startswith("\n"):
+            body = body[1:]
 
         # Parse YAML
         frontmatter = yaml.safe_load(yaml_str)

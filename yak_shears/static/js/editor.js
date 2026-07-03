@@ -375,13 +375,16 @@ function initEditor() {
 			button.addEventListener("click", () => {
 				const view = button.getAttribute("data-view");
 				setViewMode(view);
+				if (window.innerWidth > MOBILE_BREAKPOINT && metadataPanelVisible && !panelPinned) {
+					toggleMetadataPanel(false);
+				}
 			});
 		});
 
 		// Initialize view mode based on screen size
 		// Desktop defaults to side-by-side, mobile to editor-only
 		const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
-		const initialView = isMobile ? "editor" : "editor"; // TODO: Consider defaulting to "side-by-side" on desktop
+		const initialView = isMobile ? "editor" : "side-by-side";
 		setViewMode(initialView);
 
 		// Initialize menu button toggle

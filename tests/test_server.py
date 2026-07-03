@@ -288,7 +288,9 @@ def test_yak_preview(client: TestClient, mock_user_session) -> None:
         response = client.get("/api/yak-preview?path=subdirectory-2/yak2.dj&line=1&query=test")
         assert response.status_code == HTTPStatus.OK
         data = response.json()
-        assert "html" in data
+        assert "source" in data
+        assert data["query"] == "test"
+        assert data["edit_url"].startswith("/edit?yak=")
 
 
 def test_yak_preview_no_path(client: TestClient, mock_user_session) -> None:

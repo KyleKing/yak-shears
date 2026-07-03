@@ -5,10 +5,11 @@ import os
 
 import uvicorn
 from starlette.applications import Starlette
+from starlette.datastructures import MutableHeaders
 from starlette.responses import Response
 from starlette.routing import Route
 from starlette.staticfiles import StaticFiles
-from starlette.types import Scope
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from yak_shears._auth.middleware import AuthMiddleware
 from yak_shears._auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
@@ -18,12 +19,44 @@ from yak_shears._yak.routes import ROUTES as YAK_ROUTES
 
 from ._handlers import favicon_handler, not_found, root_handler
 
+_CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+    "img-src 'self' data:; "
+    "frame-ancestors 'none'"
+)
+
+_LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
+
 ROUTES = [
     Route("/", endpoint=root_handler),
     Route("/favicon.ico", endpoint=favicon_handler),
     *YAK_ROUTES,
     *AUTH_ROUTES,
 ]
+
+
+class SecurityHeadersMiddleware:
+    """Attach baseline security response headers to every HTTP response."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self._app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self._app(scope, receive, send)
+            return
+
+        async def send_with_headers(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
+                headers["X-Content-Type-Options"] = "nosniff"
+                headers["Referrer-Policy"] = "same-origin"
+                headers["Content-Security-Policy"] = _CONTENT_SECURITY_POLICY
+            await send(message)
+
+        await self._app(scope, receive, send_with_headers)
 
 
 class RevalidateStaticFiles(StaticFiles):
@@ -64,6 +97,7 @@ def create_app() -> Starlette:  # pragma: no cover
 
     public_paths = {r"^/$", r"^/favicon.ico$", r"^/static/.+", *AUTH_PUBLIC_PATHS}
     app.add_middleware(AuthMiddleware, public_paths=public_paths)
+    app.add_middleware(SecurityHeadersMiddleware)
 
     return app
 
@@ -84,7 +118,16 @@ def start(
         reload: Whether to reload the server on code changes
         no_auth: Turn off auth middleware. Only use for local development and only allowed when reload is also specified
         search_db_dir: Directory for the search database
+
+    Raises:
+        ValueError: If no_auth is requested without reload, or with a non-loopback host.
     """
+    if no_auth and not reload:
+        raise ValueError("--no-auth is only permitted together with --reload for local development")
+    if no_auth and host not in _LOOPBACK_HOSTS:
+        msg = f"--no-auth refuses to bind to non-loopback host {host!r}"
+        raise ValueError(msg)
+
     if search_db_dir:
         os.environ["SEARCH_DB_DIR"] = search_db_dir
 

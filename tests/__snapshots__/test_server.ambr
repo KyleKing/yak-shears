@@ -187,7 +187,7 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>
-     Yaks in ./test_yaks_endpoint0/yak_test_dir
+     Yaks in ./yak_test_dir
     </title>
     <link href="/static/css/main.css" rel="stylesheet"/>
     <script src="/static/js/htmx.min.js">
@@ -235,7 +235,7 @@
     <main class="layout__inner" id="main-content" role="main">
      <div class="container">
       <h1>
-       Yaks in ./test_yaks_endpoint0/yak_test_dir
+       Yaks in ./yak_test_dir
       </h1>
       <p class="page-info">
        Showing 3 of 3 yaks (Page 1 of 1)
@@ -275,12 +275,18 @@
           # Yak 3  This is a test yak number 3
          </p>
         </div>
-        <div class="card__tooltip">
-         Subdirectory-3
-         <br/>
-         C: yak3.dj
-         <br/>
-         M: 2025-05-01 10:00:00
+        <div class="card__meta">
+         <span class="card__chip">
+          Subdirectory-3
+         </span>
+         <span class="card__stats">
+          <span class="card__stat">
+           2025-05-01
+          </span>
+          <span class="card__stat">
+           10 words
+          </span>
+         </span>
         </div>
        </a>
        <a class="card" href="/edit?yak=subdirectory-2/yak2.dj" style="--card-accent-color: hsl(326, 6%, 88%)">
@@ -289,12 +295,18 @@
           # Yak 2  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;
          </p>
         </div>
-        <div class="card__tooltip">
-         Subdirectory-2
-         <br/>
-         C: yak2.dj
-         <br/>
-         M: 2025-05-01 10:00:00
+        <div class="card__meta">
+         <span class="card__chip">
+          Subdirectory-2
+         </span>
+         <span class="card__stats">
+          <span class="card__stat">
+           2025-05-01
+          </span>
+          <span class="card__stat">
+           4 words
+          </span>
+         </span>
         </div>
        </a>
        <a class="card" href="/edit?yak=yak1.dj" style="--card-accent-color: hsl(202, 6%, 88%)">
@@ -303,12 +315,18 @@
           # Yak 1  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;
          </p>
         </div>
-        <div class="card__tooltip">
-         Yak_test_dir
-         <br/>
-         C: yak1.dj
-         <br/>
-         M: 2025-05-01 10:00:00
+        <div class="card__meta">
+         <span class="card__chip">
+          Yak_test_dir
+         </span>
+         <span class="card__stats">
+          <span class="card__stat">
+           2025-05-01
+          </span>
+          <span class="card__stat">
+           4 words
+          </span>
+         </span>
         </div>
        </a>
       </div>

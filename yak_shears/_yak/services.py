@@ -17,6 +17,7 @@ from yak_shears._log_utils import log
 from yak_shears._templates import SearchResult, SortBy, YakInfo
 from yak_shears._yak.database import (
     check_tables_exist,
+    get_backlinks,
     get_search_db_path,
     get_word_count,
     init_search_db,
@@ -27,7 +28,7 @@ from yak_shears._yak.database import (
     upsert_frontmatter,
 )
 from yak_shears.frontmatter import parse_frontmatter
-from yak_shears.links import extract_all_links
+from yak_shears.links import extract_all_links, extract_tags
 
 PREVIEW_LENGTH = 200
 
@@ -147,17 +148,37 @@ async def prepare_yak_info(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
         _, body = parse_frontmatter(content)
         body = body.strip()
         preview = body[:PREVIEW_LENGTH].replace("\n", " ")
+        rel_path = yak_path.relative_to(yak_dir).as_posix()
 
         info = YakInfo(
+            backlink_count=len(get_backlinks(rel_path)),
             category=yak_path.parent.name,
             last_modified=last_modified,
             name=yak_path.name,
-            path=yak_path.relative_to(yak_dir).as_posix(),
+            path=rel_path,
             preview=preview,
+            tags=extract_tags(body),
             truncated=len(body) > PREVIEW_LENGTH,
+            word_count=len(body.split()),
         )
         yaks.append(info)
     return yaks
+
+
+async def read_yak_body(yak_dir: Path, relative_path: str) -> str:
+    """Read a yak's content with YAML frontmatter stripped.
+
+    Raises:
+        FileNotFoundError: If yak doesn't exist
+    """
+    yak_path = await resolve_yak_path(yak_dir, relative_path)
+    if not await yak_path.is_file():
+        msg = f"Yak not found: {yak_path}"
+        raise FileNotFoundError(msg)
+
+    content = await yak_path.read_text(encoding="utf-8")
+    _, body = parse_frontmatter(content)
+    return body
 
 
 # -----------------------------------------------------------------------------
