@@ -1077,19 +1077,90 @@ pre code {
 
 .search-preview {
 	width: 50%;
-	padding: var(--space-4);
-	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
 	background: var(--color-bg);
 }
 
-.search-preview-content {
-	font-family: inherit;
-	line-height: 1.5;
-	white-space: pre-wrap;
+/* The previewPane (#search-preview-content) fills the pane as a flex column so
+   the rendered body scrolls and the Open bar stays pinned to the bottom (3.3). */
+.search-preview > .search-preview-content {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
 }
 
-.search-preview-header {
-	margin-bottom: var(--space-3);
+.search-preview__body {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	padding: var(--space-5);
+}
+
+/* Full-width action bar to open the note in the editor (3.3) */
+.search-preview__open {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.6em;
+	padding: var(--space-4);
+	background: var(--color-accent);
+	color: #000;
+	font-weight: 600;
+	text-decoration: none;
+	border-top: 1px solid var(--color-border);
+	transition: filter var(--transition-fast);
+}
+
+.search-preview__open:hover {
+	filter: brightness(0.96);
+}
+
+.search-preview__hint {
+	font-size: 0.82em;
+	font-weight: 500;
+	opacity: 0.65;
+}
+
+/* Search-in-progress indicator (3.1): an indeterminate bar under the input */
+.search-progress {
+	height: 2px;
+	margin-top: var(--space-3);
+	overflow: hidden;
+	background: var(--color-border);
+	border-radius: var(--radius-pill);
+}
+
+.search-progress::before {
+	content: "";
+	display: block;
+	height: 100%;
+	width: 40%;
+	background: var(--color-accent);
+	border-radius: inherit;
+	animation: search-progress-slide 1s ease-in-out infinite;
+}
+
+@keyframes search-progress-slide {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(350%);
+	}
+}
+
+/* htmx indicator visibility (opacity toggled while the request is in flight) */
+.htmx-indicator {
+	opacity: 0;
+	transition: opacity 120ms ease-in;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+	opacity: 1;
 }
 
 .search-empty {

@@ -13,7 +13,7 @@
 {% block content %}
   <div class="search-modal">
     <div class="search-input-container">
-      <form action="/search" method="get" class="search-form" hx-get="/search" hx-target="#search-results-container" hx-trigger="input changed delay:300ms, submit" hx-push-url="true" role="search" aria-label="Search yaks">
+      <form action="/search" method="get" class="search-form" hx-get="/search" hx-target="#search-results-container" hx-trigger="input changed delay:300ms, submit" hx-push-url="true" hx-indicator=".search-progress" role="search" aria-label="Search yaks">
         <input
           type="text"
           name="query"
@@ -24,6 +24,8 @@
           aria-label="Search query"
         >
       </form>
+      {# Indeterminate progress bar shown while a search request is in flight (3.1) #}
+      <div class="search-progress htmx-indicator" role="status" aria-live="polite" aria-label="Searching"></div>
     </div>
 
     <div class="search-content" id="search-results-container" hx-on:htmx:afterSwap="window.setupResults()">

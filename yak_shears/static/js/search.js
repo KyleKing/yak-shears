@@ -47,9 +47,8 @@ async function loadPreview(resultElement, useModal = false) {
 		if (response.ok) {
 			const data = await response.json();
 			renderPreviewInto(previewPane, data);
-			if (useModal) {
-				scrollToFirstMatch(previewPane);
-			}
+			// Center the first highlighted match in the preview (3.2)
+			scrollToFirstMatch(previewPane);
 		}
 	} catch (error) {
 		console.error("Failed to load preview:", error);
@@ -63,9 +62,9 @@ function renderPreviewInto(previewPane, data) {
 		: escapeHtml(data.source);
 
 	previewPane.innerHTML =
-		`<div class="search-preview-header">` +
-		`<a href="${data.edit_url}" class="button button--primary">Edit</a></div>` +
-		`<div class="search-preview-content djot-rendered"></div>`;
+		`<div class="search-preview__body"><div class="preview-content djot-rendered"></div></div>` +
+		`<a href="${data.edit_url}" class="search-preview__open">Open` +
+		`<span class="search-preview__hint">↵ Enter</span></a>`;
 
 	const body = previewPane.querySelector(".djot-rendered");
 	if (window.djot) {
