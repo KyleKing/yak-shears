@@ -16,7 +16,7 @@ async def test_redirect_to_yaks(context: BrowserContext, page: Page, server_life
     title = await page.title()
     assert "Login" not in title, "Login page was not skipped"
     assert "/yaks" in page.url, "Did not redirect to yaks"
-    assert title == "Yaks in ./test_data/mock_djot_dir_0"
+    assert title == "Yaks in ./mock_djot_dir_0"
 
 
 @pytest.mark.playwright

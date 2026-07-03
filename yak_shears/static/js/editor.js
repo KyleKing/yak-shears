@@ -327,6 +327,14 @@ function initEditor() {
 		// Set initial status based on whether we have local changes
 		updateSaveStatus(saved && saved !== serverContent ? "Modified" : "Synced");
 
+		// Inject current editor content into the save request. Avoids hx-vals="js:...",
+		// which requires 'unsafe-eval' and is blocked by the page's Content-Security-Policy.
+		document.body.addEventListener("htmx:configRequest", function (evt) {
+			if (evt.target.id === "save-btn") {
+				evt.detail.parameters.content = getEditorContent();
+			}
+		});
+
 		// HTMX event listeners for save feedback (button clicks trigger HTMX POST)
 		document.body.addEventListener("htmx:beforeRequest", function (evt) {
 			if (evt.target.id === "save-btn") {
@@ -628,8 +636,7 @@ function updateSaveStatus(status) {
 /**
  * Get current editor content for HTMX form submission
  *
- * Called by HTMX via hx-vals="js:{content: getEditorContent(), yak: '...'}"
- * See edit.html.jinja line 33
+ * Injected into the save request via the htmx:configRequest listener above.
  *
  * @returns {string} Current editor text content
  */
@@ -641,7 +648,6 @@ function getEditorContent() {
 }
 
 // Expose functions globally for template/HTMX usage
-window.getEditorContent = getEditorContent;
 window.toggleMetadataPanel = toggleMetadataPanel;
 window.togglePanelPin = togglePanelPin;
 

@@ -72,9 +72,10 @@ If still interested, these are the high-level commands necessary to run locally
 ```sh
 # Initial Setup
 brew install mise uv
-uv sync
 mise install
 hk install --mise
+uv sync
+uv run playwright install chromium --only-shell
 
 # Formatting
 mise run format ::: typecheck

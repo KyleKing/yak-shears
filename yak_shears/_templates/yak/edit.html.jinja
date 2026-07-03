@@ -41,8 +41,8 @@
       {# Fixed bottom action bar with save button and status #}
       <div class="editor__actions">
         <div class="container">
-          {# HTMX-powered save button - JS injects editor content via hx-vals #}
-          <button class="button button--primary" id="save-btn" hx-post="/edit" hx-swap="none" hx-vals="js:{content: getEditorContent(), yak: '{{ yak_path }}'}">Save</button>
+          {# HTMX-powered save button - not inside #editor-form, so yak is supplied via hx-vals and editor.js injects content via htmx:configRequest #}
+          <button class="button button--primary" id="save-btn" hx-post="/edit" hx-swap="none" hx-vals='{"yak": {{ yak_path | tojson }}}'>Save</button>
           <button class="button button--secondary" id="menu-btn" type="button" aria-label="Toggle menu" aria-expanded="false" aria-controls="metadata-panel" title="Toggle menu (⌘M)">Menu</button>
           {# Status indicator: "Synced" | "Modified" | "Saving..." | "Saved" #}
           <span id="save-status" class="editor__status"></span>
@@ -136,7 +136,7 @@
 
       <section class="metadata-section metadata-section--danger">
         <h3 class="metadata-section__title">Danger Zone</h3>
-        <button class="button button--danger button--full" hx-post="/delete" hx-vals="js:{yak: '{{ yak_path }}'}" hx-confirm="Are you sure you want to delete this yak? This action cannot be undone.">Delete Yak</button>
+        <button class="button button--danger button--full" hx-post="/delete" hx-vals='{"yak": {{ yak_path | tojson }}}' hx-confirm="Are you sure you want to delete this yak? This action cannot be undone.">Delete Yak</button>
       </section>
     </aside>
   </div>
