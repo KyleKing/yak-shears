@@ -28,9 +28,27 @@ from yak_shears._yak.database import (
     upsert_frontmatter,
 )
 from yak_shears.frontmatter import parse_frontmatter
-from yak_shears.links import extract_all_links, extract_tags
+from yak_shears.links import extract_all_links, extract_tags, extract_wikilinks
 
 PREVIEW_LENGTH = 200
+PREVIEW_SOURCE_LIMIT = 2000
+WORD_METER_TARGET = 500
+_URL_RE = re.compile(r"https?://", re.IGNORECASE)
+
+
+def _count_links(body: str) -> int:
+    """Count hyperlinks (URLs and wikilinks) in a yak body."""
+    return len(_URL_RE.findall(body)) + len(extract_wikilinks(body))
+
+
+def _truncate_source(body: str, limit: int) -> tuple[str, bool]:
+    """Truncate a preview source at a line boundary within `limit` chars."""
+    if len(body) <= limit:
+        return body, False
+    cut = body.rfind("\n", 0, limit)
+    if cut <= 0:
+        cut = limit
+    return body[:cut], True
 
 
 # -----------------------------------------------------------------------------
@@ -147,18 +165,19 @@ async def prepare_yak_info(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
         content = await yak_path.read_text(encoding="utf-8")
         _, body = parse_frontmatter(content)
         body = body.strip()
-        preview = body[:PREVIEW_LENGTH].replace("\n", " ")
+        preview, truncated = _truncate_source(body, PREVIEW_SOURCE_LIMIT)
         rel_path = yak_path.relative_to(yak_dir).as_posix()
 
         info = YakInfo(
             backlink_count=len(get_backlinks(rel_path)),
             category=yak_path.parent.name,
             last_modified=last_modified,
+            link_count=_count_links(body),
             name=yak_path.name,
             path=rel_path,
             preview=preview,
             tags=extract_tags(body),
-            truncated=len(body) > PREVIEW_LENGTH,
+            truncated=truncated,
             word_count=len(body.split()),
         )
         yaks.append(info)
@@ -322,7 +341,7 @@ def _process_search_results(
 def _derive_title(content: str, rel_path: str) -> str:
     """Derive a human-readable title from frontmatter, a heading, or the filename."""
     frontmatter, body = parse_frontmatter(content)
-    title = frontmatter.get("title")
+    title = frontmatter.get("title") or frontmatter.get("name")
     if isinstance(title, str) and title.strip():
         return title.strip()
     for line in body.splitlines():

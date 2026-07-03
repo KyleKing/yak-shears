@@ -8,7 +8,7 @@
     <script src="/static/js/htmx.min.js"></script>
     {% block extra_head %}{% endblock %}
   </head>
-  <body class="layout">
+  <body class="layout" data-route="{{ current_route | default('') }}">
     <a href="#main-content" class="skip-link">Skip to main content</a>
     <header class="header" role="banner">
       <div class="container">

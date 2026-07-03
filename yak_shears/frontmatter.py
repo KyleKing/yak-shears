@@ -18,27 +18,59 @@ Example:
     'Content goes here...\n'
 """
 
+import re
 from typing import Any
 
 import yaml
 
+# iCloud/Apple Notes export metadata lines look like `: name=value\` (the trailing
+# backslash is a Djot hard break). A leading run of these lines is a metadata block.
+_EXPORT_META_RE = re.compile(r"^: (?P<key>[^=\n]+)=(?P<value>.*)$")
+
+
+def _parse_export_metadata(content: str) -> tuple[dict[str, Any], str] | None:
+    """Parse an Apple Notes/iCloud export metadata block, if present.
+
+    Returns None when the content does not begin with such a block so callers
+    can fall back to other formats.
+    """
+    lines = content.splitlines(keepends=True)
+    metadata: dict[str, Any] = {}
+    consumed = 0
+    for line in lines:
+        match = _EXPORT_META_RE.match(line.rstrip("\n"))
+        if not match:
+            break
+        value = match["value"].rstrip("\\").strip()
+        metadata[match["key"].strip()] = value
+        consumed += 1
+
+    if not metadata:
+        return None
+
+    body = "".join(lines[consumed:]).lstrip("\n")
+    return metadata, body
+
 
 def parse_frontmatter(content: str) -> tuple[dict[str, Any], str]:
-    """Parse YAML frontmatter from Djot file content.
+    """Parse frontmatter from Djot file content.
 
     Args:
         content: The full content of a Djot file
 
     Returns:
         Tuple of (frontmatter_dict, body_content)
-        - frontmatter_dict: Parsed YAML as dictionary (empty dict if no frontmatter)
+        - frontmatter_dict: Parsed metadata (empty dict if no frontmatter)
         - body_content: Content after frontmatter (or full content if no frontmatter)
 
     Note:
-        Frontmatter must start on the first line with '---' and end with '---'.
-        Malformed YAML returns empty dict and full content.
+        Supports YAML frontmatter delimited by '---' as well as Apple Notes/iCloud
+        export blocks whose lines start with ': '. Malformed YAML returns empty dict
+        and full content.
     """
     if not content.startswith("---\n"):
+        if export := _parse_export_metadata(content):
+            return export
         return {}, content
 
     try:

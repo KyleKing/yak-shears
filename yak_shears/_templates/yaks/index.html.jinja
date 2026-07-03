@@ -2,6 +2,10 @@
 
 {% block title %}Yaks in {{ yak_dir_label }}{% endblock %}
 
+{% block extra_head %}
+  <script src="/static/js/djot.min.js"></script>
+{% endblock %}
+
 {% block content %}
   <h1>Yaks in {{ yak_dir_label }}</h1>
   <p class="page-info">Showing {{ yaks | length }} of {{ total_yaks }} yaks (Page {{ current_page }} of {{ total_pages }})</p>
@@ -25,9 +29,11 @@
   {% if yaks %}
     <div class="cards">
       {% for info in yaks %}
-        <a href="/edit?yak={{ info.path }}" class="card" style="--card-accent-color: {{ get_category_color(info.category) }}">
+        {% set fill = ([info.word_count, 500] | min) / 500 %}
+        <a href="/edit?yak={{ info.path }}" class="card" style="--card-accent-color: {{ get_category_color(info.category) }}; --card-fill: {{ '%.3f' | format(fill) }}">
+          <div class="card__meter" title="{{ info.word_count }} words" aria-hidden="true"></div>
           <div class="card__body">
-            <p>{{ info.preview }}{% if info.truncated %}...{% endif %}</p>
+            <div class="card__preview" data-src="{{ info.preview }}">{{ info.preview }}{% if info.truncated %}…{% endif %}</div>
           </div>
           {% if info.tags %}
             <div class="card__tags">
@@ -38,13 +44,33 @@
             <span class="card__chip">{{ info.category | title }}</span>
             <span class="card__stats">
               <span class="card__stat">{{ info.last_modified[:10] }}</span>
-              <span class="card__stat">{{ info.word_count }} words</span>
-              {% if info.backlink_count %}<span class="card__stat">{{ info.backlink_count }} links</span>{% endif %}
+              <span class="card__stat">{{ info.link_count }} link{{ '' if info.link_count == 1 else 's' }}</span>
             </span>
           </div>
         </a>
       {% endfor %}
     </div>
+    <script>
+      // Render Djot previews into cards (compact, header-styled). See main.css .card__preview.
+      document.querySelectorAll(".card__preview").forEach((el) => {
+        const src = el.dataset.src || "";
+        if (window.djot && src) {
+          try {
+            el.innerHTML = window.djot.renderHTML(window.djot.parse(src));
+            // Demote rendered headings to styled divs so cards don't inject
+            // page-level <h1>..<h6> into the document outline.
+            el.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((h) => {
+              const div = document.createElement("div");
+              div.className = "card__h";
+              div.textContent = h.textContent;
+              h.replaceWith(div);
+            });
+          } catch (err) {
+            el.textContent = src;
+          }
+        }
+      });
+    </script>
   {% else %}
     <div class="empty-state-container">
       <div class="empty-state">

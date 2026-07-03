@@ -170,3 +170,41 @@ Body content"""
     # Whitespace-only YAML is parsed as None by YAML, which becomes empty dict
     assert frontmatter == {}
     assert body == "Body content"
+
+
+def test_parse_icloud_export_metadata() -> None:
+    """Apple Notes/iCloud export metadata block is parsed and stripped from body."""
+    content = (
+        ": id=x-coredata://ABCD/ICNote/p1\\\n"
+        ": creation_date=2025-01-01T09:30:48\\\n"
+        ": name=Dog Sheep\\\n"
+        ": folder=Notes\\\n"
+        "\n"
+        "````` =html\n"
+        "<div><h1>Dog Sheep</h1></div>\n"
+    )
+
+    frontmatter, body = parse_frontmatter(content)
+
+    assert frontmatter == {
+        "id": "x-coredata://ABCD/ICNote/p1",
+        "creation_date": "2025-01-01T09:30:48",
+        "name": "Dog Sheep",
+        "folder": "Notes",
+    }
+    assert body.startswith("````` =html")
+    assert ": id=" not in body
+
+
+def test_parse_icloud_export_value_with_equals() -> None:
+    """Values containing '=' are preserved after the first delimiter."""
+    frontmatter, _ = parse_frontmatter(": query=a=b=c\\\n\nBody")
+    assert frontmatter == {"query": "a=b=c"}
+
+
+def test_colon_line_not_metadata_is_left_alone() -> None:
+    """A leading ': ' line without '=' is not treated as export metadata."""
+    content = ": just a note line\nmore body"
+    frontmatter, body = parse_frontmatter(content)
+    assert frontmatter == {}
+    assert body == content

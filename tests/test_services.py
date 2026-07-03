@@ -148,6 +148,20 @@ class TestYakInfo:
         assert info.category in {"category1", "category2"}
         assert "content" in info.preview
         assert not info.truncated
+        assert info.link_count >= 0
+
+
+class TestLinkCount:
+    def test_counts_urls_and_wikilinks(self) -> None:
+        from yak_shears._yak.services import _count_links
+
+        body = "See <https://example.com> and http://other.org plus [[a-note]] and [[b|B]]"
+        assert _count_links(body) == 4
+
+    def test_no_links(self) -> None:
+        from yak_shears._yak.services import _count_links
+
+        assert _count_links("plain text with no links") == 0
 
 
 class TestYakCRUD:

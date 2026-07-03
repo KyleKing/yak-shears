@@ -24,7 +24,7 @@
     <script defer="" src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js">
     </script>
    </head>
-   <body class="layout">
+   <body class="layout" data-route="">
     <a class="skip-link" href="#main-content">
      Skip to main content
     </a>
@@ -192,8 +192,10 @@
     <link href="/static/css/main.css" rel="stylesheet"/>
     <script src="/static/js/htmx.min.js">
     </script>
+    <script src="/static/js/djot.min.js">
+    </script>
    </head>
-   <body class="layout">
+   <body class="layout" data-route="yaks">
     <a class="skip-link" href="#main-content">
      Skip to main content
     </a>
@@ -269,11 +271,17 @@
        </a>
       </div>
       <div class="cards">
-       <a class="card" href="/edit?yak=subdirectory-3/yak3.dj" style="--card-accent-color: hsl(327, 6%, 88%)">
+       <a class="card" href="/edit?yak=subdirectory-3/yak3.dj" style="--card-accent-color: hsl(261, 25%, 70%); --card-fill: 0.020">
+        <div aria-hidden="true" class="card__meter" title="10 words">
+        </div>
         <div class="card__body">
-         <p>
-          # Yak 3  This is a test yak number 3
-         </p>
+         <div class="card__preview" data-src="# Yak 3
+  
+  This is a test yak number 3">
+          # Yak 3
+  
+  This is a test yak number 3
+         </div>
         </div>
         <div class="card__meta">
          <span class="card__chip">
@@ -284,16 +292,22 @@
            2025-05-01
           </span>
           <span class="card__stat">
-           10 words
+           0 links
           </span>
          </span>
         </div>
        </a>
-       <a class="card" href="/edit?yak=subdirectory-2/yak2.dj" style="--card-accent-color: hsl(326, 6%, 88%)">
+       <a class="card" href="/edit?yak=subdirectory-2/yak2.dj" style="--card-accent-color: hsl(244, 40%, 55%); --card-fill: 0.008">
+        <div aria-hidden="true" class="card__meter" title="4 words">
+        </div>
         <div class="card__body">
-         <p>
-          # Yak 2  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;
-         </p>
+         <div class="card__preview" data-src="# Yak 2
+  
+  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;">
+          # Yak 2
+  
+  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;
+         </div>
         </div>
         <div class="card__meta">
          <span class="card__chip">
@@ -304,16 +318,22 @@
            2025-05-01
           </span>
           <span class="card__stat">
-           4 words
+           1 link
           </span>
          </span>
         </div>
        </a>
-       <a class="card" href="/edit?yak=yak1.dj" style="--card-accent-color: hsl(202, 6%, 88%)">
+       <a class="card" href="/edit?yak=yak1.dj" style="--card-accent-color: hsl(160, 25%, 70%); --card-fill: 0.008">
+        <div aria-hidden="true" class="card__meter" title="4 words">
+        </div>
         <div class="card__body">
-         <p>
-          # Yak 1  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;
-         </p>
+         <div class="card__preview" data-src="# Yak 1
+  
+  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;">
+          # Yak 1
+  
+  &lt;https://www.ecosia.org/search?method=index&amp;q=yak&gt;
+         </div>
         </div>
         <div class="card__meta">
          <span class="card__chip">
@@ -324,12 +344,33 @@
            2025-05-01
           </span>
           <span class="card__stat">
-           4 words
+           1 link
           </span>
          </span>
         </div>
        </a>
       </div>
+      <script>
+       // Render Djot previews into cards (compact, header-styled). See main.css .card__preview.
+        document.querySelectorAll(".card__preview").forEach((el) => {
+          const src = el.dataset.src || "";
+          if (window.djot && src) {
+            try {
+              el.innerHTML = window.djot.renderHTML(window.djot.parse(src));
+              // Demote rendered headings to styled divs so cards don't inject
+              // page-level <h1>..<h6> into the document outline.
+              el.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((h) => {
+                const div = document.createElement("div");
+                div.className = "card__h";
+                div.textContent = h.textContent;
+                h.replaceWith(div);
+              });
+            } catch (err) {
+              el.textContent = src;
+            }
+          }
+        });
+      </script>
      </div>
     </main>
    </body>

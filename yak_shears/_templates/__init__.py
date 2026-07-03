@@ -24,6 +24,7 @@ class YakInfo:
     backlink_count: int
     category: str
     last_modified: str
+    link_count: int
     name: str
     path: str
     preview: str
@@ -51,20 +52,33 @@ ENV = Environment(
 )
 
 
-def get_category_color(category: str) -> str:
-    """Get a subtle, muted color for a category based on its name.
+_HASH_MASK = 2**31
+_SATURATIONS = (25, 30, 35, 40, 45)
+_LIGHTNESSES = (55, 60, 65, 70, 75)
 
-    Returns a Scandinavian-style muted color with low saturation for minimal design.
+
+def get_category_color(category: str) -> str:
+    """Deterministic muted color for a category name.
+
+    Ports the djb2-based HSL scheme from the user's WezTerm config so tab and
+    category colors stay consistent: full-spectrum hue with constrained
+    saturation/lightness for muted, readable accents.
 
     Returns:
-        A CSS color string.
+        A CSS ``hsl(...)`` color string.
     """
     if not category:
-        return "#d9d4cc"  # default border color
-    # Use sum of ords for stable hash-like value
-    hue = sum(ord(c) for c in category) % 360
-    # Use ultra-subtle colors with very low saturation for true Scandinavian minimalism
-    return f"hsl({hue}, 6%, 88%)"
+        return "var(--color-border)"
+
+    hash_val = 5381
+    for char in category:
+        hash_val = ((hash_val * 33) + ord(char)) % _HASH_MASK
+    hash_val = ((hash_val * 31337) + 12345) % _HASH_MASK
+
+    hue = hash_val % 360
+    saturation = _SATURATIONS[(hash_val // 360) % len(_SATURATIONS)]
+    lightness = _LIGHTNESSES[(hash_val // 1800) % len(_LIGHTNESSES)]
+    return f"hsl({hue}, {saturation}%, {lightness}%)"
 
 
 def _render_template(template_name: str, *, status_code: HTTPStatus = HTTPStatus.OK, **context: Any) -> HTMLResponse:

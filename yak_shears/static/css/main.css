@@ -46,8 +46,8 @@
 		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 	}
 
-	.card::before {
-		opacity: 0.8;
+	.card__preview::after {
+		background: linear-gradient(transparent, var(--color-surface));
 	}
 }
 
@@ -147,6 +147,12 @@ p {
 
 .layout__inner {
 	flex: 1;
+}
+
+/* Roomier top/bottom breathing space with a little overscroll (1.6) */
+[data-route="yaks"] .layout__inner {
+	padding-top: var(--space-6);
+	padding-bottom: var(--space-8);
 }
 
 .container {
@@ -317,15 +323,28 @@ p {
 
 .cards {
 	display: grid;
-	gap: var(--space-6);
-	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap: var(--space-5);
+	/* At most three columns so a lone card never stretches full width (1.1) */
+	grid-template-columns: 1fr;
 	margin-top: var(--space-6);
+}
+
+@media (min-width: 640px) {
+	.cards {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 960px) {
+	.cards {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
 }
 
 .card {
 	display: flex;
 	flex-direction: column;
-	padding: var(--space-6);
+	padding: var(--space-5);
 	background: var(--color-surface);
 	border: 1px solid var(--color-border);
 	border-radius: var(--radius-sm);
@@ -339,15 +358,18 @@ p {
 	overflow: hidden;
 }
 
-.card::before {
-	content: "";
+/* Word-count meter: accent fill spans (words / 500) of the card width (1.2) */
+.card__meter {
 	position: absolute;
 	top: 0;
 	left: 0;
 	right: 0;
 	height: 4px;
-	background: var(--card-accent-color, var(--color-border));
-	opacity: 0.6;
+	background: linear-gradient(
+		to right,
+		var(--card-accent-color, var(--color-border)) calc(var(--card-fill, 0) * 100%),
+		var(--color-border) calc(var(--card-fill, 0) * 100%)
+	);
 }
 
 .card:hover {
@@ -357,9 +379,66 @@ p {
 
 .card__body {
 	flex: 1;
+	margin-top: var(--space-2);
 	margin-bottom: var(--space-3);
-	font-size: 0.9rem;
 	color: var(--color-text-dim);
+}
+
+/* Compact rendered Djot preview: small type, headers bold but not enlarged (1.5) */
+.card__preview {
+	position: relative;
+	max-height: 8rem;
+	overflow: hidden;
+	font-size: 0.8rem;
+	line-height: 1.5;
+	white-space: normal;
+}
+
+.card__preview::after {
+	content: "";
+	position: absolute;
+	inset: auto 0 0 0;
+	height: 2rem;
+	background: linear-gradient(transparent, var(--color-surface));
+}
+
+.card__preview > :first-child {
+	margin-top: 0;
+}
+
+.card__preview .card__h {
+	font-size: 1em;
+	font-weight: 700;
+	margin: 0.5em 0 0.2em;
+	color: var(--color-text);
+	line-height: 1.3;
+}
+
+.card__preview p {
+	margin: 0 0 0.4em;
+}
+
+.card__preview ul,
+.card__preview ol {
+	margin: 0.2em 0;
+	padding-left: 1.2em;
+}
+
+.card__preview pre {
+	margin: 0.3em 0;
+	padding: 0.4em 0.6em;
+	background: var(--color-surface-alt);
+	border-radius: var(--radius-sm);
+	overflow: hidden;
+}
+
+.card__preview code {
+	font-size: 0.9em;
+}
+
+.card__preview img {
+	max-width: 100%;
+	height: auto;
 }
 
 .card__tags {
