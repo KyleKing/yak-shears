@@ -31,7 +31,8 @@ from yak_shears.frontmatter import parse_frontmatter
 from yak_shears.links import extract_all_links, extract_tags, extract_wikilinks
 
 PREVIEW_LENGTH = 200
-PREVIEW_SOURCE_LIMIT = 2000
+PREVIEW_SOURCE_LIMIT = 600
+PREVIEW_MAX_LINES = 12
 WORD_METER_TARGET = 500
 _URL_RE = re.compile(r"https?://", re.IGNORECASE)
 
@@ -41,14 +42,25 @@ def _count_links(body: str) -> int:
     return len(_URL_RE.findall(body)) + len(extract_wikilinks(body))
 
 
-def _truncate_source(body: str, limit: int) -> tuple[str, bool]:
-    """Truncate a preview source at a line boundary within `limit` chars."""
-    if len(body) <= limit:
-        return body, False
-    cut = body.rfind("\n", 0, limit)
-    if cut <= 0:
-        cut = limit
-    return body[:cut], True
+def _truncate_source(body: str, limit: int, max_lines: int) -> tuple[str, bool]:
+    """Clip a preview source to at most `max_lines` lines and `limit` chars.
+
+    Keeps cards cheap to render: the grid draws dozens at once and only a few
+    lines are visible after the CSS height clamp.
+    """
+    truncated = False
+    lines = body.split("\n")
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+        truncated = True
+    clipped = "\n".join(lines)
+    if len(clipped) > limit:
+        cut = clipped.rfind("\n", 0, limit)
+        if cut <= 0:
+            cut = limit
+        clipped = clipped[:cut]
+        truncated = True
+    return clipped, truncated
 
 
 # -----------------------------------------------------------------------------
@@ -165,7 +177,7 @@ async def prepare_yak_info(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
         content = await yak_path.read_text(encoding="utf-8")
         _, body = parse_frontmatter(content)
         body = body.strip()
-        preview, truncated = _truncate_source(body, PREVIEW_SOURCE_LIMIT)
+        preview, truncated = _truncate_source(body, PREVIEW_SOURCE_LIMIT, PREVIEW_MAX_LINES)
         rel_path = yak_path.relative_to(yak_dir).as_posix()
 
         info = YakInfo(

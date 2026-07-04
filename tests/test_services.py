@@ -6,8 +6,11 @@ import pytest
 
 from yak_shears._templates import SortBy
 from yak_shears._yak.services import (
+    PREVIEW_MAX_LINES,
+    PREVIEW_SOURCE_LIMIT,
     PaginationResult,
     YakPathError,
+    _truncate_source,
     create_yak,
     delete_yak,
     get_categories,
@@ -164,6 +167,27 @@ class TestLinkCount:
         assert _count_links("plain text with no links") == 0
 
 
+class TestPreviewTruncation:
+    def test_short_body_is_untouched(self) -> None:
+        body = "one\ntwo\nthree"
+        clipped, truncated = _truncate_source(body, PREVIEW_SOURCE_LIMIT, PREVIEW_MAX_LINES)
+        assert clipped == body
+        assert not truncated
+
+    def test_caps_line_count(self) -> None:
+        body = "\n".join(str(n) for n in range(50))
+        clipped, truncated = _truncate_source(body, PREVIEW_SOURCE_LIMIT, PREVIEW_MAX_LINES)
+        assert truncated
+        assert len(clipped.split("\n")) == PREVIEW_MAX_LINES
+
+    def test_caps_char_count_at_line_boundary(self) -> None:
+        body = "\n".join(["x" * 100] * 5)
+        clipped, truncated = _truncate_source(body, 250, PREVIEW_MAX_LINES)
+        assert truncated
+        assert len(clipped) <= 250
+        assert "\n" not in clipped[-1:]
+
+
 class TestYakCRUD:
     @pytest.mark.asyncio
     async def test_create_yak(self, tmp_path):
@@ -207,6 +231,25 @@ class TestYakCRUD:
 
         content, _ = await read_yak(yak_dir, "category1/file1.dj")
         assert content == "updated content"
+
+    @pytest.mark.asyncio
+    async def test_save_preserves_export_metadata_verbatim(self, temp_yak_dir):
+        """Saving must not reformat iCloud export metadata into YAML (no magic)."""
+        from anyio import Path
+
+        yak_dir = Path(temp_yak_dir)
+        db_dir = temp_yak_dir.parent / "db"
+        db_dir.mkdir()
+        export = ": id=x-coredata://ABC/ICNote/p1\\\n: name=Sample\\\n\nBody line one\n"
+
+        with patch.dict("os.environ", {"SEARCH_DB_DIR": str(db_dir)}):
+            from yak_shears._yak.database import init_search_db
+
+            init_search_db()
+            await save_yak(yak_dir, "category1/file1.dj", export)
+
+        content, _ = await read_yak(yak_dir, "category1/file1.dj")
+        assert content == export
 
     @pytest.mark.asyncio
     async def test_delete_yak(self, temp_yak_dir):

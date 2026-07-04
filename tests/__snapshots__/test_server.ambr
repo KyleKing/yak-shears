@@ -151,11 +151,8 @@
          </p>
         </section>
         <section class="metadata-section metadata-section--danger">
-         <div class="metadata-section__label">
-          danger
-         </div>
-         <button class="button button--danger button--full" hx-confirm="Are you sure you want to delete this yak? This action cannot be undone." hx-post="/delete" hx-vals='{"yak": "test.dj"}'>
-          Delete Yak
+         <button class="button button--sm button--danger-ghost button--full" hx-confirm="Delete this yak? This cannot be undone." hx-post="/delete" hx-vals='{"yak": "test.dj"}'>
+          rm test.dj
          </button>
         </section>
        </aside>
@@ -281,11 +278,11 @@
           Subdirectory-3
          </span>
          <span class="card__stats">
-          <span class="card__stat">
+          <span class="card__stat card__stat--date" title="Last modified">
            2025-05-01
           </span>
-          <span class="card__stat">
-           0 links
+          <span class="card__stat card__stat--links" title="0 links">
+           ⇗ 0
           </span>
          </span>
         </div>
@@ -307,11 +304,11 @@
           Subdirectory-2
          </span>
          <span class="card__stats">
-          <span class="card__stat">
+          <span class="card__stat card__stat--date" title="Last modified">
            2025-05-01
           </span>
-          <span class="card__stat">
-           1 link
+          <span class="card__stat card__stat--links" title="1 link">
+           ⇗ 1
           </span>
          </span>
         </div>
@@ -333,11 +330,11 @@
           Yak_test_dir
          </span>
          <span class="card__stats">
-          <span class="card__stat">
+          <span class="card__stat card__stat--date" title="Last modified">
            2025-05-01
           </span>
-          <span class="card__stat">
-           1 link
+          <span class="card__stat card__stat--links" title="1 link">
+           ⇗ 1
           </span>
          </span>
         </div>
@@ -357,6 +354,14 @@
                 div.className = "card__h";
                 div.textContent = h.textContent;
                 h.replaceWith(div);
+              });
+              // Demote links to styled text: the whole card is one <a>, so nested
+              // anchors are invalid HTML and would steal the card's click target.
+              el.querySelectorAll("a").forEach((a) => {
+                const span = document.createElement("span");
+                span.className = "card__link";
+                span.textContent = a.textContent;
+                a.replaceWith(span);
               });
             } catch (err) {
               el.textContent = src;

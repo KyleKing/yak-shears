@@ -114,7 +114,7 @@ async def test_delete_yak(context: BrowserContext, page: Page, server_lifecycle)
         # Register handler for confirm dialog
         page.on("dialog", lambda dialog: dialog.accept())
         # Then click delete
-        delete_button = page.locator("button:has-text('Delete Yak')")
+        delete_button = page.locator("button.button--danger-ghost")
         await expect(delete_button).to_be_visible()
         await delete_button.click()
 
@@ -432,9 +432,21 @@ async def test_list_indent_inserts_blank_before_nested(context: BrowserContext, 
     editor = page.locator(".editor")
     await expect(editor).to_be_editable()
 
-    await _fill_editor(page, "- parent")
-    await page.keyboard.press("Enter")
-    await page.keyboard.type("child")
+    # Set a flat two-item list with the caret at the end of the child line so this
+    # exercises only the indent path (chaining type+Tab races the caret rAF).
+    await page.evaluate(
+        """() => {
+            window.jar.updateCode("- parent\\n- child");
+            const ed = document.querySelector(".editor");
+            ed.focus();
+            const range = document.createRange();
+            range.selectNodeContents(ed);
+            range.collapse(false);
+            const sel = getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }"""
+    )
     await page.keyboard.press("Tab")
 
     content = await editor.text_content()
@@ -470,3 +482,28 @@ async def test_list_outdent_removes_nested_blank(context: BrowserContext, page: 
 
     content = await editor.text_content()
     assert content == "- parent\n- child", f"Expected flat list without blank line but got {content!r}"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_wrap_toggle_rewraps_editor(context: BrowserContext, page: Page, server_lifecycle):
+    """The wrap toggle flips the editor itself between no-wrap and soft-wrap."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    async def white_space() -> str:
+        return await page.evaluate("() => getComputedStyle(document.querySelector('.editor')).whiteSpace")
+
+    # Default is unwrapped (CodeJar forces pre-wrap inline; the app overrides to pre).
+    assert await white_space() == "pre"
+
+    await open_menu(page)
+    wrap_toggle = page.locator("#wrap-toggle")
+    await wrap_toggle.click()
+    assert await white_space() == "pre-wrap"
+
+    await wrap_toggle.click()
+    assert await white_space() == "pre"

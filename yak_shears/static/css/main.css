@@ -7,6 +7,7 @@
 	--color-border: #d9d4cc;
 	--color-accent: #f7cf46;
 	--color-danger: #d93838;
+	--space-1: 0.25rem;
 	--space-2: 0.5rem;
 	--space-3: 0.75rem;
 	--space-4: 1rem;
@@ -15,6 +16,7 @@
 	--space-7: 3rem;
 	--space-8: 4rem;
 	--radius-sm: 0.5rem;
+	--radius-lg: 0.75rem;
 	--radius-pill: 999px;
 	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
 	--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.08);
@@ -316,6 +318,22 @@ p {
 	border-color: #c0392b;
 }
 
+/* Low-key destructive action: reads as an outline until hovered (item 2) */
+.button--danger-ghost {
+	background: transparent;
+	color: var(--color-danger);
+	border-color: var(--color-border);
+	font-weight: 500;
+	opacity: 0.75;
+}
+
+.button--danger-ghost:hover {
+	background: var(--color-danger);
+	border-color: var(--color-danger);
+	color: #fff;
+	opacity: 1;
+}
+
 .button--full {
 	width: 100%;
 	justify-content: center;
@@ -444,57 +462,76 @@ p {
 .card__tags {
 	display: flex;
 	flex-wrap: wrap;
-	gap: var(--space-2);
+	gap: var(--space-2) var(--space-3);
 	margin-bottom: var(--space-2);
 }
 
 .card__tag {
 	color: var(--color-text-dim);
-	font-size: 0.75rem;
+	font-size: 0.72rem;
 }
 
+.card__tag::before {
+	content: "#";
+	opacity: 0.5;
+}
+
+/* Links inside a card preview are demoted to non-clickable styled text: the
+   whole card is the click target, so a nested <a> would be invalid markup. */
+.card__link {
+	color: var(--color-text);
+	text-decoration: underline dotted;
+	text-underline-offset: 2px;
+}
+
+/* Boardgame-style footer: a bracketed category token on the left, mono stats on
+   the right, ruled off from the body above. */
 .card__meta {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: var(--space-3);
-	padding-top: var(--space-2);
+	padding-top: var(--space-3);
 	border-top: 1px solid var(--color-border);
+	font-size: 0.72rem;
 }
 
 .card__chip {
 	display: inline-flex;
 	align-items: center;
-	gap: 0.4em;
-	padding: 0.1em 0.6em;
-	border-radius: 999px;
-	background: var(--color-surface-alt);
+	gap: 0.45em;
+	padding: 0.15em 0.55em;
 	border: 1px solid var(--color-border);
+	border-radius: 3px;
+	background: var(--color-surface-alt);
 	color: var(--color-text);
-	font-size: 0.75rem;
-	font-weight: 500;
+	font-weight: 600;
+	text-transform: lowercase;
 	white-space: nowrap;
 }
 
 .card__chip::before {
 	content: "";
-	width: 0.6em;
-	height: 0.6em;
-	border-radius: 999px;
+	width: 0.55em;
+	height: 0.55em;
+	border-radius: 2px;
 	background: var(--card-accent-color, var(--color-border));
 }
 
 .card__stats {
 	display: flex;
 	flex-wrap: wrap;
-	gap: var(--space-2) var(--space-3);
+	gap: 0.2em 0.7em;
 	justify-content: flex-end;
 	color: var(--color-text-dim);
-	font-size: 0.75rem;
 }
 
 .card__stat {
 	white-space: nowrap;
+}
+
+.card__stat--links {
+	font-variant-numeric: tabular-nums;
 }
 
 .card__actions {
@@ -805,7 +842,6 @@ pre code {
 
 .preview-content {
 	line-height: 1.7;
-	font-family: var(--font-sans);
 	font-size: 1rem;
 	color: var(--color-text);
 }
@@ -1232,30 +1268,6 @@ pre code {
 	pointer-events: none;
 }
 
-.htmx-indicator {
-	display: none;
-}
-
-.htmx-request .htmx-indicator {
-	display: inline-block;
-}
-
-.loading-spinner {
-	display: inline-block;
-	width: 1rem;
-	height: 1rem;
-	border: 2px solid var(--color-border);
-	border-top-color: var(--color-accent);
-	border-radius: 50%;
-	animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-	to {
-		transform: rotate(360deg);
-	}
-}
-
 @keyframes fadeIn {
 	from {
 		opacity: 0;
@@ -1276,17 +1288,6 @@ pre code {
 		opacity: 1;
 		transform: translateY(0);
 	}
-}
-
-.loading-message {
-	display: none;
-	color: var(--color-text-dim);
-	font-size: 0.9rem;
-	margin-top: var(--space-3);
-}
-
-.htmx-request + .loading-message {
-	display: block;
 }
 
 /* Subtle page animations */
@@ -1716,14 +1717,6 @@ pre code {
 	margin-top: auto;
 	padding-top: var(--space-4);
 	border-top: 1px solid var(--color-border);
-}
-
-.metadata-section--danger .metadata-section__label {
-	color: var(--color-danger);
-}
-
-.metadata-section--danger .metadata-section__label::before {
-	color: var(--color-danger);
 }
 
 .metadata-properties {

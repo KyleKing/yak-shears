@@ -3,6 +3,8 @@ import re
 import pytest
 from playwright.async_api import BrowserContext, Page, expect
 
+from tests.conftest import MOCK_YAK_DIR
+
 from ._helpers import login, maybe_screenshot
 
 
@@ -125,3 +127,28 @@ async def test_yaks_responsive_layout(context: BrowserContext, page: Page, serve
     await page.set_viewport_size({"width": 1920, "height": 1080})
     await page.goto("/yaks")
     await expect(cards_container).to_be_visible()
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_yaks_card_links_are_demoted_not_nested(context: BrowserContext, page: Page, server_lifecycle):
+    """A link in a card preview renders as styled text, never a nested <a> (invalid markup)."""
+    await login(context, page)
+
+    category = MOCK_YAK_DIR / "test-e2e-category"
+    category.mkdir(parents=True, exist_ok=True)
+    note = category / "linky.dj"
+    note.write_text("# Linky\n\n<https://example.com>\n")
+    try:
+        await page.goto("/yaks?category=test-e2e-category")
+        await page.wait_for_selector(".card__preview")
+        stats = await page.evaluate(
+            "() => ({"
+            "nested: document.querySelectorAll('a.card a').length,"
+            "demoted: document.querySelectorAll('.card__link').length"
+            "})"
+        )
+        assert stats["nested"] == 0
+        assert stats["demoted"] >= 1
+    finally:
+        note.unlink(missing_ok=True)

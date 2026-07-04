@@ -43,8 +43,8 @@
           <div class="card__meta">
             <span class="card__chip">{{ info.category | title }}</span>
             <span class="card__stats">
-              <span class="card__stat">{{ info.last_modified[:10] }}</span>
-              <span class="card__stat">{{ info.link_count }} link{{ '' if info.link_count == 1 else 's' }}</span>
+              <span class="card__stat card__stat--date" title="Last modified">{{ info.last_modified[:10] }}</span>
+              <span class="card__stat card__stat--links" title="{{ info.link_count }} link{{ '' if info.link_count == 1 else 's' }}">⇗ {{ info.link_count }}</span>
             </span>
           </div>
         </a>
@@ -64,6 +64,14 @@
               div.className = "card__h";
               div.textContent = h.textContent;
               h.replaceWith(div);
+            });
+            // Demote links to styled text: the whole card is one <a>, so nested
+            // anchors are invalid HTML and would steal the card's click target.
+            el.querySelectorAll("a").forEach((a) => {
+              const span = document.createElement("span");
+              span.className = "card__link";
+              span.textContent = a.textContent;
+              a.replaceWith(span);
             });
           } catch (err) {
             el.textContent = src;
