@@ -3,6 +3,7 @@
 import asyncio
 import os
 import shutil
+import socket
 import time
 from contextlib import suppress
 from pathlib import Path as SyncPath
@@ -15,11 +16,11 @@ from playwright.async_api import ConsoleMessage, Page
 from tests.conftest import MOCK_YAK_DIR
 
 
-def _get_worker_port() -> str:
-    """Get port for this worker to enable parallel E2E tests."""
-    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "main")
-    worker_num = 0 if worker_id == "main" else int(worker_id.replace("gw", ""))
-    return str(8081 + worker_num)
+def _get_free_port() -> int:
+    """Ask the OS for an unused port so parallel/concurrent test runs never collide."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("localhost", 0))
+        return sock.getsockname()[1]
 
 
 def get_playwright_auth_path() -> SyncPath:
@@ -28,7 +29,7 @@ def get_playwright_auth_path() -> SyncPath:
     return SyncPath(__file__).absolute().parents[2] / f".playwright-auth-{worker_id}.json"
 
 
-PORT = _get_worker_port()
+PORT = str(_get_free_port())
 BASE_URL = f"http://localhost:{PORT}"
 
 
