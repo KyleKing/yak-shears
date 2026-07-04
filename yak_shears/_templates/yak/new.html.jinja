@@ -12,12 +12,14 @@
   <form method="post" class="form">
     <div class="form__group">
       <label for="category" class="form__label">Category:</label>
-      <input type="text" id="category" name="category" class="form__input" list="category-options" placeholder="Pick or type a category" autocomplete="off" autofocus required>
-      <datalist id="category-options">
-        {% for cat in categories | sort %}
-          <option value="{{ cat }}"></option>
-        {% endfor %}
-      </datalist>
+      <div class="combobox" data-combobox>
+        <input type="text" id="category" name="category" class="form__input combobox__input" placeholder="Pick or type a category" autocomplete="off" autofocus required role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="category-listbox">
+        <ul class="combobox__list" id="category-listbox" role="listbox" hidden>
+          {% for cat in categories | sort %}
+            <li class="combobox__option" id="category-option-{{ loop.index }}" role="option" data-value="{{ cat }}">{{ cat }}</li>
+          {% endfor %}
+        </ul>
+      </div>
     </div>
 
     <div class="form__actions">
@@ -25,4 +27,8 @@
       <a href="/yaks" class="button">Cancel</a>
     </div>
   </form>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ static_url('js/combobox.js') }}"></script>
 {% endblock %}

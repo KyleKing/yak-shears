@@ -632,6 +632,43 @@ p {
 	border-color: var(--color-accent);
 }
 
+.combobox {
+	position: relative;
+}
+
+.combobox__list {
+	position: absolute;
+	top: calc(100% + var(--space-1));
+	left: 0;
+	right: 0;
+	z-index: 20;
+	max-height: 240px;
+	overflow-y: auto;
+	margin: 0;
+	padding: var(--space-1);
+	list-style: none;
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	box-shadow: var(--shadow-md);
+}
+
+.combobox__option {
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+	font-size: 0.9rem;
+}
+
+.combobox__option:hover {
+	background: var(--color-surface-alt);
+}
+
+.combobox__option--active {
+	background: var(--color-accent);
+	color: #000;
+}
+
 .form__actions {
 	display: flex;
 	gap: var(--space-2);
