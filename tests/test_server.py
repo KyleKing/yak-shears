@@ -369,7 +369,7 @@ def test_search_htmx_with_query(client: TestClient, mock_user_session) -> None:
         assert response.status_code == HTTPStatus.OK
 
 
-@pytest.mark.parametrize("sort_by", ["name", "modified"])
+@pytest.mark.parametrize("sort_by", ["created_at", "modified"])
 def test_yaks_sort(client: TestClient, mock_user_session, sort_by) -> None:
     """Test the yaks endpoint with different sort options."""
     with set_yak_shears_dir(MOCK_YAK_DIR):

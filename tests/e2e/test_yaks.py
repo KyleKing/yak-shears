@@ -36,21 +36,21 @@ async def test_yaks_page_loads(context: BrowserContext, page: Page, server_lifec
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_yaks_sorting_by_name(context: BrowserContext, page: Page, server_lifecycle):
-    """Test sorting yaks by name."""
+async def test_yaks_sorting_by_created_at(context: BrowserContext, page: Page, server_lifecycle):
+    """Test sorting yaks by created at."""
     await login(context, page)
 
     await page.goto("/yaks")
 
-    # Click sort by name button
-    sort_by_name = page.locator("a:has-text('Name (Created At)')")
-    await sort_by_name.click()
+    # Click sort by created at button
+    sort_by_created_at = page.locator("a:has-text('Created At')")
+    await sort_by_created_at.click()
 
     # Check URL contains sort parameter
-    await page.wait_for_url("**/yaks?sort_by=name")
+    await page.wait_for_url("**/yaks?sort_by=created_at")
 
     # Verify the button is marked as active
-    await expect(sort_by_name).to_have_class(re.compile(r"button--primary"))
+    await expect(sort_by_created_at).to_have_class(re.compile(r"button--primary"))
 
 
 @pytest.mark.playwright

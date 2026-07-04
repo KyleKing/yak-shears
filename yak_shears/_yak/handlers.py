@@ -67,7 +67,7 @@ class YaksQueryParams:
         try:
             sort_by = SortBy(request.query_params.get("sort_by", "").lower())
         except ValueError:
-            sort_by = SortBy.NAME
+            sort_by = SortBy.CREATED_AT
 
         category = request.query_params.get("category") or None
         if category and category not in categories:

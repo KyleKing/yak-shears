@@ -12,7 +12,7 @@
 
   <div class="sort-controls">
     <span class="sort-controls__label">Sort by:</span>
-    <a href="/yaks?sort_by=name{% if current_category %}&category={{ current_category }}{% endif %}" class="button button--sm {% if sort_by == 'name' %}button--primary{% endif %}">Name (Created At)</a>
+    <a href="/yaks?sort_by=created_at{% if current_category %}&category={{ current_category }}{% endif %}" class="button button--sm {% if sort_by == 'created_at' %}button--primary{% endif %}">Created At</a>
     <a href="/yaks?sort_by=modified_date{% if current_category %}&category={{ current_category }}{% endif %}" class="button button--sm {% if sort_by == 'modified_date' %}button--primary{% endif %}">Modified Date</a>
   </div>
 

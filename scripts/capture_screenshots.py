@@ -54,10 +54,10 @@ async def capture_screenshots() -> None:
         logger.info("  → Yaks page (default view)")
         await page.screenshot(path=screenshots_dir / "3-yaks-default.png", full_page=True)
 
-        # 5. Yaks page - sorted by name
-        logger.info("  → Yaks page (sorted by name)")
-        await page.click("a:has-text('Name')")
-        await page.wait_for_url("**/yaks?sort_by=name")
+        # 5. Yaks page - sorted by created at
+        logger.info("  → Yaks page (sorted by created at)")
+        await page.click("a:has-text('Created At')")
+        await page.wait_for_url("**/yaks?sort_by=created_at")
         await page.screenshot(path=screenshots_dir / "4-yaks-sorted-name.png", full_page=True)
 
         # 6. Search page - empty state

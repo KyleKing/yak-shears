@@ -91,15 +91,15 @@ class TestYakListing:
 class TestPagination:
     @pytest.mark.asyncio
     async def test_paginate_yaks_empty(self):
-        result = await paginate_yaks([], page=1, page_size=10, sort_by=SortBy.NAME)
+        result = await paginate_yaks([], page=1, page_size=10, sort_by=SortBy.CREATED_AT)
         assert result == PaginationResult(paths=[], total_count=0, total_pages=0)
 
     @pytest.mark.asyncio
-    async def test_paginate_yaks_by_name(self, temp_yak_dir):
+    async def test_paginate_yaks_by_created_at(self, temp_yak_dir):
         from anyio import Path
 
         paths = await list_yak_paths(Path(temp_yak_dir))
-        result = await paginate_yaks(paths, page=1, page_size=10, sort_by=SortBy.NAME)
+        result = await paginate_yaks(paths, page=1, page_size=10, sort_by=SortBy.CREATED_AT)
         assert result.total_count == 3
         assert result.total_pages == 1
         assert len(result.paths) == 3
@@ -118,7 +118,7 @@ class TestPagination:
         from anyio import Path
 
         paths = await list_yak_paths(Path(temp_yak_dir))
-        result = await paginate_yaks(paths, page=1, page_size=10, sort_by=SortBy.NAME, category="category1")
+        result = await paginate_yaks(paths, page=1, page_size=10, sort_by=SortBy.CREATED_AT, category="category1")
         assert result.total_count == 2
         assert all(p.parent.name == "category1" for p in result.paths)
 
@@ -127,12 +127,12 @@ class TestPagination:
         from anyio import Path
 
         paths = await list_yak_paths(Path(temp_yak_dir))
-        result = await paginate_yaks(paths, page=1, page_size=2, sort_by=SortBy.NAME)
+        result = await paginate_yaks(paths, page=1, page_size=2, sort_by=SortBy.CREATED_AT)
         assert result.total_count == 3
         assert result.total_pages == 2
         assert len(result.paths) == 2
 
-        result2 = await paginate_yaks(paths, page=2, page_size=2, sort_by=SortBy.NAME)
+        result2 = await paginate_yaks(paths, page=2, page_size=2, sort_by=SortBy.CREATED_AT)
         assert len(result2.paths) == 1
 
 

@@ -153,6 +153,8 @@ async def paginate_yaks(
         path_mtimes.sort(key=itemgetter(1), reverse=True)
         paths = [pth for pth, _ in path_mtimes]
     else:
+        # SortBy.CREATED_AT: filenames are creation timestamps, so sorting by
+        # name is equivalent to and more reliable than filesystem metadata.
         paths = sorted(paths, key=lambda pth: pth.name.lower(), reverse=True)
 
     total_count = len(paths)

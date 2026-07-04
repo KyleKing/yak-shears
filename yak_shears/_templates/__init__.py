@@ -14,7 +14,7 @@ from starlette.responses import HTMLResponse
 class SortBy(StrEnum):
     """Enum for yak sorting options."""
 
-    NAME = "name"
+    CREATED_AT = "created_at"
     MODIFIED_DATE = "modified_date"
 
 
