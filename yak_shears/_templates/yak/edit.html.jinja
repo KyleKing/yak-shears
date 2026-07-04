@@ -1,12 +1,12 @@
 {% extends "base.html.jinja" %}
 
 {% block extra_head %}
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/themes/prism.min.css">
   <script src="https://unpkg.com/@djot/djot@0.3.2/dist/djot.js"></script>
   <script src="{{ static_url('js/codejar.min.js') }}"></script>
   <script src="{{ static_url('js/highlight.js') }}"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/prism.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/plugins/autoloader/prism-autoloader.min.js"></script>
 {% endblock %}
 
 {% block title %}Editing {{ yak_name }}{% endblock %}

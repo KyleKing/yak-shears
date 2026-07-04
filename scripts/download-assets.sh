@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
-HTMX_VERSION=${HTMX_VERSION:-v2.0.7}
-CODEJAR_VERSION=${CODEJAR_VERSION:-4d19174c5a2759a5bf90be26353f7c85715392fa}  # Default to master, set env var for specific version
+HTMX_VERSION=${HTMX_VERSION:-v2.0.9}
+CODEJAR_VERSION=${CODEJAR_VERSION:-32f7a803cccb191ff10f550dc58403c6b2eb311e}  # Default to master, set env var for specific version
 
 # Download HTMX
 echo -e "\nDownloading HTMX $HTMX_VERSION"
