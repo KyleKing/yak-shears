@@ -1,5 +1,6 @@
 """Template rendering utilities."""
 
+import hashlib
 from dataclasses import dataclass
 from enum import StrEnum
 from http import HTTPStatus
@@ -45,11 +46,39 @@ class SearchResult:
 
 
 TEMPLATE_DIR = SyncPath(__file__).parent
+STATIC_DIR = TEMPLATE_DIR.parent / "static"
 
 ENV = Environment(
     loader=FileSystemLoader(str(TEMPLATE_DIR)),
     autoescape=True,
 )
+
+
+_static_versions: dict[str, tuple[float, str]] = {}
+
+
+def static_url(path: str) -> str:
+    """Versioned URL for a static asset so edits and deploys bust browser caches.
+
+    The token is a content hash, cached per file and refreshed when the file's
+    mtime changes, so local edits bust immediately while production only changes
+    the URL when the bytes change (letting the asset be cached long and hard).
+    """
+    asset = STATIC_DIR / path
+    try:
+        mtime = asset.stat().st_mtime
+    except OSError:
+        return f"/static/{path}"
+    cached = _static_versions.get(path)
+    if cached is None or cached[0] != mtime:
+        token = hashlib.sha256(asset.read_bytes()).hexdigest()[:8]
+        _static_versions[path] = (mtime, token)
+    else:
+        token = cached[1]
+    return f"/static/{path}?v={token}"
+
+
+ENV.globals["static_url"] = static_url
 
 
 _HASH_MASK = 2**31

@@ -1,6 +1,7 @@
 """Pytest configuration."""
 
 import os
+import re
 import tempfile
 from collections.abc import AsyncGenerator, Generator
 from contextlib import contextmanager
@@ -11,12 +12,19 @@ from unittest.mock import patch
 import pytest
 import pytest_asyncio
 from anyio import Path
+from bs4 import BeautifulSoup
 
 from yak_shears._auth import handlers
 from yak_shears._auth.models import HashedPassword, Password, User
 from yak_shears._auth.storage import UserStore, _set_default_store, create_user
 
 MOCK_YAK_DIR = SyncPath(__file__).parent / "test_data/mock_djot_dir_0"
+
+
+def stable_html(content: bytes) -> str:
+    """Prettify HTML with static_url content-hash tokens stripped for stable snapshots."""
+    html = BeautifulSoup(content.decode("utf-8"), "html.parser").prettify()
+    return re.sub(r"\?v=[0-9a-f]{8}", "", html)
 
 
 @pytest.fixture(scope="session")

@@ -1,7 +1,6 @@
 from http import HTTPStatus
 
 import pytest
-from bs4 import BeautifulSoup
 from starlette.applications import Starlette
 from starlette.responses import Response
 from starlette.routing import Route
@@ -13,7 +12,7 @@ from yak_shears._auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
 from yak_shears._auth.routes import ROUTES as AUTH_ROUTES
 from yak_shears._constants import DEFAULT_REDIRECT
 
-from .conftest import SAMPLE_USER_EMAIL, SAMPLE_USER_PASSWORD
+from .conftest import SAMPLE_USER_EMAIL, SAMPLE_USER_PASSWORD, stable_html
 
 
 @pytest.fixture
@@ -92,7 +91,7 @@ def test_displayed_error(auth_client, snapshot: SnapshotAssertion):
 
     assert response.status_code == HTTPStatus.BAD_REQUEST
     assert expected_content in response.content
-    assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
+    assert stable_html(response.content) == snapshot()
 
 
 def test_login_get_shows_form(auth_client, snapshot: SnapshotAssertion):
@@ -100,7 +99,7 @@ def test_login_get_shows_form(auth_client, snapshot: SnapshotAssertion):
     response = auth_client.get("/auth/login")
 
     assert response.status_code == HTTPStatus.OK
-    assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
+    assert stable_html(response.content) == snapshot()
 
 
 def test_login_get_when_already_logged_in(auth_client, sample_user):

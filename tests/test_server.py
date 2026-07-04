@@ -1,22 +1,24 @@
 # TODO: Split up into file/routes
 
+import os
+import re
 from datetime import UTC, datetime
 from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from bs4 import BeautifulSoup
 from freezegun import freeze_time
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
+from yak_shears import _templates
 from yak_shears._constants import DEFAULT_REDIRECT
 from yak_shears._yak.database import get_search_db_path
 from yak_shears.server._handlers import not_found
-from yak_shears.server._routes import ROUTES
+from yak_shears.server._routes import ROUTES, create_app, create_app_without_auth
 
-from .conftest import MOCK_YAK_DIR, set_yak_shears_dir
+from .conftest import MOCK_YAK_DIR, set_yak_shears_dir, stable_html
 
 
 @pytest.fixture
@@ -70,6 +72,47 @@ def test_root_endpoint(client: TestClient) -> None:
     assert response.headers["location"] == DEFAULT_REDIRECT
 
 
+def test_static_url_versions_and_busts_on_change(tmp_path, monkeypatch) -> None:
+    """static_url fingerprints assets, reuses the token until the file changes."""
+    css = tmp_path / "css"
+    css.mkdir()
+    asset = css / "x.css"
+    asset.write_text("a{}")
+    monkeypatch.setattr(_templates, "STATIC_DIR", tmp_path)
+    monkeypatch.setattr(_templates, "_static_versions", {})
+
+    url = _templates.static_url("css/x.css")
+    assert re.fullmatch(r"/static/css/x\.css\?v=[0-9a-f]{8}", url)
+    assert _templates.static_url("css/x.css") == url
+
+    asset.write_text("a{color:red}")
+    os.utime(asset, (asset.stat().st_atime + 10, asset.stat().st_mtime + 10))
+    assert _templates.static_url("css/x.css") != url
+
+
+def test_static_url_missing_asset_is_unversioned(tmp_path, monkeypatch) -> None:
+    """A missing asset falls back to a bare URL instead of raising."""
+    monkeypatch.setattr(_templates, "STATIC_DIR", tmp_path)
+    monkeypatch.setattr(_templates, "_static_versions", {})
+    assert _templates.static_url("css/missing.css") == "/static/css/missing.css"
+
+
+def test_dev_static_files_revalidate() -> None:
+    """Local dev serves static assets with no-cache so edits are picked up."""
+    dev_client = TestClient(create_app_without_auth())
+    response = dev_client.get("/static/css/main.css")
+    assert response.status_code == HTTPStatus.OK
+    assert response.headers["cache-control"] == "no-cache"
+
+
+def test_prod_static_files_are_immutable() -> None:
+    """Production serves fingerprinted assets with a long immutable cache."""
+    prod_client = TestClient(create_app())
+    response = prod_client.get("/static/css/main.css")
+    assert response.status_code == HTTPStatus.OK
+    assert response.headers["cache-control"] == "public, max-age=31536000, immutable"
+
+
 def test_yaks_endpoint(client: TestClient, mock_user_session, isolated_yak_dir: Path, snapshot) -> None:
     """Test the yaks endpoint."""
     with (
@@ -82,7 +125,7 @@ def test_yaks_endpoint(client: TestClient, mock_user_session, isolated_yak_dir: 
 
         response = client.get("/yaks")
         assert response.status_code == HTTPStatus.OK
-        assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
+        assert stable_html(response.content) == snapshot()
         assert "yak1.dj" in response.text
         assert "yak2.dj" in response.text
         assert "yak3.dj" in response.text
@@ -189,7 +232,7 @@ def test_edit_yak_get(client: TestClient, mock_user_session, tmp_path, snapshot)
         assert response.status_code == HTTPStatus.OK
         assert "Editing test.dj" in response.text
         assert "Test yak content" in response.text
-        assert BeautifulSoup(response.content.decode("utf-8"), "html.parser").prettify() == snapshot()
+        assert stable_html(response.content) == snapshot()
 
 
 def test_edit_yak_post(client: TestClient, mock_user_session, tmp_path) -> None:

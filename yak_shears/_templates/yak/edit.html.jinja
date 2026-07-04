@@ -3,8 +3,8 @@
 {% block extra_head %}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
   <script src="https://unpkg.com/@djot/djot@0.3.2/dist/djot.js"></script>
-  <script src="/static/js/codejar.min.js"></script>
-  <script src="/static/js/highlight.js"></script>
+  <script src="{{ static_url('js/codejar.min.js') }}"></script>
+  <script src="{{ static_url('js/highlight.js') }}"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 {% endblock %}
@@ -144,5 +144,5 @@
   <script>
   window.serverContent = {{ content | tojson }};
   </script>
-  <script type="module" src="/static/js/editor.js"></script>
+  <script type="module" src="{{ static_url('js/editor.js') }}"></script>
 {% endblock %}

@@ -3,7 +3,7 @@
 {% block title %}Yaks in {{ yak_dir_label }}{% endblock %}
 
 {% block extra_head %}
-  <script src="/static/js/djot.min.js"></script>
+  <script src="{{ static_url('js/djot.min.js') }}"></script>
 {% endblock %}
 
 {% block content %}

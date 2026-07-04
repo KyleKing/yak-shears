@@ -64,6 +64,7 @@ class RevalidateStaticFiles(StaticFiles):
 
     Responses keep their ETag/Last-Modified for cheap 304s, but `no-cache`
     forces the browser to revalidate rather than serve a stale cached asset.
+    Used in local development where files change under a running server.
     """
 
     async def get_response(self, path: str, scope: Scope) -> Response:
@@ -72,19 +73,37 @@ class RevalidateStaticFiles(StaticFiles):
         return response
 
 
+class ImmutableStaticFiles(StaticFiles):
+    """Static files served with a long immutable cache for production.
+
+    Safe because templates reference assets through content-hashed URLs
+    (`static_url`), so a changed asset gets a new URL rather than relying on
+    the browser to revalidate a same-URL response.
+    """
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
+
+def _base_app(static_files: StaticFiles) -> Starlette:
+    app = Starlette(
+        routes=ROUTES,
+        debug=True,
+        exception_handlers={404: not_found},
+    )
+    app.mount("/static", static_files, name="static")
+    return app
+
+
 def create_app_without_auth() -> Starlette:  # pragma: no cover
     """Only used for local development and testing.
 
     Returns:
         Starlette: The configured Starlette application
     """
-    app = Starlette(
-        routes=ROUTES,
-        debug=True,
-        exception_handlers={404: not_found},
-    )
-    app.mount("/static", RevalidateStaticFiles(directory="yak_shears/static"), name="static")
-    return app
+    return _base_app(RevalidateStaticFiles(directory="yak_shears/static"))
 
 
 def create_app() -> Starlette:  # pragma: no cover
@@ -93,7 +112,7 @@ def create_app() -> Starlette:  # pragma: no cover
     Returns:
         Starlette: The configured Starlette application
     """
-    app = create_app_without_auth()
+    app = _base_app(ImmutableStaticFiles(directory="yak_shears/static"))
 
     public_paths = {r"^/$", r"^/favicon.ico$", r"^/static/.+", *AUTH_PUBLIC_PATHS}
     app.add_middleware(AuthMiddleware, public_paths=public_paths)
