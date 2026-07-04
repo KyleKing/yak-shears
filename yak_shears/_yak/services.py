@@ -402,28 +402,26 @@ def highlight_content(content: str, query: str) -> str:
         return content
 
     def _highlight_line(line: str) -> str:
-        matches = []
+        matches: list[tuple[int, int, str]] = []
         for word in words:
             pattern = re.compile(re.escape(word), re.IGNORECASE)
-            for match in pattern.finditer(line):
-                matches.append((match.start(), match.end(), match.group(0)))
+            matches.extend((match.start(), match.end(), match.group(0)) for match in pattern.finditer(line))
 
         if not matches:
             return html.escape(line)
 
         matches.sort()
-        merged = []
+        merged: list[tuple[int, int, str]] = []
         for start, end, text in matches:
             if merged and start < merged[-1][1]:
                 merged[-1] = (merged[-1][0], max(end, merged[-1][1]), line[merged[-1][0]:max(end, merged[-1][1])])
             else:
                 merged.append((start, end, text))
 
-        result = []
+        result: list[str] = []
         last_end = 0
         for start, end, text in merged:
-            result.append(html.escape(line[last_end:start]))
-            result.append(f'<span class="search-highlight">{html.escape(text)}</span>')
+            result.extend((html.escape(line[last_end:start]), f'<span class="search-highlight">{html.escape(text)}</span>'))
             last_end = end
         result.append(html.escape(line[last_end:]))
 

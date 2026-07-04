@@ -114,7 +114,7 @@ def extract_all_links(content: str) -> list[tuple[str, str]]:
         >>> extract_all_links("See [[note]] #python")
         [('note', 'wikilink'), ('python', 'tag')]
     """
-    links = []
+    links: list[tuple[str, str]] = []
 
     # Add wikilinks
     links.extend((target, "wikilink") for target, _ in extract_wikilinks(content))

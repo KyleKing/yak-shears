@@ -90,11 +90,11 @@ class TestExtractYakPath:
         request = _mock_request(method="GET", headers_get_return=None, query_params_get_return="")
 
         result = await extract_yak_path(request)
-        assert result == ""
+        assert not result
 
     @pytest.mark.asyncio
     async def test_extract_none_from_query_params(self) -> None:
         request = _mock_request(method="GET", headers_get_return=None, query_params_get_return=None)
 
         result = await extract_yak_path(request)
-        assert result == ""
+        assert not result

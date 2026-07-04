@@ -191,9 +191,10 @@ def check_tables_exist() -> bool:
         with get_search_db() as con:
             con.execute("SELECT 1 FROM metadata LIMIT 1")
             con.execute("SELECT 1 FROM words LIMIT 1")
-        return True
     except Exception:
         return False
+    else:
+        return True
 
 
 # -----------------------------------------------------------------------------

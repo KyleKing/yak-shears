@@ -1,5 +1,7 @@
 
 
+import operator
+
 import pytest
 
 from yak_shears._auth.models import Password
@@ -93,7 +95,7 @@ def test_get_user_by_email(email, expected, temp_user_file, sample_user):
 @pytest.mark.parametrize(
     ("user_id_fn", "expected_found"),
     [
-        (lambda sample_user: sample_user["id"], True),
+        (operator.itemgetter("id"), True),
         (lambda _: "nonexistent-id", False),
     ],
     ids=["existing_user", "nonexistent_user"],

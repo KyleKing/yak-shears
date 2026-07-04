@@ -58,8 +58,6 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
     # Test arrow key navigation updates preview
     initial_text = preview_text
     await page.keyboard.press("ArrowDown")
-    # await page.pause()
-    # Wait for preview to update by waiting for network response or content change
     await page.wait_for_function(
         "initialText => document.querySelector('#search-preview-content')?.textContent !== initialText",
         arg=initial_text,
