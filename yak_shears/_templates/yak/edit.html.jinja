@@ -44,6 +44,9 @@
           {# HTMX-powered save button - not inside #editor-form, so yak is supplied via hx-vals and editor.js injects content via htmx:configRequest #}
           <button class="button button--primary" id="save-btn" hx-post="/edit" hx-swap="none" hx-vals='{"yak": {{ yak_path | tojson }}}'>Save</button>
           <button class="button button--secondary" id="menu-btn" type="button" aria-label="Toggle menu" aria-expanded="false" aria-controls="metadata-panel" title="Toggle menu (⌘M)">Menu</button>
+          {# Upload photo/video: inserts a Djot image snippet at the cursor. Also triggerable by pasting. #}
+          <button class="button button--secondary" id="upload-btn" type="button" aria-label="Attach photo or video" title="Attach photo or video">＋ Media</button>
+          <input type="file" id="media-input" accept="image/*,video/*" multiple hidden>
           {# Status indicator: "Synced" | "Modified" | "Saving..." | "Saved" #}
           <span id="save-status" class="editor__status"></span>
         </div>

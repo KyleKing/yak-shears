@@ -908,6 +908,31 @@ pre code {
 	padding: 0;
 }
 
+/* Attached photos/videos: thumbnails in preview, click/play loads full media. */
+.preview-media {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	margin: 1em 0;
+	border-radius: var(--radius-sm);
+	border: 1px solid var(--color-border);
+	background: var(--color-surface-alt);
+}
+
+.preview-media--video {
+	width: 100%;
+	max-height: 70vh;
+	object-fit: contain;
+}
+
+.preview-media__link {
+	display: inline-block;
+}
+
+.preview-media__link:hover .preview-media--image {
+	border-color: var(--color-link);
+}
+
 /* ============================================================================
    Fixed Bottom Action Bar
    Contains Save button, Menu button, and status indicator
@@ -1942,4 +1967,71 @@ pre code {
 		padding: var(--space-2) var(--space-1);
 		font-size: 0.75rem;
 	}
+}
+
+/* ============================================================================
+   Doctor: attachment integrity report
+   ============================================================================ */
+.doctor-section {
+	margin: var(--space-4) 0 var(--space-6) 0;
+}
+
+.doctor-section__title {
+	font-size: 1.125rem;
+	margin: 0 0 var(--space-2) 0;
+	padding-bottom: var(--space-2);
+	border-bottom: 1px solid var(--color-border);
+}
+
+.doctor-section__hint {
+	color: var(--color-text-muted, inherit);
+	font-size: 0.875rem;
+	margin: 0 0 var(--space-3) 0;
+}
+
+.doctor-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.doctor-item {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--space-2) var(--space-4);
+	padding: var(--space-2) var(--space-3);
+	border-left: 3px solid var(--color-border);
+	background: var(--color-surface-alt);
+	border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+	margin-bottom: var(--space-2);
+}
+
+.doctor-item--missing {
+	border-left-color: #d9534f;
+}
+
+.doctor-item--orphan {
+	border-left-color: #d9a441;
+}
+
+.doctor-item__ref {
+	font-size: 0.875rem;
+}
+
+.doctor-item__note {
+	font-size: 0.8125rem;
+	opacity: 0.85;
+}
+
+.doctor-item__size {
+	font-size: 0.8125rem;
+	opacity: 0.7;
+	margin-left: auto;
+}
+
+.doctor-empty {
+	color: var(--color-text-muted, inherit);
+	opacity: 0.75;
+	margin: 0;
 }

@@ -47,6 +47,11 @@
            New
           </a>
          </li>
+         <li>
+          <a class="nav__link" href="/doctor">
+           Doctor
+          </a>
+         </li>
         </ul>
        </nav>
       </div>
@@ -137,6 +142,11 @@
          <li>
           <a class="nav__link" href="/new">
            New
+          </a>
+         </li>
+         <li>
+          <a class="nav__link" href="/doctor">
+           Doctor
           </a>
          </li>
         </ul>

@@ -58,6 +58,11 @@
            New
           </a>
          </li>
+         <li>
+          <a class="nav__link" href="/doctor">
+           Doctor
+          </a>
+         </li>
         </ul>
        </nav>
       </div>
@@ -88,6 +93,10 @@
           <button aria-controls="metadata-panel" aria-expanded="false" aria-label="Toggle menu" class="button button--secondary" id="menu-btn" title="Toggle menu (⌘M)" type="button">
            Menu
           </button>
+          <button aria-label="Attach photo or video" class="button button--secondary" id="upload-btn" title="Attach photo or video" type="button">
+           ＋ Media
+          </button>
+          <input accept="image/*,video/*" hidden="" id="media-input" multiple="" type="file"/>
           <span class="editor__status" id="save-status">
           </span>
          </div>
@@ -217,6 +226,11 @@
          <li>
           <a class="nav__link" href="/new">
            New
+          </a>
+         </li>
+         <li>
+          <a class="nav__link" href="/doctor">
+           Doctor
           </a>
          </li>
         </ul>

@@ -151,6 +151,48 @@ function stripFrontmatter(content) {
 	return content.slice(end + 5);
 }
 
+const VIDEO_EXT_RE = /\.(mp4|webm|mov|m4v)$/i;
+
+/**
+ * Upgrade rendered media so previews stay cheap:
+ * - /media video refs (Djot has no video syntax, so they arrive as <img>) become
+ *   an HTML5 <video> with preload="none" and a poster frame (poster/full downloaded on play)
+ * - images swap to their /thumb thumbnail, lazy-load, and link to the full-res file
+ *
+ * @param {HTMLElement} container - Rendered preview element
+ */
+function enhanceMedia(container) {
+	container.querySelectorAll('img[src^="/media/"]').forEach((img) => {
+		const full = img.getAttribute("src");
+		const thumb = full.replace("/media/", "/thumb/").replace(/\.[^./]+$/, ".jpg");
+		if (VIDEO_EXT_RE.test(full)) {
+			const video = document.createElement("video");
+			video.controls = true;
+			video.preload = "none";
+			video.poster = thumb;
+			video.setAttribute("playsinline", "");
+			const source = document.createElement("source");
+			source.src = full;
+			source.type = "video/mp4";
+			video.appendChild(source);
+			video.className = "preview-media preview-media--video";
+			img.replaceWith(video);
+		} else {
+			img.src = thumb;
+			img.loading = "lazy";
+			img.decoding = "async";
+			img.className = "preview-media preview-media--image";
+			const link = document.createElement("a");
+			link.href = full;
+			link.target = "_blank";
+			link.rel = "noopener";
+			link.className = "preview-media__link";
+			img.replaceWith(link);
+			link.appendChild(img);
+		}
+	});
+}
+
 function renderPreview(content) {
 	const previewContent = document.getElementById("preview-content");
 	if (previewContent && window.djot) {
@@ -158,6 +200,8 @@ function renderPreview(content) {
 			// Parse Djot → AST → HTML, excluding YAML frontmatter
 			const html = window.djot.renderHTML(window.djot.parse(stripFrontmatter(content)));
 			previewContent.innerHTML = html;
+
+			enhanceMedia(previewContent);
 
 			// Apply Prism syntax highlighting to code blocks
 			if (window.Prism) {
@@ -421,6 +465,65 @@ function initEditor() {
 			});
 		}
 		applyWrap(localStorage.getItem("editorWrap") === "true");
+
+		// Media upload: toolbar button + paste. Uploaded files are transcoded
+		// server-side; the returned Djot snippet is inserted at the cursor.
+		const uploadBtn = document.getElementById("upload-btn");
+		const mediaInput = document.getElementById("media-input");
+
+		const insertAtCursor = (text) => {
+			editor.focus();
+			// execCommand fires an input event, so CodeJar re-highlights and onUpdate runs.
+			const ok = document.execCommand("insertText", false, text);
+			if (!ok) {
+				jar.updateCode(`${jar.toString()}\n${text}`);
+			}
+		};
+
+		const uploadOne = async (file) => {
+			const form = new FormData();
+			form.append("file", file);
+			form.append("yak", yak_path);
+			updateSaveStatus(`Uploading ${file.name}...`);
+			try {
+				const res = await fetch("/media/upload", { method: "POST", body: form });
+				const data = await res.json();
+				if (!res.ok) throw new Error(data.error || "Upload failed");
+				insertAtCursor(`\n${data.snippet}\n`);
+				updateSaveStatus("Modified");
+			} catch (err) {
+				console.error("Media upload failed:", err);
+				updateSaveStatus(`Upload failed: ${err.message}`);
+			}
+		};
+
+		const uploadFiles = async (files) => {
+			for (const file of files) {
+				if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
+					await uploadOne(file);
+				}
+			}
+		};
+
+		if (uploadBtn && mediaInput) {
+			uploadBtn.addEventListener("click", () => mediaInput.click());
+			mediaInput.addEventListener("change", () => {
+				if (mediaInput.files.length) uploadFiles(mediaInput.files);
+				mediaInput.value = "";
+			});
+		}
+
+		editor.addEventListener("paste", (e) => {
+			const items = Array.from(e.clipboardData?.items || []);
+			const files = items
+				.filter((it) => it.kind === "file" && (it.type.startsWith("image/") || it.type.startsWith("video/")))
+				.map((it) => it.getAsFile())
+				.filter(Boolean);
+			if (files.length) {
+				e.preventDefault();
+				uploadFiles(files);
+			}
+		});
 
 		// Initialize menu button toggle
 		const menuBtn = document.getElementById('menu-btn');

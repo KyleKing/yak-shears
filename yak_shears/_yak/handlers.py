@@ -7,7 +7,7 @@ from typing import Self
 from urllib.parse import quote
 
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from starlette.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from yak_shears._log_utils import log
 from yak_shears._templates import (
@@ -20,6 +20,12 @@ from yak_shears._templates import (
     render_yaks,
 )
 from yak_shears._yak.database import get_backlinks
+from yak_shears._yak.media import (
+    MediaError,
+    build_doctor_report,
+    process_upload,
+    resolve_attachment,
+)
 from yak_shears._yak.request_utils import extract_yak_path, is_htmx_request
 from yak_shears._yak.services import (
     YakPathError,
@@ -223,6 +229,81 @@ async def yak_preview_handler(request: Request) -> Response:
 
     edit_url = f"/edit?yak={quote(path)}&query={quote(query)}"
     return JSONResponse({"source": body, "query": query, "edit_url": edit_url})
+
+
+_MEDIA_MAX_UPLOAD_BYTES = 300 * 1024 * 1024
+_IMMUTABLE_CACHE = "public, max-age=31536000, immutable"
+_MEDIA_CONTENT_TYPES = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".mp4": "video/mp4"}
+
+
+async def media_upload_handler(request: Request) -> Response:
+    """Handle POST /media/upload: store one photo/video and return its embed snippet."""
+    yak_dir = await get_yak_dir()
+    form_data = await request.form()
+
+    yak_path_str = str(form_data.get("yak", "")).strip()
+    upload = form_data.get("file")
+    if not yak_path_str or not hasattr(upload, "read"):
+        return JSONResponse({"error": "Missing file or yak path"}, status_code=HTTPStatus.BAD_REQUEST)
+
+    data = await upload.read()
+    if len(data) > _MEDIA_MAX_UPLOAD_BYTES:
+        return JSONResponse({"error": "File too large"}, status_code=HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+
+    try:
+        result = await process_upload(yak_dir, yak_path_str, upload.filename or "upload", data)
+    except MediaError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=HTTPStatus.BAD_REQUEST)
+    except Exception as exc:
+        log(f"ERROR: media upload failed: {exc}")
+        return JSONResponse({"error": "Upload processing failed"}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    return JSONResponse({
+        "kind": result.kind.value,
+        "url": result.url,
+        "thumb": result.thumb_url,
+        "snippet": result.snippet,
+        "reused": result.reused,
+    })
+
+
+async def _serve_attachment(request: Request, *, thumb: bool) -> Response:
+    yak_dir = await get_yak_dir()
+    category = request.path_params["category"]
+    filename = request.path_params["filename"]
+    try:
+        path = await resolve_attachment(yak_dir, category, filename, thumb=thumb)
+    except MediaError:
+        return Response("Not found", status_code=HTTPStatus.NOT_FOUND)
+    if not await path.is_file():
+        return Response("Not found", status_code=HTTPStatus.NOT_FOUND)
+
+    media_type = "image/jpeg" if thumb else _MEDIA_CONTENT_TYPES.get(SyncPath(filename).suffix.lower())
+    return FileResponse(path, media_type=media_type, headers={"Cache-Control": _IMMUTABLE_CACHE})
+
+
+async def media_file_handler(request: Request) -> Response:
+    """Serve a full-resolution attachment (image or video with Range support)."""
+    return await _serve_attachment(request, thumb=False)
+
+
+async def thumb_file_handler(request: Request) -> Response:
+    """Serve a downscaled thumbnail or video poster frame."""
+    return await _serve_attachment(request, thumb=True)
+
+
+async def doctor_handler(request: Request) -> Response:  # noqa: ARG001
+    """Report broken media references and orphaned attachment files."""
+    yak_dir = await get_yak_dir()
+    report = await build_doctor_report(yak_dir)
+    return _render_template(
+        "doctor/index.html.jinja",
+        missing=report.missing,
+        orphans=report.orphans,
+        referenced_count=report.referenced_count,
+        file_count=report.file_count,
+        current_route="doctor",
+    )
 
 
 # Re-export for backwards compatibility with tests

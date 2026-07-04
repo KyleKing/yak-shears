@@ -1,0 +1,46 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}Doctor{% endblock %}
+
+{% block content %}
+  <h1>Doctor</h1>
+  <p class="page-info">
+    {{ referenced_count }} referenced attachment{{ '' if referenced_count == 1 else 's' }},
+    {{ file_count }} file{{ '' if file_count == 1 else 's' }} on disk,
+    {{ missing | length }} missing, {{ orphans | length }} orphaned
+  </p>
+
+  <section class="doctor-section">
+    <h2 class="doctor-section__title">Missing files</h2>
+    {% if missing %}
+      <p class="doctor-section__hint">Notes embed these, but the file is gone from <code>_attachments/</code>. Fix the link or re-upload.</p>
+      <ul class="doctor-list">
+        {% for category, filename, note in missing %}
+          <li class="doctor-item doctor-item--missing">
+            <code class="doctor-item__ref">/media/{{ category }}/{{ filename }}</code>
+            <a class="doctor-item__note" href="/edit?yak={{ note }}">{{ note }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="doctor-empty">All referenced media resolves.</p>
+    {% endif %}
+  </section>
+
+  <section class="doctor-section">
+    <h2 class="doctor-section__title">Orphaned files</h2>
+    {% if orphans %}
+      <p class="doctor-section__hint">No note references these; they are safe to delete to reclaim space.</p>
+      <ul class="doctor-list">
+        {% for category, filename, size_kb in orphans %}
+          <li class="doctor-item doctor-item--orphan">
+            <code class="doctor-item__ref">{{ category }}/{{ filename }}</code>
+            <span class="doctor-item__size">{{ size_kb }} KB</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="doctor-empty">No orphaned attachments.</p>
+    {% endif %}
+  </section>
+{% endblock %}

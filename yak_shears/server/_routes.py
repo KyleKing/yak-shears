@@ -24,6 +24,7 @@ _CONTENT_SECURITY_POLICY = (
     "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
     "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
     "img-src 'self' data:; "
+    "media-src 'self'; "
     "frame-ancestors 'none'"
 )
 
