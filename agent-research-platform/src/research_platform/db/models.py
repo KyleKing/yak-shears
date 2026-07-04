@@ -1,7 +1,6 @@
 """SQLAlchemy models for B2B SaaS platform with pgvector support."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID, uuid4
 
 from pgvector.sqlalchemy import Vector
@@ -16,14 +15,13 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
     """Base class for all models."""
-
-    pass
 
 
 class Organization(Base):
@@ -75,7 +73,7 @@ class Product(Base):
     uuid: Mapped[UUID] = mapped_column(PGUUID, default=uuid4, unique=True, index=True)
     organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     category: Mapped[str] = mapped_column(String(100), index=True)
     price: Mapped[float] = mapped_column(Float)
     sku: Mapped[str] = mapped_column(String(100), unique=True, index=True)
@@ -83,7 +81,7 @@ class Product(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # Vector embedding for semantic search
-    embedding: Mapped[Optional[list[float]]] = mapped_column(
+    embedding: Mapped[list[float] | None] = mapped_column(
         Vector(1536), nullable=True
     )  # Dimension depends on embedding model
 
@@ -112,7 +110,7 @@ class Customer(Base):
     organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), index=True)
     company_name: Mapped[str] = mapped_column(String(255), nullable=False)
     contact_email: Mapped[str] = mapped_column(String(255), index=True)
-    contact_name: Mapped[Optional[str]] = mapped_column(String(255))
+    contact_name: Mapped[str | None] = mapped_column(String(255))
     tier: Mapped[str] = mapped_column(String(50), default="standard")  # standard, premium, vip
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -182,15 +180,15 @@ class SupportTicket(Base):
     priority: Mapped[str] = mapped_column(
         String(50), default="medium", index=True
     )  # low, medium, high, urgent
-    sentiment_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    sentiment_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
-    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Vector embedding for semantic search on subject+first message
-    embedding: Mapped[Optional[list[float]]] = mapped_column(Vector(1536), nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)
 
     # Relationships
     customer: Mapped["Customer"] = relationship(back_populates="support_tickets")
@@ -236,7 +234,7 @@ class Document(Base):
     document_type: Mapped[str] = mapped_column(
         String(50), index=True
     )  # article, faq, manual, policy
-    tags: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    tags: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
@@ -269,7 +267,7 @@ class ExperimentRun(Base):
 
     id: Mapped[UUID] = mapped_column(PGUUID, primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     agent_version: Mapped[str] = mapped_column(String(50))
     model: Mapped[str] = mapped_column(String(100))
     prompt_version: Mapped[str] = mapped_column(String(50))
@@ -287,7 +285,7 @@ class ExperimentRun(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     completed_at: Mapped[datetime] = mapped_column(DateTime)
     status: Mapped[str] = mapped_column(String(50), default="completed")  # running, completed, failed
-    parent_run_id: Mapped[Optional[UUID]] = mapped_column(
+    parent_run_id: Mapped[UUID | None] = mapped_column(
         PGUUID, ForeignKey("experiment_runs.id"), nullable=True
     )
 
@@ -317,11 +315,11 @@ class CaseResult(Base):
     # Data
     inputs: Mapped[dict] = mapped_column(JSONB)
     output: Mapped[dict] = mapped_column(JSONB)
-    expected_output: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    expected_output: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     evaluator_results: Mapped[dict] = mapped_column(JSONB)  # Results from each evaluator
 
     # Tracing
-    trace_id: Mapped[Optional[str]] = mapped_column(String(100))
+    trace_id: Mapped[str | None] = mapped_column(String(100))
 
     # Relationships
     experiment: Mapped["ExperimentRun"] = relationship(back_populates="case_results")

@@ -1,8 +1,6 @@
 """Embedding generation and vector search utilities."""
 
-from typing import Optional
 
-import httpx
 from openai import AsyncOpenAI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,7 +19,7 @@ class EmbeddingService:
     ):
         self.model = model
         self.dimensions = dimensions
-        self._client: Optional[AsyncOpenAI] = None
+        self._client: AsyncOpenAI | None = None
 
     def _get_client(self) -> AsyncOpenAI:
         """Get or create OpenAI client."""

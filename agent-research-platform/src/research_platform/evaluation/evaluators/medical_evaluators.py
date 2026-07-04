@@ -1,9 +1,8 @@
 """Custom evaluators for medical agents."""
 
-from typing import Any
-from pydantic_evals import Evaluator, EvaluationResult
+from pydantic_evals import EvaluationResult, Evaluator
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from research_platform.db.models_medical import AuditLog
 
@@ -118,7 +117,6 @@ class AuditComplianceEvaluator(Evaluator):
         self, inputs: dict, output: dict, expected_outputs: dict | None = None
     ) -> EvaluationResult:
         """Verify audit logs exist for the operation."""
-
         # Extract expected audit info from inputs
         institution_id = inputs.get("institution_id")
         mrn = inputs.get("mrn")
@@ -181,7 +179,6 @@ class ResponseCompletenessEvaluator(Evaluator):
         self, inputs: dict, output: dict, expected_outputs: dict | None = None
     ) -> EvaluationResult:
         """Evaluate response completeness."""
-
         issues = []
 
         # Check answer exists and has substance
@@ -230,7 +227,6 @@ class CostBudgetEvaluator(Evaluator):
         self, inputs: dict, output: dict, expected_outputs: dict | None = None
     ) -> EvaluationResult:
         """Check if cost is within budget."""
-
         cost = output.get("cost", 0.0)
         passed = cost <= self.max_cost
 
@@ -263,7 +259,6 @@ class LatencyEvaluator(Evaluator):
         self, inputs: dict, output: dict, expected_outputs: dict | None = None
     ) -> EvaluationResult:
         """Check if latency is acceptable."""
-
         latency_ms = output.get("latency_ms", 0.0)
         passed = latency_ms <= self.max_latency_ms
 
@@ -297,7 +292,6 @@ class ResearchCitationEvaluator(Evaluator):
         self, inputs: dict, output: dict, expected_outputs: dict | None = None
     ) -> EvaluationResult:
         """Evaluate research citation quality."""
-
         references = output.get("references", [])
 
         if len(references) == 0:

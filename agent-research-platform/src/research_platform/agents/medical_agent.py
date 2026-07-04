@@ -10,14 +10,13 @@ from pydantic_ai import Agent, RunContext
 from research_platform.agents.tools.medical import (
     MedicalDeps,
     find_patient,
+    get_encounter_summary,
+    get_lab_results,
     get_patient_diagnoses,
     get_patient_medications,
-    get_lab_results,
     search_patients_by_diagnosis,
-    get_encounter_summary,
 )
 from research_platform.config import settings
-
 
 # Response models
 
@@ -144,7 +143,6 @@ async def validate_medical_response(
     ctx: RunContext[MedicalDeps], result: MedicalQueryResponse
 ) -> MedicalQueryResponse:
     """Validate medical query responses."""
-
     # Ensure confidence is in valid range
     if not (0 <= result.confidence <= 1):
         result.confidence = max(0, min(1, result.confidence))

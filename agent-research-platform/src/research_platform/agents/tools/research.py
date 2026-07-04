@@ -1,21 +1,19 @@
 """Biomedical research tools for agents."""
 
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, Field
 from pydantic_ai import RunContext
-from sqlalchemy import select, and_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from research_platform.db.embeddings import EmbeddingService
 from research_platform.db.models_medical import (
-    ResearchProject,
     ClinicalTrial,
     Publication,
+    ResearchProject,
 )
-
 
 # Dependency types
 

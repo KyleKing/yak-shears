@@ -11,7 +11,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 import asyncpg
 from alembic import command
 from alembic.config import Config
-
 from research_platform.config import settings
 
 

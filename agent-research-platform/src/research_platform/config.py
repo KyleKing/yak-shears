@@ -1,6 +1,6 @@
 """Configuration management for the research platform."""
 
-from typing import Optional
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,17 +19,17 @@ class Settings(BaseSettings):
     database_echo: bool = False
 
     # API Keys
-    openai_api_key: Optional[str] = None
-    anthropic_api_key: Optional[str] = None
-    gemini_api_key: Optional[str] = None
-    groq_api_key: Optional[str] = None
+    openai_api_key: str | None = None
+    anthropic_api_key: str | None = None
+    gemini_api_key: str | None = None
+    groq_api_key: str | None = None
 
     # Embedding Service
     embedding_model: str = "openai:text-embedding-3-small"
     embedding_dimensions: int = 1536
 
     # Logfire
-    logfire_token: Optional[str] = None
+    logfire_token: str | None = None
     logfire_project: str = "agent-research-platform"
 
     # Agent Defaults

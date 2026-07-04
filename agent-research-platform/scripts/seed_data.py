@@ -10,7 +10,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from faker import Faker
-
 from research_platform.db.embeddings import EmbeddingService
 from research_platform.db.models import (
     Customer,

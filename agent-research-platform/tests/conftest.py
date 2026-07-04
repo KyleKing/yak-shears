@@ -1,11 +1,10 @@
 """Pytest configuration and fixtures for medical agent tests."""
 
-import pytest
 import asyncio
 from pathlib import Path
 
+import pytest
 from research_platform.config import settings
-
 
 # Configure pytest-asyncio
 pytest_plugins = ("pytest_asyncio",)
@@ -72,8 +71,8 @@ def mock_medical_deps():
 def mock_research_deps():
     """Mock research agent dependencies."""
     from research_platform.agents.tools.research import ResearchDeps
-    from research_platform.db.session import get_engine
     from research_platform.db.embeddings import EmbeddingService
+    from research_platform.db.session import get_engine
 
     return ResearchDeps(
         db=get_engine(),
@@ -133,11 +132,11 @@ async def test_db_session():
 def medical_evaluators():
     """Standard medical evaluators."""
     from research_platform.evaluation.evaluators.medical_evaluators import (
-        PHILeakageEvaluator,
-        MedicalAccuracyEvaluator,
-        ResponseCompletenessEvaluator,
         CostBudgetEvaluator,
         LatencyEvaluator,
+        MedicalAccuracyEvaluator,
+        PHILeakageEvaluator,
+        ResponseCompletenessEvaluator,
     )
 
     return [
@@ -153,10 +152,10 @@ def medical_evaluators():
 def research_evaluators():
     """Standard research evaluators."""
     from research_platform.evaluation.evaluators.medical_evaluators import (
-        ResponseCompletenessEvaluator,
         CostBudgetEvaluator,
         LatencyEvaluator,
         ResearchCitationEvaluator,
+        ResponseCompletenessEvaluator,
     )
 
     return [

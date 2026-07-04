@@ -5,7 +5,7 @@ For production medical systems, ensure full HIPAA compliance,
 proper security audits, and regulatory approval.
 """
 
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -22,14 +22,13 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
     """Base class for all models."""
-
-    pass
 
 
 class Institution(Base):
@@ -67,8 +66,8 @@ class Staff(Base):
     role: Mapped[str] = mapped_column(
         String(50), index=True
     )  # physician, nurse, researcher, admin
-    specialization: Mapped[Optional[str]] = mapped_column(String(255))
-    license_number: Mapped[Optional[str]] = mapped_column(String(100))
+    specialization: Mapped[str | None] = mapped_column(String(255))
+    license_number: Mapped[str | None] = mapped_column(String(100))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
@@ -95,12 +94,12 @@ class Patient(Base):
     gender: Mapped[str] = mapped_column(String(20))  # male, female, other, unknown
 
     # Contact (PHI)
-    email: Mapped[Optional[str]] = mapped_column(String(255))
-    phone: Mapped[Optional[str]] = mapped_column(String(50))
+    email: Mapped[str | None] = mapped_column(String(255))
+    phone: Mapped[str | None] = mapped_column(String(50))
 
     # Clinical
-    blood_type: Mapped[Optional[str]] = mapped_column(String(10))
-    allergies: Mapped[Optional[dict]] = mapped_column(JSONB)  # List of allergies
+    blood_type: Mapped[str | None] = mapped_column(String(10))
+    allergies: Mapped[dict | None] = mapped_column(JSONB)  # List of allergies
 
     # Metadata
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -130,9 +129,9 @@ class Encounter(Base):
         String(50), index=True
     )  # outpatient, inpatient, emergency, telemedicine
     admission_date: Mapped[datetime] = mapped_column(DateTime, index=True)
-    discharge_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    chief_complaint: Mapped[Optional[str]] = mapped_column(Text)
-    notes: Mapped[Optional[str]] = mapped_column(Text)
+    discharge_date: Mapped[datetime | None] = mapped_column(DateTime)
+    chief_complaint: Mapped[str | None] = mapped_column(Text)
+    notes: Mapped[str | None] = mapped_column(Text)
 
     # Status
     status: Mapped[str] = mapped_column(
@@ -140,7 +139,7 @@ class Encounter(Base):
     )  # active, completed, cancelled
 
     # Vector embedding for semantic search on notes
-    embedding: Mapped[Optional[list[float]]] = mapped_column(Vector(1536), nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)
 
     # Relationships
     patient: Mapped["Patient"] = relationship(back_populates="encounters")
@@ -164,7 +163,7 @@ class Diagnosis(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), index=True)
-    encounter_id: Mapped[Optional[int]] = mapped_column(
+    encounter_id: Mapped[int | None] = mapped_column(
         ForeignKey("encounters.id"), index=True, nullable=True
     )
 
@@ -176,9 +175,9 @@ class Diagnosis(Base):
     )  # primary, secondary, differential
 
     # Clinical details
-    onset_date: Mapped[Optional[date]] = mapped_column(Date)
+    onset_date: Mapped[date | None] = mapped_column(Date)
     status: Mapped[str] = mapped_column(String(50))  # active, resolved, chronic
-    notes: Mapped[Optional[str]] = mapped_column(Text)
+    notes: Mapped[str | None] = mapped_column(Text)
 
     diagnosed_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
@@ -197,22 +196,22 @@ class Medication(Base):
 
     # Drug information
     drug_name: Mapped[str] = mapped_column(String(255), index=True)
-    generic_name: Mapped[Optional[str]] = mapped_column(String(255))
+    generic_name: Mapped[str | None] = mapped_column(String(255))
     dosage: Mapped[str] = mapped_column(String(100))
     frequency: Mapped[str] = mapped_column(String(100))
     route: Mapped[str] = mapped_column(String(50))  # oral, IV, topical, etc.
 
     # Prescription details
-    prescribed_by: Mapped[Optional[str]] = mapped_column(String(255))
+    prescribed_by: Mapped[str | None] = mapped_column(String(255))
     start_date: Mapped[date] = mapped_column(Date)
-    end_date: Mapped[Optional[date]] = mapped_column(Date)
+    end_date: Mapped[date | None] = mapped_column(Date)
     status: Mapped[str] = mapped_column(
         String(50), index=True
     )  # active, completed, discontinued
 
     # Additional info
-    indication: Mapped[Optional[str]] = mapped_column(Text)
-    notes: Mapped[Optional[str]] = mapped_column(Text)
+    indication: Mapped[str | None] = mapped_column(Text)
+    notes: Mapped[str | None] = mapped_column(Text)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
@@ -230,21 +229,21 @@ class LabResult(Base):
 
     # Test information
     test_name: Mapped[str] = mapped_column(String(255), index=True)
-    test_code: Mapped[Optional[str]] = mapped_column(String(50))  # LOINC code
+    test_code: Mapped[str | None] = mapped_column(String(50))  # LOINC code
     category: Mapped[str] = mapped_column(
         String(100), index=True
     )  # hematology, chemistry, microbiology, etc.
 
     # Results
     result_value: Mapped[str] = mapped_column(String(255))
-    unit: Mapped[Optional[str]] = mapped_column(String(50))
-    reference_range: Mapped[Optional[str]] = mapped_column(String(100))
-    abnormal_flag: Mapped[Optional[str]] = mapped_column(String(20))  # H, L, normal
+    unit: Mapped[str | None] = mapped_column(String(50))
+    reference_range: Mapped[str | None] = mapped_column(String(100))
+    abnormal_flag: Mapped[str | None] = mapped_column(String(20))  # H, L, normal
 
     # Metadata
     collected_at: Mapped[datetime] = mapped_column(DateTime, index=True)
     resulted_at: Mapped[datetime] = mapped_column(DateTime)
-    notes: Mapped[Optional[str]] = mapped_column(Text)
+    notes: Mapped[str | None] = mapped_column(Text)
 
     # Relationships
     patient: Mapped["Patient"] = relationship(back_populates="lab_results")
@@ -272,12 +271,12 @@ class ResearchProject(Base):
     )  # planning, active, completed, published
 
     # Funding
-    funding_source: Mapped[Optional[str]] = mapped_column(String(255))
-    budget: Mapped[Optional[float]] = mapped_column(Float)
+    funding_source: Mapped[str | None] = mapped_column(String(255))
+    budget: Mapped[float | None] = mapped_column(Float)
 
     # Timeline
     start_date: Mapped[date] = mapped_column(Date)
-    end_date: Mapped[Optional[date]] = mapped_column(Date)
+    end_date: Mapped[date | None] = mapped_column(Date)
 
     # Principal Investigator
     pi_name: Mapped[str] = mapped_column(String(255))
@@ -285,7 +284,7 @@ class ResearchProject(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     # Vector embedding for semantic search
-    embedding: Mapped[Optional[list[float]]] = mapped_column(Vector(1536), nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)
 
     # Relationships
     institution: Mapped["Institution"] = relationship(back_populates="research_projects")
@@ -311,12 +310,12 @@ class ClinicalTrial(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     uuid: Mapped[UUID] = mapped_column(PGUUID, default=uuid4, unique=True, index=True)
-    research_project_id: Mapped[Optional[int]] = mapped_column(
+    research_project_id: Mapped[int | None] = mapped_column(
         ForeignKey("research_projects.id"), index=True, nullable=True
     )
 
     # Trial identifiers
-    nct_id: Mapped[Optional[str]] = mapped_column(
+    nct_id: Mapped[str | None] = mapped_column(
         String(50), unique=True, index=True
     )  # ClinicalTrials.gov ID
     title: Mapped[str] = mapped_column(String(500))
@@ -330,7 +329,7 @@ class ClinicalTrial(Base):
     intervention_type: Mapped[str] = mapped_column(String(100))  # drug, device, behavioral, etc.
 
     # Enrollment
-    target_enrollment: Mapped[Optional[int]] = mapped_column(Integer)
+    target_enrollment: Mapped[int | None] = mapped_column(Integer)
     current_enrollment: Mapped[int] = mapped_column(Integer, default=0)
 
     # Conditions studied
@@ -338,15 +337,15 @@ class ClinicalTrial(Base):
 
     # Timeline
     start_date: Mapped[date] = mapped_column(Date)
-    completion_date: Mapped[Optional[date]] = mapped_column(Date)
+    completion_date: Mapped[date | None] = mapped_column(Date)
 
     # Locations
-    study_locations: Mapped[Optional[dict]] = mapped_column(JSONB)
+    study_locations: Mapped[dict | None] = mapped_column(JSONB)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     # Vector embedding
-    embedding: Mapped[Optional[list[float]]] = mapped_column(Vector(1536), nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)
 
     # Relationships
     research_project: Mapped[Optional["ResearchProject"]] = relationship(
@@ -374,8 +373,8 @@ class Publication(Base):
     institution_id: Mapped[int] = mapped_column(ForeignKey("institutions.id"), index=True)
 
     # Publication identifiers
-    pubmed_id: Mapped[Optional[str]] = mapped_column(String(50), unique=True, index=True)
-    doi: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True)
+    pubmed_id: Mapped[str | None] = mapped_column(String(50), unique=True, index=True)
+    doi: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
 
     # Publication details
     title: Mapped[str] = mapped_column(Text)
@@ -385,7 +384,7 @@ class Publication(Base):
     publication_date: Mapped[date] = mapped_column(Date, index=True)
 
     # Classification
-    keywords: Mapped[Optional[dict]] = mapped_column(JSONB)  # MeSH terms
+    keywords: Mapped[dict | None] = mapped_column(JSONB)  # MeSH terms
     research_area: Mapped[str] = mapped_column(String(100), index=True)
 
     # Metrics
@@ -422,7 +421,7 @@ class AuditLog(Base):
     institution_id: Mapped[int] = mapped_column(ForeignKey("institutions.id"), index=True)
 
     # Who
-    user_id: Mapped[Optional[int]] = mapped_column(Integer)  # Staff ID
+    user_id: Mapped[int | None] = mapped_column(Integer)  # Staff ID
     user_email: Mapped[str] = mapped_column(String(255))
 
     # What
@@ -440,11 +439,11 @@ class AuditLog(Base):
     )
 
     # Where (IP address, etc.)
-    ip_address: Mapped[Optional[str]] = mapped_column(String(50))
-    user_agent: Mapped[Optional[str]] = mapped_column(String(500))
+    ip_address: Mapped[str | None] = mapped_column(String(50))
+    user_agent: Mapped[str | None] = mapped_column(String(500))
 
     # Additional details
-    details: Mapped[Optional[dict]] = mapped_column(JSONB)
+    details: Mapped[dict | None] = mapped_column(JSONB)
 
 
 # Keep experiment tracking models from original
@@ -457,7 +456,7 @@ class ExperimentRun(Base):
 
     id: Mapped[UUID] = mapped_column(PGUUID, primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     agent_version: Mapped[str] = mapped_column(String(50))
     model: Mapped[str] = mapped_column(String(100))
     prompt_version: Mapped[str] = mapped_column(String(50))
@@ -475,7 +474,7 @@ class ExperimentRun(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     completed_at: Mapped[datetime] = mapped_column(DateTime)
     status: Mapped[str] = mapped_column(String(50), default="completed")
-    parent_run_id: Mapped[Optional[UUID]] = mapped_column(
+    parent_run_id: Mapped[UUID | None] = mapped_column(
         PGUUID, ForeignKey("experiment_runs.id"), nullable=True
     )
 
@@ -505,11 +504,11 @@ class CaseResult(Base):
     # Data
     inputs: Mapped[dict] = mapped_column(JSONB)
     output: Mapped[dict] = mapped_column(JSONB)
-    expected_output: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    expected_output: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     evaluator_results: Mapped[dict] = mapped_column(JSONB)
 
     # Tracing
-    trace_id: Mapped[Optional[str]] = mapped_column(String(100))
+    trace_id: Mapped[str | None] = mapped_column(String(100))
 
     # Relationships
     experiment: Mapped["ExperimentRun"] = relationship(back_populates="case_results")

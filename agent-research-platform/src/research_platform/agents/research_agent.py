@@ -5,15 +5,14 @@ from pydantic_ai import Agent, RunContext
 
 from research_platform.agents.tools.research import (
     ResearchDeps,
-    search_publications,
-    search_clinical_trials,
     find_publications_by_author,
     get_research_projects,
-    search_research_projects,
     get_trial_enrollment_stats,
+    search_clinical_trials,
+    search_publications,
+    search_research_projects,
 )
 from research_platform.config import settings
-
 
 # Response models
 
@@ -151,7 +150,6 @@ async def validate_research_response(
     ctx: RunContext[ResearchDeps], result: ResearchQueryResponse
 ) -> ResearchQueryResponse:
     """Validate research query responses."""
-
     # Ensure confidence is valid
     if not (0 <= result.confidence <= 1):
         result.confidence = max(0, min(1, result.confidence))

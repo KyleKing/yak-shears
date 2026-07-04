@@ -1,16 +1,14 @@
 """Tests for Biomedical Research Agent."""
 
 import pytest
-from pydantic_evals import Dataset, Case
-
+from pydantic_evals import Case, Dataset
 from research_platform.agents.research_agent import research_agent
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_search_publications(mock_research_deps):
     """Test publication search."""
-
     result = await research_agent.run(
         "Find recent publications about cancer immunotherapy.",
         deps=mock_research_deps,
@@ -22,11 +20,10 @@ async def test_search_publications(mock_research_deps):
     assert len(result.data.research_areas) > 0
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_search_clinical_trials(mock_research_deps):
     """Test clinical trial search."""
-
     result = await research_agent.run(
         "Find active Phase III clinical trials for Alzheimer's disease.",
         deps=mock_research_deps,
@@ -36,11 +33,10 @@ async def test_search_clinical_trials(mock_research_deps):
     assert result.data.confidence > 0
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_find_author_publications(mock_research_deps):
     """Test finding publications by author."""
-
     result = await research_agent.run(
         "Find publications by Dr. Smith in cardiology.",
         deps=mock_research_deps,
@@ -50,11 +46,10 @@ async def test_find_author_publications(mock_research_deps):
     assert result.data.confidence > 0
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_research_project_search(mock_research_deps):
     """Test research project search."""
-
     result = await research_agent.run(
         "What research projects are ongoing in oncology?",
         deps=mock_research_deps,
@@ -63,11 +58,10 @@ async def test_research_project_search(mock_research_deps):
     assert result.data.answer
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_trial_enrollment_stats(mock_research_deps):
     """Test getting trial enrollment statistics."""
-
     result = await research_agent.run(
         "What is the enrollment status for neurology clinical trials?",
         deps=mock_research_deps,
@@ -79,11 +73,10 @@ async def test_trial_enrollment_stats(mock_research_deps):
 # Evaluation tests
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_research_agent_evaluation(mock_research_deps, research_evaluators):
     """Test research agent with evaluation framework."""
-
     dataset = Dataset(
         name="research_agent_publications",
         cases=[
@@ -117,7 +110,7 @@ async def test_research_agent_evaluation(mock_research_deps, research_evaluators
     assert report.passed_ratio >= 0.7
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_citation_quality(mock_research_deps):
     """Test citation quality."""
@@ -148,11 +141,10 @@ async def test_citation_quality(mock_research_deps):
         ("diabetes medications", "endocrinology"),
     ],
 )
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_research_area_classification(mock_research_deps, query, expected_area):
     """Test that queries are classified into correct research areas."""
-
     result = await research_agent.run(query, deps=mock_research_deps)
 
     # Research areas should be identified

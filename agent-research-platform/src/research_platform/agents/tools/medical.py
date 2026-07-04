@@ -10,18 +10,17 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field
 from pydantic_ai import RunContext
-from sqlalchemy import select, func, and_
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from research_platform.db.models_medical import (
-    Patient,
-    Encounter,
-    Diagnosis,
-    Medication,
-    LabResult,
     AuditLog,
+    Diagnosis,
+    Encounter,
+    LabResult,
+    Medication,
+    Patient,
 )
-
 
 # Dependency types
 

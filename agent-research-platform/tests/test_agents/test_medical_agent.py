@@ -6,16 +6,14 @@ Subsequent runs: pytest (uses cached responses)
 """
 
 import pytest
-from pydantic_evals import Dataset, Case
-
+from pydantic_evals import Case, Dataset
 from research_platform.agents.medical_agent import medical_agent
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_find_patient_basic(mock_medical_deps, sample_mrn):
     """Test basic patient lookup."""
-
     result = await medical_agent.run(
         f"Find patient with MRN {sample_mrn} and tell me their basic information.",
         deps=mock_medical_deps,
@@ -27,11 +25,10 @@ async def test_find_patient_basic(mock_medical_deps, sample_mrn):
     assert result.data.phi_accessed is True
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_get_patient_diagnoses(mock_medical_deps, sample_mrn):
     """Test retrieving patient diagnoses."""
-
     result = await medical_agent.run(
         f"What are the active diagnoses for patient {sample_mrn}? Include ICD-10 codes.",
         deps=mock_medical_deps,
@@ -45,11 +42,10 @@ async def test_get_patient_diagnoses(mock_medical_deps, sample_mrn):
     assert result.data.phi_accessed is True
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_get_patient_medications(mock_medical_deps, sample_mrn):
     """Test retrieving patient medications."""
-
     result = await medical_agent.run(
         f"List the current medications for patient {sample_mrn}.",
         deps=mock_medical_deps,
@@ -59,11 +55,10 @@ async def test_get_patient_medications(mock_medical_deps, sample_mrn):
     assert len(result.data.sources) > 0
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_get_lab_results(mock_medical_deps, sample_mrn):
     """Test retrieving lab results."""
-
     result = await medical_agent.run(
         f"Show me recent lab results for patient {sample_mrn}, especially any abnormal values.",
         deps=mock_medical_deps,
@@ -73,11 +68,10 @@ async def test_get_lab_results(mock_medical_deps, sample_mrn):
     assert result.data.confidence > 0
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_search_by_diagnosis(mock_medical_deps, sample_icd10_codes):
     """Test searching patients by diagnosis."""
-
     result = await medical_agent.run(
         f"Find patients with diabetes (ICD-10: {sample_icd10_codes['diabetes_type2']}).",
         deps=mock_medical_deps,
@@ -88,11 +82,10 @@ async def test_search_by_diagnosis(mock_medical_deps, sample_icd10_codes):
     assert result.data.phi_accessed is False or len(result.data.sources) > 0
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_comprehensive_patient_summary(mock_medical_deps, sample_mrn):
     """Test comprehensive patient summary."""
-
     result = await medical_agent.run(
         f"""Provide a comprehensive summary for patient {sample_mrn} including:
         - Demographics
@@ -113,11 +106,10 @@ async def test_comprehensive_patient_summary(mock_medical_deps, sample_mrn):
 # Evaluation tests
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_medical_agent_evaluation(mock_medical_deps, medical_evaluators):
     """Test medical agent with evaluation framework."""
-
     # Create test dataset
     dataset = Dataset(
         name="medical_agent_basic",
@@ -176,7 +168,7 @@ async def test_medical_agent_evaluation(mock_medical_deps, medical_evaluators):
     assert all(r.passed for r in critical_results), "Critical test failed"
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_phi_leakage_prevention(mock_medical_deps):
     """Test that PHI is not leaked inappropriately."""
@@ -199,7 +191,7 @@ async def test_phi_leakage_prevention(mock_medical_deps):
     assert eval_result.passed, f"PHI leakage detected: {eval_result.metadata}"
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_medical_accuracy(mock_medical_deps, sample_mrn):
     """Test medical accuracy evaluation."""
@@ -229,7 +221,7 @@ async def test_medical_accuracy(mock_medical_deps, sample_mrn):
 # Parametrized tests
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "query,expected_tool",
@@ -243,7 +235,6 @@ async def test_medical_accuracy(mock_medical_deps, sample_mrn):
 )
 async def test_tool_selection(mock_medical_deps, query, expected_tool):
     """Test that agent selects appropriate tools."""
-
     result = await medical_agent.run(query, deps=mock_medical_deps)
 
     # Agent should complete successfully
@@ -254,11 +245,10 @@ async def test_tool_selection(mock_medical_deps, query, expected_tool):
 # Edge case tests
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_nonexistent_patient(mock_medical_deps):
     """Test handling of nonexistent patient."""
-
     result = await medical_agent.run(
         "Find patient with MRN NONEXISTENT-999",
         deps=mock_medical_deps,
@@ -269,11 +259,10 @@ async def test_nonexistent_patient(mock_medical_deps):
     assert result.data.confidence < 0.9  # Should be less confident
 
 
-@pytest.mark.vcr()
+@pytest.mark.vcr
 @pytest.mark.asyncio
 async def test_ambiguous_query(mock_medical_deps):
     """Test handling of ambiguous queries."""
-
     result = await medical_agent.run(
         "Tell me about the patient",  # No MRN specified
         deps=mock_medical_deps,
