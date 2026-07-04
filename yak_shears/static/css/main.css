@@ -7,6 +7,7 @@
 	--color-border: #d9d4cc;
 	--color-accent: #f7cf46;
 	--color-danger: #d93838;
+	--color-link: #0a58ca;
 	--space-1: 0.25rem;
 	--space-2: 0.5rem;
 	--space-3: 0.75rem;
@@ -34,6 +35,7 @@
 		--color-text: #ffffff;
 		--color-text-dim: #c7c3ba;
 		--color-border: #2c2c2b;
+		--color-link: #6ea8fe;
 		--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
 		--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
 		--shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
@@ -814,6 +816,16 @@ pre code {
 	word-break: break-word;
 }
 
+/* The highlighter wraps Djot code blocks in <pre><code> inside the editor; a
+   nested <pre> keeps the UA default white-space: pre, so the inline pre-wrap on
+   .editor never reaches it. Re-wrap those blocks when the wrap toggle is on. */
+.editor-container.wrap .editor pre,
+.editor-container.wrap .editor pre code {
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+	word-break: break-word;
+}
+
 .editor:focus {
 	outline: none;
 	border-color: var(--color-accent);
@@ -862,6 +874,18 @@ pre code {
 
 .preview-content p {
 	margin: 0 0 1em 0;
+}
+
+/* Themed link color; without it, rendered links fell back to the UA dark blue,
+   which is unreadable on the dark surface. */
+.preview-content a {
+	color: var(--color-link);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.preview-content a:hover {
+	text-decoration-thickness: 2px;
 }
 
 .preview-content code {
@@ -1498,11 +1522,15 @@ pre code {
 	grid-template-columns: 1fr;
 }
 
-/* Only reserve space (nudging the editor left) when the viewport is too narrow
-   for the centered editor and the rail to sit side by side. */
-@media (min-width: 769px) and (max-width: 1560px) {
+/* Reserve the rail width so the editor/preview can use the rest, then drop the
+   centered reading cap while pinned so they actually claim that freed space (2.6). */
+@media (min-width: 769px) {
 	.editor-layout.panel-pinned .editor-main {
 		padding-right: 320px;
+	}
+
+	.editor-layout.panel-pinned .editor-container {
+		max-width: none;
 	}
 }
 

@@ -486,6 +486,37 @@ async def test_list_outdent_removes_nested_blank(context: BrowserContext, page: 
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
+async def test_list_indent_stops_beyond_one_level(context: BrowserContext, page: Page, server_lifecycle):
+    """A child already one level under its parent cannot indent a second level deeper."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    # Child is nested one level under a top-level parent; a further Tab would make it
+    # two levels deeper than the parent, which Djot cannot parse, so it must no-op.
+    await page.evaluate(
+        """() => {
+            window.jar.updateCode("- parent\\n\\n    - child");
+            const ed = document.querySelector(".editor");
+            ed.focus();
+            const range = document.createRange();
+            range.selectNodeContents(ed);
+            range.collapse(false);
+            const sel = getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }"""
+    )
+    await page.keyboard.press("Tab")
+
+    content = await editor.text_content()
+    assert content == "- parent\n\n    - child", f"Expected indent to be capped but got {content!r}"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
 async def test_wrap_toggle_rewraps_editor(context: BrowserContext, page: Page, server_lifecycle):
     """The wrap toggle flips the editor itself between no-wrap and soft-wrap."""
     await login(context, page)
@@ -507,3 +538,27 @@ async def test_wrap_toggle_rewraps_editor(context: BrowserContext, page: Page, s
 
     await wrap_toggle.click()
     assert await white_space() == "pre"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_wrap_toggle_rewraps_editor_code_block(context: BrowserContext, page: Page, server_lifecycle):
+    """Wrap must also reach code blocks, which the highlighter nests in a <pre>."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await page.evaluate('() => window.jar.updateCode("```py\\nx = 1\\n```")')
+
+    async def pre_white_space() -> str:
+        return await page.evaluate(
+            "() => getComputedStyle(document.querySelector('.editor pre')).whiteSpace"
+        )
+
+    assert await pre_white_space() == "pre"
+
+    await open_menu(page)
+    await page.locator("#wrap-toggle").click()
+    assert await pre_white_space() == "pre-wrap"

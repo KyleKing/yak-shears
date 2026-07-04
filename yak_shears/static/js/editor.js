@@ -459,16 +459,12 @@ function initEditor() {
 			}
 		});
 
-		// Restore panel state from localStorage
+		// Restore panel state from localStorage. Only a pinned panel is restored:
+		// an unpinned panel is a transient overlay, so re-opening it on every load
+		// would keep covering the split preview when returning to the editor.
 		const savedPinned = localStorage.getItem('panelPinned');
-		const savedVisible = localStorage.getItem('metadataPanelVisible');
-
-		// On desktop, restore pinned state if it was previously pinned
 		if (window.innerWidth > MOBILE_BREAKPOINT && savedPinned === 'true') {
 			togglePanelPin();
-		} else if (savedVisible === 'true') {
-			// Or just show panel if it was visible (but not pinned)
-			toggleMetadataPanel(true);
 		}
 
 		// Handle window resize - adjust view mode and panel state
@@ -586,6 +582,19 @@ function _getPreviousLine(text, lineStart) {
 	return { start: prevStart, text: text.substring(prevStart, prevEnd) };
 }
 
+// Indent of the nearest non-blank line above `lineStart` (the effective parent),
+// or null when there is none. Used to bound how deep an item may indent.
+function _previousNonBlankIndent(text, lineStart) {
+	let start = lineStart;
+	while (start > 0) {
+		const prev = _getPreviousLine(text, start);
+		if (!prev) return null;
+		if (prev.text.trim() !== "") return _leadingSpaces(prev.text);
+		start = prev.start;
+	}
+	return null;
+}
+
 function _handleListIndentation(editorEl, jarInstance, outdent) {
 	const text = jarInstance.toString();
 	const cursorPos = _getCursorPosition(editorEl);
@@ -628,6 +637,13 @@ function _handleListIndentation(editorEl, jarInstance, outdent) {
 	// Indent
 	const newLineText = indentStr + lineText;
 	const newIndent = _leadingSpaces(newLineText);
+
+	// Keep nesting valid: an item may be at most one level deeper than the nearest
+	// non-blank line above it. Consume the Tab without over-indenting past that.
+	const parentIndent = _previousNonBlankIndent(text, lineStart);
+	if (parentIndent !== null && newIndent > parentIndent + indentSize) {
+		return true;
+	}
 
 	// Djot only renders a nested list when a blank line precedes it, so insert one
 	// when this item becomes indented under a non-blank parent line.

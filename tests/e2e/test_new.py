@@ -21,8 +21,8 @@ async def test_new_yak_page_loads(context: BrowserContext, page: Page, server_li
 
     # Check form elements are present
     await expect(page.locator("h1")).to_contain_text("Create New Yak")
-    await expect(page.locator("#category_select")).to_be_visible()
-    await expect(page.locator("#new_category")).to_be_visible()
+    await expect(page.locator("#category")).to_be_visible()
+    await expect(page.locator("#category-options")).to_have_count(1)
     await expect(page.locator("button[type='submit']")).to_be_visible()
 
 
@@ -34,11 +34,11 @@ async def test_create_new_yak_with_existing_category(context: BrowserContext, pa
 
     await page.goto("/new")
 
-    # Select an existing category (if available)
-    category_options = await page.locator("#category_select option").all()
-    if len(category_options) > 1:  # More than just the placeholder
-        # Select the first real category
-        await page.select_option("#category_select", index=1)
+    # Pick an existing category from the datalist (if any) by typing its value
+    options = await page.locator("#category-options option").all()
+    if options:
+        existing = await options[0].get_attribute("value")
+        await page.fill("#category", existing)
 
         # Submit form
         await page.click("button[type='submit']")
@@ -57,7 +57,7 @@ async def test_create_new_yak_with_new_category(context: BrowserContext, page: P
 
     # Enter a new category name
     test_category = "test-e2e-category"
-    await page.fill("#new_category", test_category)
+    await page.fill("#category", test_category)
 
     # Submit form
     await page.click("button[type='submit']")

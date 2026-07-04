@@ -11,18 +11,13 @@
 
   <form method="post" class="form">
     <div class="form__group">
-      <label for="category_select" class="form__label">Category:</label>
-      <select id="category_select" name="category" class="form__select">
-        <option value="">Select existing category...</option>
+      <label for="category" class="form__label">Category:</label>
+      <input type="text" id="category" name="category" class="form__input" list="category-options" placeholder="Pick or type a category" autocomplete="off" autofocus required>
+      <datalist id="category-options">
         {% for cat in categories | sort %}
-          <option value="{{ cat }}">{{ cat | title }}</option>
+          <option value="{{ cat }}"></option>
         {% endfor %}
-      </select>
-    </div>
-
-    <div class="form__group">
-      <label for="new_category" class="form__label">Or create new category:</label>
-      <input type="text" id="new_category" name="new_category" class="form__input" placeholder="Enter new category name">
+      </datalist>
     </div>
 
     <div class="form__actions">
