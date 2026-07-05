@@ -1,7 +1,9 @@
 {% extends "base.html.jinja" %}
 
 {% block extra_head %}
+  <!-- freshness: npm prismjs -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/themes/prism.min.css">
+  <!-- freshness: npm @djot/djot -->
   <script src="https://unpkg.com/@djot/djot@0.3.2/dist/djot.js"></script>
   <script src="{{ static_url('js/codejar.min.js') }}"></script>
   <script src="{{ static_url('js/highlight.js') }}"></script>

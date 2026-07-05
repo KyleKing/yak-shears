@@ -7,6 +7,10 @@ _.python.venv = {path = ".venv"}
 depends = ['download-assets']
 description = 'Build generated code'
 
+[tasks."check-freshness"]
+description = "Check for outdated vendored JS, CDN pins, and Python deps"
+run = "uv run python scripts/check_freshness.py"
+
 [tasks.dev]
 description = 'Run development server without authentication'
 run = 'uv run serve --reload --no-auth'
