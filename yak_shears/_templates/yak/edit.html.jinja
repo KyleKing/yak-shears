@@ -19,6 +19,14 @@
 
   <div class="editor-layout">
     <div class="editor-main">
+      {# Draft recovery bar - unhidden by editor.js:_setupDraftToggle() when
+         localStorage holds unsaved changes that differ from the server version #}
+      <div class="draft-toggle" id="draft-toggle" hidden>
+        <span class="draft-toggle__label">unsaved local changes</span>
+        <button class="button button--sm active" type="button" id="draft-server-btn">server</button>
+        <button class="button button--sm" type="button" id="draft-local-btn">local</button>
+      </div>
+
       <div class="editor-container" id="editor-container">
         {# Form wrapper required for HTMX POST - see handlers.py:edit_yak_handler #}
         <form id="editor-form" method="post">

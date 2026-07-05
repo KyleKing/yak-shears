@@ -562,3 +562,44 @@ async def test_wrap_toggle_rewraps_editor_code_block(context: BrowserContext, pa
     await open_menu(page)
     await page.locator("#wrap-toggle").click()
     assert await pre_white_space() == "pre-wrap"
+
+
+# ============================================================================
+# Draft Recovery Tests
+# ============================================================================
+
+
+@pytest.mark.skip(reason="Pending editor.js/main.css wiring for #draft-toggle; see PLAN.md draft recovery item")
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_draft_toggle_recovers_local_changes(context: BrowserContext, page: Page, server_lifecycle):
+    """Draft bar appears for unsaved localStorage changes and swaps versions losslessly."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+    toggle = page.locator("#draft-toggle")
+    await expect(toggle).to_be_hidden()
+
+    server_content = await editor.text_content()
+    assert server_content is not None
+    draft = server_content + "\nlocal draft line"
+    await page.evaluate("(draft) => localStorage.setItem('editor_yak1.dj', draft)", draft)
+
+    await page.reload()
+    await expect(editor).to_be_editable()
+    await expect(toggle).to_be_visible()
+    await expect(editor).not_to_contain_text("local draft line")
+
+    await page.locator("#draft-local-btn").click()
+    await expect(editor).to_contain_text("local draft line")
+    await expect(page.locator("#save-status")).to_contain_text("Modified")
+
+    await page.locator("#draft-server-btn").click()
+    await expect(editor).not_to_contain_text("local draft line")
+
+    # Previewing the server version must not delete the stored draft
+    stored = await page.evaluate("() => localStorage.getItem('editor_yak1.dj')")
+    assert stored == draft
+    await page.evaluate("() => localStorage.removeItem('editor_yak1.dj')")
