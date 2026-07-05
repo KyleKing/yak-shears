@@ -62,6 +62,14 @@ A possible `shears` companion CLI over the same vault:
 - Bookmarklet notes managed by a browser extension, to archive tabs instead of cluttering the bookmarks bar
 - Trip-planning note type (location, cost, must-see, category, best time, dates) enabling dynamic calendar scheduling and nearby lookups
 
+### Layout Container Ownership (from the stale yak-shears-py checkout)
+
+That checkout's final commit moved the `.container` div out of `base.html.jinja` into each page template so routes own their width. The current design kept `.container` in base (1200px cap) and works around it per-page: pinned-panel CSS drops the inner `.editor-container` cap to claim space within the outer cap, and `body[data-route]` offers per-route overrides without moving markup. Revisit if a route ever needs true full-width (e.g. side-by-side editing plus pinned metadata on wide screens); the options are the sub-template move, a base-template block that suppresses the wrapper, or a `data-route` width override.
+
+### Visual Regression Testing (survey from the stale yak-shears-py checkout)
+
+A prior tool survey concluded: Playwright's built-in `to_have_screenshot` diffing is the fit here (free, already the e2e harness); Percy/Applitools/Chromatic add paid dashboards this single-user project doesn't need; BackstopJS/Loki add a second harness for no gain. The e2e suite already captures README screenshots via `maybe_screenshot`, so adoption is mostly baseline management and CI storage for diffs.
+
 ## Performance Targets
 
 - Parse 1000 files in <500ms (validated: 0.318ms/file)
