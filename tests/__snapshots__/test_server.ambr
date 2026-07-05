@@ -74,6 +74,17 @@
       </div>
       <div class="editor-layout">
        <div class="editor-main">
+        <div class="draft-toggle" hidden="" id="draft-toggle">
+         <span class="draft-toggle__label">
+          unsaved local changes
+         </span>
+         <button class="button button--sm active" id="draft-server-btn" type="button">
+          server
+         </button>
+         <button class="button button--sm" id="draft-local-btn" type="button">
+          local
+         </button>
+        </div>
         <div class="editor-container" id="editor-container">
          <form id="editor-form" method="post">
           <input name="yak" type="hidden" value="test.dj"/>
@@ -250,8 +261,8 @@
        <span class="sort-controls__label">
         Sort by:
        </span>
-       <a class="button button--sm button--primary" href="/yaks?sort_by=name">
-        Name (Created At)
+       <a class="button button--sm button--primary" href="/yaks?sort_by=created_at">
+        Created At
        </a>
        <a class="button button--sm" href="/yaks?sort_by=modified_date">
         Modified Date
@@ -261,16 +272,16 @@
        <span class="filter-controls__label">
         Filter by category:
        </span>
-       <a class="button button--sm button--primary" href="/yaks?sort_by=name">
+       <a class="button button--sm button--primary" href="/yaks?sort_by=created_at">
         All
        </a>
-       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=subdirectory-2">
+       <a class="button button--sm" href="/yaks?sort_by=created_at&amp;category=subdirectory-2">
         Subdirectory-2
        </a>
-       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=subdirectory-3">
+       <a class="button button--sm" href="/yaks?sort_by=created_at&amp;category=subdirectory-3">
         Subdirectory-3
        </a>
-       <a class="button button--sm" href="/yaks?sort_by=name&amp;category=yak_test_dir">
+       <a class="button button--sm" href="/yaks?sort_by=created_at&amp;category=yak_test_dir">
         Yak_test_dir
        </a>
       </div>

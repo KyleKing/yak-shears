@@ -71,6 +71,7 @@ class YaksQueryParams:
 
         category = request.query_params.get("category") or None
         if category and category not in categories:
+            log(f"Ignored invalid category: {category}")
             category = None
 
         return cls(page=page, sort_by=sort_by, category=category)

@@ -83,7 +83,11 @@ async def login_handler(request: Request) -> Response:
             httponly=True,
             secure=IN_TLS_CONTEXT,
             samesite="strict",
-            # PLANNED: specify the domain
+            # PLANNED: decide whether to specify the Domain attribute. Omitting it yields a
+            # host-only cookie (no subdomains), which is usually the safer default; setting it
+            # explicitly widens the cookie to all subdomains. Deriving it from the Host header
+            # is unreliable (it may include a port and is attacker-influenced without a
+            # trusted-host allowlist). Revisit alongside the Hetzner deployment.
         )
         return response
 
