@@ -68,6 +68,7 @@ class UserStore:
             "email_to_user_id": self._email_to_user_id,
         }
         await self._data_path.write_text(json.dumps(data, indent=2))
+        await self._data_path.chmod(0o600)
 
     # -------------------------------------------------------------------------
     # User Management

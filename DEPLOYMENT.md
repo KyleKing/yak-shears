@@ -63,8 +63,8 @@ nslookup yak-shears.kyleking.me 8.8.8.8
 ### Option A: Hetzner Cloud Console
 
 1. **Create VPS via Hetzner Cloud Console**
-   - OS: Ubuntu 22.04 or later
-   - Server type: CX22 or larger (4GB+ RAM recommended)
+   - OS: Ubuntu 24.04
+   - Server type: CX22 or larger in the EU; CPX11/CPX21 in US locations (CX is EU-only)
    - Location: Your preference
    - SSH key: Add your public key
    - Cloud-init: Paste contents of `cloud-config.yaml` (replace `<public_ssh_key>` placeholder)
@@ -80,14 +80,14 @@ brew install hcloud  # macOS
 # Authenticate (create API token in Hetzner Cloud Console)
 hcloud context create yak-shears
 
-# Create server with cloud-config
+# Create server with cloud-config (use a local copy with <public_ssh_key> filled in)
 hcloud server create \
   --name yak-shears \
-  --type cx22 \
-  --image ubuntu-22.04 \
-  --location nbg1 \
+  --type cpx21 \
+  --image ubuntu-24.04 \
+  --location ash \
   --ssh-key YOUR_KEY_NAME \
-  --user-data-from-file cloud-config.yaml
+  --user-data-from-file cloud-config.local.yaml
 
 # Get server IP
 hcloud server ip yak-shears
@@ -155,9 +155,9 @@ See: https://docs.syncthing.net/intro/getting-started.html#configuring
 
 ## GitOps Auto-Updates
 
-The server polls `origin/main` every 5 minutes and automatically:
+The server polls `origin/yak-shears-py` every 5 minutes and automatically:
 - Pulls new commits
-- Runs `mise install && uv sync`
+- Runs `uv sync`
 - Restarts `yak-shears` service
 
 ```sh
@@ -414,9 +414,6 @@ echo "*/15 * * * * /usr/local/bin/health-check.sh" | crontab -
 ```sh
 # Update system packages
 sudo apt update && sudo apt upgrade -y
-
-# Update mise tools
-mise upgrade
 
 # Update Python dependencies
 cd /home/yakshears/yak-shears

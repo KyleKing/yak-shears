@@ -182,10 +182,16 @@ poetry.toml
 # Custom Rules
 
 .yak-shears-users.json
-yak_shears/static/**/*.min.*
 yak_shears_search.db
+
+# Vendored built assets (required at runtime; overrides the global *.min.js ignore
+# so a fresh VPS clone works without node/tsc/terser)
+!yak_shears/static/js/*.min.js
 
 ## Playwright
 .playwright/auth*.json
 test-results/*
 tests/test_data/mock_djot_dir_0/*
+
+## Deployment (contains the filled-in SSH key)
+cloud-config.local.yaml

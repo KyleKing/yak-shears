@@ -13,7 +13,7 @@ Blockers found in `cloud-config.yaml` and `DEPLOYMENT.md` that would make the cu
 - Fix the port mismatch. The systemd unit runs `uv run --no-sync serve` with no `--port` (binds `:8080`) while Caddy proxies `localhost:8084` (`cloud-config.yaml:66,140`). Align the unit, the Caddyfile, and the `DEPLOYMENT.md` health check on one port.
 - Move the search DB out of the Syncthing folder. `get_search_db_path()` defaults into `$YAK_SHEARS_DIR`, which Syncthing syncs and corrupts. Set `--search-db-dir` in the systemd unit to a non-synced path (e.g. `/home/yakshears/.local/state/yak-shears`).
 - Set `IN_TLS_CONTEXT=TRUE` in the systemd unit so the session cookie carries `Secure` behind Caddy.
-- Secrets hygiene: untrack `yak_shears/.yak-shears-users.json` (committed with a real hash), purge from history, and write it with mode 0600 in `UserStore._save`.
+- Secrets hygiene: verified 2026-07-04 that `yak_shears/.yak-shears-users.json` is gitignored and was never committed (no history purge needed); `UserStore._save` now chmods it to 0600.
 - Post-deploy smoke test: authenticated login, note save, media upload, search, and confirm the CSP headers don't break anything in auth mode (they've only been exercised in dev).
 - Docs: `DEPLOYMENT.md` prerequisites now mention ffmpeg, and the backup section points at the real users-file path (`/home/yakshears/yak-shears/yak_shears/.yak-shears-users.json`, until relocated).
 

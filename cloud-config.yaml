@@ -28,6 +28,7 @@ packages:
   - ufw
   - git
   - curl
+  - ffmpeg
   - gnupg2
   - apt-transport-https
   - debian-keyring
@@ -63,10 +64,12 @@ write_files:
       [Service]
       User=yakshears
       WorkingDirectory=/home/yakshears/yak-shears
-      ExecStart=/home/yakshears/.local/bin/uv run --no-sync serve
+      ExecStartPre=/bin/mkdir -p /home/yakshears/.local/state/yak-shears
+      ExecStart=/home/yakshears/.local/bin/uv run --no-sync serve --port 8084 --search-db-dir /home/yakshears/.local/state/yak-shears
       Restart=always
       RestartSec=10
       Environment=YAK_SHEARS_DIR=/home/yakshears/Sync/yak-shears
+      Environment=IN_TLS_CONTEXT=TRUE
 
       [Install]
       WantedBy=multi-user.target
@@ -81,21 +84,20 @@ write_files:
       cd /home/yakshears/yak-shears || exit 1
 
       # Fetch latest changes
-      git fetch origin main || exit 1
+      git fetch origin yak-shears-py || exit 1
 
       LOCAL=$(git rev-parse HEAD)
-      REMOTE=$(git rev-parse origin/main)
+      REMOTE=$(git rev-parse origin/yak-shears-py)
 
       if [ "$LOCAL" != "$REMOTE" ]; then
         echo "Updates detected. Pulling changes..."
-        git pull origin main || exit 1
+        git pull origin yak-shears-py || exit 1
 
         echo "Installing dependencies..."
-        /home/yakshears/.local/bin/mise install || exit 1
         /home/yakshears/.local/bin/uv sync || exit 1
 
         echo "Restarting service..."
-        systemctl restart yak-shears || exit 1
+        sudo systemctl restart yak-shears || exit 1
 
         echo "Update completed successfully"
       else
@@ -178,11 +180,8 @@ runcmd:
   # Update package lists
   - apt update || exit 1
 
-  # Install uv (Python package manager)
+  # Install uv (Python package manager; also provisions a managed CPython during sync)
   - sudo -u yakshears sh -c 'curl -LsSf https://astral.sh/uv/install.sh | sh' || exit 1
-
-  # Install mise (tool version manager)
-  - sudo -u yakshears sh -c 'curl -fsSL https://mise.jdx.dev/install.sh | sh' || exit 1
 
   # Install Syncthing
   - mkdir -p /etc/apt/keyrings || exit 1
@@ -204,7 +203,6 @@ runcmd:
   # Clone repository and install dependencies
   # NOTE: For private repos, add SSH deploy key to GitHub and update URL to git@github.com:...
   - sudo -u yakshears git clone https://github.com/KyleKing/yak-shears.git /home/yakshears/yak-shears || exit 1
-  - sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/mise install' || exit 1
   - sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/uv sync' || exit 1
 
   # Enable and start Syncthing
@@ -224,8 +222,12 @@ runcmd:
   - systemctl enable gitops-update.timer || exit 1
   - systemctl start gitops-update.timer || exit 1
 
-  # Restart SSH to apply hardened config
-  - systemctl restart sshd || exit 1
+  # Apply hardened SSH config. Ubuntu 22.10+ socket-activates sshd (ssh.socket
+  # owns the listen port and ignores `Port 2222` in sshd_config), so disable the
+  # socket and run ssh.service traditionally.
+  - systemctl disable --now ssh.socket || true
+  - systemctl enable ssh.service || exit 1
+  - systemctl restart ssh.service || exit 1
 
   # Reboot to ensure clean state
   - sleep 10 && reboot
