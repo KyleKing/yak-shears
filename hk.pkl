@@ -62,9 +62,21 @@ local commit_msg_checks = new Mapping<String, Step> {
         check = "cz check --allow-abort --commit-msg-file={{commit_msg_file}}"
     }
 }
+// Rendered-page snapshot tests (TestClient + syrupy, a few seconds); gated on the
+// files that feed rendered pages so stale snapshots can't be committed
+local snapshot_tests = new Mapping<String, Step> {
+    ["snapshot-tests"] {
+        glob = List("yak_shears/_templates/**/*.jinja", "yak_shears/static/**", "yak_shears/server/**/*.py")
+        check = "uv run pytest tests/test_server.py tests/test_auth_routes.py -q --no-cov"
+    }
+}
 local pre_push_checks = new Mapping<String, Step> {
     ["commitizen-branch"] {
         check = "cz check --rev-range origin/HEAD..HEAD"
+    }
+    // Mirrors CI's non-playwright suite so a broken push is caught locally
+    ["test-unit"] {
+        check = "mise run test:unit"
     }
 }
 
@@ -73,7 +85,10 @@ hooks = new {
     ["pre-commit"] {
         fix = true    // automatically modify files with available linter fixes
         stash = "git" // stashes unstaged changes while running fix steps
-        steps = linters
+        steps = new {
+            ...linters
+            ...snapshot_tests
+        }
     }
     ["pre-push"] {
         steps = new {

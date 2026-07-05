@@ -22,9 +22,14 @@ MOCK_YAK_DIR = SyncPath(__file__).parent / "test_data/mock_djot_dir_0"
 
 
 def stable_html(content: bytes) -> str:
-    """Prettify HTML with static_url content-hash tokens stripped for stable snapshots."""
-    html = BeautifulSoup(content.decode("utf-8"), "html.parser").prettify()
-    return re.sub(r"\?v=[0-9a-f]{8}", "", html)
+    """Prettify the page's `<main>` element for stable snapshots.
+
+    Scoped to `<main>` so base-template churn (head scripts, CDN pins) does not
+    invalidate every page snapshot; static_url content-hash tokens are stripped.
+    """
+    soup = BeautifulSoup(content.decode("utf-8"), "html.parser")
+    main = soup.find("main") or soup
+    return re.sub(r"\?v=[0-9a-f]{8}", "", main.prettify())
 
 
 @pytest.fixture(scope="session")

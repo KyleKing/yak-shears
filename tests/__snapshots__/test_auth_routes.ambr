@@ -1,188 +1,72 @@
 # serializer version: 1
 # name: test_displayed_error
   '''
-  <!DOCTYPE html>
-  <html lang="en">
-   <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>
-     Login to Yak-Shears
-    </title>
-    <link href="/static/css/main.css" rel="stylesheet"/>
-    <script src="/static/js/htmx.min.js">
-    </script>
-   </head>
-   <body class="layout" data-route="">
-    <a class="skip-link" href="#main-content">
-     Skip to main content
-    </a>
-    <header class="header" role="banner">
-     <div class="container">
-      <div class="header__bar">
-       <a aria-label="Yak Shears home" class="brand" href="/yaks">
-        <div aria-hidden="true" class="brand__logo">
-         YS
-        </div>
-        <span>
-         Yak Shears
-        </span>
-       </a>
-       <div class="header__center">
-       </div>
-       <nav aria-label="Main navigation" role="navigation">
-        <ul class="nav__list">
-         <li>
-          <a class="nav__link" href="/yaks">
-           Yaks
-          </a>
-         </li>
-         <li>
-          <a class="nav__link" href="/search">
-           Search
-          </a>
-         </li>
-         <li>
-          <a class="nav__link" href="/new">
-           New
-          </a>
-         </li>
-         <li>
-          <a class="nav__link" href="/doctor">
-           Doctor
-          </a>
-         </li>
-        </ul>
-       </nav>
-      </div>
+  <main class="layout__inner" id="main-content" role="main">
+   <div class="container">
+    <h1>
+     Login
+    </h1>
+    <form action="/auth/login" aria-label="Login form" class="login-form" method="post">
+     <input name="redirect" type="hidden" value="/yaks"/>
+     <div class="login-form__group">
+      <label class="login-form__label" for="email">
+       Email
+      </label>
+      <input aria-required="true" autocomplete="email" class="login-form__control" id="email" name="email" required="" type="email"/>
      </div>
-    </header>
-    <main class="layout__inner" id="main-content" role="main">
-     <div class="container">
-      <h1>
-       Login
-      </h1>
-      <form action="/auth/login" aria-label="Login form" class="login-form" method="post">
-       <input name="redirect" type="hidden" value="/yaks"/>
-       <div class="login-form__group">
-        <label class="login-form__label" for="email">
-         Email
-        </label>
-        <input aria-required="true" autocomplete="email" class="login-form__control" id="email" name="email" required="" type="email"/>
-       </div>
-       <div class="login-form__group">
-        <label class="login-form__label" for="password">
-         Password
-        </label>
-        <input aria-required="true" autocomplete="current-password" class="login-form__control" id="password" name="password" required="" type="password"/>
-       </div>
-       <div aria-live="polite" class="alert alert--warn" role="alert">
-        <strong>
-         Error:
-        </strong>
-        Invalid email or password
-       </div>
-       <button class="button button--primary" type="submit">
-        Login
-       </button>
-      </form>
-      <p class="text-center text-sm">
-       Note: Users must be created by an administrator using the CLI tool.
-      </p>
+     <div class="login-form__group">
+      <label class="login-form__label" for="password">
+       Password
+      </label>
+      <input aria-required="true" autocomplete="current-password" class="login-form__control" id="password" name="password" required="" type="password"/>
      </div>
-    </main>
-   </body>
-  </html>
+     <div aria-live="polite" class="alert alert--warn" role="alert">
+      <strong>
+       Error:
+      </strong>
+      Invalid email or password
+     </div>
+     <button class="button button--primary" type="submit">
+      Login
+     </button>
+    </form>
+    <p class="text-center text-sm">
+     Note: Users must be created by an administrator using the CLI tool.
+    </p>
+   </div>
+  </main>
   
   '''
 # ---
 # name: test_login_get_shows_form
   '''
-  <!DOCTYPE html>
-  <html lang="en">
-   <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>
-     Login to Yak-Shears
-    </title>
-    <link href="/static/css/main.css" rel="stylesheet"/>
-    <script src="/static/js/htmx.min.js">
-    </script>
-   </head>
-   <body class="layout" data-route="">
-    <a class="skip-link" href="#main-content">
-     Skip to main content
-    </a>
-    <header class="header" role="banner">
-     <div class="container">
-      <div class="header__bar">
-       <a aria-label="Yak Shears home" class="brand" href="/yaks">
-        <div aria-hidden="true" class="brand__logo">
-         YS
-        </div>
-        <span>
-         Yak Shears
-        </span>
-       </a>
-       <div class="header__center">
-       </div>
-       <nav aria-label="Main navigation" role="navigation">
-        <ul class="nav__list">
-         <li>
-          <a class="nav__link" href="/yaks">
-           Yaks
-          </a>
-         </li>
-         <li>
-          <a class="nav__link" href="/search">
-           Search
-          </a>
-         </li>
-         <li>
-          <a class="nav__link" href="/new">
-           New
-          </a>
-         </li>
-         <li>
-          <a class="nav__link" href="/doctor">
-           Doctor
-          </a>
-         </li>
-        </ul>
-       </nav>
-      </div>
+  <main class="layout__inner" id="main-content" role="main">
+   <div class="container">
+    <h1>
+     Login
+    </h1>
+    <form action="/auth/login" aria-label="Login form" class="login-form" method="post">
+     <div class="login-form__group">
+      <label class="login-form__label" for="email">
+       Email
+      </label>
+      <input aria-required="true" autocomplete="email" class="login-form__control" id="email" name="email" required="" type="email"/>
      </div>
-    </header>
-    <main class="layout__inner" id="main-content" role="main">
-     <div class="container">
-      <h1>
-       Login
-      </h1>
-      <form action="/auth/login" aria-label="Login form" class="login-form" method="post">
-       <div class="login-form__group">
-        <label class="login-form__label" for="email">
-         Email
-        </label>
-        <input aria-required="true" autocomplete="email" class="login-form__control" id="email" name="email" required="" type="email"/>
-       </div>
-       <div class="login-form__group">
-        <label class="login-form__label" for="password">
-         Password
-        </label>
-        <input aria-required="true" autocomplete="current-password" class="login-form__control" id="password" name="password" required="" type="password"/>
-       </div>
-       <button class="button button--primary" type="submit">
-        Login
-       </button>
-      </form>
-      <p class="text-center text-sm">
-       Note: Users must be created by an administrator using the CLI tool.
-      </p>
+     <div class="login-form__group">
+      <label class="login-form__label" for="password">
+       Password
+      </label>
+      <input aria-required="true" autocomplete="current-password" class="login-form__control" id="password" name="password" required="" type="password"/>
      </div>
-    </main>
-   </body>
-  </html>
+     <button class="button button--primary" type="submit">
+      Login
+     </button>
+    </form>
+    <p class="text-center text-sm">
+     Note: Users must be created by an administrator using the CLI tool.
+    </p>
+   </div>
+  </main>
   
   '''
 # ---
