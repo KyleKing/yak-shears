@@ -22,7 +22,7 @@ async def test_new_yak_page_loads(context: BrowserContext, page: Page, server_li
     # Check form elements are present
     await expect(page.locator("h1")).to_contain_text("Create New Yak")
     await expect(page.locator("#category")).to_be_visible()
-    await expect(page.locator("#category-options")).to_have_count(1)
+    await expect(page.locator("#category-listbox")).to_have_count(1)
     await expect(page.locator("button[type='submit']")).to_be_visible()
 
 
@@ -34,11 +34,13 @@ async def test_create_new_yak_with_existing_category(context: BrowserContext, pa
 
     await page.goto("/new")
 
-    # Pick an existing category from the datalist (if any) by typing its value
-    options = await page.locator("#category-options option").all()
+    # Pick an existing category from the combobox (if any) by typing its value
+    options = await page.locator("#category-listbox .combobox__option").all()
     if options:
-        existing = await options[0].get_attribute("value")
+        existing = await options[0].get_attribute("data-value")
         await page.fill("#category", existing)
+        # Dismiss the open listbox so it does not cover the submit button
+        await page.keyboard.press("Escape")
 
         # Submit form
         await page.click("button[type='submit']")
@@ -73,6 +75,9 @@ async def test_new_yak_cancel_navigation(context: BrowserContext, page: Page, se
     await login(context, page)
 
     await page.goto("/new")
+
+    # The autofocused combobox opens its listbox over the form actions; dismiss it first
+    await page.keyboard.press("Escape")
 
     # Click cancel
     cancel_button = page.locator("a:has-text('Cancel')")

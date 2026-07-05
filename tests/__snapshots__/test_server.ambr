@@ -12,7 +12,9 @@
     <link href="/static/css/main.css" rel="stylesheet"/>
     <script src="/static/js/htmx.min.js">
     </script>
+    <!-- freshness: npm prismjs -->
     <link href="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/themes/prism.min.css" rel="stylesheet"/>
+    <!-- freshness: npm @djot/djot -->
     <script src="https://unpkg.com/@djot/djot@0.3.2/dist/djot.js">
     </script>
     <script src="/static/js/codejar.min.js">
@@ -202,7 +204,7 @@
     <link href="/static/css/main.css" rel="stylesheet"/>
     <script src="/static/js/htmx.min.js">
     </script>
-    <script src="/static/js/djot.min.js">
+    <script src="https://unpkg.com/@djot/djot@0.3.2/dist/djot.js">
     </script>
    </head>
    <body class="layout" data-route="yaks">
