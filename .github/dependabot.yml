@@ -2,6 +2,11 @@
 #   https://docs.github.com/en/code-security/dependabot/working-with-dependabot/keeping-your-actions-up-to-date-with-dependabot
 
 # See Dependabot logs in: https://github.com/<owner>/<repo>/network/updates (under "Insights" tab)
+#
+# Actions are pinned by commit SHA with the version tag as a trailing comment (e.g.
+# `actions/checkout@<sha> # v5`), so Dependabot PRs bump the SHA and comment together.
+# FYI: Dependabot only keeps the tag comment in sync if it's already present, so any new
+# `uses:` line added by hand must include the `# vX` comment from the start.
 version: 2
 updates:
   - package-ecosystem: "github-actions"
