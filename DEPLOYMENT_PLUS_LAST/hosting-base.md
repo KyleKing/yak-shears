@@ -1,11 +1,11 @@
-# Manual Hosting Reference: Syncthing & Caddy
+# Base Hosting Setup: Syncthing & Caddy
 
-Manual installation steps for Syncthing and Caddy. This is a **supplementary reference** for cases where you need to set up or debug these services manually.
-
-> **Primary Guide**: See **[DEPLOYMENT.md](../DEPLOYMENT.md)** for the automated cloud-init deployment (recommended).
+This document contains the shared installation and configuration steps for Syncthing and Caddy that are used across multiple hosting scenarios (new setup, final deployment, etc.).
 
 **See also:**
-- **hosting-gemini.md** — Gemini variant configuration
+- **hosting-new.md** — Full, detailed guide for new VPS setup (canonical reference)
+- **hosting-final.md** — Quick-start guide with links to full instructions
+- **hosting-gemini.md** — Gemini-specific hosting notes
 
 ---
 
@@ -91,9 +91,9 @@ yak-shears.kyleking.me {
         # Prevents browsers from MIME-sniffing
         X-Content-Type-Options "nosniff"
         # Helps prevent clickjacking attacks.
-        X-Frame-Options "DENY"
+        X-Frame-Options "DENY
         # Controls how much referrer information is sent with requests.
-        Referrer-Policy "same-origin"
+        Referrer-Policy "same-origin
         # Content-Security-Policy "default-src 'self';" # Customize as needed
     }
 }
