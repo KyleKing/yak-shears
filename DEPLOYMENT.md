@@ -9,6 +9,7 @@ This guide covers deploying Yak Shears to a Hetzner VPS using cloud-init automat
 - Domain name (for HTTPS via Let's Encrypt)
 - DNS management access (Cloudflare, etc.)
 - Local tools: `ssh`, `git`
+- Server binaries: `ffmpeg` is required for media upload (video transcoding and poster frames); ensure it is in `cloud-config.yaml`'s package list
 
 ## DNS Configuration (Required for Let's Encrypt)
 
@@ -344,7 +345,7 @@ sudo -u yakshears cat /home/yakshears/.ssh/id_ed25519.pub
 ## Backup
 
 **What to backup:**
-- User database: `/home/yakshears/.yak-shears-users.json`
+- User database: `/home/yakshears/yak-shears/yak_shears/.yak-shears-users.json` (lives inside the package directory)
 - Yak notes: `/home/yakshears/Sync/yak-shears/` (synced via Syncthing)
 - Caddy certificates: `/var/lib/caddy/.local/share/caddy/` (auto-renewable)
 

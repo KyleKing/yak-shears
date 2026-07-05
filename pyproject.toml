@@ -154,10 +154,6 @@ unfixable = [
 known-first-party = ['yak_shears']
 
 [tool.ruff.lint.per-file-ignores]
-'spikes/*.py' = [
-  'S101', # Use of `assert` detected
-  'T201', # print
-]
 'tests/*.py' = [
   'ANN001', # Missing type annotation for function argument
   'ANN201', # Missing return type annotation for public function

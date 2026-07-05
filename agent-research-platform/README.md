@@ -1,5 +1,7 @@
 # Agent Research Platform
 
+> **Note**: This is a standalone pydantic-ai research sub-project, unrelated to the Yak Shears runtime. It originated on the `claude/research-pydantic-ai-tools` branch (PR #4; outstanding review items in [PR4_REVIEW.md](./PR4_REVIEW.md)). Long-term it may inform an agent/semantic-search CLI used by yak-shears, at which point it moves to its own repo. Its architecture doc is [ARCHITECTURE.md](./ARCHITECTURE.md).
+
 A comprehensive research platform for building, testing, and evaluating agentic LLM applications with PostgreSQL/pgvector for B2B use cases.
 
 ## Overview
@@ -125,7 +127,7 @@ This is a **research platform** demonstrating:
 - Claude Skills for pydantic-ai and pydantic-evals
 - Complete documentation
 
-=§ **Ready to Implement** (following architecture):
+=ï¿½ **Ready to Implement** (following architecture):
 - Agent implementations (SQL, RAG, Analysis, Support)
 - Tool catalog (database tools, search tools, analysis tools)
 - Evaluation framework with custom evaluators

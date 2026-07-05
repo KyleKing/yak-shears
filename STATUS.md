@@ -1,67 +1,59 @@
 # Project Status
 
-Quick overview of what's implemented, in progress, and planned.
+Quick overview of what's implemented and what's next. Last updated: 2026-07-04.
+
+## Current Focus
+
+**Deploy to Hetzner** (PLAN.md Phase 1): fix cloud-config port/branch/ffmpeg issues, relocate the search DB out of the Syncthing folder, then harden auth/sessions.
 
 ## Implemented Features
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| User authentication | ✅ | Email/password with sessions |
-| Yak listing | ✅ | Pagination, sorting, categories |
-| Editor | ✅ | CodeJar with live preview |
-| Search | ✅ | DuckDB full-text, fuzzy matching |
-| Frontmatter parsing | ✅ | YAML extraction on save |
-| Link extraction | ✅ | `[[wikilinks]]` indexed |
+| User authentication | ✅ | Email/password with sessions (in-memory; persistence planned) |
+| Yak listing | ✅ | Pagination, sorting, categories, rendered card previews |
+| Editor | ✅ | CodeJar with live preview, wrap toggle, list indent rules |
+| Search | ✅ | DuckDB word table with fuzzy matching (backend swap planned) |
+| Frontmatter parsing | ✅ | YAML fences and Apple Notes export format; read-only panel (ADR 0003) |
+| Link extraction | ✅ | `[[wikilinks]]` and `#tags` indexed (duplicate-link bug open) |
 | Backlinks storage | ✅ | Stored in DuckDB |
+| Media upload | ✅ | Paste/toolbar upload, HEIC/video transcoding, thumbnails, doctor view (ADR 0004) |
 | Responsive design | ✅ | Mobile, tablet, desktop |
-| E2E tests | ✅ | 26 Playwright tests |
+| E2E tests | ✅ | Playwright coverage of auth, yaks, editor, search, new, media paste path |
 
-## In Progress
+## Next Up (see PLAN.md for details)
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Metadata panel | 🔄 | Right sidebar for frontmatter |
-| Backlinks UI | 🔄 | Display in metadata panel |
-
-## Planned (Not Started)
-
-| Feature | Phase | Priority |
-|---------|-------|----------|
-| Link autocomplete | Phase 3 | High |
-| Data model validation | Phase 4 | Medium |
-| Board/table views | Phase 5 | Medium |
-| Graph visualization | Phase 6 | Low |
+| Work | Phase | Priority |
+|------|-------|----------|
+| Hetzner deployment fixes | 1 | Now |
+| Session persistence, link dedupe, auth hardening | 2 | High |
+| Media test coverage, doctor delete action | 3 | High |
+| SearchBackend protocol + ripgrep/DuckDB FTS | 4 | Medium |
+| Link autocomplete and broken-link detection | 5 | Medium |
+| Semantic search as separate CLI | 6 | Later |
 
 ## Architecture
 
 ```
 yak_shears/
-├── _auth/              # Authentication
-│   ├── storage.py      # UserStore class
-│   ├── handlers.py     # Login/logout
-│   └── middleware.py   # Session middleware
-├── _yak/               # Yak management
-│   ├── database.py     # DuckDB operations
-│   ├── services.py     # Business logic
-│   ├── request_utils.py# Request utilities
-│   ├── handlers.py     # HTTP handlers
-│   └── routes.py       # Route definitions
+├── _auth/              # Authentication (storage, handlers, middleware)
+├── _yak/               # Yak management (database, services, media, handlers, routes)
 ├── _templates/         # Jinja2 templates
-├── static/             # CSS and JS
+├── frontmatter.py      # Frontmatter parsing (YAML + Apple Notes export format)
+├── links.py            # Wikilink/tag extraction
+├── server/             # App factories and startup
+├── static/             # CSS and JS (editor.js, main.css)
 └── cli.py              # User management CLI
 ```
 
-## Test Coverage
-
-- Unit tests: `tests/test_*.py`
-- E2E tests: `tests/e2e/test_*.py`
-- Run: `mise run test`
-
-## Documentation
+## Documentation Map
 
 | Document | Purpose |
 |----------|---------|
-| AGENTS.md | AI/developer reference |
-| DEPLOYMENT.md | Production deployment |
-| ROADMAP.md | Vision and phases |
-| README.md | Getting started |
+| PLAN.md | Phased implementation plan (the single source for "what's next") |
+| ROADMAP.md | Vision, principles, future ideas |
+| DEPLOYMENT.md | Production deployment to Hetzner |
+| AGENTS.md | AI/developer command reference |
+| adr/ | Decision records (CSS, search, frontmatter, media, hosting) |
+| archive/ | Superseded plans and completed-work reports |
+| agent-research-platform/ | Unrelated pydantic-ai research sub-project (quarantined; see its README) |

@@ -1,155 +1,76 @@
 # Roadmap
 
-This document outlines the vision and planned development phases for Yak Shears.
+Vision and long-term direction for Yak Shears. For concrete sequenced work, see [PLAN.md](./PLAN.md); for current state, see [STATUS.md](./STATUS.md).
 
 ## Vision
 
-Transform Yak Shears from a simple note-taking app into a flexible, file-based knowledge management system supporting:
-- Structured metadata via YAML frontmatter
+A flexible, file-based knowledge management system supporting:
+- Structured metadata via frontmatter (edited as plain text, rendered read-only; see ADR 0003)
 - Wiki-style bi-directional linking with auto-suggestions
-- User-defined data models (tickets, practice logs, etc.)
-- Aggregated views per data model
+- Media attachments that live inside the synced vault (see ADR 0004)
+- Aggregated views over note metadata
 
 ## Design Principles
 
-1. **File-first**: Djot files are source of truth
+1. **File-first**: Djot files are source of truth; files round-trip verbatim
 2. **Optional metadata**: Notes work without frontmatter
 3. **No lock-in**: Files work without Yak Shears
 4. **Progressive enhancement**: Basic notes work, advanced features optional
 5. **Scandinavian minimalism**: Clean, functional, subtle design
 
----
+## Completed
 
-## Completed Work
+- Phase 0 foundation: Starlette/HTMX app, auth, listing, editor with live preview, DuckDB search
+- Scandinavian minimal design system with E2E coverage (see `archive/IMPROVEMENTS.md`)
+- Frontmatter parsing (YAML and Apple Notes export format), link extraction, backlinks storage
+- Media upload with transcoding, thumbnails, and doctor view
 
-### Phase 0: Foundation (Complete)
-- Starlette/HTMX web application
-- User authentication with sessions
-- Yak listing with pagination/sorting
-- Editor with live preview
-- Full-text search with DuckDB
+## Near Term
 
-### UI Improvements (Complete)
-- Scandinavian minimal design system
-- Single accent color (yellow #f7cf46)
-- Responsive layout (mobile, tablet, desktop)
-- Empty states and loading indicators
-- Accessibility (ARIA labels, keyboard navigation)
-- E2E test coverage (~26 tests)
+Sequenced in [PLAN.md](./PLAN.md): Hetzner deployment (Phase 1), data-integrity and auth hardening (2), media hardening (3), search backend abstraction with ripgrep/DuckDB FTS (4), link intelligence (5).
 
-### Technical Spikes (Complete)
-All core technical assumptions validated:
-- YAML frontmatter parsing: 0.318ms/file
-- Link extraction: 0.010ms/file
-- DuckDB backlinks query: 2-3ms
-- Metadata UI render: ~20ms
+### Link Intelligence (PLAN.md Phase 5)
 
----
-
-## Current Development
-
-### Phase 1: Frontmatter Foundation (In Progress)
-- [x] Frontmatter parser
-- [x] Database schema for metadata/links
-- [x] Link extraction from content
-- [x] Index on save
-- [ ] Metadata panel UI
-- [ ] Backlinks display
-
-### Phase 2: Metadata UI (Planned)
-- Right sidebar on edit page
-- Display/edit frontmatter key-value pairs
-- Write back to file
-- Collapsible on mobile
-
----
-
-## Future Phases
-
-### Phase 3: Link Intelligence
-- `[[` autocomplete in editor
-- Suggestion algorithm (prefix, recent, frequent)
-- Fuzzy link resolution
+- `[[` autocomplete in editor (prefix, recent, frequent)
+- Fuzzy link resolution and broken-link detection (doctor-style report first)
 - Link preview on hover
-- Broken link detection
+- Frontmatter key completion in the editor
 
-### Phase 4: Data Models
-- JSON Schema validation
-- Built-in models: Note, Ticket, Practice Log
-- Type selector dropdown
-- Form generation from schema
+## Longer Term
 
-### Phase 5: Aggregation Views
-- Board view (Kanban for tickets)
-- Table view (sortable, inline edit)
-- Calendar view (by due date)
-- Query engine with DuckDB
+### Semantic Search (PLAN.md Phase 6)
 
-### Phase 6: Advanced Features
-- Graph visualization
-- Custom user-defined data models
-- Block references (`[[note#heading]]`)
-- Templates for new notes
-- Export/import
+Hybrid keyword + vector search as a **separate general-purpose CLI**, integrated through the SearchBackend seam (ADR 0002). Blueprint preserved in `archive/djot-search-sqlite-exploration.md`.
 
----
+### Data Models and Aggregation
 
-## Use Cases
+Reduced from the original phases 4-6 after the frontmatter decision (no form generation):
+- Optional schema validation for known `type:` values (report-style, like the doctor view)
+- Table view over frontmatter (sortable), board view for task-like notes
+- Query engine over the metadata store
+- Graph visualization, block references (`[[note#heading]]`), templates for new notes, export/import
 
-### Ticket Management
-```yaml
----
-type: ticket
-status: in-progress
-priority: high
-due_date: 2025-12-15
-tags: [backend, database]
----
-```
+### CLI Ideas (from 2026-07 planning notes)
 
-### Language Practice
-```yaml
----
-type: practice
-language: spanish
-activity: reading
-duration_minutes: 45
-practiced_at: 2025-11-23T14:30:00
----
-```
+A possible `shears` companion CLI over the same vault:
+- `shears new (evergreen|personal|work)?` with the category ("yak pen") set via env var or argument; or reconsider one flat directory with category as metadata
+- `shears list -order=(created|modified|count-links|...)` defaulting to most recently modified
+- Note state lifecycle: no state initially, manually promoted to `Atomic` once reviewed; tasks are notes with `state: backlog|queue|in-progress|complete|not-planned` (no `on-hold`: partially complete subtasks self-document and return to `queue`)
+- `shears split <name>?` / `shears merge <from>? <to>?` with interactive selection, recording `split-from` / `merged-from` frontmatter so links to deleted/moved notes stay resolvable
+- `shears link <from?> <to?>` managing a `links:` list (bi-directionality comes from the database, not the file)
+- Planning metadata for time-sensitive tasks: `start-date`, `soft-deadline`, `hard-deadline`
+- Bookmarklet notes managed by a browser extension, to archive tabs instead of cluttering the bookmarks bar
+- Trip-planning note type (location, cost, must-see, category, best time, dates) enabling dynamic calendar scheduling and nearby lookups
 
----
+## Performance Targets
 
-## Technical Notes
-
-### Performance Targets
-- Parse 1000 files in <500ms
-- Backlinks query <50ms
+- Parse 1000 files in <500ms (validated: 0.318ms/file)
+- Backlinks query <50ms (validated: 2-3ms)
 - Related notes query <100ms
 - UI render <100ms
 
-### Database Schema
-```sql
--- Metadata index
-CREATE TABLE yak_frontmatter (
-    path TEXT PRIMARY KEY,
-    frontmatter_json TEXT,
-    updated_at TIMESTAMP
-);
-
--- Links graph
-CREATE TABLE yak_links (
-    source_path TEXT,
-    target_path TEXT,
-    link_type TEXT,
-    PRIMARY KEY (source_path, target_path)
-);
-```
-
----
-
 ## References
 
-For detailed technical documentation, see:
-- `.github/METADATA_LINKING_PLAN.md` - Comprehensive architecture
-- `spikes/SPIKE_RESULTS.md` - Spike validation results
+- `adr/` — decision records
+- `archive/METADATA_LINKING_PLAN.md` — original detailed architecture (partially superseded by ADR 0003)
+- The `spikes/` directory was removed in 2026-07 (all spikes validated and integrated); results survive in git history and the numbers above
