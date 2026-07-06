@@ -27,28 +27,44 @@ A flexible, file-based knowledge management system supporting:
 
 ## Near Term
 
-Sequenced in [PLAN.md](./PLAN.md): Hetzner deployment (Phase 1), data-integrity and auth hardening (2), media hardening (3), search backend abstraction with ripgrep/DuckDB FTS (4), link intelligence (5).
+Priority order (2026-07-06): deploy first, then auth/data hardening, then product features, with infrastructure polish opportunistic around them. Sequenced in [PLAN.md](./PLAN.md): Hetzner deployment (Phase 1), data-integrity and auth hardening (2), link intelligence and related notes (3), the frontmatter query engine and store split (4), product views (5: prune queue, streams, backlog), grouping and network navigation (6), read-only external references (7). Media hardening, the search text-backend swap (ripgrep/DuckDB FTS), the semantic CLI, and lint are opportunistic infrastructure that slots between product phases.
 
-### Link Intelligence (PLAN.md Phase 5)
+### The keystone: query over notes-with-frontmatter
 
-- `[[` autocomplete in editor (prefix, recent, frequent)
+Most of the product roadmap reduces to one primitive: query and aggregate notes by frontmatter, sorted, filtered, and grouped, then render the result as a view. A backlog is a query, a stream board is that query grouped by state, a triage bucket is the query for notes missing state, the prune queue is a query over review dates. Build the query engine once (PLAN.md Phase 4) and each product feature is a thin view. Nothing becomes app-owned state that cannot be rebuilt from the vault; a "stream member" is a query result, not a stored list.
+
+### Link Intelligence and related notes (PLAN.md Phase 3)
+
+- `[[` autocomplete in editor (prefix, recent, frequent) and a search-to-select cross-linking modal on the same resolver
 - Fuzzy link resolution and broken-link detection (doctor-style report first)
 - Link preview on hover
-- Frontmatter key completion in the editor
+- Frontmatter key completion in the editor (also drives `color`/`stream`/`state` completion for streams)
+- Inline, explainable related-notes panel per note (ranked by shared links, shared tags, co-citation; embeddings later)
+
+### Work Streams, Backlog, and the prune queue (PLAN.md Phase 5)
+
+Personal organization as views over task-notes, not a separate task store. A stream is a note (`type: stream`) with a short id, display name, palette color, and optional WIP limit; a task is a note with `state` and an optional `stream`. The board groups tasks by state within a stream, the backlog is the same data as a table, and the triage bucket catches task-notes missing a stream or state. A curated named palette (fjord, teal, moss, ...) is the schema artifact that drives in-editor color completion, swatches, and Doctor validity checks. WIP limits are a forcing function on attention, so they live in the view, not the data. A daily prune/review queue resurfaces stale notes on a spaced interval to fight note rot.
 
 ## Longer Term
 
-### Semantic Search (PLAN.md Phase 6)
+### Grouping and network navigation, the anti-graph (PLAN.md Phase 6)
 
-Hybrid keyword + vector search as a **separate general-purpose CLI**, integrated through the SearchBackend seam (ADR 0002). Blueprint preserved in `archive/djot-search-sqlite-exploration.md`.
+The Obsidian-style global force-directed graph is a hairball with no stable spatial memory and flat edges; the competitive research is clear that it is a diagnostic at best, never a navigation tool. The stance here is compute and surface, do not draw. Navigation runs on an explainable related-notes panel and a bounded local graph (1-2 hops, with type/state/recency encoded). Grouping runs on living hub notes (`type: hub`) whose membership is a derived query rather than a hand-maintained list, auto-drafted from detected clusters for the user to curate (this is the "central node note" idea done so it cannot go stale). Understanding the network runs on a scheduled network-health digest: emergent themes (Leiden community detection diffed over time), bridge notes (betweenness), hub leaderboard (PageRank), and orphans with suggested connections. Computed signals live only in the rebuildable index; only user-accepted actions ever write to files.
+
+### Semantic Search (opportunistic infrastructure)
+
+Hybrid keyword + vector search as a **separate general-purpose CLI**, integrated through the SearchBackend seam (ADR 0002). Also the seam that later feeds embedding similarity into the related-notes panel and the network-health digest. Blueprint preserved in `archive/djot-search-sqlite-exploration.md`.
 
 ### Data Models and Aggregation
 
-Reduced from the original phases 4-6 after the frontmatter decision (no form generation):
+The query engine, table view, and board view moved into the near-term product phases (PLAN.md Phases 4-5). What remains longer-term:
 - Optional schema validation for known `type:` values (report-style, like the doctor view)
-- Table view over frontmatter (sortable), board view for task-like notes
-- Query engine over the metadata store
-- Graph visualization, block references (`[[note#heading]]`), templates for new notes, export/import
+- Block references (`[[note#heading]]`), templates for new notes, export/import
+- A cluster-by-cluster adjacency matrix as a "whole vault at a glance" view (stretch; stays legible where node-link tangles)
+
+### Workout planner (deferred)
+
+Decision pending (see PLAN.md). Likely modeled as dated notes with structured frontmatter so streaks and a calendar become views, with a possible sibling iOS app reading and writing the Syncthing vault directly rather than through a token API.
 
 ### CLI Ideas (from 2026-07 planning notes)
 

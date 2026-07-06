@@ -1,6 +1,6 @@
 # Project Status
 
-Quick overview of what's implemented and what's next. Last updated: 2026-07-04.
+Quick overview of what's implemented and what's next. Last updated: 2026-07-06.
 
 ## Current Focus
 
@@ -23,14 +23,19 @@ Quick overview of what's implemented and what's next. Last updated: 2026-07-04.
 
 ## Next Up (see PLAN.md for details)
 
+Priority order (2026-07-06): deploy, then hardening, then product features; infrastructure polish is opportunistic around them.
+
 | Work | Phase | Priority |
 |------|-------|----------|
 | Hetzner deployment fixes | 1 | Now |
 | Session persistence, link dedupe, auth hardening | 2 | High |
-| Media test coverage, doctor delete action | 3 | High |
-| SearchBackend protocol + ripgrep/DuckDB FTS | 4 | Medium |
-| Link autocomplete and broken-link detection | 5 | Medium |
-| Semantic search as separate CLI | 6 | Later |
+| Link autocomplete, cross-link modal, related-notes panel | 3 | High |
+| Frontmatter query engine + metadata/text store split | 4 | High |
+| Prune queue, streams/backlog views | 5 | High |
+| Grouping and network navigation (hubs, local graph, health digest) | 6 | Medium |
+| Read-only external references | 7 | Medium |
+| Media hardening, ripgrep/FTS backend, semantic CLI, lint | opportunistic | Around product phases |
+| Workout planner | deferred | Decision pending |
 
 ## Architecture
 

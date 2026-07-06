@@ -1,6 +1,8 @@
 # Yak Shears: Phased Implementation Plan
 
-Single consolidated plan, merged from the 2026-07 code audit (formerly `NEXT_SESSION_PLAN.md`), the deferred follow-up list, the hosting notes (now in `archive/`), and the raw CLI ideas (now in [ROADMAP.md](./ROADMAP.md) Future Ideas). Priority order per 2026-07-04 decision: **deploy to Hetzner first, then continue development.**
+Single consolidated plan, merged from the 2026-07 code audit, the deferred follow-up list, the hosting notes, the raw CLI ideas (now in [ROADMAP.md](./ROADMAP.md)), and the 2026-07 feature brainstorm (folded in here from the former `NEXT_FEATURES.md`).
+
+Priority order (2026-07-06 decision): **deploy first (Phase 1), then auth/data hardening (Phase 2), then the product features (the query-engine keystone and the views on top, Phases 3-7).** Infrastructure polish (media hardening, the search text-backend swap, the semantic CLI, lint) is opportunistic and slots around the product phases rather than blocking them. The workout planner is deferred pending a scope decision.
 
 Status legend: each item lists the file to change and done-criteria so a session can start without re-deriving context.
 
@@ -21,7 +23,7 @@ Known hosting TODOs carried from `archive/hosting-new.md`: ufw rules appear to r
 
 ## Phase 2: Data integrity, auth, and runtime correctness
 
-Verified defects and hardening, safe to do in parallel with Phase 1:
+Verified defects and hardening, safe to do in parallel with Phase 1. The link-dedupe fix is the foundation for every link, related-notes, and grouping feature in Phases 3-6.
 
 - Duplicate links wipe a note's index (still unfixed). `extract_all_links` (`links.py:104-125`) emits one tuple per occurrence, violating the `yak_links` primary key in `replace_links` (`_yak/database.py:235-248`); the failure is swallowed, leaving no backlinks. De-duplicate preserving first-seen order, or `INSERT OR IGNORE`. Done when a note with a repeated `[[wikilink]]` and repeated `#tag` indexes correctly, with a test.
 - Session persistence and expiry. `create_session`/`delete_session` (`_auth/storage.py:186-198`) never call `_save()`: restarts log everyone out and a deleted token can resurrect. Also store per-session expiry server-side (the 1-week lifetime lives only in the cookie). Previously judged "not worth it" for single-user; deployment changes that calculus.
@@ -63,7 +65,64 @@ function _setupDraftToggle(saved, serverContent) {
 - CSS: style `.draft-toggle` like the `.view-toggle` group (surface-alt buttons, accent `.active`), constrained to the editor's 1200px column; include a `.draft-toggle[hidden] { display: none; }` rule since any `display: flex` on the class would defeat the `hidden` attribute
 - Unskip `test_draft_toggle_recovers_local_changes`; done when it passes
 
-## Phase 3: Media hardening
+## Phase 3: Link intelligence and related notes
+
+The first product surface, and the foundation of the grouping story (Phase 6). Unblocked once the backlinks store is stable (Phase 2 dedupe fix). Formerly the standalone "link intelligence" phase, now carrying the related-notes panel.
+
+- `[[` autocomplete in the editor (prefix match, then recent, then frequent).
+- Cross-linking modal: a search-to-select dialog that inserts a `[[link]]`, sharing the autocomplete resolver. The inline-typing and modal paths are two triggers on one resolver.
+- Fuzzy link resolution and broken-link detection (the media doctor view is the pattern to follow: report first, actions later).
+- Editor completion help for frontmatter keys (same UI mechanics as `[[` autocomplete). This mechanic also drives the `color`/`stream`/`state` field completion in Phase 5.
+- Inline related-notes panel on every note: a ranked, **explainable** list ("related because 3 shared links, 2 shared tags, cited together by 4 notes"), not a picture. Rank from structural signals already free in the index: shared outbound links, shared tags, co-citation. Cap at ~8. Embedding similarity is deferred to the semantic CLI (opportunistic infra). Performance target already set (<100ms).
+
+## Phase 4: Frontmatter query engine and store split (keystone)
+
+The single primitive under Phases 5-6: query and aggregate notes by frontmatter, sorted, filtered, and grouped, rendered as views. Everything downstream (prune queue, streams, backlog, triage) is a thin view on this. Per the 2026-07-06 "couple them" decision, this phase also does the metadata/text store separation the old search-abstraction phase planned, because the query engine reads the frontmatter store and it should not be relocated twice.
+
+- Build the query/aggregation surface over the frontmatter store: `select` by field, `filter`, `sort`, `group`. Results must be reconstructable from files, so no app-owned membership state (a "stream member" is a query result, not a stored list).
+- Separate the metadata/backlinks store from the text index (carried from the old Phase 4). Swapping the text backend later (ripgrep/FTS, opportunistic) must not relocate the frontmatter/links store. Prerequisite noted previously: `_process_search_results` leaks DuckDB's `(path, line_num, word)` tuple shape into the service layer; clean that seam as part of the split.
+- Done when a view can render "notes where `state in {backlog, queue}` ordered by modified" purely from the store, and when the text-search backend can be swapped without touching the frontmatter/links store.
+
+## Phase 5: Product views (prune queue, streams, backlog)
+
+Thin views on the Phase 4 engine. Nothing here introduces state that cannot be rebuilt from the vault.
+
+### Daily prune / review queue
+
+- Surface a few old notes per day on a spaced interval for re-read, edit, merge, or prune (the note-rot-fighting idea, flashcard framing dropped). Frontmatter `last-reviewed` plus a review interval, a little date math, and a view. Pairs with the Phase 3 related-notes panel: surface a stale note together with its neighbors so a review can end in a merge or a new link. Build this first as the smallest thin view that proves the pattern.
+
+### Work Streams and Backlog
+
+Board and table views over task-notes. A stream is a note; a task is a note that names a stream by id. Bi-directionality (which tasks belong to a stream) comes from the index, not a list inside the stream note.
+
+- Stream note frontmatter: `type: stream`, `id` (short slug tasks reference), `name` (display), `color` (one palette name), optional `wip-limit`.
+- Task note frontmatter: `state` (`backlog | queue | in-progress | complete | not-planned`, no `on-hold` per the lifecycle decision), optional `stream` id, optional `soft-deadline` / `hard-deadline`.
+- Views: board (group task-notes by `state`, filtered by `stream`), backlog table (same data, sortable), triage bucket (task-notes with no `stream` or no `state`).
+- Named color palette as a single schema artifact driving `color:` completion, swatch rendering, and the Doctor validity check. Draft palette (validate light/dark contrast before locking, may extend toward ~18): fjord, teal, moss, sage, amber, clay, rust, rose, plum, slate.
+- In-editor completion/validation (Phase 3 mechanic): `color:` from the palette (with swatches), `stream:` from existing stream-note ids, `state:` from the enum, `type:` offering `stream`. Advisory highlight, never blocks a save (files stay plain text per ADR 0003).
+- Doctor checks: stream-reference integrity (task referencing a missing stream), color validity (a `color` not in the palette), WIP-limit warnings (stream over its `wip-limit`), alongside the existing broken-link and orphan checks.
+- The small-active-set WIP limit (tiled, space-limited streams ordered by recency/blocked) is a **view** constraint, not a data cap.
+
+## Phase 6: Grouping and network navigation (the anti-graph)
+
+Design stance from the competitive research (folded from `NEXT_FEATURES.md`): **compute and surface, do not draw.** The Obsidian-style global force-directed graph is a hairball with no stable spatial memory and flat edges; it is a diagnostic at best, never a navigation tool. Value lives in computed clusters, hubs, bridges, and gaps delivered as explainable lists. The global graph is demoted to a diagnostics tab or skipped.
+
+- The Phase 3 inline related-notes panel is the primary day-to-day navigation surface (stated there, foundational here).
+- Bounded local graph (current note plus 1-2 hops) as the only picture drawn. Encode note type, state, and recency as color and size so it carries operational meaning. It never hairballs because the visible set is bounded.
+- Living hub notes (`type: hub`, reusing the streams `type:` machinery): a hub declares a query and the index resolves current members, so membership is **derived** and a new note joins its hubs automatically (this is your central "node note" idea done so it cannot go stale). Auto-draft a candidate hub per detected cluster, seeded by the cluster's most central notes, for the user to curate. Distinguish **structural** backlinks (a hub indexing this note) from incidental **mentions**.
+- Network-health digest (scheduled, Doctor-adjacent): emergent themes via Leiden community detection diffed week over week; bridge notes via betweenness centrality (each naming the two clusters it joins); a hub leaderboard via PageRank (flag hubs grown enough to promote into a `type: hub`); orphans via a zero-backlink query, each shown with top-N suggested connections. Batch compute in `networkx` or `python-igraph` (sub-second at this corpus size); add the dependency to `cloud-config.yaml`/mise. Leiden over Louvain (guarantees connected communities, faster).
+- Hard rule that keeps this file-first: computed signals (cluster ids, centrality, similarity edges) live only in the rebuildable index, never written into notes. Only explicit user actions (accepting a drafted hub, accepting a suggested link) mutate `.dj` files, so a vault checked out elsewhere still round-trips verbatim.
+- Embedding similarity for the related-notes panel and orphan suggestions rides in when the semantic CLI lands (opportunistic infra), through the same seam.
+
+## Phase 7: External references (read-only)
+
+- A note references an external item in frontmatter (`linear: ENG-123`, `github: owner/repo#45`), rendered as a badge/link. Optional read-only status enrichment much later. Never two-way sync: it breaks file-first and no-lock-in, needs secrets on the VPS, and is a maintenance tax as those APIs change.
+
+## Opportunistic infrastructure
+
+Lower priority per the 2026-07-06 product-first decision. Do these between product phases; none blocks the product work except where noted.
+
+### Media hardening (formerly Phase 3)
 
 The upload/transcode/doctor feature shipped without automated coverage:
 
@@ -72,41 +131,38 @@ The upload/transcode/doctor feature shipped without automated coverage:
 - Known edge case: `execCommand insertText` collapses surrounding newlines when inserting at offset 0 of a note.
 - Deferred by choice: drag-drop upload (paste + toolbar button only, per 2026-07-04 decision).
 
-## Phase 4: Search abstraction and ripgrep backend
+### Search text-backend swap (formerly Phase 4 remainder)
 
-Depends on Phase 1's search-DB relocation and Phase 2's event-loop offload.
+The metadata/text store split moved into Phase 4 (the keystone). What remains is the swappable text backend:
 
-- Extract a `SearchBackend` Protocol in `_yak/services.py`: `ensure_ready()`, `refresh(yak_dir)`, `search(query) -> list[SearchResult]`. Prerequisite: `_process_search_results` currently leaks DuckDB's `(path, line_num, word)` tuple shape into the service layer.
-- Separate the metadata/backlinks store from the text index (they share one DuckDB file; swapping search backends must not relocate frontmatter/links).
+- Extract a `SearchBackend` Protocol in `_yak/services.py`: `ensure_ready()`, `refresh(yak_dir)`, `search(query) -> list[SearchResult]`.
 - Add a ripgrep subprocess backend: `anyio.run_process` with `shell=False` and the `--` guard (`["rg", "--json", ..., "--", query]`), search root pinned to the resolved `yak_dir`. Add `ripgrep` to `cloud-config.yaml` packages and mise config.
 - Replace the Levenshtein word-table with DuckDB's FTS extension for ranked/fuzzy results (removes the weakest code in `database.py`; preferred over tantivy-py at this corpus size).
 
 See [adr/0002-search-backend-strategy.md](./adr/0002-search-backend-strategy.md).
 
-## Phase 5: Link intelligence
+### Semantic search as a separate CLI (formerly Phase 6)
 
-ROADMAP Phase 3, unblocked once the backlinks store is stable (Phase 2 dedupe fix, Phase 4 store split):
-
-- `[[` autocomplete in the editor (prefix match, then recent, then frequent).
-- Fuzzy link resolution and broken-link detection (the media doctor view is the pattern to follow: report first, actions later).
-- Link preview on hover.
-- Editor completion help for frontmatter keys (deferred idea from the frontmatter decision, same UI mechanics as autocomplete).
-
-## Phase 6: Semantic search (separate general-purpose CLI)
-
-Direction per 2026-07-04 discussion: build or adopt this **outside** yak-shears as a general-purpose document-search CLI, integrated later via the Phase 4 `SearchBackend` seam as a subprocess. Rationale in [adr/0002](./adr/0002-search-backend-strategy.md).
+Direction per 2026-07-04 discussion: build or adopt this **outside** yak-shears as a general-purpose document-search CLI, integrated via the Phase 4 store seam as a subprocess. This is also the seam that later feeds embedding similarity into the Phase 3 related-notes panel and the Phase 6 network digest.
 
 - First, evaluate existing tools before building (the space moves fast; check current options for local hybrid search CLIs).
 - If building: the SQLite FTS5 + sqlite-vec + small-embedding-model design in `archive/djot-search-sqlite-exploration.md` is the blueprint. SQLite is the right call for a standalone CLI (single file, no server, easiest install); its phases 1-3 (BM25, vectors with all-MiniLM-L6-v2, incremental ingestion) fit the 4GB CX22. Stop before its phases 4-5 (chunking, query expansion) at a few-hundred-doc corpus.
 - Do not stand up a hosted vector DB or FaaS at this scale; embeddings run on-box or via a hosted embedding API at index time only.
 
-## Phase 7: Lint debt and code pruning (opportunistic)
+### Lint debt and code pruning (formerly Phase 7)
 
 - Burn down the ~51 project-wide ruff findings (DOC201, RUF067, the lazy import in `highlight_content`).
 - Fix undefined `--space-1` CSS var usage in `main.css` (~line 1403/1684).
 - Prune dead code once confirmed unused: `write_frontmatter`/`update_frontmatter`/`remove_frontmatter_field` (`frontmatter.py`, intentionally unwired per the frontmatter ADR; `update_frontmatter` also has a verified blank-line-accumulation bug, so fix it if ever wired in rather than deleting silently), `resolve_link` (`links.py`), and unused `database.py` helpers (`delete_files`, `delete_words_for_paths`, `upsert_file`, `insert_words`).
 - Editor caret fragility (known, low priority): rAF-based `_setCursorPosition` races if Tab/Shift+Tab arrive faster than one frame; fine at human speed.
 
+## Deferred: Workout planner
+
+Decision pending; not a knowledge-management feature (streaks, earned breaks, a calendar, a dedicated iOS app with a token API describe a fitness app sharing this app's auth and hosting). Two framings on record for when it is revisited:
+
+- Model a workout as a dated note with structured frontmatter (exercises, sets, completed-at), so the streak and calendar become views and the vault gives sync, search, and no-lock-in for free.
+- The Syncthing vault is already a sync layer and an API. A phone app that reads and writes `.dj` files into the vault needs no yak-shears HTTP API and no token; the token-authenticated API is only required for what the file layer cannot do (server-side queries, transcoding, a device remote from the vault), which defers an entire auth surface.
+
 ## Sequencing
 
-Phase 1 first (user priority). Phase 2 in parallel where it doesn't touch deployment files. Phase 3 anytime. Phase 4 depends on Phases 1-2 as noted; Phase 5 on Phases 2/4; Phase 6 on Phase 4's seam. Phase 7 is filler work between phases.
+Phase 1 first (user priority). Phase 2 in parallel where it does not touch deployment files; its link-dedupe fix is the foundation for Phases 3-6. Then product-first: Phase 3 (link intelligence, unblocked by the dedupe fix), Phase 4 (the query-engine keystone plus the coupled store split), Phase 5 (the prune queue then streams/backlog), Phase 6 (grouping and the anti-graph navigation), Phase 7 (read-only external references). Opportunistic infrastructure slots between product phases; the semantic CLI unlocks the embedding-similarity enhancements in Phases 3 and 6. The workout planner stays deferred until its scope decision is made.
