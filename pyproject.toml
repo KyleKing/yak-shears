@@ -15,6 +15,7 @@ dev = [
   "pytest-watcher>=0.4.3",
   "ruff>=0.11.10",
   "syrupy>=4.9.1",
+  "typed-jinja[lsp]",
   "types-pyyaml>=6.0.12.20250915",
 ]
 
@@ -201,8 +202,17 @@ torch = [
   {index = "pytorch-cpu", marker = "sys_platform != 'linux'"},
   {index = "pytorch-cu128", marker = "sys_platform == 'linux'"},
 ]
+typed-jinja = { path = "../../local-code/typed-jinja", editable = true }
 
 [tool.uv.workspace]
 members = [
   "agent-research-platform",
 ]
+
+[tool.typed_jinja]
+imports = ["from collections.abc import Callable"]
+template_dirs = ["yak_shears/_templates"]
+
+[tool.typed_jinja.globals]
+current_route = "str"
+static_url = "Callable[[str], str]"

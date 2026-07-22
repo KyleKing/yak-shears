@@ -195,3 +195,4 @@ tests/test_data/mock_djot_dir_0/*
 
 ## Deployment (contains the filled-in SSH key)
 cloud-config.local.yaml
+
