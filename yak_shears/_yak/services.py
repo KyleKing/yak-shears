@@ -13,18 +13,20 @@ from pathlib import Path as SyncPath
 
 from anyio import Path
 
-from yak_shears._log_utils import log
+from yak_shears._log_utils import StageTimer, log
 from yak_shears._templates import SearchResult, SortBy, YakInfo
 from yak_shears._yak.database import (
     check_tables_exist,
+    close_search_db,
+    derive_title,
     get_backlinks,
+    get_file_titles,
     get_search_db_path,
     get_word_count,
     init_search_db,
+    refresh_search_index,
     replace_links,
     search_words,
-    should_update_index,
-    update_search_index,
     upsert_frontmatter,
 )
 from yak_shears.frontmatter import parse_frontmatter
@@ -34,6 +36,7 @@ PREVIEW_LENGTH = 200
 PREVIEW_SOURCE_LIMIT = 600
 PREVIEW_MAX_LINES = 12
 WORD_METER_TARGET = 500
+YAK_FILENAME_FORMAT = "%Y-%m-%dT%H_%M_%SZ"
 _URL_RE = re.compile(r"https?://", re.IGNORECASE)
 
 
@@ -228,7 +231,7 @@ async def create_yak(yak_dir: Path, category: str) -> Path:
     category_dir = yak_dir / category
     await category_dir.mkdir(parents=True, exist_ok=True)
 
-    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime(YAK_FILENAME_FORMAT)
     filename = f"{timestamp}.dj"
     yak_path = category_dir / filename
 
@@ -308,29 +311,30 @@ def index_yak_metadata(yak_path: SyncPath, yak_dir: SyncPath) -> None:
 
 
 async def ensure_search_db_ready() -> None:
-    """Ensure the search database exists and is valid."""
+    """Ensure the search database exists, is valid, and has the current schema."""
     db_path = get_search_db_path()
-    if not await Path(db_path).exists():
-        init_search_db()
-    elif not check_tables_exist():
+    if await Path(db_path).exists() and not check_tables_exist():
         log("WARNING: Search database appears corrupted, reinitializing")
+        close_search_db()
         await Path(db_path).unlink(missing_ok=True)
-        init_search_db()
+    init_search_db()
 
 
 def ensure_search_index_updated(sync_yak_dir: SyncPath) -> None:
     """Ensure the search index is up to date."""
     try:
-        if should_update_index(sync_yak_dir) or get_word_count() == 0:
-            update_search_index(sync_yak_dir)
+        refresh_search_index(sync_yak_dir, force=get_word_count() == 0)
     except Exception as exc:
         log(f"WARNING: Failed to update search index: {exc}")
 
 
-def perform_search(query: str, sync_yak_dir: SyncPath) -> list[SearchResult]:
+def perform_search(query: str, sync_yak_dir: SyncPath, timer: StageTimer | None = None) -> list[SearchResult]:
     """Perform search and return processed results."""
-    raw_results = search_words(query)
-    return _process_search_results(raw_results, sync_yak_dir)
+    timer = timer or StageTimer()
+    with timer.stage("query"):
+        raw_results = search_words(query)
+    with timer.stage("process"):
+        return _process_search_results(raw_results, sync_yak_dir)
 
 
 def _process_search_results(
@@ -340,28 +344,20 @@ def _process_search_results(
     """Process raw search results into SearchResult objects, grouped by file."""
     results = []
     seen_paths: set[str] = set()
+    matched: list[tuple[str, int, str]] = []
 
     for path, line_num, word in search_results:
         if path in seen_paths:
             continue
         seen_paths.add(path)
+        matched.append((path, line_num, word))
 
-        if result := _create_search_result(sync_yak_dir / path, path, line_num, word):
+    titles = get_file_titles([path for path, _, _ in matched])
+    for path, line_num, word in matched:
+        if result := _create_search_result(sync_yak_dir / path, path, line_num, word, titles.get(path)):
             results.append(result)
 
     return results
-
-
-def _derive_title(content: str, rel_path: str) -> str:
-    """Derive a human-readable title from frontmatter, a heading, or the filename."""
-    frontmatter, body = parse_frontmatter(content)
-    title = frontmatter.get("title") or frontmatter.get("name")
-    if isinstance(title, str) and title.strip():
-        return title.strip()
-    for line in body.splitlines():
-        if stripped := line.strip():
-            return stripped.lstrip("#").strip() or stripped
-    return SyncPath(rel_path).name
 
 
 def _create_search_result(
@@ -369,6 +365,7 @@ def _create_search_result(
     rel_path: str,
     line_num: int,
     word: str,
+    title: str | None = None,
 ) -> SearchResult | None:
     """Create a SearchResult from a file path, returning None on error."""
     try:
@@ -381,7 +378,7 @@ def _create_search_result(
             line_num=line_num,
             preview=lines[line_num - 1].strip(),
             word=word,
-            first_line=_derive_title(content, rel_path),
+            first_line=title or derive_title(content, rel_path),
         )
     except Exception as exc:
         log(f"WARNING: Error reading file {file_path}: {exc}")

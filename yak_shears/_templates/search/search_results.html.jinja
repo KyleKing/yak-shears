@@ -9,7 +9,7 @@ query: str
       <div class="search-results-count">Found {{ results | length }} matches for "{{ query }}"</div>
       <div class="search-results-list" id="search-results-list">
         {% for result in results %}
-          <div class="search-result" data-path="{{ result.path }}">
+          <div class="search-result" data-path="{{ result.path }}" role="listitem" tabindex="0">
             <div class="search-result__first-line">{{ result.first_line }}</div>
             <div class="search-result__path">{{ result.path }}</div>
           </div>
@@ -29,24 +29,18 @@ query: str
   {% endif %}
 </div>
 
-<div class="search-preview-modal" id="search-preview-modal" style="display: none;">
+{# Keep identical to the copy in search.html.jinja #}
+<div class="search-preview-modal" id="search-preview-modal" hidden role="dialog" aria-modal="true" aria-labelledby="search-preview-modal-title">
   <div class="search-preview-modal__overlay"></div>
   <div class="search-preview-modal__content">
-    <button class="search-preview-modal__close" id="search-preview-modal-close">&times;</button>
-    <div class="search-preview-content" id="search-preview-modal-content">
-      <!-- Modal preview will be loaded here -->
+    <div class="search-preview-modal__header">
+      <span class="search-preview-modal__title" id="search-preview-modal-title">Preview</span>
+      <button class="search-preview-modal__close" id="search-preview-modal-close" type="button" aria-label="Close preview">Close</button>
     </div>
+    <div class="search-preview-content" id="search-preview-modal-content"></div>
   </div>
 </div>
+{# setupResults() binds the modal handlers idempotently; do not re-register them here #}
 <script>
 window.setupResults();
-
-// Modal event listeners
-document.getElementById("search-preview-modal-close")?.addEventListener("click", function() {
-    const modal = document.getElementById("search-preview-modal");
-    if (modal) {
-        modal.style.display = "none";
-        document.body.style.overflow = "";
-    }
-});
 </script>

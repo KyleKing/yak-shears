@@ -25,6 +25,17 @@
 	--transition-fast: 120ms ease;
 	--transition-smooth: 200ms ease-out;
 	--action-bar-height: 60px;
+	/* Logo (2rem) plus the header's vertical padding and its bottom border.
+	   Fixed elements offset themselves by this; it used to exist only as an
+	   inline fallback value, so it never tracked the real header. */
+	--header-height: calc(2rem + (2 * var(--space-4)) + 1px);
+	--tap-target: 44px;
+	--safe-bottom: env(safe-area-inset-bottom, 0px);
+	--safe-left: env(safe-area-inset-left, 0px);
+	--safe-right: env(safe-area-inset-right, 0px);
+	/* Height of the on-screen keyboard, written by editor.js from visualViewport.
+	   Bars that must sit above the keyboard offset themselves by it. */
+	--keyboard-inset: 0px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -61,6 +72,9 @@
 
 body {
 	margin: 0;
+	/* Nothing here is meant to scroll sideways. `clip` rather than `hidden`,
+	   because `hidden` would stop the sticky header from sticking. */
+	overflow-x: clip;
 	/* https://qwtel.com/posts/software/the-monospaced-system-ui-css-font-stack */
 	font-family:
 		ui-monospace,
@@ -122,6 +136,15 @@ h4 {
 	margin: 0;
 }
 
+/* Headings carry unbreakable tokens like "./yak-shears", which pushed the page
+   wider than the phone viewport until they were allowed to break anywhere. */
+h1,
+h2,
+h3,
+h4 {
+	overflow-wrap: anywhere;
+}
+
 h1 {
 	font-size: 2rem;
 	margin-bottom: var(--space-6);
@@ -162,12 +185,21 @@ p {
 .container {
 	max-width: 1200px;
 	margin: 0 auto;
-	padding: 0 var(--space-5);
+	padding-left: calc(var(--space-4) + var(--safe-left));
+	padding-right: calc(var(--space-4) + var(--safe-right));
+}
+
+@media (min-width: 640px) {
+	.container {
+		padding-left: calc(var(--space-5) + var(--safe-left));
+		padding-right: calc(var(--space-5) + var(--safe-right));
+	}
 }
 
 @media (min-width: 768px) {
 	.container {
-		padding: 0 var(--space-6);
+		padding-left: calc(var(--space-6) + var(--safe-left));
+		padding-right: calc(var(--space-6) + var(--safe-right));
 	}
 }
 
@@ -191,12 +223,18 @@ p {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	gap: var(--space-3);
+	min-width: 0;
 }
 
 .header__center {
 	flex: 1;
+	min-width: 0;
 	text-align: center;
 	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .brand {
@@ -206,11 +244,18 @@ p {
 	text-decoration: none;
 	color: var(--color-text);
 	font-weight: 600;
+	min-width: 0;
+	flex-shrink: 0;
+}
+
+.brand__name {
+	white-space: nowrap;
 }
 
 .brand__logo {
 	width: 2rem;
 	height: 2rem;
+	flex-shrink: 0;
 	background: var(--color-accent);
 	border-radius: 50%;
 	display: flex;
@@ -219,6 +264,77 @@ p {
 	font-size: 0.8rem;
 	font-weight: 700;
 	color: #000;
+}
+
+/* ----------------------------------------------------------------------------
+   Header navigation
+
+   The markup is a <details> so the mobile menu opens without JavaScript. Above
+   the mobile breakpoint the summary is hidden and the panel is forced visible,
+   which turns the same markup back into a plain inline nav row.
+   ---------------------------------------------------------------------------- */
+.nav {
+	position: relative;
+	flex-shrink: 0;
+}
+
+.nav__toggle {
+	display: none;
+	width: var(--tap-target);
+	height: var(--tap-target);
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+	list-style: none;
+	color: var(--color-text);
+}
+
+.nav__toggle::-webkit-details-marker {
+	display: none;
+}
+
+.nav__toggle:hover {
+	background: var(--color-surface-alt);
+}
+
+/* Three bars drawn from one element: the middle is the box, the outer two are
+   pseudo-elements offset above and below. */
+.nav__bars,
+.nav__bars::before,
+.nav__bars::after {
+	display: block;
+	width: 22px;
+	height: 2px;
+	background: currentColor;
+	border-radius: 2px;
+	transition: transform var(--transition-fast), opacity var(--transition-fast);
+}
+
+.nav__bars::before,
+.nav__bars::after {
+	content: "";
+	position: relative;
+}
+
+.nav__bars::before {
+	top: -7px;
+}
+
+.nav__bars::after {
+	top: 5px;
+}
+
+.nav[open] .nav__bars {
+	background: transparent;
+}
+
+.nav[open] .nav__bars::before {
+	transform: translateY(7px) rotate(45deg);
+}
+
+.nav[open] .nav__bars::after {
+	transform: translateY(-5px) rotate(-45deg);
 }
 
 .nav__list {
@@ -230,6 +346,7 @@ p {
 }
 
 .nav__link {
+	display: block;
 	text-decoration: none;
 	color: var(--color-text-dim);
 	padding: var(--space-2) var(--space-3);
@@ -246,6 +363,45 @@ p {
 	background: var(--color-accent);
 	color: #000;
 	font-weight: 600;
+}
+
+@media (max-width: 768px) {
+	/* The four nav labels plus the wordmark do not fit on a phone, which is what
+	   pushed the header wider than the viewport. Collapse to a hamburger and
+	   drop the wordmark, keeping the logo as the home link. */
+	.nav__toggle {
+		display: flex;
+	}
+
+	.brand__name {
+		display: none;
+	}
+
+	.nav__panel {
+		position: absolute;
+		top: calc(100% + var(--space-2));
+		right: 0;
+		min-width: 12rem;
+		padding: var(--space-2);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow-lg);
+		z-index: 200;
+	}
+
+	.nav__list {
+		flex-direction: column;
+		gap: var(--space-1);
+	}
+
+	.nav__link {
+		display: flex;
+		align-items: center;
+		min-height: var(--tap-target);
+		padding: var(--space-2) var(--space-4);
+		border-radius: var(--radius-sm);
+	}
 }
 
 .nav__item {
@@ -869,6 +1025,23 @@ pre code {
 	box-shadow: 0 0 0 3px rgba(247, 207, 70, 0.2); /* Accent color with 20% opacity */
 }
 
+/* Drop target feedback while a file is dragged over the editor (editor.js). */
+.editor--dragover {
+	border-color: var(--color-accent);
+	border-style: dashed;
+	background: var(--color-surface-alt);
+}
+
+/* The editor holds plain text, so any element node here arrived from a browser
+   drop or paste that slipped past the handlers. Cap it so a dropped photo
+   cannot render at full size and make the note unscrollable. */
+.editor img,
+.editor video {
+	max-width: 100%;
+	max-height: 60vh;
+	height: auto;
+}
+
 /* ============================================================================
    Djot Preview Pane
    Shows rendered HTML from Djot parser (via editor.js:renderPreview)
@@ -945,6 +1118,15 @@ pre code {
 	padding: 0;
 }
 
+/* Any image in the preview is capped, not only ones enhanceMedia() rewrote:
+   an embed pointing outside /media would otherwise render at natural size. */
+.preview-content img,
+.preview-content video {
+	max-width: 100%;
+	max-height: 80vh;
+	height: auto;
+}
+
 /* Attached photos/videos: thumbnails in preview, click/play loads full media. */
 .preview-media {
 	display: block;
@@ -976,25 +1158,93 @@ pre code {
    Fixed position ensures it's always visible during scrolling
    ============================================================================ */
 .editor__actions {
-	display: flex;
-	gap: var(--space-3);
-	align-items: center;
 	position: fixed;
 	bottom: 0;
 	left: 0;
 	right: 0;
 	background: rgba(245, 243, 239, 0.95); /* Semi-transparent light theme */
 	backdrop-filter: blur(10px); /* Blur content behind the bar */
-	padding: var(--space-4);
+	padding: var(--space-3) 0 calc(var(--space-3) + var(--safe-bottom));
 	border-top: 1px solid var(--color-border);
 	box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
 	z-index: 10; /* Above editor content, below modals */
+}
+
+/* One non-wrapping row. It used to wrap on a phone, which made the bar taller
+   than --action-bar-height and hid the last lines of the note behind it. */
+.editor__actions .container {
+	display: flex;
+	gap: var(--space-2);
+	align-items: center;
+	flex-wrap: nowrap;
 }
 
 @media (prefers-color-scheme: dark) {
 	.editor__actions {
 		background: rgba(18, 18, 18, 0.95); /* Semi-transparent dark theme */
 	}
+}
+
+/* ============================================================================
+   Mobile editor accessory toolbar
+
+   iOS has no Tab key and no way for a web page to supply a keyboard accessory
+   view, so list indent/outdent and bold/italic get buttons instead. editor.js
+   writes --keyboard-inset from visualViewport so the bar rides above the
+   on-screen keyboard. See adr/0008.
+   ============================================================================ */
+.editor-toolbar {
+	display: none;
+	position: fixed;
+	left: 0;
+	right: 0;
+	/* With the keyboard up, ride directly above it (the Save bar is behind the
+	   keyboard anyway). With it down, sit above the Save bar instead of on top
+	   of it. */
+	bottom: max(var(--keyboard-inset, 0px), calc(var(--action-bar-height) + var(--safe-bottom)));
+	gap: var(--space-1);
+	align-items: center;
+	padding: var(--space-2) calc(var(--space-2) + var(--safe-left)) var(--space-2) calc(var(--space-2) + var(--safe-right));
+	background: var(--color-surface-alt);
+	border-top: 1px solid var(--color-border);
+	box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12);
+	overflow-x: auto;
+	scrollbar-width: none;
+	z-index: 60; /* Above the action bar, below the metadata panel */
+}
+
+.editor-toolbar::-webkit-scrollbar {
+	display: none;
+}
+
+.editor-toolbar--visible {
+	display: flex;
+}
+
+.editor-toolbar__btn {
+	flex: 1 0 auto;
+	min-width: var(--tap-target);
+	min-height: var(--tap-target);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 var(--space-2);
+	font-size: 1.05rem;
+	background: var(--color-surface);
+	color: var(--color-text);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+}
+
+.editor-toolbar__btn:active {
+	background: var(--color-accent);
+	color: #000;
+}
+
+.editor-toolbar__btn--dismiss {
+	margin-left: auto;
+	flex: 0 0 auto;
+	color: var(--color-text-dim);
 }
 
 /* Save status indicator text */
@@ -1016,6 +1266,140 @@ pre code {
 	color: var(--color-danger);
 }
 
+/* ============================================================================
+   Prism theme overrides
+
+   edit.html.jinja loads Prism's stock light theme from a CDN, after this
+   stylesheet, so its rules win on equal specificity. That theme hardcodes
+   `color: black` and `text-shadow: 0 1px white` on any `code[class*=language-]`
+   and a near-white `pre` background. In dark mode that renders as black text
+   with a white halo on a near-black surface, which is the illegible code block
+   in 6-Syntax.PNG. Prism's autoloader also highlights the editor's own code
+   blocks, so the editor inherits the same problem.
+
+   These selectors carry a class ancestor, so they outrank the CDN theme in both
+   panes. Colors come from variables that flip with the color scheme.
+   ============================================================================ */
+:root {
+	--code-bg: #f2efe9;
+	--code-fg: #1b1b1b;
+	--token-comment: #6a737d;
+	--token-punctuation: #57606a;
+	--token-literal: #0550ae;
+	--token-string: #0a7b3e;
+	--token-keyword: #a3306f;
+	--token-function: #7a4bbd;
+	--token-operator: #9a5b12;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--code-bg: #17171a;
+		--code-fg: #e6e3dc;
+		--token-comment: #8b949e;
+		--token-punctuation: #a8a29a;
+		--token-literal: #79c0ff;
+		--token-string: #7ee787;
+		--token-keyword: #ff9ecd;
+		--token-function: #d2a8ff;
+		--token-operator: #ffab70;
+	}
+}
+
+.editor pre[class*="language-"],
+.editor code[class*="language-"],
+.preview-content pre[class*="language-"],
+.preview-content code[class*="language-"] {
+	color: var(--code-fg);
+	/* The stock theme's white halo is what made the text unreadable on dark. */
+	text-shadow: none;
+	background: none;
+}
+
+.editor pre[class*="language-"],
+.preview-content pre[class*="language-"] {
+	background: var(--code-bg);
+}
+
+.editor .token.comment,
+.editor .token.prolog,
+.editor .token.doctype,
+.editor .token.cdata,
+.preview-content .token.comment,
+.preview-content .token.prolog,
+.preview-content .token.doctype,
+.preview-content .token.cdata {
+	color: var(--token-comment);
+	font-style: italic;
+}
+
+.editor .token.punctuation,
+.preview-content .token.punctuation {
+	color: var(--token-punctuation);
+}
+
+.editor .token.number,
+.editor .token.boolean,
+.editor .token.constant,
+.editor .token.symbol,
+.editor .token.property,
+.editor .token.tag,
+.editor .token.deleted,
+.preview-content .token.number,
+.preview-content .token.boolean,
+.preview-content .token.constant,
+.preview-content .token.symbol,
+.preview-content .token.property,
+.preview-content .token.tag,
+.preview-content .token.deleted {
+	color: var(--token-literal);
+}
+
+.editor .token.string,
+.editor .token.char,
+.editor .token.attr-name,
+.editor .token.selector,
+.editor .token.builtin,
+.editor .token.inserted,
+.preview-content .token.string,
+.preview-content .token.char,
+.preview-content .token.attr-name,
+.preview-content .token.selector,
+.preview-content .token.builtin,
+.preview-content .token.inserted {
+	color: var(--token-string);
+}
+
+.editor .token.keyword,
+.editor .token.atrule,
+.editor .token.attr-value,
+.preview-content .token.keyword,
+.preview-content .token.atrule,
+.preview-content .token.attr-value {
+	color: var(--token-keyword);
+}
+
+.editor .token.function,
+.editor .token.class-name,
+.preview-content .token.function,
+.preview-content .token.class-name {
+	color: var(--token-function);
+}
+
+.editor .token.operator,
+.editor .token.entity,
+.editor .token.url,
+.editor .token.variable,
+.editor .token.regex,
+.preview-content .token.operator,
+.preview-content .token.entity,
+.preview-content .token.url,
+.preview-content .token.variable,
+.preview-content .token.regex {
+	color: var(--token-operator);
+	background: none;
+}
+
 /* Syntax highlighting for editor content (applied by highlight.js) */
 /* TODO: Pick more appropriate colors for these tokens */
 .editor .heading {
@@ -1035,6 +1419,43 @@ pre code {
 	font-size: 0.95rem;
 	color: var(--color-text-dim);
 	margin-bottom: var(--space-5);
+}
+
+/* ----------------------------------------------------------------------------
+   /yaks header and collapsible controls
+   ---------------------------------------------------------------------------- */
+.yaks-head__title {
+	margin-bottom: var(--space-2);
+}
+
+.yaks-controls__toggle {
+	display: none;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-2);
+	min-height: var(--tap-target);
+	padding: 0 var(--space-4);
+	margin-bottom: var(--space-4);
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-pill);
+	cursor: pointer;
+	list-style: none;
+	font-size: 0.85rem;
+	font-weight: 600;
+}
+
+.yaks-controls__toggle::-webkit-details-marker {
+	display: none;
+}
+
+.yaks-controls__caret {
+	color: var(--color-text-dim);
+	transition: transform var(--transition-fast);
+}
+
+.yaks-controls[open] .yaks-controls__caret {
+	transform: rotate(180deg);
 }
 
 .sort-controls {
@@ -1116,10 +1537,12 @@ pre code {
 /* Search Modal Styles */
 .search-modal {
 	position: fixed;
-	top: 3rem;
+	top: var(--header-height, 60px);
 	left: 0;
-	width: 100vw;
-	height: calc(100vh - 3rem);
+	right: 0;
+	/* dvh, because iOS Safari's 100vh assumes the URL bar is hidden and so runs
+	   the bottom of the results list off the bottom of the screen. */
+	height: calc(100dvh - var(--header-height, 60px));
 	background: var(--color-surface);
 	display: flex;
 	flex-direction: column;
@@ -1184,6 +1607,14 @@ pre code {
 .search-result:hover,
 .search-result.selected {
 	background: var(--color-surface-alt);
+}
+
+/* Results are focusable so closing the preview modal can return focus to the
+   one that opened it (search.js). Without this the landing spot is invisible. */
+.search-result:focus-visible {
+	background: var(--color-surface-alt);
+	outline: 2px solid var(--color-accent);
+	outline-offset: -2px;
 }
 
 .search-result__first-line {
@@ -1439,66 +1870,109 @@ pre code {
 	border-radius: 0.2em;
 }
 
-/* Search Preview Modal */
+/* ============================================================================
+   Search Preview Modal
+
+   Opened on small screens when a result is tapped (search.js). Previously the
+   close control was a bare glyph floating over scrolling body text and the
+   "Open" action was appended below the whole rendered note, so on a phone it
+   sat far past the fold and was never found. Now the modal is a three-part
+   column: a header bar with a labelled close button, a scrolling body, and the
+   Open bar pinned to the bottom.
+   ============================================================================ */
 .search-preview-modal {
 	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100vw;
-	height: 100vh;
+	inset: 0;
 	z-index: 2000;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	padding: var(--space-4);
+}
+
+.search-preview-modal[hidden] {
+	display: none;
 }
 
 .search-preview-modal__overlay {
 	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
+	inset: 0;
 	background: rgba(0, 0, 0, 0.5);
 }
 
 .search-preview-modal__content {
 	position: relative;
 	background: var(--color-surface);
-	border-radius: var(--radius-sm);
+	border-radius: var(--radius-lg);
 	border: 1px solid var(--color-border);
-	max-width: 90vw;
-	max-height: 90vh;
 	width: 800px;
 	height: 600px;
+	max-width: 100%;
+	max-height: 100%;
 	display: flex;
 	flex-direction: column;
-	box-shadow: var(--shadow-md);
+	overflow: hidden;
+	box-shadow: var(--shadow-lg);
+}
+
+.search-preview-modal__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-3);
+	flex-shrink: 0;
+	padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+	background: var(--color-surface-alt);
+	border-bottom: 1px solid var(--color-border);
+}
+
+.search-preview-modal__title {
+	font-size: 0.78rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--color-text-dim);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .search-preview-modal__close {
-	position: absolute;
-	top: var(--space-2);
-	right: var(--space-2);
-	background: none;
-	border: none;
-	font-size: 1.5rem;
+	flex-shrink: 0;
+	min-height: var(--tap-target);
+	min-width: var(--tap-target);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 var(--space-4);
+	font-size: 0.85rem;
+	font-weight: 600;
+	background: var(--color-surface);
+	color: var(--color-text);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-pill);
 	cursor: pointer;
-	color: var(--color-text-dim);
-	padding: var(--space-2);
-	border-radius: var(--radius-sm);
 	transition: background var(--transition-fast);
-	z-index: 1;
 }
 
 .search-preview-modal__close:hover {
 	background: var(--color-surface-alt);
+	border-color: var(--color-text-dim);
 }
 
+/* Same flex-column treatment as the side-by-side pane, so the rendered note
+   scrolls and search.js's .search-preview__open bar stays pinned at the bottom. */
 .search-preview-modal .search-preview-content {
 	flex: 1;
-	padding: var(--space-4);
-	overflow-y: auto;
-	padding-top: var(--space-6);
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.search-preview-modal .search-preview__open {
+	min-height: var(--tap-target);
+	padding-bottom: calc(var(--space-4) + var(--safe-bottom));
 }
 
 /* ============================================================================
@@ -1511,6 +1985,67 @@ pre code {
    IMPORTANT: This 768px breakpoint is referenced in editor.js as MOBILE_BREAKPOINT
    ============================================================================ */
 @media (max-width: 768px) {
+	/* --- Header density --------------------------------------------------- */
+	.header {
+		padding: var(--space-3) 0;
+		padding-top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
+	}
+
+	/* --- /yaks: shrink the title block and collapse the control rows ------- */
+	.yaks-head__title {
+		font-size: 1.35rem;
+		margin-bottom: var(--space-1);
+	}
+
+	.page-info {
+		font-size: 0.8rem;
+		margin-bottom: var(--space-3);
+	}
+
+	.yaks-controls__toggle {
+		display: flex;
+	}
+
+	.sort-controls,
+	.filter-controls {
+		margin-bottom: var(--space-3);
+	}
+
+	.sort-controls__label,
+	.filter-controls__label {
+		flex-basis: 100%;
+		font-size: 0.7rem;
+	}
+
+	.cards {
+		margin-top: var(--space-4);
+		gap: var(--space-3);
+	}
+
+	.card {
+		padding: var(--space-4);
+	}
+
+	.card__preview {
+		max-height: 6.5rem;
+	}
+
+	/* --- Search: results need real tap targets ----------------------------- */
+	.search-result {
+		min-height: var(--tap-target);
+		padding: var(--space-3) var(--space-4);
+	}
+
+	/* Nested category paths are long. Wrap to two lines rather than ellipsizing:
+	   the filename at the end is the part that identifies the note. */
+	.search-result__path {
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+		overflow-wrap: anywhere;
+	}
+
 	/* Search page adjustments */
 	.search-content {
 		flex-direction: column;
@@ -1539,7 +2074,14 @@ pre code {
 		flex-direction: column;
 	}
 
-	.editor-container form {
+	/* The desktop `.editor-container.sidebyside form { width: 50% }` rule is more
+	   specific than a bare `.editor-container form`, so it kept winning here and
+	   left the split view squeezed into a half-width column with dead space
+	   beside it (4-Side-by-Side.PNG). Match its specificity to undo it. */
+	.editor-container form,
+	.editor-container.sidebyside form,
+	.editor-container.sidebyside .editor,
+	.editor-container.sidebyside .preview {
 		width: 100%;
 	}
 
@@ -1926,13 +2468,17 @@ pre code {
 	}
 
 	.editor-main {
-		min-height: calc(100vh - var(--header-height, 60px) - 60px);
+		min-height: calc(100dvh - var(--header-height, 60px) - var(--action-bar-height));
+		padding-bottom: calc(var(--action-bar-height) + var(--safe-bottom));
 	}
 
-	/* Editor container - full width */
+	/* Phone screens have no room to spend on chrome: the container gutter, the
+	   editor's own padding, and the overscroll tail all shrink so more of the
+	   note is on screen (task items 3 and 4). */
 	.editor-container {
 		flex-direction: column;
-		padding: var(--space-3);
+		gap: var(--space-2);
+		padding: var(--space-2) 0;
 	}
 
 	.editor-container.editoronly,
@@ -1950,12 +2496,32 @@ pre code {
 	.editor-container .editor {
 		width: 100%;
 		flex: 1;
-		min-height: calc(100vh - var(--header-height, 60px) - 140px);
+		padding: var(--space-3);
+		/* 45vh of trailing overscroll is a desktop luxury; on a phone it reads as
+		   a broken, endlessly tall panel. */
+		padding-bottom: 25vh;
+		min-height: calc(100dvh - var(--header-height, 60px) - var(--action-bar-height) - var(--space-6));
 	}
 
 	.editor-container .preview {
 		width: 100%;
 		flex: 1;
+		padding: var(--space-3);
+	}
+
+	/* Split view on a phone: editor and preview each get a real share of the
+	   height rather than one being squeezed to nothing. */
+	.editor-container.sidebyside .editor,
+	.editor-container.sidebyside .preview {
+		flex: 1 1 0;
+		min-height: 40dvh;
+	}
+
+	/* Leave room for the accessory toolbar while the keyboard is up so the last
+	   line of the note is not hidden behind it. */
+	.editor-container:has(~ .editor-toolbar--visible) .editor,
+	.editor-main:has(.editor-toolbar--visible) .editor {
+		scroll-padding-bottom: var(--tap-target);
 	}
 
 	/* Metadata panel - bottom sheet */

@@ -55,13 +55,15 @@ query: str
           {% endif %}
         </div>
 
-        <div class="search-preview-modal" id="search-preview-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        {# Keep identical to the copy in search_results.html.jinja #}
+        <div class="search-preview-modal" id="search-preview-modal" hidden role="dialog" aria-modal="true" aria-labelledby="search-preview-modal-title">
           <div class="search-preview-modal__overlay"></div>
           <div class="search-preview-modal__content">
-            <button class="search-preview-modal__close" id="search-preview-modal-close" aria-label="Close preview">&times;</button>
-            <div class="search-preview-content" id="search-preview-modal-content">
-              <!-- Modal preview will be loaded here -->
+            <div class="search-preview-modal__header">
+              <span class="search-preview-modal__title" id="search-preview-modal-title">Preview</span>
+              <button class="search-preview-modal__close" id="search-preview-modal-close" type="button" aria-label="Close preview">Close</button>
             </div>
+            <div class="search-preview-content" id="search-preview-modal-content"></div>
           </div>
         </div>
       {% else %}

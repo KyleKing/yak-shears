@@ -55,11 +55,16 @@ async def test_create_new_yak_with_new_category(context: BrowserContext, page: P
     """Test creating a new yak with a new category."""
     await login(context, page)
 
-    await page.goto("/new")
+    # Wait for combobox.js (loaded at the end of the body). Typing a category
+    # opens the listbox over the form actions, so dismiss it before submitting,
+    # or the submit click waits for actionability until the test times out.
+    await page.goto("/new", wait_until="networkidle")
 
     # Enter a new category name
     test_category = "test-e2e-category"
     await page.fill("#category", test_category)
+    await page.keyboard.press("Escape")
+    await expect(page.locator("#category-listbox")).to_be_hidden()
 
     # Submit form
     await page.click("button[type='submit']")
@@ -74,10 +79,15 @@ async def test_new_yak_cancel_navigation(context: BrowserContext, page: Page, se
     """Test that cancel button navigates back to yaks page."""
     await login(context, page)
 
-    await page.goto("/new")
+    # combobox.js loads at the end of the body, so pressing Escape straight after
+    # navigation can land before it binds. The listbox then opens over the form
+    # actions and the Cancel click waits for actionability until the test times
+    # out. Wait for the script, dismiss, and confirm it is closed.
+    await page.goto("/new", wait_until="networkidle")
 
-    # The autofocused combobox opens its listbox over the form actions; dismiss it first
+    listbox = page.locator("#category-listbox")
     await page.keyboard.press("Escape")
+    await expect(listbox).to_be_hidden()
 
     # Click cancel
     cancel_button = page.locator("a:has-text('Cancel')")

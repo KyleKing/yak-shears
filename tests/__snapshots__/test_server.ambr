@@ -29,6 +29,33 @@
         </div>
        </div>
       </div>
+      <div aria-label="Editor formatting" class="editor-toolbar" hidden="" id="editor-toolbar" role="toolbar">
+       <button aria-label="Outdent list item" class="editor-toolbar__btn" data-action="outdent" type="button">
+        ⇤
+       </button>
+       <button aria-label="Indent list item" class="editor-toolbar__btn" data-action="indent" type="button">
+        ⇥
+       </button>
+       <button aria-label="Toggle bullet" class="editor-toolbar__btn" data-action="bullet" type="button">
+        •
+       </button>
+       <button aria-label="Toggle checklist" class="editor-toolbar__btn" data-action="checklist" type="button">
+        ☐
+       </button>
+       <button aria-label="Bold" class="editor-toolbar__btn" data-action="bold" type="button">
+        <b>
+         B
+        </b>
+       </button>
+       <button aria-label="Italic" class="editor-toolbar__btn" data-action="italic" type="button">
+        <i>
+         I
+        </i>
+       </button>
+       <button aria-label="Dismiss keyboard" class="editor-toolbar__btn editor-toolbar__btn--dismiss" data-action="dismiss" type="button">
+        ▾
+       </button>
+      </div>
       <div class="editor__actions">
        <div class="container">
         <button class="button button--primary" hx-post="/edit" hx-swap="none" hx-vals='{"yak": "test.dj"}' id="save-btn">
@@ -119,40 +146,56 @@
   '''
   <main class="layout__inner" id="main-content" role="main">
    <div class="container">
-    <h1>
-     Yaks in ./yak_test_dir
-    </h1>
-    <p class="page-info">
-     Showing 3 of 3 yaks (Page 1 of 1)
-    </p>
-    <div class="sort-controls">
-     <span class="sort-controls__label">
-      Sort by:
-     </span>
-     <a class="button button--sm button--primary" href="/yaks?sort_by=created_at">
-      Created At
-     </a>
-     <a class="button button--sm" href="/yaks?sort_by=modified_date">
-      Modified Date
-     </a>
+    <div class="yaks-head">
+     <h1 class="yaks-head__title">
+      Yaks in ./yak_test_dir
+     </h1>
+     <p class="page-info">
+      3 of 3 yaks · page 1 of 1
+     </p>
     </div>
-    <div class="filter-controls">
-     <span class="filter-controls__label">
-      Filter by category:
-     </span>
-     <a class="button button--sm button--primary" href="/yaks?sort_by=created_at">
-      All
-     </a>
-     <a class="button button--sm" href="/yaks?sort_by=created_at&amp;category=subdirectory-2">
-      Subdirectory-2
-     </a>
-     <a class="button button--sm" href="/yaks?sort_by=created_at&amp;category=subdirectory-3">
-      Subdirectory-3
-     </a>
-     <a class="button button--sm" href="/yaks?sort_by=created_at&amp;category=yak_test_dir">
-      Yak_test_dir
-     </a>
-    </div>
+    <details class="yaks-controls" id="yaks-controls" open="">
+     <summary class="yaks-controls__toggle">
+      <span class="yaks-controls__current">
+       Created
+          ·
+          All
+      </span>
+      <span aria-hidden="true" class="yaks-controls__caret">
+       ▾
+      </span>
+     </summary>
+     <div class="yaks-controls__panel">
+      <div class="sort-controls">
+       <span class="sort-controls__label">
+        Sort by:
+       </span>
+       <a class="button button--sm button--primary" href="/yaks?sort_by=created_at">
+        Created At
+       </a>
+       <a class="button button--sm" href="/yaks?sort_by=modified_date">
+        Modified Date
+       </a>
+      </div>
+      <div class="filter-controls">
+       <span class="filter-controls__label">
+        Filter by category:
+       </span>
+       <a class="button button--sm button--primary" href="/yaks?sort_by=created_at">
+        All
+       </a>
+       <a class="button button--sm" href="/yaks?sort_by=created_at&amp;category=subdirectory-2">
+        Subdirectory-2
+       </a>
+       <a class="button button--sm" href="/yaks?sort_by=created_at&amp;category=subdirectory-3">
+        Subdirectory-3
+       </a>
+       <a class="button button--sm" href="/yaks?sort_by=created_at&amp;category=yak_test_dir">
+        Yak_test_dir
+       </a>
+      </div>
+     </div>
+    </details>
     <div class="cards">
      <a class="card" href="/edit?yak=subdirectory-3/yak3.dj" style="--card-accent-color: hsl(261, 25%, 70%); --card-fill: 0.020">
       <div aria-hidden="true" class="card__meter" title="10 words">

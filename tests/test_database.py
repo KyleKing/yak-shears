@@ -2,15 +2,20 @@
 
 from unittest.mock import patch
 
+import duckdb
 import pytest
 from freezegun import freeze_time
 
 from yak_shears._yak.database import (
+    CHEAP_SEARCH_TARGET_ROWS,
     MAX_WORD_LENGTH,
+    apply_vault_scan,
     check_tables_exist,
+    close_search_db,
     delete_files,
     delete_words_for_paths,
     get_backlinks,
+    get_file_titles,
     get_frontmatter,
     get_last_update_time,
     get_search_db_path,
@@ -18,7 +23,9 @@ from yak_shears._yak.database import (
     get_word_count,
     init_search_db,
     insert_words,
+    refresh_search_index,
     replace_links,
+    scan_vault,
     search_words,
     set_last_update_time,
     should_update_index,
@@ -40,6 +47,7 @@ def temp_db(tmp_path, worker_id):
     with patch.dict("os.environ", {"SEARCH_DB_DIR": str(db_dir)}):
         init_search_db()
         yield db_dir
+        close_search_db()
 
 
 @pytest.fixture
@@ -315,3 +323,117 @@ class TestDatabaseEdgeCases:
         assert "old.dj" not in stored
         assert "new1.dj" in stored
         assert "new2.dj" in stored
+
+
+class TestSearchTiers:
+    """Exact and prefix queries must resolve without the Levenshtein scan."""
+
+    @pytest.fixture
+    def indexed_words(self, temp_db):
+        insert_words([
+            ("file1.dj", 1, "banana"),
+            ("file1.dj", 2, "bandana"),
+            ("file2.dj", 1, "band"),
+            ("file2.dj", 2, "unrelated"),
+        ])
+        return temp_db
+
+    @pytest.mark.parametrize(
+        ("query", "expected_words"),
+        [
+            ("banana", {"banana", "bandana"}),
+            ("BANANA", {"banana", "bandana"}),
+            ("band", {"band", "bandana"}),
+            ("banna", {"banana"}),
+            ("unrelted", {"unrelated"}),
+            ("zzzzzzzz", set()),
+        ],
+    )
+    def test_search_words_tiers(self, indexed_words, query, expected_words):
+        results = search_words(query)
+        assert {word for _, _, word in results} == expected_words
+
+    def test_search_words_skips_fuzzy_when_prefix_is_enough(self, temp_db):
+        insert_words([("file.dj", line, f"prefix{line}") for line in range(1, CHEAP_SEARCH_TARGET_ROWS + 5)])
+        results = search_words("prefix")
+        assert len(results) == CHEAP_SEARCH_TARGET_ROWS + 4
+
+
+class TestSchemaMigration:
+    def test_init_search_db_adds_title_column(self, tmp_path, worker_id):
+        db_dir = tmp_path / "legacy" / worker_id
+        db_dir.mkdir(parents=True)
+        legacy = duckdb.connect(str(db_dir / "yak_shears_search.db"))
+        legacy.execute("CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT)")
+        legacy.execute("CREATE TABLE files (path TEXT PRIMARY KEY, mtime REAL)")
+        legacy.execute(
+            "CREATE TABLE words (path TEXT, line_num INTEGER, word TEXT, PRIMARY KEY (path, line_num, word))"
+        )
+        legacy.execute("INSERT INTO files VALUES ('old.dj', 1.0)")
+        legacy.execute("INSERT INTO words VALUES ('old.dj', 1, 'legacy')")
+        legacy.close()
+
+        with patch.dict("os.environ", {"SEARCH_DB_DIR": str(db_dir)}):
+            init_search_db()
+            init_search_db()
+
+            assert get_stored_files() == {"old.dj": 1.0}
+            assert get_file_titles(["old.dj"]) == {}
+            assert [word for _, _, word in search_words("legacy")] == ["legacy"]
+
+            upsert_file("old.dj", 2.0, "Legacy Title")
+            assert get_file_titles(["old.dj"]) == {"old.dj": "Legacy Title"}
+
+
+class TestVaultScan:
+    @pytest.mark.parametrize("change", ["add", "modify", "delete"])
+    def test_scan_reflects_vault_changes(self, temp_db, temp_yak_dir, change):
+        update_search_index(temp_yak_dir)
+
+        expected_changed: list[str]
+        expected_deleted: list[str]
+        match change:
+            case "add":
+                (temp_yak_dir / "file4.dj").write_text("brand new")
+                expected_changed, expected_deleted = ["file4.dj"], []
+            case "modify":
+                (temp_yak_dir / "file1.dj").write_text("changed content")
+                expected_changed, expected_deleted = ["file1.dj"], []
+            case _:
+                (temp_yak_dir / "file2.dj").unlink()
+                expected_changed, expected_deleted = [], ["file2.dj"]
+
+        scan = scan_vault(temp_yak_dir)
+        assert scan.changed_paths == expected_changed
+        assert scan.deleted_paths == expected_deleted
+        assert scan.has_changes
+
+        apply_vault_scan(temp_yak_dir, scan)
+        assert not scan_vault(temp_yak_dir).has_changes
+        assert set(get_stored_files()) == set(scan.file_mtimes)
+
+    def test_index_stores_derived_titles(self, temp_db, tmp_path):
+        yak_dir = tmp_path / "titled"
+        yak_dir.mkdir()
+        (yak_dir / "heading.dj").write_text("# My Heading\nbody text")
+        (yak_dir / "frontmatter.dj").write_text("---\ntitle: From Frontmatter\n---\nbody text")
+        (yak_dir / "empty.dj").write_text("")
+
+        update_search_index(yak_dir)
+
+        assert get_file_titles(["heading.dj", "frontmatter.dj", "empty.dj"]) == {
+            "heading.dj": "My Heading",
+            "frontmatter.dj": "From Frontmatter",
+            "empty.dj": "empty.dj",
+        }
+
+    def test_refresh_respects_update_interval(self, temp_db, temp_yak_dir):
+        with freeze_time("2025-01-01 00:00:00") as frozen_time:
+            assert refresh_search_index(temp_yak_dir, force=True)
+
+            (temp_yak_dir / "file1.dj").write_text("changed within the guard window")
+            assert not refresh_search_index(temp_yak_dir)
+
+            frozen_time.move_to("2025-01-01 00:02:00")
+            assert refresh_search_index(temp_yak_dir)
+            assert not refresh_search_index(temp_yak_dir)

@@ -57,6 +57,17 @@ backlinks: list[tuple[str, str]]
         </div>
       </div>
 
+      {# Mobile accessory bar - editor.js positions it above the software keyboard #}
+      <div class="editor-toolbar" id="editor-toolbar" role="toolbar" aria-label="Editor formatting" hidden>
+        <button class="editor-toolbar__btn" type="button" data-action="outdent" aria-label="Outdent list item">&#8676;</button>
+        <button class="editor-toolbar__btn" type="button" data-action="indent" aria-label="Indent list item">&#8677;</button>
+        <button class="editor-toolbar__btn" type="button" data-action="bullet" aria-label="Toggle bullet">&bull;</button>
+        <button class="editor-toolbar__btn" type="button" data-action="checklist" aria-label="Toggle checklist">&#9744;</button>
+        <button class="editor-toolbar__btn" type="button" data-action="bold" aria-label="Bold"><b>B</b></button>
+        <button class="editor-toolbar__btn" type="button" data-action="italic" aria-label="Italic"><i>I</i></button>
+        <button class="editor-toolbar__btn editor-toolbar__btn--dismiss" type="button" data-action="dismiss" aria-label="Dismiss keyboard">&#9662;</button>
+      </div>
+
       {# Fixed bottom action bar with save button and status #}
       <div class="editor__actions">
         <div class="container">

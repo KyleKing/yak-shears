@@ -304,6 +304,10 @@ function initEditor() {
 		});
 		window.jar = jar; // Expose for testing and debugging
 
+		// Upload failures have no status element of their own, so they hold the shared
+		// save status until the next successful upload or save.
+		let uploadError = false;
+
 		// Cmd/Ctrl+Enter saves the document
 		editor.addEventListener(
 			"keydown",
@@ -393,6 +397,7 @@ function initEditor() {
 			if (evt.target.id === "save-btn") {
 				document.getElementById("save-btn").disabled = false;
 				if (evt.detail.successful) {
+					uploadError = false;
 					updateSaveStatus("Saved");
 					// Auto-transition "Saved" → "Synced" after 2 seconds
 					setTimeout(() => {
@@ -411,10 +416,10 @@ function initEditor() {
 			// Update save status based on whether content matches server
 			if (code === serverContent) {
 				localStorage.removeItem(storageKey); // No need to persist when synced
-				updateSaveStatus("Synced");
+				if (!uploadError) updateSaveStatus("Synced");
 			} else {
 				localStorage.setItem(storageKey, code); // Persist unsaved changes
-				updateSaveStatus("Modified");
+				if (!uploadError) updateSaveStatus("Modified");
 			}
 			// Update preview if it's visible in current view mode
 			if (currentView === "side-by-side" || currentView === "preview") {
@@ -441,9 +446,11 @@ function initEditor() {
 		const initialView = isMobile ? "editor" : "side-by-side";
 		setViewMode(initialView);
 
-		// Word wrap toggle (default off; persisted per browser)
+		// Word wrap toggle. Defaults off on desktop (2.5) but on for phone
+		// widths, where an unwrapped line means scrolling sideways to read every
+		// paragraph. An explicit choice is remembered and wins over both.
 		const wrapToggle = document.getElementById("wrap-toggle");
-		const applyWrap = (on) => {
+		const applyWrap = (on, { persist = true } = {}) => {
 			const container = document.getElementById("editor-container");
 			container.classList.toggle("wrap", on);
 			// CodeJar sets white-space inline, which beats a CSS class, so set it directly.
@@ -457,14 +464,19 @@ function initEditor() {
 				wrapToggle.setAttribute("aria-pressed", on.toString());
 				wrapToggle.classList.toggle("active", on);
 			}
-			localStorage.setItem("editorWrap", on ? "true" : "false");
+			// The width-derived default is not written back, so opening a note on
+			// a phone does not silently set the preference for the desktop too.
+			if (persist) localStorage.setItem("editorWrap", on ? "true" : "false");
 		};
 		if (wrapToggle) {
 			wrapToggle.addEventListener("click", () => {
 				applyWrap(!document.getElementById("editor-container").classList.contains("wrap"));
 			});
 		}
-		applyWrap(localStorage.getItem("editorWrap") === "true");
+		const storedWrap = localStorage.getItem("editorWrap");
+		applyWrap(storedWrap === null ? isMobile : storedWrap === "true", {
+			persist: storedWrap !== null,
+		});
 
 		// Media upload: toolbar button + paste. Uploaded files are transcoded
 		// server-side; the returned Djot snippet is inserted at the cursor.
@@ -489,10 +501,12 @@ function initEditor() {
 				const res = await fetch("/media/upload", { method: "POST", body: form });
 				const data = await res.json();
 				if (!res.ok) throw new Error(data.error || "Upload failed");
+				uploadError = false;
 				insertAtCursor(`\n${data.snippet}\n`);
 				updateSaveStatus("Modified");
 			} catch (err) {
 				console.error("Media upload failed:", err);
+				uploadError = true;
 				updateSaveStatus(`Upload failed: ${err.message}`);
 			}
 		};
@@ -514,16 +528,47 @@ function initEditor() {
 		}
 
 		editor.addEventListener("paste", (e) => {
-			const items = Array.from(e.clipboardData?.items || []);
-			const files = items
-				.filter((it) => it.kind === "file" && (it.type.startsWith("image/") || it.type.startsWith("video/")))
-				.map((it) => it.getAsFile())
-				.filter(Boolean);
+			const files = _mediaFilesFrom(e.clipboardData);
 			if (files.length) {
 				e.preventDefault();
 				uploadFiles(files);
 			}
+			requestAnimationFrame(() => _stripInjectedElements(editor, jar));
 		});
+
+		const setDragover = (active) => editor.classList.toggle("editor--dragover", active);
+
+		editor.addEventListener("dragenter", (e) => {
+			e.preventDefault();
+			setDragover(true);
+		});
+
+		// preventDefault marks the editor a valid drop target; without it "drop" never fires
+		editor.addEventListener("dragover", (e) => {
+			e.preventDefault();
+			setDragover(true);
+		});
+
+		editor.addEventListener("dragleave", (e) => {
+			if (!editor.contains(e.relatedTarget)) setDragover(false);
+		});
+
+		// Always preventDefault: the browser default inserts a data-URL <img> node into the
+		// contenteditable, which leaves an unscrollable editor and never uploads the file.
+		editor.addEventListener("drop", (e) => {
+			e.preventDefault();
+			setDragover(false);
+			const files = _mediaFilesFrom(e.dataTransfer);
+			if (files.length) {
+				uploadFiles(files);
+			} else {
+				const text = e.dataTransfer?.getData("text/plain");
+				if (text) insertAtCursor(text);
+			}
+			requestAnimationFrame(() => _stripInjectedElements(editor, jar));
+		});
+
+		_setupEditorToolbar(editor, jar);
 
 		// Initialize menu button toggle
 		const menuBtn = document.getElementById('menu-btn');
@@ -794,6 +839,173 @@ function _toggleChecklistState(editorEl, jarInstance) {
 	const newCursorPos = Math.max(lineStart, cursorPos + cursorDelta);
 	jarInstance.updateCode(newText);
 	requestAnimationFrame(() => _setCursorPosition(editorEl, newCursorPos));
+}
+
+function _isMediaType(type) {
+	return type.startsWith("image/") || type.startsWith("video/");
+}
+
+// DataTransfer exposes dropped files on .files and pasted ones on .items; a few
+// browsers populate only one of the two, so both are consulted.
+function _mediaFilesFrom(dataTransfer) {
+	const fromFiles = Array.from(dataTransfer?.files || []).filter((file) => _isMediaType(file.type));
+	if (fromFiles.length) return fromFiles;
+	return Array.from(dataTransfer?.items || [])
+		.filter((item) => item.kind === "file" && _isMediaType(item.type))
+		.map((item) => item.getAsFile())
+		.filter(Boolean);
+}
+
+// Extensions and browser quirks can still inject nodes into the contenteditable.
+// highlight() erases them on the next keystroke, but the editor is unusable until
+// then, so rebuild from the text immediately.
+function _stripInjectedElements(editorEl, jarInstance) {
+	if (!editorEl.querySelector("img, video, iframe, object, embed, svg")) return;
+	jarInstance.updateCode(jarInstance.toString());
+}
+
+function _getSelectionRange(editorEl) {
+	const sel = window.getSelection();
+	if (!sel.rangeCount) return { start: 0, end: 0 };
+	const range = sel.getRangeAt(0);
+	const anchor = getTextOffset(editorEl, range.startContainer, range.startOffset);
+	const focus = getTextOffset(editorEl, range.endContainer, range.endOffset);
+	return anchor <= focus ? { start: anchor, end: focus } : { start: focus, end: anchor };
+}
+
+const BULLET_PREFIX_RE = /^(\s*)- (\[[ x]\] )?/;
+
+function _toggleBullet(editorEl, jarInstance) {
+	const text = jarInstance.toString();
+	const cursorPos = _getCursorPosition(editorEl);
+	const { lineStart, lineEnd, lineText } = _getCurrentLine(text, cursorPos);
+
+	const match = lineText.match(BULLET_PREFIX_RE);
+	let newLineText;
+	let cursorDelta;
+	if (match) {
+		newLineText = match[1] + lineText.substring(match[0].length);
+		cursorDelta = -(match[0].length - match[1].length);
+	} else {
+		const indent = lineText.match(/^\s*/)[0];
+		newLineText = `${indent}- ${lineText.substring(indent.length)}`;
+		cursorDelta = 2;
+	}
+
+	const newText = text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
+	jarInstance.updateCode(newText);
+	requestAnimationFrame(() =>
+		_setCursorPosition(editorEl, Math.max(lineStart, cursorPos + cursorDelta)),
+	);
+}
+
+function _toggleInlineMarker(editorEl, jarInstance, marker) {
+	const text = jarInstance.toString();
+	const { start, end } = _getSelectionRange(editorEl);
+	const selected = text.substring(start, end);
+	const width = marker.length;
+
+	const apply = (newText, caret) => {
+		jarInstance.updateCode(newText);
+		requestAnimationFrame(() => _setCursorPosition(editorEl, caret));
+	};
+
+	if (selected.length >= 2 * width && selected.startsWith(marker) && selected.endsWith(marker)) {
+		const unwrapped = selected.substring(width, selected.length - width);
+		apply(text.substring(0, start) + unwrapped + text.substring(end), start + unwrapped.length);
+		return;
+	}
+	if (
+		start >= width &&
+		text.substring(start - width, start) === marker &&
+		text.substring(end, end + width) === marker
+	) {
+		apply(
+			text.substring(0, start - width) + selected + text.substring(end + width),
+			start - width + selected.length,
+		);
+		return;
+	}
+
+	const wrapped = marker + selected + marker;
+	const caret = selected ? start + wrapped.length : start + width;
+	apply(text.substring(0, start) + wrapped + text.substring(end), caret);
+}
+
+function _runToolbarAction(action, editorEl, jarInstance) {
+	switch (action) {
+		case "outdent":
+			_handleListIndentation(editorEl, jarInstance, true);
+			break;
+		case "indent":
+			_handleListIndentation(editorEl, jarInstance, false);
+			break;
+		case "bullet":
+			_toggleBullet(editorEl, jarInstance);
+			break;
+		case "checklist":
+			_toggleChecklistState(editorEl, jarInstance);
+			break;
+		case "bold":
+			_toggleInlineMarker(editorEl, jarInstance, "*");
+			break;
+		case "italic":
+			_toggleInlineMarker(editorEl, jarInstance, "_");
+			break;
+	}
+}
+
+// Height of the software keyboard, published to CSS so the toolbar can sit on top of it.
+function _syncKeyboardInset() {
+	const viewport = window.visualViewport;
+	const inset = viewport
+		? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+		: 0;
+	document.documentElement.style.setProperty("--keyboard-inset", `${inset}px`);
+}
+
+function _setupEditorToolbar(editorEl, jarInstance) {
+	const toolbar = document.getElementById("editor-toolbar");
+	if (!toolbar) return;
+
+	const refresh = () => {
+		const visible =
+			window.innerWidth <= MOBILE_BREAKPOINT && document.activeElement === editorEl;
+		toolbar.hidden = !visible;
+		toolbar.classList.toggle("editor-toolbar--visible", visible);
+	};
+
+	editorEl.addEventListener("focus", refresh);
+	// Buttons cancel their own blur below, so a blur that survives a frame is a real one.
+	editorEl.addEventListener("blur", () => requestAnimationFrame(refresh));
+	window.addEventListener("resize", refresh);
+
+	_syncKeyboardInset();
+	if (window.visualViewport) {
+		window.visualViewport.addEventListener("resize", _syncKeyboardInset);
+		window.visualViewport.addEventListener("scroll", _syncKeyboardInset);
+	}
+
+	// Suppressing the default keeps focus (and the keyboard) on the editor while tapping
+	const keepFocus = (event) => {
+		const button = event.target.closest(".editor-toolbar__btn");
+		if (button && button.dataset.action !== "dismiss") event.preventDefault();
+	};
+	toolbar.addEventListener("pointerdown", keepFocus);
+	toolbar.addEventListener("mousedown", keepFocus);
+
+	toolbar.addEventListener("click", (event) => {
+		const button = event.target.closest(".editor-toolbar__btn");
+		if (!button) return;
+		if (button.dataset.action === "dismiss") {
+			editorEl.blur();
+			refresh();
+			return;
+		}
+		_runToolbarAction(button.dataset.action, editorEl, jarInstance);
+	});
+
+	refresh();
 }
 
 /**

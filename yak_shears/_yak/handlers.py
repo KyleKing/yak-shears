@@ -9,7 +9,7 @@ from urllib.parse import quote
 from starlette.requests import Request
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 
-from yak_shears._log_utils import log
+from yak_shears._log_utils import StageTimer, log
 from yak_shears._templates import (
     SortBy,
     _render_template,
@@ -169,18 +169,23 @@ async def search_handler(request: Request) -> Response:
             return HTMLResponse('<div class="search-empty"><p>Start typing to search your yaks...</p></div>')
         return render_search([], query)
 
-    await ensure_search_db_ready()
+    timer = StageTimer()
+    with timer.stage("db_ready"):
+        await ensure_search_db_ready()
 
     yak_dir = await get_yak_dir()
     sync_yak_dir = SyncPath(yak_dir)
 
-    ensure_search_index_updated(sync_yak_dir)
+    with timer.stage("index"):
+        ensure_search_index_updated(sync_yak_dir)
 
     try:
-        results = perform_search(query, sync_yak_dir)
+        results = perform_search(query, sync_yak_dir, timer)
     except Exception as exc:
         log(f"ERROR: Search database query failed: {exc}")
         return render_error("Search is temporarily unavailable", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    log(timer.format_line("SEARCH", query_len=len(query), results=len(results)))
 
     if is_htmx_request(request):
         return _render_template("search/search_results.html.jinja", results=results, query=query)

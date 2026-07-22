@@ -141,26 +141,66 @@ function scrollToFirstMatch(previewPane) {
 	}
 }
 
+// The result that was selected before the modal opened, refocused when it closes
+let previouslyFocusedResult = null;
+let modalHandlersBound = false;
+
+function getModal() {
+	return document.getElementById("search-preview-modal");
+}
+
+function isModalOpen() {
+	const modal = getModal();
+	return Boolean(modal && modal.classList.contains("is-open"));
+}
+
 // Open modal
 function openModal() {
-	const modal = document.getElementById("search-preview-modal");
-	if (modal) {
-		modal.style.display = "flex";
-		document.body.style.overflow = "hidden";
+	const modal = getModal();
+	if (!modal) return;
+	const results = document.querySelectorAll(".search-result");
+	previouslyFocusedResult = results[selectedIndex] || null;
+	modal.hidden = false;
+	modal.classList.add("is-open");
+	document.body.style.overflow = "hidden";
+	const closeButton = document.getElementById("search-preview-modal-close");
+	if (closeButton) {
+		requestAnimationFrame(() => closeButton.focus());
 	}
 }
 
 // Close modal
 function closeModal() {
-	const modal = document.getElementById("search-preview-modal");
-	if (modal) {
-		modal.style.display = "none";
-		document.body.style.overflow = "";
+	const modal = getModal();
+	if (!modal) return;
+	modal.classList.remove("is-open");
+	modal.hidden = true;
+	document.body.style.overflow = "";
+	if (previouslyFocusedResult && previouslyFocusedResult.isConnected) {
+		previouslyFocusedResult.focus();
 	}
+	previouslyFocusedResult = null;
+}
+
+// Delegated so repeated HTMX swaps of the modal markup never stack listeners
+function bindModalHandlers() {
+	if (modalHandlersBound) return;
+	modalHandlersBound = true;
+	document.addEventListener("click", (event) => {
+		const target = event.target;
+		if (!(target instanceof Element)) return;
+		if (
+			target.closest(".search-preview-modal__close") ||
+			target.classList.contains("search-preview-modal__overlay")
+		) {
+			closeModal();
+		}
+	});
 }
 
 // Setup results
 function setupResults() {
+	bindModalHandlers();
 	selectedIndex = -1;
 	const results = document.querySelectorAll(".search-result");
 	if (results.length > 0) {
@@ -197,18 +237,7 @@ if (document.readyState === "loading") {
 	setupResults();
 }
 
-// Modal event listeners
-document.addEventListener("DOMContentLoaded", function () {
-	const modalClose = document.getElementById("search-preview-modal-close");
-	const modalOverlay = document.querySelector(".search-preview-modal__overlay");
-
-	if (modalClose) {
-		modalClose.addEventListener("click", closeModal);
-	}
-	if (modalOverlay) {
-		modalOverlay.addEventListener("click", closeModal);
-	}
-});
+document.addEventListener("DOMContentLoaded", bindModalHandlers);
 
 // Keyboard navigation
 document.addEventListener("keydown", function (e) {
@@ -217,8 +246,7 @@ document.addEventListener("keydown", function (e) {
 	const resultItems = resultsList.querySelectorAll(".search-result");
 	if (resultItems.length === 0) return;
 
-	const modal = document.getElementById("search-preview-modal");
-	const modalIsOpen = modal && modal.style.display === "flex";
+	const modalIsOpen = isModalOpen();
 
 	switch (e.key) {
 		case "ArrowDown":
@@ -252,6 +280,11 @@ document.addEventListener("keydown", function (e) {
 			}
 			break;
 		case "Escape":
+			if (modalIsOpen) {
+				e.preventDefault();
+				closeModal();
+				break;
+			}
 			const searchInput = document.querySelector(".search-input");
 			if (searchInput) {
 				searchInput.blur();

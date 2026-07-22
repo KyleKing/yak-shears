@@ -83,8 +83,20 @@ yak_shears/
 ### Frontend Approach
 
 - Server-side rendering with Jinja2 templates
-- Responsive design for iPhone 14, iPad, and Desktop
+- Responsive design for iPhone 14 (390x844), iPad, and Desktop
+- Installable as a homescreen web app via `static/manifest.webmanifest` (`display: standalone`). Without it, iOS opens every navigation in an in-app browser overlay (ADR 0009)
 - Keep total assets under 14KB
+
+#### Mobile layout rules
+
+The 768px breakpoint is the mobile/desktop split and is duplicated in `editor.js`, `search.js`, and `nav.js` as `MOBILE_BREAKPOINT`. Changing it means changing all four.
+
+- Below 768px the header collapses to a hamburger and the wordmark is hidden, otherwise the four nav labels overflow the viewport
+- The header menu and the `/yaks` sort/filter rows are `<details>` elements that ship **open** and are closed by `nav.js` on phones. Do not invert this: a closed `<details>` hides its body with `content-visibility` on `::details-content`, which author CSS cannot force back open, and the content becomes unclickable
+- `--header-height`, `--action-bar-height`, `--tap-target`, `--keyboard-inset`, and the `--safe-*` insets are defined in `:root`. Fixed bars offset themselves with these rather than hardcoding pixels
+- Use `dvh`, not `vh`, for full-height panels. iOS Safari's `100vh` assumes a hidden URL bar and runs content off-screen
+- Interactive targets are at least `var(--tap-target)` (44px)
+- Watch specificity when overriding view modes: `.editor-container.sidebyside form` outranks `.editor-container form`, which is why the split view stayed half-width on phones
 
 ### Key Design Patterns
 
@@ -121,6 +133,11 @@ Now implemented with CodeJar
 - Supports toggling italic and bold on the selected text. On mobile, the keyboard is extended with buttons to apply bullet or italic to highlighted text
 - Toggle between three view modes: Editor-only, Side-by-side (editor and preview), and Preview-only
 - Preview includes syntax highlighting for code blocks using Prism.js v1.29.0, with language detection from Djot AST "lang" attribute
+- Word wrap defaults off on desktop and on below 768px, where an unwrapped line means scrolling sideways to read. An explicit toggle is remembered and wins; the width-derived default is not written to localStorage
+- Dropped and pasted images and videos are uploaded through `/media/upload` and replaced with a Djot snippet. The `drop` handler must always `preventDefault()`, or the browser inserts a full-size data-URL `<img>` into the contenteditable and the note becomes uneditable
+- On phones an accessory toolbar (`.editor-toolbar`) rides above the software keyboard with indent, outdent, bullet, checklist, bold, and italic. `editor.js` writes `--keyboard-inset` from `visualViewport`; its buttons must `preventDefault()` on pointerdown so tapping one does not dismiss the keyboard. iOS gives web content no way to extend the system keyboard itself (ADR 0008)
+
+Prism's stock theme is loaded from a CDN *after* `main.css` and hardcodes black text with a white halo, which is unreadable on the dark surface. `main.css` overrides it under `.editor` and `.preview-content` with scheme-aware token variables; those selectors need a class ancestor to outrank it.
 
 ### Note Preview
 
@@ -142,7 +159,7 @@ Implemented as a full page at /search with fuzzy search using persistent and laz
     - The search sidebar shows each matched yak with a single, unwrapped line of preview text in the space available
     - The search preview shows highlighted text for what was matched during the search
 - Keyboard navigation: Use arrow keys to navigate results, Enter to open the currently selected yak
-- On small screens (≤768px width), the preview is shown in a closeable modal instead of side-by-side layout, scrolled to the first match
+- On small screens (≤768px width), the preview is shown in a closeable modal instead of side-by-side layout, scrolled to the first match. The modal is a three-part column: a header bar with a labelled Close button, a scrolling body, and an "Open" bar pinned to the bottom so the way into the editor is always on screen
 - PLANNED: support modal-based search without requiring a new page (ctrl-p), which opens in a new tab
 - PLANNED: support embeddings as well as fuzzy matches
 

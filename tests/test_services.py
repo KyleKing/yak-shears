@@ -1,5 +1,6 @@
 """Tests for the services module."""
 
+import re
 from unittest.mock import patch
 
 import pytest
@@ -201,6 +202,18 @@ class TestYakCRUD:
         assert await result.exists()
 
     @pytest.mark.asyncio
+    async def test_create_yak_filename_is_iso_utc(self, tmp_path):
+        from anyio import Path
+
+        yak_dir = Path(tmp_path)
+        result = await create_yak(yak_dir, "new_category")
+
+        assert re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}_\d{2}_\d{2}Z\.dj", result.name)
+        content, category = await read_yak(yak_dir, f"new_category/{result.name}")
+        assert content == ""
+        assert category == "new_category"
+
+    @pytest.mark.asyncio
     async def test_read_yak(self, temp_yak_dir):
         from anyio import Path
 
@@ -349,7 +362,7 @@ class TestServiceEdgeCases:
         yak_dir = tmp_path / "yaks"
         yak_dir.mkdir()
 
-        with patch("yak_shears._yak.services.should_update_index", side_effect=RuntimeError("Test error")):
+        with patch("yak_shears._yak.services.refresh_search_index", side_effect=RuntimeError("Test error")):
             # Should not raise, just log warning
             ensure_search_index_updated(yak_dir)
 

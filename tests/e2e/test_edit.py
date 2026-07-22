@@ -1,7 +1,7 @@
 import re
 
 import pytest
-from playwright.async_api import BrowserContext, Page, expect
+from playwright.async_api import BrowserContext, Page, ViewportSize, expect
 
 from tests.conftest import MOCK_YAK_DIR
 
@@ -603,3 +603,134 @@ async def test_draft_toggle_recovers_local_changes(context: BrowserContext, page
     stored = await page.evaluate("() => localStorage.getItem('editor_yak1.dj')")
     assert stored == draft
     await page.evaluate("() => localStorage.removeItem('editor_yak1.dj')")
+
+
+# ============================================================================
+# Mobile Accessory Toolbar and Drag-Drop Tests
+# ============================================================================
+
+IPHONE_14_VIEWPORT = ViewportSize(width=390, height=844)
+
+_SET_CODE_AND_CARET = """
+    ([code, start, end]) => {
+        window.jar.updateCode(code);
+        const ed = document.querySelector(".editor");
+        ed.focus();
+        const from = getNodeAtOffset(ed, start);
+        const to = getNodeAtOffset(ed, end);
+        const range = document.createRange();
+        range.setStart(from.node, from.offset);
+        range.setEnd(to.node, to.offset);
+        const sel = getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+"""
+
+
+async def _set_code_and_select(page: Page, code: str, start: int, end: int) -> None:
+    await page.evaluate(_SET_CODE_AND_CARET, [code, start, end])
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_toolbar_indents_and_outdents_on_mobile(context: BrowserContext, page: Page, server_lifecycle):
+    """The accessory toolbar appears on a phone viewport and drives list indentation."""
+    await login(context, page)
+    await page.set_viewport_size(IPHONE_14_VIEWPORT)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    toolbar = page.locator("#editor-toolbar")
+    await expect(toolbar).to_be_visible()
+
+    await _set_code_and_select(page, "- item", 6, 6)
+    await page.locator("[data-action='indent']").click()
+    assert await editor.text_content() == "    - item"
+
+    await page.locator("[data-action='outdent']").click()
+    assert await editor.text_content() == "- item"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_toolbar_hidden_on_desktop(context: BrowserContext, page: Page, server_lifecycle):
+    """The accessory toolbar is a mobile affordance and stays hidden on wide viewports."""
+    await login(context, page)
+    await page.set_viewport_size({"width": 1280, "height": 900})
+    await page.goto("/edit?yak=yak1.dj")
+
+    await expect(page.locator(".editor")).to_be_editable()
+    await expect(page.locator("#editor-toolbar")).to_be_hidden()
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_toolbar_bold_wraps_selection(context: BrowserContext, page: Page, server_lifecycle):
+    """Bold wraps the selection in Djot strong markers."""
+    await login(context, page)
+    await page.set_viewport_size(IPHONE_14_VIEWPORT)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await _set_code_and_select(page, "hello world", 6, 11)
+    await page.locator("[data-action='bold']").click()
+    assert await editor.text_content() == "hello *world*"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_toolbar_bold_unwraps_selection(context: BrowserContext, page: Page, server_lifecycle):
+    """Bold strips the markers when the selection is already strong."""
+    await login(context, page)
+    await page.set_viewport_size(IPHONE_14_VIEWPORT)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await _set_code_and_select(page, "hello *world*", 6, 13)
+    await page.locator("[data-action='bold']").click()
+    assert await editor.text_content() == "hello world"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_dropped_image_uploads_instead_of_embedding(context: BrowserContext, page: Page, server_lifecycle):
+    """A dropped image is uploaded and inserted as Djot, never as a raw <img> node."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    uploads: list[str] = []
+
+    async def handle_upload(route):
+        uploads.append(route.request.method)
+        await route.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"snippet": "![drop](/media/drop.png)"}',
+        )
+
+    await page.route("**/media/upload", handle_upload)
+
+    await page.evaluate('() => window.jar.updateCode("start")')
+    await page.evaluate(
+        """() => {
+            const transfer = new DataTransfer();
+            transfer.items.add(new File([new Uint8Array([1, 2, 3])], "drop.png", { type: "image/png" }));
+            const ed = document.querySelector(".editor");
+            ed.focus();
+            ed.dispatchEvent(new DragEvent("drop", { dataTransfer: transfer, bubbles: true, cancelable: true }));
+        }"""
+    )
+
+    await expect(editor).to_contain_text("![drop](/media/drop.png)")
+    assert uploads == ["POST"], f"Expected one POST to /media/upload but got {uploads}"
+    assert await editor.locator("img").count() == 0, "A raw <img> was inserted into the editor"
