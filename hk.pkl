@@ -55,6 +55,11 @@ local linters = new Mapping<String, Step> {
         check = "toml-sort --check {{ files }}"
         fix = "toml-sort --in-place {{ files }}"
     }
+
+    ["typed-jinja"] {
+        glob = "yak_shears/_templates/**/*.jinja"
+        check = "uv run typed-jinja check {{ files }}"
+    }
 }
 
 local commit_msg_checks = new Mapping<String, Step> {
