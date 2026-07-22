@@ -48,7 +48,7 @@ write_files:
       KbdInteractiveAuthentication no
       ChallengeResponseAuthentication no
       MaxAuthTries 2
-      AllowTcpForwarding no
+      AllowTcpForwarding local  # "local" (not "no") so `ssh -L` can reach Syncthing's UI; "all" would also permit -R
       X11Forwarding no
       AllowAgentForwarding no
       AuthorizedKeysFile .ssh/authorized_keys
@@ -190,11 +190,13 @@ runcmd:
   - apt update || exit 1
   - apt install -y syncthing || exit 1
 
-  # Install Caddy
+  # Install Caddy. Non-interactive + force-confold: /etc/caddy/Caddyfile was
+  # already written above by write_files, so dpkg would otherwise stop and
+  # prompt at a conffile conflict, aborting the rest of runcmd.
   - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg || exit 1
   - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list || exit 1
   - apt update || exit 1
-  - apt install -y caddy || exit 1
+  - DEBIAN_FRONTEND=noninteractive apt install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" caddy || exit 1
 
   # Setup Yak Shears directories
   - mkdir -p /home/yakshears/Sync/yak-shears || exit 1
