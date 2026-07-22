@@ -1,10 +1,10 @@
 # Project Status
 
-Quick overview of what's implemented and what's next. Last updated: 2026-07-06.
+Quick overview of what's implemented and what's next. Last updated: 2026-07-22.
 
 ## Current Focus
 
-**Deploy to Hetzner** (PLAN.md Phase 1): fix cloud-config port/branch/ffmpeg issues, relocate the search DB out of the Syncthing folder, then harden auth/sessions.
+**Deployed to Hetzner** (PLAN.md Phase 1, done 2026-07-22; see [DEPLOY_LOG.md](./DEPLOY_LOG.md) for the run and [adr/0007-observability-strategy.md](./adr/0007-observability-strategy.md) for logging/alerting options). Live at `https://yak-shears.kyleking.me`. Next: harden auth/sessions (Phase 2).
 
 ## Implemented Features
 
@@ -27,8 +27,8 @@ Priority order (2026-07-06): deploy, then hardening, then product features; infr
 
 | Work | Phase | Priority |
 |------|-------|----------|
-| Hetzner deployment fixes | 1 | Now |
-| Session persistence, link dedupe, auth hardening | 2 | High |
+| Hetzner deployment fixes | 1 | Done (2026-07-22) |
+| Session persistence, link dedupe, auth hardening | 2 | Now |
 | Link autocomplete, cross-link modal, related-notes panel | 3 | High |
 | Frontmatter query engine + metadata/text store split | 4 | High |
 | Prune queue, streams/backlog views | 5 | High |
@@ -57,8 +57,9 @@ yak_shears/
 |----------|---------|
 | PLAN.md | Phased implementation plan (the single source for "what's next") |
 | ROADMAP.md | Vision, principles, future ideas |
-| DEPLOYMENT.md | Production deployment to Hetzner |
+| DEPLOYMENT.md | Production deployment to Hetzner (evergreen how-to) |
+| DEPLOY_LOG.md | Narrative record of the actual first deployment, issues hit and fixes |
 | AGENTS.md | AI/developer command reference |
-| adr/ | Decision records (CSS, search, frontmatter, media, hosting) |
+| adr/ | Decision records (CSS, search, frontmatter, media, hosting, observability) |
 | archive/ | Superseded plans and completed-work reports |
 | agent-research-platform/ | Unrelated pydantic-ai research sub-project (quarantined; see its README) |

@@ -24,6 +24,7 @@ A flexible, file-based knowledge management system supporting:
 - Scandinavian minimal design system with E2E coverage (see `archive/IMPROVEMENTS.md`)
 - Frontmatter parsing (YAML and Apple Notes export format), link extraction, backlinks storage
 - Media upload with transcoding, thumbnails, and doctor view
+- Hetzner deployment (PLAN.md Phase 1, 2026-07-22): live at `https://yak-shears.kyleking.me`; see [DEPLOY_LOG.md](./DEPLOY_LOG.md)
 
 ## Near Term
 

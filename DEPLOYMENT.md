@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide covers deploying Yak Shears to a Hetzner VPS using cloud-init automation.
+This guide covers deploying Yak Shears to a Hetzner VPS using cloud-init automation. It is the evergreen, reusable reference: it should always describe a procedure that works against the current `cloud-config.yaml` and current codebase. For the narrative of one specific deployment (what was actually run, in order, and every issue hit along the way) see [DEPLOY_LOG.md](./DEPLOY_LOG.md).
 
 ## Prerequisites
 
@@ -70,27 +70,51 @@ nslookup yak-shears.kyleking.me 8.8.8.8
    - Cloud-init: Paste contents of `cloud-config.yaml` (replace `<public_ssh_key>` placeholder)
    - **Note the VPS IP address** assigned after creation
 
-### Option B: hcloud CLI
+### Option B: hcloud CLI (recommended; this is what the reference deployment used)
 
 ```sh
-# Install hcloud CLI
+# 0. Dedicated SSH key, one per purpose (don't reuse a personal/GitHub key for a VPS)
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_yak_shears -C "yak-shears-hetzner"
+
+# 1. Install hcloud CLI
 brew install hcloud  # macOS
 # or download from https://github.com/hetznercloud/cli/releases
 
-# Authenticate (create API token in Hetzner Cloud Console)
-hcloud context create yak-shears
+# 2. Authenticate. Generate a Read & Write API token in the Hetzner Cloud Console
+# (console.hetzner.cloud -> project -> Security -> API Tokens), then:
+hcloud context create yak-shears   # paste the token when prompted; stored in ~/.config/hcloud/cli.toml
 
-# Create server with cloud-config (use a local copy with <public_ssh_key> filled in)
+# 3. Register the key with the project
+hcloud ssh-key create --name yak-shears --public-key-from-file ~/.ssh/id_ed25519_yak_shears.pub
+
+# 4. Fill the <public_ssh_key> placeholder into a local, gitignored copy
+sed "s|<public_ssh_key>|$(cat ~/.ssh/id_ed25519_yak_shears.pub)|" cloud-config.yaml > cloud-config.local.yaml
+grep ssh-ed25519 cloud-config.local.yaml   # sanity check
+
+# 5. Create the server with the filled-in cloud-config
 hcloud server create \
   --name yak-shears \
-  --type cpx21 \
+  --type cpx11 \
   --image ubuntu-24.04 \
   --location ash \
-  --ssh-key YOUR_KEY_NAME \
+  --ssh-key yak-shears \
   --user-data-from-file cloud-config.local.yaml
 
 # Get server IP
 hcloud server ip yak-shears
+```
+
+CPX11 (2 vCPU / 2GB, ~$4.99/mo) is the size actually used for the reference deployment and has held up fine for a single-user app. CPX21 (3 vCPU / 4GB, ~$8.49/mo) is the safer default if you want headroom for ffmpeg transcodes running alongside DuckDB, or expect more concurrent load. The CX line is EU-only; use CPX in US locations like `ash` (Ashburn).
+
+Add a host block to `~/.ssh/config` once you have the IP so `ssh yak-shears` just works:
+
+```
+Host yak-shears
+    HostName <vps-ip>
+    Port 2222
+    User yakshears
+    IdentityFile ~/.ssh/id_ed25519_yak_shears
+    IdentitiesOnly yes
 ```
 
 2. **Configure DNS immediately** (see DNS Configuration section above)
@@ -119,8 +143,12 @@ hcloud server ip yak-shears
 5. **Create initial user**
    ```sh
    ssh -p 2222 yakshears@<vps-ip>
-   uv run yak-shears-users create your-email@example.com
+   cd ~/yak-shears
+   uv run yak-shears-users create your-email@example.com   # prompts for a password interactively
    ```
+   Run the create/delete commands yourself over an interactive SSH session so the password never passes through any automation or chat transcript; `getpass` needs a real TTY and fails non-interactively (no `-t`, or stdin piped) with `EOFError`.
+
+   The running `yak-shears` service picks up new/deleted users automatically (it reloads `.yak-shears-users.json` when the file's mtime changes, so no restart needed). If you're running an older deployment predating that fix, `sudo systemctl restart yak-shears` after any CLI user change.
 
 6. **Access application**
    - HTTPS: `https://yak-shears.kyleking.me` (update domain in `cloud-config.yaml`)
@@ -139,7 +167,7 @@ Before deploying, update `cloud-config.yaml`:
 
 ## Syncthing Setup
 
-Syncthing provides file synchronization for yak notes (`~/Sync/yak-shears`).
+Syncthing provides file synchronization for yak notes. The VPS-side directory is `~/Sync/yak-shears` (created by cloud-init, chowned to `yakshears`); the search DB is deliberately kept out of it (see the Backup section).
 
 ```sh
 # Port-forward Syncthing UI (run from laptop)
@@ -148,10 +176,32 @@ ssh -p 2222 -L 9998:localhost:8384 yakshears@<vps-ip>
 # Open http://localhost:9998 in browser
 # - Copy Device ID from your laptop's Syncthing
 # - Paste in VPS Syncthing → Actions → Show ID → Add Remote Device
-# - Share ~/Sync/yak-shears folder bidirectionally
+# - Share the folder bidirectionally (see "Which folder to share" below)
 ```
 
 See: https://docs.syncthing.net/intro/getting-started.html#configuring
+
+### Which folder to share
+
+If this is your first Syncthing folder, share `~/Sync/yak-shears` directly, matching the VPS path above.
+
+If you already sync other files between devices, you likely have one `default` folder rooted at `~/Sync` (with `yak-shears` as one subfolder among others), not a dedicated `yak-shears`-only folder. In that case it's simpler to add the VPS as another device on that existing folder (`~/Sync` <-> `/home/yakshears/Sync`) rather than carving out a new Syncthing folder just for this app, so the VPS behaves like any other paired device. The tradeoff: the VPS then receives everything in `~/Sync`, not just `yak-shears`, so check what else lives there before doing this.
+
+### Troubleshooting: `ssh -L` fails with "administratively prohibited"
+
+```
+channel 3: open failed: administratively prohibited: open failed
+```
+
+The SSH hardening drop-in (`/etc/ssh/sshd_config.d/99-ssh-hardening.conf`, written by `cloud-config.yaml`) sets `AllowTcpForwarding local`, which permits `ssh -L` (local port forwarding, what the tunnel above needs) while still blocking `-R` remote forwarding. If you're hitting this error, the drop-in probably still has the old `AllowTcpForwarding no` — check with `ssh yak-shears "sudo cat /etc/ssh/sshd_config.d/99-ssh-hardening.conf"`, fix with:
+
+```sh
+ssh yak-shears "sudo sed -i 's/AllowTcpForwarding no/AllowTcpForwarding local/' /etc/ssh/sshd_config.d/99-ssh-hardening.conf && sudo sshd -t && sudo systemctl restart ssh.service"
+```
+
+### Troubleshooting: "no route to host" during device pairing
+
+Syncthing advertises both IPv4 and IPv6 addresses for a device. If your network doesn't have a working route to the VPS's IPv6 address, the pairing UI may briefly show `no route to host` against the `quic://[ipv6]:22000` address before Syncthing falls back to IPv4 or a relay, which usually resolves itself within a minute or two. Not a server misconfiguration; only worth investigating further if the connection never establishes on any address after a few minutes (check `sudo ufw status` allows `22000/tcp`, `22000/udp`, `21027/udp`, and that `systemctl is-active syncthing@yakshears` is `active`).
 
 ## GitOps Auto-Updates
 
@@ -281,6 +331,38 @@ systemctl status gitops-update.timer
 
 # Run update script manually to see errors
 sudo -u yakshears /usr/local/bin/gitops-update.sh
+```
+
+### `cloud-init status` shows `error`, and only some services came up
+
+```
+errors:
+    - ('scripts_user', RuntimeError('Runparts: 1 failures (runcmd) in 1 attempted commands'))
+```
+
+`runcmd` runs each command in sequence and stops at the first failure, so everything after the failure point (repo clone, `uv sync`, enabling/starting services, the gitops timer, the SSH hardening restart) silently never runs. Find where it stopped:
+
+```sh
+sudo tail -150 /var/log/cloud-init-output.log
+```
+
+The one hit on the reference deployment: `apt install caddy` prompted interactively over dpkg because `write_files` had already dropped `/etc/caddy/Caddyfile` on disk (write_files runs before runcmd), and dpkg saw a conffile conflict with no TTY to answer it. `cloud-config.yaml` now installs Caddy with `DEBIAN_FRONTEND=noninteractive` and `--force-confdef --force-confold` to avoid this, but if you hit it anyway (e.g. on an older cloud-config, or a different package with the same shape of problem):
+
+```sh
+# Finish the stuck package non-interactively, keeping cloud-init's version of any conffile
+sudo DEBIAN_FRONTEND=noninteractive dpkg --configure -a --force-confdef --force-confold
+
+# Then run whatever runcmd steps never got to execute, e.g.:
+sudo mkdir -p /home/yakshears/Sync/yak-shears
+sudo chown -R yakshears:yakshears /home/yakshears/Sync
+sudo -u yakshears git clone https://github.com/KyleKing/yak-shears.git /home/yakshears/yak-shears
+sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/uv sync'
+sudo systemctl enable --now syncthing@yakshears.service caddy yak-shears
+sudo systemctl daemon-reload
+sudo systemctl enable --now gitops-update.timer
+sudo systemctl disable --now ssh.socket
+sudo systemctl enable ssh.service
+sudo systemctl restart ssh.service   # safe: reads the new sshd_config.d drop-in, existing session survives
 ```
 
 ### SSL Certificate / HTTPS Issues

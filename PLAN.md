@@ -6,20 +6,29 @@ Priority order (2026-07-06 decision): **deploy first (Phase 1), then auth/data h
 
 Status legend: each item lists the file to change and done-criteria so a session can start without re-deriving context.
 
-## Phase 1: Deploy to Hetzner (top priority)
+## Phase 1: Deploy to Hetzner — done (2026-07-22)
 
-Blockers found in `cloud-config.yaml` and `DEPLOYMENT.md` that would make the current branch fail or misbehave on a fresh VPS:
+Blockers found in `cloud-config.yaml` and `DEPLOYMENT.md` that would have made the branch fail or misbehave on a fresh VPS, all fixed pre-deploy:
 
-- Add `ffmpeg` to the `packages:` list in `cloud-config.yaml`. The media feature (commit 6e240cd) shells out to ffmpeg for video transcode and poster frames; a fresh VPS has none. Done when a MOV upload works on the VPS.
-- Fix the GitOps branch. `gitops-update.sh` polls `origin/main` (`cloud-config.yaml:87`), but the default branch is `yak-shears-py`, so the auto-update timer never fires. Done when a push to `yak-shears-py` deploys within one timer interval.
-- Fix the port mismatch. The systemd unit runs `uv run --no-sync serve` with no `--port` (binds `:8080`) while Caddy proxies `localhost:8084` (`cloud-config.yaml:66,140`). Align the unit, the Caddyfile, and the `DEPLOYMENT.md` health check on one port.
-- Move the search DB out of the Syncthing folder. `get_search_db_path()` defaults into `$YAK_SHEARS_DIR`, which Syncthing syncs and corrupts. Set `--search-db-dir` in the systemd unit to a non-synced path (e.g. `/home/yakshears/.local/state/yak-shears`).
+- Added `ffmpeg` to the `packages:` list. The media feature shells out to ffmpeg for video transcode and poster frames.
+- Fixed the GitOps branch (`origin/main` -> `origin/yak-shears-py`) so the auto-update timer actually fires.
+- Fixed the port mismatch: the systemd unit now passes `--port 8084`, matching what Caddy proxies.
+- Moved the search DB out of the Syncthing folder via `--search-db-dir /home/yakshears/.local/state/yak-shears`.
 - Set `IN_TLS_CONTEXT=TRUE` in the systemd unit so the session cookie carries `Secure` behind Caddy.
-- Secrets hygiene: verified 2026-07-04 that `yak_shears/.yak-shears-users.json` is gitignored and was never committed (no history purge needed); `UserStore._save` now chmods it to 0600.
-- Post-deploy smoke test: authenticated login, note save, media upload, search, and confirm the CSP headers don't break anything in auth mode (they've only been exercised in dev).
-- Docs: `DEPLOYMENT.md` prerequisites now mention ffmpeg, and the backup section points at the real users-file path (`/home/yakshears/yak-shears/yak_shears/.yak-shears-users.json`, until relocated).
+- Secrets hygiene: `yak_shears/.yak-shears-users.json` confirmed gitignored and never committed; `UserStore._save` chmods it to 0600.
+- Post-deploy smoke test: login, note edit/save/reload, image upload all confirmed working. **Still open**: video transcode, search-returns-results, and a CSP-violation console check haven't been exercised in production yet — do these before treating the deploy as fully verified.
 
-Known hosting TODOs carried from `archive/hosting-new.md`: ufw rules appear to reset on VPS boot (verify and persist); create a script that snapshots manually-managed VPS files (Caddyfile, sshd_config, ufw state, systemd units) for version control.
+Issues hit during the actual run (not caught by the pre-flight audit above; full detail in [DEPLOY_LOG.md](./DEPLOY_LOG.md)), now fixed in `cloud-config.yaml` and code:
+
+- `runcmd` aborted partway through provisioning: `apt install caddy` hit an interactive dpkg prompt (conffile conflict with the `write_files`-written Caddyfile) with no TTY, so the RuntimeError killed everything after it in the script. Fixed with `DEBIAN_FRONTEND=noninteractive` + `--force-confdef --force-confold` on that install step.
+- `AllowTcpForwarding no` in the SSH hardening drop-in silently blocked `ssh -L`, breaking the documented Syncthing-pairing tunnel. Changed to `AllowTcpForwarding local` (permits `-L`, still blocks `-R`).
+- The user store (`_auth/storage.py`) was a module-level singleton loaded once at process start, so a user created via the `yak-shears-users` CLI (a separate process) was invisible to the already-running server until restart. Fixed properly: `authenticate_user` now checks the data file's mtime and reloads if it changed, so CLI-created users work without a manual restart.
+
+Known hosting TODOs, now resolved or re-scoped:
+
+- ufw rules resetting on boot: verified fixed — a full reboot on the live VPS kept ufw active with all rules intact.
+- A script that snapshots manually-managed VPS files (Caddyfile, sshd_config, ufw state, systemd units) for version control: still not built: everything currently manageable lives in `cloud-config.yaml` (single source of truth re-applied only at provision time, not continuously reconciled), so drift between the file and the live box is possible after ad hoc SSH fixes like the ones above. Worth a `cloud-config.yaml` diff check next time the VPS is touched by hand.
+- Logging/alerting strategy: previously undecided, now has a menu of options with a recommendation in [adr/0007-observability-strategy.md](./adr/0007-observability-strategy.md) — implementation not yet started.
 
 ## Phase 2: Data integrity, auth, and runtime correctness
 
