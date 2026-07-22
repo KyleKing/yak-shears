@@ -1,3 +1,16 @@
+{#def
+from yak_shears._templates import YakInfo, SortBy
+from collections.abc import Callable
+yaks: list[YakInfo]
+current_page: int
+total_pages: int
+total_yaks: int
+yak_dir_label: str
+sort_by: SortBy
+current_category: str | None
+categories: set[str]
+get_category_color: Callable[[str], str]
+-#}
 {% extends "base.html.jinja" %}
 
 {% block title %}Yaks in {{ yak_dir_label }}{% endblock %}

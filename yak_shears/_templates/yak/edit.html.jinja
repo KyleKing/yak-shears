@@ -1,3 +1,12 @@
+{#def
+yak_name: str
+yak_path: str
+content: str
+category: str
+category_color: str
+frontmatter: dict[str, object]
+backlinks: list[tuple[str, str]]
+-#}
 {% extends "base.html.jinja" %}
 
 {% block extra_head %}

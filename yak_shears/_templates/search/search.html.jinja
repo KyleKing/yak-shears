@@ -1,3 +1,8 @@
+{#def
+from yak_shears._templates import SearchResult
+results: list[SearchResult]
+query: str
+-#}
 {% extends "base.html.jinja" %}
 
 {% block title %}Search Yaks{% endblock %}
