@@ -19,6 +19,8 @@ from yak_shears._yak.database import (
     get_frontmatter,
     get_last_update_time,
     get_search_db_path,
+    index_is_inside_vault,
+    stray_vault_index,
     get_stored_files,
     get_word_count,
     init_search_db,
@@ -67,10 +69,41 @@ def temp_yak_dir(tmp_path):
 
 
 class TestDatabasePath:
-    def test_get_search_db_path_default(self, tmp_path):
-        with patch.dict("os.environ", {"YAK_SHEARS_DIR": str(tmp_path)}, clear=True):
+    def test_get_search_db_path_defaults_outside_the_vault(self, tmp_path):
+        state_home = tmp_path / "state"
+        env = {"YAK_SHEARS_DIR": str(tmp_path / "vault"), "XDG_STATE_HOME": str(state_home)}
+        with patch.dict("os.environ", env, clear=True):
             path = get_search_db_path()
-            assert path == tmp_path / "yak_shears_search.db"
+
+        # The index must not land in the synced vault (ADR 0010).
+        assert path == state_home / "yak-shears" / "yak_shears_search.db"
+        assert (tmp_path / "vault") not in path.parents
+
+    def test_index_is_inside_vault_flags_a_legacy_override(self, tmp_path):
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        with patch.dict("os.environ", {"YAK_SHEARS_DIR": str(vault), "SEARCH_DB_DIR": str(vault)}, clear=True):
+            assert index_is_inside_vault()
+
+    def test_index_is_not_inside_vault_by_default(self, tmp_path):
+        env = {"YAK_SHEARS_DIR": str(tmp_path / "vault"), "XDG_STATE_HOME": str(tmp_path / "state")}
+        with patch.dict("os.environ", env, clear=True):
+            assert not index_is_inside_vault()
+
+    def test_stray_vault_index_reports_a_leftover_file(self, tmp_path):
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        (vault / "yak_shears_search.db").write_bytes(b"leftover")
+        env = {"YAK_SHEARS_DIR": str(vault), "XDG_STATE_HOME": str(tmp_path / "state")}
+        with patch.dict("os.environ", env, clear=True):
+            assert stray_vault_index() == vault / "yak_shears_search.db"
+
+    def test_no_stray_when_the_vault_is_clean(self, tmp_path):
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        env = {"YAK_SHEARS_DIR": str(vault), "XDG_STATE_HOME": str(tmp_path / "state")}
+        with patch.dict("os.environ", env, clear=True):
+            assert stray_vault_index() is None
 
     def test_get_search_db_path_with_search_db_dir(self, tmp_path):
         db_dir = tmp_path / "custom_db"

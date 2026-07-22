@@ -77,6 +77,8 @@ yak_shears/
 ### Yak Management
 
 - Works with Djot yaks (`.dj` extension) stored in `~/Sync/yak-shears` by default
+- Yaks are named after their creation instant in UTC: `2026-07-22T14_03_51Z.dj` (`filenames.CANONICAL_FORMAT`). Keep every writer going through `canonical_stem()`, because the listing sort is a plain filename compare and a second naming shape breaks it
+- The search index lives outside the vault (`$XDG_STATE_HOME/yak-shears`, or `SEARCH_DB_DIR`). Never default it back inside: DuckDB holds a `.wal` while open and a synced copy is unreadable (ADR 0010)
 - Supports yak listing with pagination and sorting (name/date)
 - Yak editing with content preview
 
@@ -133,7 +135,7 @@ Now implemented with CodeJar
 - Supports toggling italic and bold on the selected text. On mobile, the keyboard is extended with buttons to apply bullet or italic to highlighted text
 - Toggle between three view modes: Editor-only, Side-by-side (editor and preview), and Preview-only
 - Preview includes syntax highlighting for code blocks using Prism.js v1.29.0, with language detection from Djot AST "lang" attribute
-- Word wrap defaults off on desktop and on below 768px, where an unwrapped line means scrolling sideways to read. An explicit toggle is remembered and wins; the width-derived default is not written to localStorage
+- Word wrap defaults on at every width. Turning it off is remembered in localStorage and persists across pages until switched back on
 - Dropped and pasted images and videos are uploaded through `/media/upload` and replaced with a Djot snippet. The `drop` handler must always `preventDefault()`, or the browser inserts a full-size data-URL `<img>` into the contenteditable and the note becomes uneditable
 - On phones an accessory toolbar (`.editor-toolbar`) rides above the software keyboard with indent, outdent, bullet, checklist, bold, and italic. `editor.js` writes `--keyboard-inset` from `visualViewport`; its buttons must `preventDefault()` on pointerdown so tapping one does not dismiss the keyboard. iOS gives web content no way to extend the system keyboard itself (ADR 0008)
 
@@ -162,6 +164,16 @@ Implemented as a full page at /search with fuzzy search using persistent and laz
 - On small screens (≤768px width), the preview is shown in a closeable modal instead of side-by-side layout, scrolled to the first match. The modal is a three-part column: a header bar with a labelled Close button, a scrolling body, and an "Open" bar pinned to the bottom so the way into the editor is always on screen
 - PLANNED: support modal-based search without requiring a new page (ctrl-p), which opens in a new tab
 - PLANNED: support embeddings as well as fuzzy matches
+
+### Doctor
+
+A read-mostly integrity report at `/doctor`, covering attachments, filenames, and the search index.
+
+- Attachments: `/media/...` references with no file on disk, and attachment files no note references
+- Filenames: yaks whose name is a timestamp in a superseded format, with the canonical replacement. `POST /doctor/fix-filenames` renames them all, rewrites wikilinks that named the old stems, and forces an index rebuild because renames do not change mtimes and would otherwise slip past the staleness guard
+- Names that are not a timestamp in any known format are listed and never renamed. A hand-written filename is a choice, not a defect
+- A rename that would collide with an existing name is reported instead of resolved
+- Search index: where it resolved to, a warning when that is inside the synced vault, and any stray copy left by the old default
 
 ## Page Specifications
 

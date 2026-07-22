@@ -435,3 +435,40 @@ def test_delete_yak(client: TestClient, mock_user_session, tmp_path) -> None:
         assert "HX-Redirect" in response.headers
         assert response.headers["HX-Redirect"] == "/yaks"
         assert not test_yak.exists()
+
+
+def test_doctor_reports_and_fixes_mixed_filenames(client: TestClient, tmp_path: Path) -> None:
+    """Doctor surfaces legacy names and the fix action renames them in place."""
+    vault = tmp_path / "vault"
+    (vault / "evergreen").mkdir(parents=True)
+    (vault / "evergreen" / "20250930_153525.dj").write_text("legacy note", encoding="utf-8")
+    (vault / "evergreen" / "meeting-notes.dj").write_text("see [[20250930_153525]]", encoding="utf-8")
+
+    with set_yak_shears_dir(vault), patch.dict(os.environ, {"SEARCH_DB_DIR": str(tmp_path / "state")}):
+        listed = client.get("/doctor")
+        assert listed.status_code == HTTPStatus.OK
+        assert "20250930_153525.dj" in listed.text
+        assert "2025-09-30T15_35_25Z.dj" in listed.text
+        # A hand-written name is reported but never proposed for renaming.
+        assert "meeting-notes.dj" in listed.text
+
+        fixed = client.post("/doctor/fix-filenames")
+        assert fixed.status_code == HTTPStatus.SEE_OTHER
+
+    assert not (vault / "evergreen" / "20250930_153525.dj").exists()
+    assert (vault / "evergreen" / "2025-09-30T15_35_25Z.dj").read_text() == "legacy note"
+    assert (vault / "evergreen" / "meeting-notes.dj").read_text() == "see [[2025-09-30T15_35_25Z]]"
+
+
+def test_doctor_fix_is_a_noop_when_names_are_canonical(client: TestClient, tmp_path: Path) -> None:
+    """Pressing fix with nothing to do redirects without touching the vault."""
+    vault = tmp_path / "vault"
+    (vault / "evergreen").mkdir(parents=True)
+    canonical = vault / "evergreen" / "2026-07-22T14_03_51Z.dj"
+    canonical.write_text("already fine", encoding="utf-8")
+
+    with set_yak_shears_dir(vault), patch.dict(os.environ, {"SEARCH_DB_DIR": str(tmp_path / "state")}):
+        response = client.post("/doctor/fix-filenames")
+
+    assert response.status_code == HTTPStatus.SEE_OTHER
+    assert canonical.read_text() == "already fine"

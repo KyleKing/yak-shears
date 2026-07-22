@@ -1,11 +1,13 @@
 """HTTP request handlers for Yak Shears."""
 
 from dataclasses import dataclass
+from functools import partial
 from http import HTTPStatus
 from pathlib import Path as SyncPath
 from typing import Self
 from urllib.parse import quote
 
+from anyio import to_thread
 from starlette.requests import Request
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 
@@ -19,7 +21,14 @@ from yak_shears._templates import (
     render_yak_new,
     render_yaks,
 )
-from yak_shears._yak.database import get_backlinks
+from yak_shears._yak.database import (
+    get_backlinks,
+    get_search_db_path,
+    index_is_inside_vault,
+    refresh_search_index,
+    stray_vault_index,
+)
+from yak_shears._yak.filenames import apply_renames, plan_renames
 from yak_shears._yak.media import (
     MediaError,
     build_doctor_report,
@@ -35,6 +44,7 @@ from yak_shears._yak.services import (
     ensure_search_index_updated,
     get_categories,
     get_yak_dir,
+    index_yak_metadata,
     list_yak_paths,
     paginate_yaks,
     perform_search,
@@ -299,17 +309,54 @@ async def thumb_file_handler(request: Request) -> Response:
 
 
 async def doctor_handler(request: Request) -> Response:  # noqa: ARG001
-    """Report broken media references and orphaned attachment files."""
+    """Report broken media references, orphaned attachments, and naming drift."""
     yak_dir = await get_yak_dir()
     report = await build_doctor_report(yak_dir)
+    filenames = plan_renames(SyncPath(yak_dir))
+    stray = stray_vault_index()
     return _render_template(
         "doctor/index.html.jinja",
         missing=report.missing,
         orphans=report.orphans,
         referenced_count=report.referenced_count,
         file_count=report.file_count,
+        filenames=filenames,
+        index_path=str(get_search_db_path()),
+        index_in_vault=index_is_inside_vault(),
+        stray_index=str(stray) if stray else None,
         current_route="doctor",
     )
+
+
+async def doctor_fix_filenames_handler(request: Request) -> Response:
+    """Rename every migratable yak to the canonical timestamp form."""
+    yak_dir = await get_yak_dir()
+    sync_yak_dir = SyncPath(yak_dir)
+    plan = plan_renames(sync_yak_dir)
+
+    if not plan.needs_migration:
+        return RedirectResponse("/doctor", status_code=HTTPStatus.SEE_OTHER)
+
+    try:
+        result = await to_thread.run_sync(apply_renames, sync_yak_dir, plan.renames)
+    except (OSError, FileNotFoundError) as exc:
+        log(f"ERROR: filename migration failed: {exc}")
+        return render_error("Could not rename yaks", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    log(
+        f"DOCTOR renamed={len(result.renamed)} relinked={len(result.relinked)} "
+        f"blocked={len(plan.blocked)} unparseable={len(plan.unparseable)}"
+    )
+
+    # Paths changed underneath the index, so rebuild rather than waiting for the
+    # staleness guard, which keys on mtime and would miss the renames entirely.
+    # The schema is only created on the search path, which may never have run.
+    await ensure_search_db_ready()
+    for rename in result.renamed:
+        index_yak_metadata(sync_yak_dir / rename.new_path, sync_yak_dir)
+    await to_thread.run_sync(partial(refresh_search_index, sync_yak_dir, force=True))
+
+    return RedirectResponse("/doctor", status_code=HTTPStatus.SEE_OTHER)
 
 
 # Re-export for backwards compatibility with tests

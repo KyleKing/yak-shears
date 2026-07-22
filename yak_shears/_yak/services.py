@@ -29,6 +29,7 @@ from yak_shears._yak.database import (
     search_words,
     upsert_frontmatter,
 )
+from yak_shears._yak.filenames import canonical_stem
 from yak_shears.frontmatter import parse_frontmatter
 from yak_shears.links import extract_all_links, extract_tags, extract_wikilinks
 
@@ -36,7 +37,6 @@ PREVIEW_LENGTH = 200
 PREVIEW_SOURCE_LIMIT = 600
 PREVIEW_MAX_LINES = 12
 WORD_METER_TARGET = 500
-YAK_FILENAME_FORMAT = "%Y-%m-%dT%H_%M_%SZ"
 _URL_RE = re.compile(r"https?://", re.IGNORECASE)
 
 
@@ -231,8 +231,7 @@ async def create_yak(yak_dir: Path, category: str) -> Path:
     category_dir = yak_dir / category
     await category_dir.mkdir(parents=True, exist_ok=True)
 
-    timestamp = datetime.now(UTC).strftime(YAK_FILENAME_FORMAT)
-    filename = f"{timestamp}.dj"
+    filename = f"{canonical_stem(datetime.now(UTC))}.dj"
     yak_path = category_dir / filename
 
     await yak_path.write_text("", encoding="utf-8")

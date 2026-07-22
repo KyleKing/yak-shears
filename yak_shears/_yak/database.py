@@ -43,13 +43,44 @@ _CACHE = _ConnectionCache()
 _DB_LOCK = threading.RLock()
 
 
+SEARCH_DB_FILENAME = "yak_shears_search.db"
+
+
+def default_search_db_dir() -> SyncPath:
+    """Local state directory for the search index, honouring `XDG_STATE_HOME`."""
+    state_home = os.getenv("XDG_STATE_HOME")
+    base = SyncPath(state_home).expanduser() if state_home else SyncPath("~/.local/state").expanduser()
+    return base / "yak-shears"
+
+
 def get_search_db_path() -> SyncPath:
-    """Get the path to the search database."""
+    """Get the path to the search database.
+
+    Defaults to a machine-local state directory rather than the notes vault.
+    The index is a rebuildable derivative, and DuckDB keeps a `.wal` sidecar
+    while open, so a file-level sync landing mid-write copies a torn database
+    and two machines writing produce conflicting copies of it (see ADR 0010).
+    """
     search_db_dir = os.getenv("SEARCH_DB_DIR")
-    if search_db_dir:
-        return SyncPath(search_db_dir) / "yak_shears_search.db"
+    base = SyncPath(search_db_dir).expanduser() if search_db_dir else default_search_db_dir()
+    return base / SEARCH_DB_FILENAME
+
+
+def index_is_inside_vault() -> bool:
+    """Whether the resolved index sits inside the notes vault (a sync hazard)."""
     yak_dir = SyncPath(os.getenv("YAK_SHEARS_DIR", "~/Sync/yak-shears")).expanduser()
-    return yak_dir / "yak_shears_search.db"
+    db_path = get_search_db_path()
+    try:
+        return yak_dir.resolve() in db_path.resolve().parents
+    except OSError:
+        return False
+
+
+def stray_vault_index() -> SyncPath | None:
+    """An index file left behind inside the vault by an older default, if any."""
+    yak_dir = SyncPath(os.getenv("YAK_SHEARS_DIR", "~/Sync/yak-shears")).expanduser()
+    stray = yak_dir / SEARCH_DB_FILENAME
+    return stray if stray.exists() and stray.resolve() != get_search_db_path().resolve() else None
 
 
 def close_search_db() -> None:
@@ -73,9 +104,12 @@ def get_search_db() -> Generator[duckdb.DuckDBPyConnection, None, None]:
     re-entrant lock. Do not retain the connection past the `with` block.
     """
     with _DB_LOCK:
-        db_path = str(get_search_db_path())
-        if _CACHE.connection is None or _CACHE.path != db_path or not SyncPath(db_path).exists():
+        resolved = get_search_db_path()
+        db_path = str(resolved)
+        if _CACHE.connection is None or _CACHE.path != db_path or not resolved.exists():
             close_search_db()
+            # The state directory is ours to create; the vault always existed.
+            resolved.parent.mkdir(parents=True, exist_ok=True)
             _CACHE.connection = duckdb.connect(db_path)
             _CACHE.path = db_path
         yield _CACHE.connection
@@ -571,11 +605,21 @@ def refresh_search_index(yak_dir: SyncPath, *, force: bool = False) -> bool:
     if not force and time.time() - get_last_update_time() < INDEX_UPDATE_INTERVAL_SECONDS:
         return False
 
+    started = time.perf_counter()
     scan = scan_vault(yak_dir)
     if not force and not scan.has_changes:
         return False
 
     apply_vault_scan(yak_dir, scan)
+
+    # Log why a rebuild ran, not just that it did. A search that happens to
+    # trigger one is otherwise indistinguishable from a slow search, which is
+    # what hid the float32 mtime bug that re-indexed the vault on every query.
+    log(
+        f"INDEX reason={'forced' if force else 'changed'} "
+        f"scanned={len(scan.file_mtimes)} changed={len(scan.changed_paths)} "
+        f"deleted={len(scan.deleted_paths)} elapsed_ms={(time.perf_counter() - started) * 1000:.1f}"
+    )
     return True
 
 

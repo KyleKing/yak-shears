@@ -19,6 +19,7 @@ Quick overview of what's implemented and what's next. Last updated: 2026-07-22.
 | Frontmatter parsing | ✅ | YAML fences and Apple Notes export format; read-only panel (ADR 0003) |
 | Link extraction | ✅ | `[[wikilinks]]` and `#tags` indexed (duplicate-link bug open) |
 | Backlinks storage | ✅ | Stored in DuckDB |
+| Doctor | ✅ | Attachment integrity, filename migration, search index location (ADR 0010) |
 | Media upload | ✅ | Paste/toolbar/drag-drop upload, HEIC/video transcoding, thumbnails, doctor view (ADR 0004) |
 | Responsive design | ✅ | Mobile, tablet, desktop; iPhone 14 pass 2026-07-22 (header menu, search modal, editor sizing) |
 | Homescreen web app | ✅ | `manifest.webmanifest` with `display: standalone`, icons, apple meta tags (ADR 0009) |

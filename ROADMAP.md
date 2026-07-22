@@ -54,7 +54,11 @@ The Obsidian-style global force-directed graph is a hairball with no stable spat
 
 ### Search index health (opportunistic infrastructure)
 
-The search index is a DuckDB file, rebuildable from the vault, and its default location is inside the vault itself (`~/Sync/yak-shears/yak_shears_search.db`, from `_yak/database.py:get_search_db_path()`). That default is a corruption risk and should change. Syncthing copies files at the file level with no idea that a `.db` is mid-write, so a sync that lands during a write can propagate a torn file, and two machines editing at once each write their own copy of the same database and then fight over it. The production deploy already passes `--search-db-dir /home/yakshears/.local/state/yak-shears` (PLAN.md Phase 1), so the fix is to make that the default rather than the override: put the index in a local state directory on every machine and let each rebuild its own from the vault. ADR 0002 already names this as one reason the current backend is the weakest code in `database.py`.
+The index default moved out of the vault (2026-07-22, [ADR 0010](./adr/0010-derived-data-and-syncthing.md)). It now resolves to `$XDG_STATE_HOME/yak-shears`, falling back to `~/.local/state/yak-shears`, and `SEARCH_DB_DIR` still overrides. Doctor shows where it landed and warns when it is inside the vault or when a stray copy from the old default is still there.
+
+The measurement behind that: DuckDB keeps a `.wal` sidecar while a connection is open, and copying only the `.db` while a writer holds it produced **20 unreadable copies out of 20**. A synced index does not arrive degraded, it arrives dead. `tests/test_sync_safety.py` keeps that honest, so a future DuckDB that makes the copy safe will fail the test rather than quietly invalidate the ADR.
+
+Embeddings are the case where syncing derived data does pay, because they cost API calls rather than a local second, and they are reproducible from a pinned model. ADR 0010 records the shape: a content-addressed immutable cache keyed on `(model, version, content_hash)`, one file per entry, never a database. Nothing is built until embeddings exist.
 
 The rest is ordinary hygiene for any embedded database file, drawn from [Julia Evans' notes on running SQLite](https://jvns.ca/blog/2026/07/17/learning-about-running-sqlite) and translated to DuckDB:
 

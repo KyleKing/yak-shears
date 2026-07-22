@@ -676,6 +676,20 @@ async def _set_code_and_select(page: Page, code: str, start: int, end: int) -> N
     await page.evaluate(_SET_CODE_AND_CARET, [code, start, end])
 
 
+async def _expect_editor_text(page: Page, expected: str) -> None:
+    """Wait for the editor to hold exactly `expected`.
+
+    A bare `text_content()` read races the toolbar action: CodeJar rewrites the
+    DOM and then restores the caret on the next animation frame, so the first
+    read can land before either. Playwright's `to_have_text` is not usable here
+    because it normalises whitespace and these assertions are about indentation.
+    """
+    await page.wait_for_function(
+        "expected => document.querySelector('.editor').textContent === expected",
+        arg=expected,
+    )
+
+
 @pytest.mark.playwright
 @pytest.mark.asyncio
 async def test_toolbar_indents_and_outdents_on_mobile(context: BrowserContext, page: Page, server_lifecycle):
@@ -692,10 +706,10 @@ async def test_toolbar_indents_and_outdents_on_mobile(context: BrowserContext, p
 
     await _set_code_and_select(page, "- item", 6, 6)
     await page.locator("[data-action='indent']").click()
-    assert await editor.text_content() == "    - item"
+    await _expect_editor_text(page, "    - item")
 
     await page.locator("[data-action='outdent']").click()
-    assert await editor.text_content() == "- item"
+    await _expect_editor_text(page, "- item")
 
 
 @pytest.mark.playwright
@@ -723,7 +737,7 @@ async def test_toolbar_bold_wraps_selection(context: BrowserContext, page: Page,
 
     await _set_code_and_select(page, "hello world", 6, 11)
     await page.locator("[data-action='bold']").click()
-    assert await editor.text_content() == "hello *world*"
+    await _expect_editor_text(page, "hello *world*")
 
 
 @pytest.mark.playwright
@@ -739,7 +753,7 @@ async def test_toolbar_bold_unwraps_selection(context: BrowserContext, page: Pag
 
     await _set_code_and_select(page, "hello *world*", 6, 13)
     await page.locator("[data-action='bold']").click()
-    assert await editor.text_content() == "hello world"
+    await _expect_editor_text(page, "hello world")
 
 
 @pytest.mark.playwright

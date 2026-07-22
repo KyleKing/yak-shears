@@ -2618,6 +2618,27 @@ pre code {
 	border-left-color: #d9a441;
 }
 
+.doctor-item--rename {
+	border-left-color: var(--color-accent);
+}
+
+.doctor-actions {
+	margin-top: var(--space-4);
+}
+
+.doctor-details {
+	margin-top: var(--space-4);
+}
+
+.doctor-details summary {
+	cursor: pointer;
+	min-height: var(--tap-target);
+	display: flex;
+	align-items: center;
+	font-size: 0.875rem;
+	color: var(--color-text-dim);
+}
+
 .doctor-item__ref {
 	font-size: 0.875rem;
 }

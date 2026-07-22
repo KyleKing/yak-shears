@@ -1,8 +1,13 @@
 {#def
+from yak_shears._yak.filenames import FilenameReport
 missing: list[tuple[str, str, str]]
 orphans: list[tuple[str, str, int]]
 referenced_count: int
 file_count: int
+filenames: FilenameReport
+index_path: str
+index_in_vault: bool
+stray_index: str | None
 -#}
 {% extends "base.html.jinja" %}
 
@@ -48,5 +53,77 @@ file_count: int
     {% else %}
       <p class="doctor-empty">No orphaned attachments.</p>
     {% endif %}
+  </section>
+
+  <section class="doctor-section">
+    <h2 class="doctor-section__title">Filenames</h2>
+    {% if filenames.renames %}
+      <p class="doctor-section__hint">
+        These predate the current naming scheme. Compact names sort below ISO ones within the same
+        year, so a plain filename sort puts them in the wrong order. Renaming them keeps the listing
+        sort a simple string compare. Wikilinks pointing at the old names are rewritten too.
+      </p>
+      <ul class="doctor-list">
+        {% for rename in filenames.renames %}
+          <li class="doctor-item doctor-item--rename">
+            <code class="doctor-item__ref">{{ rename.old_path }}</code>
+            <span class="doctor-item__note">&rarr; {{ rename.new_path }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+      <form method="post" action="/doctor/fix-filenames" class="doctor-actions">
+        <button type="submit" class="button button--primary">
+          Rename {{ filenames.renames | length }} yak{{ '' if filenames.renames | length == 1 else 's' }}
+        </button>
+      </form>
+    {% else %}
+      <p class="doctor-empty">All {{ filenames.canonical | length }} timestamped yaks use the canonical name.</p>
+    {% endif %}
+
+    {% if filenames.blocked %}
+      <p class="doctor-section__hint">
+        Renaming these would collide with a name already in use, so they are left alone. Two notes
+        claim the same instant; rename one by hand.
+      </p>
+      <ul class="doctor-list">
+        {% for rename in filenames.blocked %}
+          <li class="doctor-item doctor-item--missing">
+            <code class="doctor-item__ref">{{ rename.old_path }}</code>
+            <span class="doctor-item__note">would collide with {{ rename.new_path }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% if filenames.unparseable %}
+      <details class="doctor-details">
+        <summary>{{ filenames.unparseable | length }} yak{{ '' if filenames.unparseable | length == 1 else 's' }} not named after a timestamp</summary>
+        <p class="doctor-section__hint">Left alone. A hand-written name is a choice, not a defect.</p>
+        <ul class="doctor-list">
+          {% for path in filenames.unparseable %}
+            <li class="doctor-item"><code class="doctor-item__ref">{{ path }}</code></li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+  </section>
+
+  <section class="doctor-section">
+    <h2 class="doctor-section__title">Search index</h2>
+    <p class="doctor-section__hint">Rebuildable from the vault. Nothing here is authoritative.</p>
+    <ul class="doctor-list">
+      <li class="doctor-item{% if index_in_vault %} doctor-item--missing{% endif %}">
+        <code class="doctor-item__ref">{{ index_path }}</code>
+        {% if index_in_vault %}
+          <span class="doctor-item__note">inside the synced vault, which risks a torn copy (ADR 0010)</span>
+        {% endif %}
+      </li>
+      {% if stray_index %}
+        <li class="doctor-item doctor-item--orphan">
+          <code class="doctor-item__ref">{{ stray_index }}</code>
+          <span class="doctor-item__note">left by an older default; safe to delete, and worth adding to <code>.stignore</code></span>
+        </li>
+      {% endif %}
+    </ul>
   </section>
 {% endblock %}
