@@ -29,6 +29,7 @@ class UserStore:
         self._users: dict[str, User] = {}
         self._email_to_user_id: dict[str, str] = {}
         self._session_store: dict[str, str] = {}
+        self._data_mtime: float = 0.0
 
     @classmethod
     def load_sync(cls, data_path: SyncPath | None = None) -> Self:
@@ -44,6 +45,7 @@ class UserStore:
                 data = json.loads(sync_path.read_text(encoding="utf-8"))
                 store._users = data.get("users", {})
                 store._email_to_user_id = data.get("email_to_user_id", {})
+                store._data_mtime = sync_path.stat().st_mtime
             except (OSError, json.JSONDecodeError):
                 pass
         return store
@@ -57,9 +59,25 @@ class UserStore:
             data = json.loads(await self._data_path.read_text())
             self._users = data.get("users", {})
             self._email_to_user_id = data.get("email_to_user_id", {})
+            self._data_mtime = (await self._data_path.stat()).st_mtime
         except (OSError, json.JSONDecodeError):
             self._users = {}
             self._email_to_user_id = {}
+
+    async def _reload_if_changed(self) -> None:
+        """Reload from disk if the file's mtime moved since the last load.
+
+        The `yak-shears-users` CLI runs as a separate process from the server and
+        writes this file directly, so the server's in-memory copy goes stale after
+        every CLI create/delete until this catches up (previously required a
+        service restart).
+        """
+        try:
+            mtime = (await self._data_path.stat()).st_mtime
+        except OSError:
+            return
+        if mtime != self._data_mtime:
+            await self.load()
 
     async def _save(self) -> None:
         """Save users to disk."""
@@ -69,6 +87,7 @@ class UserStore:
         }
         await self._data_path.write_text(json.dumps(data, indent=2))
         await self._data_path.chmod(0o600)
+        self._data_mtime = (await self._data_path.stat()).st_mtime
 
     # -------------------------------------------------------------------------
     # User Management
@@ -121,6 +140,7 @@ class UserStore:
         Returns:
             User dict if authentication successful, None otherwise.
         """
+        await self._reload_if_changed()
         user = self.get_user_by_email(email)
         if not user:
             verify_password(password, _DUMMY_SALT, _DUMMY_HASH)
