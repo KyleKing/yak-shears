@@ -446,11 +446,10 @@ function initEditor() {
 		const initialView = isMobile ? "editor" : "side-by-side";
 		setViewMode(initialView);
 
-		// Word wrap toggle. Defaults off on desktop (2.5) but on for phone
-		// widths, where an unwrapped line means scrolling sideways to read every
-		// paragraph. An explicit choice is remembered and wins over both.
+		// Word wrap toggle. Defaults on; an explicit off is remembered in
+		// localStorage and applies across pages until switched back on.
 		const wrapToggle = document.getElementById("wrap-toggle");
-		const applyWrap = (on, { persist = true } = {}) => {
+		const applyWrap = (on) => {
 			const container = document.getElementById("editor-container");
 			container.classList.toggle("wrap", on);
 			// CodeJar sets white-space inline, which beats a CSS class, so set it directly.
@@ -464,19 +463,14 @@ function initEditor() {
 				wrapToggle.setAttribute("aria-pressed", on.toString());
 				wrapToggle.classList.toggle("active", on);
 			}
-			// The width-derived default is not written back, so opening a note on
-			// a phone does not silently set the preference for the desktop too.
-			if (persist) localStorage.setItem("editorWrap", on ? "true" : "false");
+			localStorage.setItem("editorWrap", on ? "true" : "false");
 		};
 		if (wrapToggle) {
 			wrapToggle.addEventListener("click", () => {
 				applyWrap(!document.getElementById("editor-container").classList.contains("wrap"));
 			});
 		}
-		const storedWrap = localStorage.getItem("editorWrap");
-		applyWrap(storedWrap === null ? isMobile : storedWrap === "true", {
-			persist: storedWrap !== null,
-		});
+		applyWrap(localStorage.getItem("editorWrap") !== "false");
 
 		// Media upload: toolbar button + paste. Uploaded files are transcoded
 		// server-side; the returned Djot snippet is inserted at the cursor.

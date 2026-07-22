@@ -518,7 +518,7 @@ async def test_list_indent_stops_beyond_one_level(context: BrowserContext, page:
 @pytest.mark.playwright
 @pytest.mark.asyncio
 async def test_wrap_toggle_rewraps_editor(context: BrowserContext, page: Page, server_lifecycle):
-    """The wrap toggle flips the editor itself between no-wrap and soft-wrap."""
+    """The wrap toggle flips the editor itself between soft-wrap and no-wrap."""
     await login(context, page)
     await page.goto("/edit?yak=yak1.dj")
 
@@ -528,16 +528,60 @@ async def test_wrap_toggle_rewraps_editor(context: BrowserContext, page: Page, s
     async def white_space() -> str:
         return await page.evaluate("() => getComputedStyle(document.querySelector('.editor')).whiteSpace")
 
-    # Default is unwrapped (CodeJar forces pre-wrap inline; the app overrides to pre).
-    assert await white_space() == "pre"
+    # Default is wrapped.
+    assert await white_space() == "pre-wrap"
 
     await open_menu(page)
     wrap_toggle = page.locator("#wrap-toggle")
     await wrap_toggle.click()
-    assert await white_space() == "pre-wrap"
+    assert await white_space() == "pre"
 
     await wrap_toggle.click()
+    assert await white_space() == "pre-wrap"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_wrap_default_on_with_no_stored_preference(context: BrowserContext, page: Page, server_lifecycle):
+    """With no localStorage entry at all, the editor loads wrapped."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+    await page.evaluate("() => localStorage.removeItem('editorWrap')")
+
+    await page.reload()
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    white_space = await page.evaluate("() => getComputedStyle(document.querySelector('.editor')).whiteSpace")
+    assert white_space == "pre-wrap"
+    assert await page.evaluate("() => localStorage.getItem('editorWrap')") == "true"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_wrap_off_preference_persists_across_pages(context: BrowserContext, page: Page, server_lifecycle):
+    """Turning wrap off is written to localStorage and still applies after navigating away and back."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+
+    await open_menu(page)
+    await page.locator("#wrap-toggle").click()
+    assert await page.evaluate("() => localStorage.getItem('editorWrap')") == "false"
+
+    async def white_space() -> str:
+        return await page.evaluate("() => getComputedStyle(document.querySelector('.editor')).whiteSpace")
+
     assert await white_space() == "pre"
+
+    # Navigate to a different yak entirely (not just a reload) to confirm the
+    # preference is read from localStorage on every page load, not per-document state.
+    await page.goto("/edit?yak=subdirectory-2/yak2.dj")
+    await expect(editor).to_be_editable()
+    assert await white_space() == "pre"
+    assert await page.evaluate("() => localStorage.getItem('editorWrap')") == "false"
 
 
 @pytest.mark.playwright
@@ -557,11 +601,11 @@ async def test_wrap_toggle_rewraps_editor_code_block(context: BrowserContext, pa
             "() => getComputedStyle(document.querySelector('.editor pre')).whiteSpace"
         )
 
-    assert await pre_white_space() == "pre"
+    assert await pre_white_space() == "pre-wrap"
 
     await open_menu(page)
     await page.locator("#wrap-toggle").click()
-    assert await pre_white_space() == "pre-wrap"
+    assert await pre_white_space() == "pre"
 
 
 # ============================================================================
