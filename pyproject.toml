@@ -183,6 +183,14 @@ sort_inline_tables = true
 sort_table_keys = true
 trailing_comma_inline_array = true
 
+[tool.typed_jinja]
+imports = ["from collections.abc import Callable"]
+template_dirs = ["yak_shears/_templates"]
+
+[tool.typed_jinja.globals]
+current_route = "str"
+static_url = "Callable[[str], str]"
+
 [tool.uv]
 required-version = ">=0.8.22"
 
@@ -202,17 +210,9 @@ torch = [
   {index = "pytorch-cpu", marker = "sys_platform != 'linux'"},
   {index = "pytorch-cu128", marker = "sys_platform == 'linux'"},
 ]
-typed-jinja = { path = "../../local-code/typed-jinja", editable = true }
+typed-jinja = {editable = true, path = "../../local-code/typed-jinja"}
 
 [tool.uv.workspace]
 members = [
   "agent-research-platform",
 ]
-
-[tool.typed_jinja]
-imports = ["from collections.abc import Callable"]
-template_dirs = ["yak_shears/_templates"]
-
-[tool.typed_jinja.globals]
-current_route = "str"
-static_url = "Callable[[str], str]"
