@@ -1,0 +1,5 @@
+Review syncthing of database in:
+claude --resume e9144381-5145-452a-b770-e3f7a05fa844
+
+Review deployment options to push out these new changes:
+claude --resume 1dab60b7-5ea4-4493-bc39-03de92f02791
