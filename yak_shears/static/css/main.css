@@ -1868,20 +1868,30 @@ pre code {
 	border-bottom: 1px solid var(--color-border);
 }
 
+/* The patch field. Recessed like the editor, because both are places the user
+   puts signal in; the query is typed, so it is set as signal too. */
 .search-input {
 	width: 100%;
+	min-height: var(--tap-target);
 	padding: var(--space-3);
-	border: 1px solid var(--color-border);
+	border: 1px solid var(--engrave);
 	border-radius: var(--radius-sm);
-	background: var(--color-surface);
-	color: var(--color-text);
-	font: inherit;
-	font-size: 1.1rem;
+	background: var(--well);
+	box-shadow: var(--inset-well);
+	color: var(--signal);
+	font-family: var(--font-signal);
+	font-size: 1.05rem;
+}
+
+.search-input::placeholder {
+	color: var(--legend-dim);
 }
 
 .search-input:focus {
-	border-color: var(--color-accent);
 	outline: none;
+	box-shadow:
+		var(--inset-well),
+		0 0 0 2px var(--color-accent);
 }
 
 .search-content {
@@ -1899,11 +1909,13 @@ pre code {
 
 .search-results-count {
 	padding: var(--space-3);
-	background: var(--color-surface-alt);
-	border-bottom: 1px solid var(--color-border);
-	font-size: 0.9rem;
-	color: var(--color-text-dim);
+	background: var(--panel);
+	border-bottom: 1px solid var(--engrave);
+	font-size: 0.6875rem;
 	font-weight: 600;
+	letter-spacing: 0.11em;
+	text-transform: uppercase;
+	color: var(--legend-dim);
 }
 
 .search-results-list {
@@ -1911,35 +1923,63 @@ pre code {
 	overflow-y: auto;
 }
 
+/* Routing list. Same unit grammar as the rack, so a result and a yak in the
+   listing are recognizably the same object seen from two places. The selected
+   row seats into the panel and lights its edge. */
 .search-result {
-	padding: var(--space-3);
-	border-bottom: 1px solid var(--color-border);
+	position: relative;
+	padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+	border-bottom: 1px solid var(--engrave);
 	cursor: pointer;
-	transition: background var(--transition-fast);
+	transition: background var(--throw);
 }
 
-.search-result:hover,
+.search-result:hover {
+	background: var(--panel-raised);
+}
+
 .search-result.selected {
-	background: var(--color-surface-alt);
+	background: var(--well);
+	box-shadow: var(--inset-well);
+}
+
+.search-result.selected::before {
+	content: "";
+	position: absolute;
+	inset: 0 auto 0 0;
+	width: 3px;
+	background: var(--color-accent);
 }
 
 /* Results are focusable so closing the preview modal can return focus to the
    one that opened it (search.js). Without this the landing spot is invisible. */
 .search-result:focus-visible {
-	background: var(--color-surface-alt);
+	background: var(--well);
 	outline: 2px solid var(--color-accent);
 	outline-offset: -2px;
 }
 
 .search-result__first-line {
 	font-weight: 600;
-	font-size: 0.9rem;
-	margin-bottom: var(--space-2);
+	font-size: 0.875rem;
+	margin-bottom: var(--space-1);
+	color: var(--legend);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
+/* The path is literal, so it is signal. Truncated from the left: the stem is
+   what identifies a yak, and the directory prefix repeats across results. */
 .search-result__path {
-	font-size: 0.8rem;
-	color: var(--color-text-dim);
+	direction: rtl;
+	text-align: left;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-family: var(--font-signal);
+	font-size: 0.75rem;
+	color: var(--legend-dim);
 }
 
 .search-preview {
@@ -1967,22 +2007,39 @@ pre code {
 }
 
 /* Full-width action bar to open the note in the editor (3.3) */
+/* Amber means armed, and a full-width slab of it spends the panel's one lit
+   color on a control that is always present. The bar is panel; the lamp beside
+   the label is what carries the state. */
 .search-preview__open {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	gap: 0.6em;
-	padding: var(--space-4);
-	background: var(--color-accent);
-	color: #000;
+	min-height: var(--tap-target);
+	padding: var(--space-3) var(--space-4);
+	background: var(--panel-raised);
+	color: var(--legend);
+	font-size: 0.75rem;
 	font-weight: 600;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
 	text-decoration: none;
-	border-top: 1px solid var(--color-border);
-	transition: filter var(--transition-fast);
+	border-top: 1px solid var(--engrave);
+	box-shadow: inset 0 1px 0 var(--engrave-light);
+	transition: background var(--throw);
+}
+
+.search-preview__open::before {
+	content: "";
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: var(--color-accent);
+	box-shadow: 0 0 6px color-mix(in srgb, var(--color-accent) 60%, transparent);
 }
 
 .search-preview__open:hover {
-	filter: brightness(0.96);
+	background: var(--panel);
 }
 
 .search-preview__hint {
