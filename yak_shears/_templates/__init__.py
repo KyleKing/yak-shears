@@ -82,16 +82,17 @@ ENV.globals["static_url"] = static_url
 
 
 _HASH_MASK = 2**31
-_SATURATIONS = (25, 30, 35, 40, 45)
-_LIGHTNESSES = (55, 60, 65, 70, 75)
+_SATURATIONS = (58, 64, 70, 76, 82)
+_LIGHTNESSES = (48, 53, 58, 63, 68)
 
 
 def get_category_color(category: str) -> str:
     """Deterministic muted color for a category name.
 
     Ports the djb2-based HSL scheme from the user's WezTerm config so tab and
-    category colors stay consistent: full-spectrum hue with constrained
-    saturation/lightness for muted, readable accents.
+    category colors stay consistent: full-spectrum hue, held to a saturation
+    and lightness band that stays legible as an anodized cap against the dark
+    panel. Muted values disappear into it.
 
     Returns:
         A CSS ``hsl(...)`` color string.

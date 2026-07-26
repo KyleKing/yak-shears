@@ -2,7 +2,7 @@
 
 import re
 
-from yak_shears._templates import get_category_color
+from yak_shears._templates import _LIGHTNESSES, _SATURATIONS, get_category_color
 
 _HSL_RE = re.compile(r"^hsl\((\d{1,3}), (\d{1,3})%, (\d{1,3})%\)$")
 
@@ -16,8 +16,8 @@ def test_category_color_is_valid_hsl() -> None:
     assert match
     hue, sat, light = (int(g) for g in match.groups())
     assert 0 <= hue < 360
-    assert sat in {25, 30, 35, 40, 45}
-    assert light in {55, 60, 65, 70, 75}
+    assert sat in _SATURATIONS
+    assert light in _LIGHTNESSES
 
 
 def test_category_color_is_deterministic() -> None:

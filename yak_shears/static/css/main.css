@@ -18,20 +18,25 @@
    other, so the two blocks below carry independent material values.
    ============================================================================ */
 :root {
-	--panel: #d5d8d4;
-	--panel-raised: #e2e5e0;
-	--well: #f1f2ef;
-	--engrave: #b0b4af;
-	--engrave-light: #eef0ec;
-	--legend: #23262a;
-	--legend-dim: #575c5a;
-	--signal: #101211;
+	/* Anodized charcoal, slightly blue rather than neutral: a painted grey panel
+	   is the timid rendition of this world, and it takes the life out of every
+	   cap and lamp mounted on it. The instrument is dark in both schemes; the
+	   light scheme lifts the panel for daylight rather than turning it white,
+	   because a console does not become paper when the sun comes up. */
+	--panel: #22262b;
+	--panel-raised: #2b3037;
+	--well: #14171a;
+	--engrave: #0a0c0e;
+	--engrave-light: #3d434b;
+	--legend: #e8ecf1;
+	--legend-dim: #99a3ae;
+	--signal: #f7f9fb;
 
 	/* Lamps. Only ever used for state, never for decoration. */
-	--lamp-live: #1f7a3d;
-	--lamp-warn: #a35d06;
-	--lamp-fault: #b1382c;
-	--lamp-off: #a8aca7;
+	--lamp-live: #3ddc7f;
+	--lamp-warn: #ffb02e;
+	--lamp-fault: #ff5c47;
+	--lamp-off: #464d55;
 
 	/* Legacy plumbing: 2600 lines and three JS files read these names. They now
 	   resolve to console materials so a surface reads correctly before its
@@ -42,9 +47,9 @@
 	--color-text: var(--legend);
 	--color-text-dim: var(--legend-dim);
 	--color-border: var(--engrave);
-	--color-accent: #e8a020;
+	--color-accent: #ffb02e;
 	--color-danger: var(--lamp-fault);
-	--color-link: #17557f;
+	--color-link: #6fb7ff;
 	--space-1: 0.25rem;
 	--space-2: 0.5rem;
 	--space-3: 0.75rem;
@@ -64,7 +69,17 @@
 	/* A well is milled into the panel: dark at the top lip where the light is
 	   occluded, with a thin catch-light along the bottom lip. */
 	--inset-well:
-		inset 0 1px 2px rgba(0, 0, 0, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.5);
+		inset 0 2px 4px rgba(0, 0, 0, 0.55), inset 0 -1px 0
+		rgba(255, 255, 255, 0.06);
+	/* Anodized aluminium is not a flat fill: it has a fine directional grain and
+	   catches light unevenly down the panel. Two cheap layers, no image. */
+	--anodize:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.06)),
+		repeating-linear-gradient(
+			90deg,
+			rgba(255, 255, 255, 0.015) 0 1px,
+			transparent 1px 3px
+		);
 	--transition-fast: 120ms ease;
 	--transition-smooth: 200ms ease-out;
 	/* Switch throw: fast to seat, slower to release, like a real key. */
@@ -85,35 +100,17 @@
 }
 
 @media (prefers-color-scheme: dark) {
+	/* Night at the desk. The panel drops nearly to black and the caps carry the
+	   surface, the way unlit hardware does. Only the materials move; the lamps
+	   and caps are the same parts under different room light. */
 	:root {
-		--panel: #1a1d21;
-		--panel-raised: #23272c;
-		--well: #101316;
-		--engrave: #0c0e10;
-		--engrave-light: #32373d;
-		--legend: #d3d8de;
-		--legend-dim: #8f979f;
-		--signal: #f2f5f8;
-
-		/* Lamps read as emitted light against a dark panel, so they run brighter
-		   here than the darker ink values daylight needs for contrast. */
-		--lamp-live: #4cc46e;
-		--lamp-warn: #e6a336;
-		--lamp-fault: #e8574a;
-		--lamp-off: #4a5057;
-
-		--color-accent: #f2ae35;
-		--color-link: #7fb4e0;
-		--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-		--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-		--shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
-		--inset-well:
-			inset 0 1px 3px rgba(0, 0, 0, 0.6), inset 0 -1px 0
-			rgba(255, 255, 255, 0.05);
-	}
-
-	.card__preview::after {
-		background: linear-gradient(transparent, var(--well));
+		--panel: #15181b;
+		--panel-raised: #1c2025;
+		--well: #0b0d0f;
+		--engrave: #000000;
+		--engrave-light: #2f353c;
+		--legend: #dfe4ea;
+		--legend-dim: #8d97a2;
 	}
 }
 
@@ -308,7 +305,7 @@ p {
 .header {
 	position: sticky;
 	top: 0;
-	background: var(--panel-raised);
+	background: var(--anodize), var(--panel-raised);
 	border-bottom: 1px solid var(--engrave);
 	box-shadow: 0 1px 0 var(--engrave-light);
 	padding: var(--space-4) 0;
@@ -689,21 +686,44 @@ p {
 .card {
 	position: relative;
 	display: grid;
-	grid-template-columns: 4px minmax(0, 1fr) auto;
+	grid-template-columns: 6px minmax(0, 1fr) auto;
 	align-items: stretch;
 	gap: 0 var(--space-4);
 	height: 5.5rem;
 	padding: 0;
-	background: var(--panel-raised);
+	/* The unit is tinted by its own category, faintly at rest and more strongly
+	   under the pointer. Six categories become six visibly different things,
+	   which is what a rack is for; a grey rack with a colored sliver is not. */
+	background:
+		linear-gradient(
+			90deg,
+			color-mix(
+				in srgb,
+				var(--card-accent-color, transparent) 13%,
+				transparent
+			),
+			transparent 42%
+		), var(--anodize), var(--panel-raised);
 	text-decoration: none;
 	color: inherit;
-	transition: background var(--throw);
+	transition: background-color var(--throw);
 }
 
-/* The anodized cap: category color as a solid machined edge on the unit, the
-   one place hue is allowed to carry meaning at this scale. */
+/* The anodized cap. Full-height and saturated, with a catch-light down its
+   inner edge so it reads as a machined part rather than a flat rule. */
 .card__cap {
 	background: var(--card-accent-color, var(--engrave));
+	box-shadow:
+		inset -1px 0 0 rgba(0, 0, 0, 0.35),
+		inset 1px 0 0 rgba(255, 255, 255, 0.22);
+}
+
+.card:first-child .card__cap {
+	border-radius: var(--radius-lg) 0 0 0;
+}
+
+.card:last-child .card__cap {
+	border-radius: 0 0 0 var(--radius-lg);
 }
 
 /* Level meter, reading word count against a 500-word full scale. Horizontal and
@@ -713,17 +733,33 @@ p {
 	position: relative;
 	display: block;
 	width: 3.5rem;
-	height: 8px;
-	border-radius: 1px;
+	height: 9px;
+	border-radius: 2px;
 	background: var(--well);
 	box-shadow: var(--inset-well);
 	overflow: hidden;
 }
 
+/* Unlit segments, so the meter reads as a scale with a level on it rather than
+   as an empty black slot. */
+.card__meter::before {
+	content: "";
+	position: absolute;
+	inset: 1px;
+	background: rgba(255, 255, 255, 0.1);
+	mask-image: repeating-linear-gradient(
+		to right,
+		#000 0 3px,
+		transparent 3px 5px
+	);
+}
+
 .card__meter::after {
 	content: "";
 	position: absolute;
-	inset: 1px 1px 1px 1px;
+	inset: 1px;
+	box-shadow: 0 0 5px
+		color-mix(in srgb, var(--card-accent-color, transparent) 60%, transparent);
 	/* Clipped rather than width-animated: animating width thrashes layout, and
 	   scaling would stretch the segment mask along with the fill. */
 	clip-path: inset(0 calc((1 - var(--card-fill, 0)) * 100%) 0 0);
@@ -740,7 +776,16 @@ p {
 }
 
 .card:hover {
-	background: var(--panel);
+	background:
+		linear-gradient(
+			90deg,
+			color-mix(
+				in srgb,
+				var(--card-accent-color, transparent) 30%,
+				transparent
+			),
+			transparent 55%
+		), var(--anodize), var(--panel);
 }
 
 .card__body {
@@ -812,11 +857,13 @@ p {
 	padding-left: 1.2em;
 }
 
+/* A fenced block inside a two-line index entry is a slab of dark that swamps
+   the row. In the rack it is just text on a faintly recessed ground. */
 .card__preview pre {
-	margin: 0.3em 0;
-	padding: 0.4em 0.6em;
-	background: var(--color-surface-alt);
-	border-radius: var(--radius-sm);
+	margin: 0;
+	padding: 0 0.35em;
+	background: rgba(255, 255, 255, 0.04);
+	border-radius: 2px;
 	overflow: hidden;
 }
 
@@ -901,8 +948,10 @@ p {
 	color: var(--legend);
 }
 
+/* An unpatched unit reads quieter, but this is text under a contrast budget,
+   so it steps down to the dim legend rather than to the unlit-lamp value. */
 .card__stat--links[data-patched="0"] {
-	color: var(--lamp-off);
+	color: var(--legend-dim);
 }
 
 .card__actions {

@@ -205,7 +205,7 @@
      </div>
     </details>
     <div class="cards">
-     <a class="card" href="/edit?yak=subdirectory-3/yak3.dj" style="--card-accent-color: hsl(261, 25%, 70%); --card-fill: 0.020">
+     <a class="card" href="/edit?yak=subdirectory-3/yak3.dj" style="--card-accent-color: hsl(261, 58%, 63%); --card-fill: 0.020">
       <span aria-hidden="true" class="card__cap">
       </span>
       <div class="card__body">
@@ -233,7 +233,7 @@
        </span>
       </div>
      </a>
-     <a class="card" href="/edit?yak=subdirectory-2/yak2.dj" style="--card-accent-color: hsl(244, 40%, 55%); --card-fill: 0.008">
+     <a class="card" href="/edit?yak=subdirectory-2/yak2.dj" style="--card-accent-color: hsl(244, 76%, 48%); --card-fill: 0.008">
       <span aria-hidden="true" class="card__cap">
       </span>
       <div class="card__body">
@@ -261,7 +261,7 @@
        </span>
       </div>
      </a>
-     <a class="card" href="/edit?yak=yak1.dj" style="--card-accent-color: hsl(160, 25%, 70%); --card-fill: 0.008">
+     <a class="card" href="/edit?yak=yak1.dj" style="--card-accent-color: hsl(160, 58%, 63%); --card-fill: 0.008">
       <span aria-hidden="true" class="card__cap">
       </span>
       <div class="card__body">
