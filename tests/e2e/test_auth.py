@@ -24,7 +24,7 @@ async def test_login_success(context: BrowserContext, page: Page, server_lifecyc
     # Should redirect to yaks page after successful login
     await page.wait_for_url("**/yaks")
     assert "/yaks" in page.url, f"Expected yaks page, got: {page.url}"
-    await expect(page.locator("h1")).to_contain_text("Yaks")
+    await expect(page.locator("h1")).to_contain_text("Vault")
 
 
 @pytest.mark.playwright
@@ -97,4 +97,4 @@ async def test_session_persistence(context: BrowserContext, page: Page, server_l
     await expect(page).to_have_url("/yaks")
 
     # Should still be authenticated
-    await expect(page.locator("h1")).to_contain_text("Yaks")
+    await expect(page.locator("h1")).to_contain_text("Vault")

@@ -1,13 +1,50 @@
+/* ============================================================================
+   THE CONSOLE
+
+   The surface is a console panel, not a page of cards. Three materials do all
+   the work and every component is built from them:
+
+     panel    the painted face things are mounted on
+     well     a recess milled into the panel; content and inputs sit down here
+     engrave  a groove cut into the panel, drawn as a dark line over a light
+              one so it reads as cut rather than as a border
+
+   On top of the materials sit the parts: screen-printed legends (uppercase,
+   tracked, never the content itself), anodized caps that carry category color,
+   lamps that indicate real state, and meters with real ballistics.
+
+   Both schemes are real consoles. Light is a painted grey-green panel under
+   daylight; dark is the same desk at night. Neither is an inversion of the
+   other, so the two blocks below carry independent material values.
+   ============================================================================ */
 :root {
-	--color-bg: #f5f3ef;
-	--color-surface: #ffffff;
-	--color-surface-alt: #fcfaf7;
-	--color-text: #000000;
-	--color-text-dim: #3d3a35;
-	--color-border: #d9d4cc;
-	--color-accent: #f7cf46;
-	--color-danger: #d93838;
-	--color-link: #0a58ca;
+	--panel: #d5d8d4;
+	--panel-raised: #e2e5e0;
+	--well: #f1f2ef;
+	--engrave: #b0b4af;
+	--engrave-light: #eef0ec;
+	--legend: #23262a;
+	--legend-dim: #575c5a;
+	--signal: #101211;
+
+	/* Lamps. Only ever used for state, never for decoration. */
+	--lamp-live: #1f7a3d;
+	--lamp-warn: #a35d06;
+	--lamp-fault: #b1382c;
+	--lamp-off: #a8aca7;
+
+	/* Legacy plumbing: 2600 lines and three JS files read these names. They now
+	   resolve to console materials so a surface reads correctly before its
+	   components are rebuilt. New components use the material names above. */
+	--color-bg: var(--panel);
+	--color-surface: var(--panel-raised);
+	--color-surface-alt: var(--well);
+	--color-text: var(--legend);
+	--color-text-dim: var(--legend-dim);
+	--color-border: var(--engrave);
+	--color-accent: #e8a020;
+	--color-danger: var(--lamp-fault);
+	--color-link: #17557f;
 	--space-1: 0.25rem;
 	--space-2: 0.5rem;
 	--space-3: 0.75rem;
@@ -16,14 +53,23 @@
 	--space-6: 2rem;
 	--space-7: 3rem;
 	--space-8: 4rem;
-	--radius-sm: 0.5rem;
-	--radius-lg: 0.75rem;
+	/* Panel hardware is machined, not pillowy. Caps and switches take the small
+	   radius; only lamps are round. */
+	--radius-sm: 3px;
+	--radius-lg: 5px;
 	--radius-pill: 999px;
 	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
 	--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.08);
 	--shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+	/* A well is milled into the panel: dark at the top lip where the light is
+	   occluded, with a thin catch-light along the bottom lip. */
+	--inset-well:
+		inset 0 1px 2px rgba(0, 0, 0, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.5);
 	--transition-fast: 120ms ease;
 	--transition-smooth: 200ms ease-out;
+	/* Switch throw: fast to seat, slower to release, like a real key. */
+	--throw: 70ms cubic-bezier(0.2, 0, 0.1, 1);
+	--settle: 260ms cubic-bezier(0.16, 1, 0.3, 1);
 	--action-bar-height: 60px;
 	/* Logo (2rem) plus the header's vertical padding and its bottom border.
 	   Fixed elements offset themselves by this; it used to exist only as an
@@ -40,29 +86,34 @@
 
 @media (prefers-color-scheme: dark) {
 	:root {
-		--color-bg: #121212;
-		--color-surface: #1c1c1b;
-		--color-surface-alt: #222221;
-		--color-text: #ffffff;
-		--color-text-dim: #c7c3ba;
-		--color-border: #2c2c2b;
-		--color-link: #6ea8fe;
+		--panel: #1a1d21;
+		--panel-raised: #23272c;
+		--well: #101316;
+		--engrave: #0c0e10;
+		--engrave-light: #32373d;
+		--legend: #d3d8de;
+		--legend-dim: #8f979f;
+		--signal: #f2f5f8;
+
+		/* Lamps read as emitted light against a dark panel, so they run brighter
+		   here than the darker ink values daylight needs for contrast. */
+		--lamp-live: #4cc46e;
+		--lamp-warn: #e6a336;
+		--lamp-fault: #e8574a;
+		--lamp-off: #4a5057;
+
+		--color-accent: #f2ae35;
+		--color-link: #7fb4e0;
 		--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
 		--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
 		--shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
-	}
-
-	.button--primary:hover {
-		background: #f4c935;
-		filter: brightness(0.95);
-	}
-
-	.login-form {
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+		--inset-well:
+			inset 0 1px 3px rgba(0, 0, 0, 0.6), inset 0 -1px 0
+			rgba(255, 255, 255, 0.05);
 	}
 
 	.card__preview::after {
-		background: linear-gradient(transparent, var(--color-surface));
+		background: linear-gradient(transparent, var(--well));
 	}
 }
 
@@ -70,13 +121,16 @@
 	box-sizing: border-box;
 }
 
-body {
-	margin: 0;
-	/* Nothing here is meant to scroll sideways. `clip` rather than `hidden`,
-	   because `hidden` would stop the sticky header from sticking. */
-	overflow-x: clip;
-	/* https://qwtel.com/posts/software/the-monospaced-system-ui-css-font-stack */
-	font-family:
+/* Two faces, two jobs. The panel is screen-printed, so its legends and chrome
+   are sans. Monospace is reserved for what is actually measured or literal:
+   note source, filenames, timestamps, counts. Setting everything in mono was
+   the old surface wearing "technical" as a costume.
+   Mono stack: https://qwtel.com/posts/software/the-monospaced-system-ui-css-font-stack */
+:root {
+	--font-legend:
+		ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+		"Helvetica Neue", Arial, sans-serif;
+	--font-signal:
 		ui-monospace,
 		Menlo, Monaco,
 		"Cascadia Mono", "Segoe UI Mono",
@@ -86,10 +140,46 @@ body {
 		"Fira Mono",
 		"Droid Sans Mono",
 		"Consolas", "Courier New", monospace;
-	background: var(--color-bg);
-	color: var(--color-text);
+}
+
+body {
+	margin: 0;
+	/* Nothing here is meant to scroll sideways. `clip` rather than `hidden`,
+	   because `hidden` would stop the sticky header from sticking. */
+	overflow-x: clip;
+	font-family: var(--font-legend);
+	background: var(--panel);
+	color: var(--legend);
 	line-height: 1.5;
 	font-size: 1rem;
+}
+
+/* Screen-printed onto the panel: small, tracked, uppercase, and never the
+   content itself. A legend names a control; it never carries the note. */
+.legend {
+	display: block;
+	font-size: 0.6875rem;
+	font-weight: 600;
+	letter-spacing: 0.11em;
+	text-transform: uppercase;
+	color: var(--legend-dim);
+}
+
+/* Anything literal or measured. Tabular figures so counts and dates in a
+   column of strips line up on the digit rather than drifting. */
+.signal {
+	font-family: var(--font-signal);
+	font-variant-numeric: tabular-nums;
+}
+
+/* A groove milled into the panel: the cut line with its catch-light below.
+   Used instead of a border wherever the panel divides into sections. */
+.engraved-rule {
+	height: 0;
+	margin: 0;
+	border: 0;
+	border-top: 1px solid var(--engrave);
+	border-bottom: 1px solid var(--engrave-light);
 }
 
 /* Skip to main content link for keyboard users */
@@ -145,10 +235,16 @@ h4 {
 	overflow-wrap: anywhere;
 }
 
+/* Section headings are screen-printed onto the panel rather than set as display
+   type: a console names its sections in small tracked caps, and a 2rem heading
+   over a bank of controls reads as a document, not an instrument. */
 h1 {
-	font-size: 2rem;
-	margin-bottom: var(--space-6);
-	letter-spacing: -0.02em;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--legend-dim);
+	margin-bottom: var(--space-4);
 }
 
 h2 {
@@ -203,20 +299,17 @@ p {
 	}
 }
 
+/* The top strip of the panel. Opaque, because a console face is metal: the
+   old translucent blur let content swim underneath it. The doubled bottom
+   border is the engraved groove separating this strip from the work surface. */
 .header {
 	position: sticky;
 	top: 0;
-	background: rgba(245, 243, 239, 0.95);
-	backdrop-filter: blur(10px);
-	border-bottom: 1px solid var(--color-border);
+	background: var(--panel-raised);
+	border-bottom: 1px solid var(--engrave);
+	box-shadow: 0 1px 0 var(--engrave-light);
 	padding: var(--space-4) 0;
 	z-index: 100;
-}
-
-@media (prefers-color-scheme: dark) {
-	.header {
-		background: rgba(18, 18, 18, 0.95);
-	}
 }
 
 .header__bar {
@@ -252,18 +345,29 @@ p {
 	white-space: nowrap;
 }
 
+.brand__name {
+	font-size: 0.8125rem;
+	font-weight: 600;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+}
+
+/* The maker's badge riveted to the panel: a square plate, not a round avatar. */
 .brand__logo {
 	width: 2rem;
 	height: 2rem;
 	flex-shrink: 0;
-	background: var(--color-accent);
-	border-radius: 50%;
+	background: var(--panel);
+	border: 1px solid var(--engrave);
+	border-radius: var(--radius-sm);
+	box-shadow: inset 0 1px 0 var(--engrave-light);
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 0.8rem;
+	font-size: 0.6875rem;
 	font-weight: 700;
-	color: #000;
+	letter-spacing: 0.08em;
+	color: var(--legend-dim);
 }
 
 /* ----------------------------------------------------------------------------
@@ -308,7 +412,9 @@ p {
 	height: 2px;
 	background: currentColor;
 	border-radius: 2px;
-	transition: transform var(--transition-fast), opacity var(--transition-fast);
+	transition:
+		transform var(--transition-fast),
+		opacity var(--transition-fast);
 }
 
 .nav__bars::before,
@@ -345,24 +451,54 @@ p {
 	padding: 0;
 }
 
+/* Panel switches. At rest a switch sits flush with the panel face; engaged, it
+   seats into a well and its legend lights. Travel is a 1px drop, which is the
+   whole gesture: hardware moves a little, not a lot. */
 .nav__link {
+	position: relative;
 	display: block;
 	text-decoration: none;
-	color: var(--color-text-dim);
+	color: var(--legend-dim);
 	padding: var(--space-2) var(--space-3);
-	border-radius: var(--radius-pill);
-	transition: background var(--transition-fast);
+	border: 1px solid transparent;
+	border-radius: var(--radius-sm);
+	font-size: 0.75rem;
+	font-weight: 600;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	transition:
+		background var(--throw),
+		color var(--throw),
+		transform var(--throw);
 }
 
 .nav__link:hover {
-	background: var(--color-surface-alt);
-	color: var(--color-text);
+	background: var(--panel);
+	border-color: var(--engrave);
+	color: var(--legend);
+}
+
+.nav__link:active {
+	transform: translateY(1px);
 }
 
 .nav__link--active {
+	background: var(--well);
+	border-color: var(--engrave);
+	box-shadow: var(--inset-well);
+	color: var(--legend);
+}
+
+/* The indicator that says which switch is engaged. */
+.nav__link--active::after {
+	content: "";
+	position: absolute;
+	left: var(--space-3);
+	right: var(--space-3);
+	bottom: 3px;
+	height: 2px;
+	border-radius: 1px;
 	background: var(--color-accent);
-	color: #000;
-	font-weight: 600;
 }
 
 @media (max-width: 768px) {
@@ -409,60 +545,83 @@ p {
 	font-weight: 600;
 }
 
+/* Every button on the panel is a key: a capped face standing slightly proud of
+   the panel, with a catch-light on its top edge and a shadow under its lower
+   lip. Pressing it takes the light off the top and drops it 1px. */
 .button {
 	display: inline-flex;
 	align-items: center;
+	justify-content: center;
+	min-height: var(--tap-target);
 	padding: var(--space-2) var(--space-4);
-	background: var(--color-surface);
-	color: var(--color-text);
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-pill);
+	background: var(--panel-raised);
+	color: var(--legend);
+	border: 1px solid var(--engrave);
+	border-radius: var(--radius-sm);
+	box-shadow:
+		inset 0 1px 0 var(--engrave-light),
+		0 1px 1px rgba(0, 0, 0, 0.12);
 	text-decoration: none;
-	font-weight: 500;
+	font-size: 0.75rem;
+	font-weight: 600;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
 	transition:
-		background var(--transition-smooth),
-		border-color var(--transition-smooth),
-		box-shadow var(--transition-smooth);
+		background var(--throw),
+		box-shadow var(--throw),
+		transform var(--throw);
 }
 
 .button:hover {
-	background: var(--color-surface-alt);
-	border-color: var(--color-text-dim);
+	background: var(--panel);
 }
 
+.button:active {
+	transform: translateY(1px);
+	box-shadow: var(--inset-well);
+}
+
+/* The armed key. Amber is the panel's one lit color and it means "this is the
+   action that will fire", so exactly one of these belongs in a control group. */
 .button--primary {
 	background: var(--color-accent);
-	color: #000;
-	border-color: var(--color-accent);
-	font-weight: 600;
+	color: #1b1206;
+	border-color: color-mix(in srgb, var(--color-accent) 70%, #000);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.45),
+		0 1px 1px rgba(0, 0, 0, 0.18);
 }
 
 .button--primary:hover {
-	background: #f4c935;
-	border-color: #f4c935;
+	background: color-mix(in srgb, var(--color-accent) 88%, #fff);
 }
 
 .button--sm {
+	min-height: 2rem;
 	padding: var(--space-2) var(--space-3);
-	font-size: 0.85rem;
-	font-weight: 500;
+	font-size: 0.6875rem;
+	letter-spacing: 0.08em;
 }
 
 .button--secondary {
-	background: var(--color-surface-alt);
-	color: var(--color-text);
-	border-color: var(--color-border);
+	background: var(--panel);
+	color: var(--legend-dim);
 }
 
 .button--secondary:hover {
-	background: var(--color-surface);
-	border-color: var(--color-text-dim);
+	background: var(--panel-raised);
+	color: var(--legend);
 }
 
-.button--secondary.active {
-	background: var(--color-accent);
-	color: #000;
-	border-color: var(--color-accent);
+/* A latched switch stays seated once thrown: filter chips and view modes read
+   their state from depth rather than from a fill color. */
+.button--secondary.active,
+.button--sm.button--primary {
+	background: var(--well);
+	color: var(--legend);
+	box-shadow:
+		var(--inset-well),
+		inset 0 -2px 0 var(--color-accent);
 }
 
 .button--danger {
@@ -497,85 +656,129 @@ p {
 	justify-content: center;
 }
 
+/* ----------------------------------------------------------------------------
+   The rack
+
+   A grid of equal cards makes every note look like every other note, which is
+   why the old listing had to be read rather than scanned. The rack is one
+   column of channel strips instead: each note is a unit whose category cap,
+   level meter, and lamp are all in the same place on every row, so the column
+   of readouts can be swept in one pass. Width is capped at reading measure
+   rather than stretched to the viewport.
+   ---------------------------------------------------------------------------- */
 .cards {
-	display: grid;
-	gap: var(--space-5);
-	/* At most three columns so a lone card never stretches full width (1.1) */
-	grid-template-columns: 1fr;
-	margin-top: var(--space-6);
-}
-
-@media (min-width: 640px) {
-	.cards {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-}
-
-@media (min-width: 960px) {
-	.cards {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-	}
-}
-
-.card {
 	display: flex;
 	flex-direction: column;
-	padding: var(--space-5);
-	background: var(--color-surface);
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-sm);
-	box-shadow: var(--shadow-sm);
-	transition:
-		transform var(--transition-smooth),
-		box-shadow var(--transition-smooth);
-	text-decoration: none;
-	color: inherit;
-	position: relative;
+	gap: 1px;
+	max-width: 72rem;
+	margin-top: var(--space-6);
+	background: var(--engrave);
+	border: 1px solid var(--engrave);
+	border-radius: var(--radius-lg);
+	/* The 1px flex gap shows the rail through as a hairline between units, so
+	   the strips read as mounted in one frame rather than as floating cards. */
 	overflow: hidden;
 }
 
-/* Word-count meter: accent fill spans (words / 500) of the card width (1.2) */
+/* Every unit is exactly one rack height. Notes whose first blocks happen to be
+   short or tall must not change the row pitch, or the readout column stops
+   being a column. */
+.card {
+	position: relative;
+	display: grid;
+	grid-template-columns: 4px minmax(0, 1fr) auto;
+	align-items: stretch;
+	gap: 0 var(--space-4);
+	height: 5.5rem;
+	padding: 0;
+	background: var(--panel-raised);
+	text-decoration: none;
+	color: inherit;
+	transition: background var(--throw);
+}
+
+/* The anodized cap: category color as a solid machined edge on the unit, the
+   one place hue is allowed to carry meaning at this scale. */
+.card__cap {
+	background: var(--card-accent-color, var(--engrave));
+}
+
+/* Level meter, reading word count against a 500-word full scale. Horizontal and
+   segmented like a bargraph, so a column of them reads as a bank of meters and
+   a long note is distinguishable from a stub without reading either. */
 .card__meter {
+	position: relative;
+	display: block;
+	width: 3.5rem;
+	height: 8px;
+	border-radius: 1px;
+	background: var(--well);
+	box-shadow: var(--inset-well);
+	overflow: hidden;
+}
+
+.card__meter::after {
+	content: "";
 	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	height: 4px;
-	background: linear-gradient(
+	inset: 1px auto 1px 1px;
+	width: calc(var(--card-fill, 0) * (100% - 2px));
+	background: var(--card-accent-color, var(--legend-dim));
+	/* Segments, not a smooth bar: a bargraph reads as an instrument and makes
+	   small differences in level legible at this size. */
+	mask-image: repeating-linear-gradient(
 		to right,
-		var(--card-accent-color, var(--color-border)) calc(var(--card-fill, 0) * 100%),
-		var(--color-border) calc(var(--card-fill, 0) * 100%)
+		#000 0 3px,
+		transparent 3px 5px
 	);
+	/* Ballistics: the needle settles rather than snapping into place. */
+	transition: width var(--settle);
 }
 
 .card:hover {
-	transform: translateY(-2px);
-	box-shadow: var(--shadow-lg);
+	background: var(--panel);
 }
 
 .card__body {
-	flex: 1;
-	margin-top: var(--space-2);
-	margin-bottom: var(--space-3);
-	color: var(--color-text-dim);
+	min-width: 0;
+	align-self: center;
+	overflow: hidden;
+	padding: var(--space-3) 0;
+	color: var(--legend-dim);
 }
 
-/* Compact rendered Djot preview: small type, headers bold but not enlarged (1.5) */
+/* The unit's name, lifted from the note's first line by the render script. A
+   strip has to be identifiable before it is read. */
+.card__name {
+	margin-bottom: var(--space-1);
+	color: var(--legend);
+	font-size: 0.9375rem;
+	font-weight: 600;
+	line-height: 1.35;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Two lines of content and no more. Every unit is the same height, because a
+   rack whose rows jump around cannot be swept. Line-clamp rather than a max
+   height, so a partial third line never peeks under the fade. */
 .card__preview {
 	position: relative;
-	max-height: 8rem;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	height: 2.2rem;
 	overflow: hidden;
-	font-size: 0.8rem;
-	line-height: 1.5;
+	font-size: 0.8125rem;
+	line-height: 1.35;
 	white-space: normal;
 }
 
+/* The clamp already truncates cleanly, so the old fade only muddied the
+   last line. Ellipsis does the work instead. */
 .card__preview::after {
-	content: "";
-	position: absolute;
-	inset: auto 0 0 0;
-	height: 2rem;
-	background: linear-gradient(transparent, var(--color-surface));
+	content: none;
 }
 
 .card__preview > :first-child {
@@ -585,18 +788,22 @@ p {
 .card__preview .card__h {
 	font-size: 1em;
 	font-weight: 700;
-	margin: 0.5em 0 0.2em;
-	color: var(--color-text);
+	margin: 0 0 0.2em;
+	color: var(--legend);
 	line-height: 1.3;
 }
 
-.card__preview p {
-	margin: 0 0 0.4em;
+/* Block margins inside the preview push the second line past the clip and leave
+   a sliced third line showing. Everything here runs on the same leading. */
+.card__preview p,
+.card__preview ul,
+.card__preview ol,
+.card__preview blockquote {
+	margin: 0;
 }
 
 .card__preview ul,
 .card__preview ol {
-	margin: 0.2em 0;
 	padding-left: 1.2em;
 }
 
@@ -620,13 +827,14 @@ p {
 .card__tags {
 	display: flex;
 	flex-wrap: wrap;
-	gap: var(--space-2) var(--space-3);
-	margin-bottom: var(--space-2);
+	gap: var(--space-1) var(--space-3);
+	margin-top: var(--space-2);
 }
 
 .card__tag {
-	color: var(--color-text-dim);
-	font-size: 0.72rem;
+	color: var(--legend-dim);
+	font-family: var(--font-signal);
+	font-size: 0.6875rem;
 }
 
 .card__tag::before {
@@ -642,54 +850,54 @@ p {
 	text-underline-offset: 2px;
 }
 
-/* Boardgame-style footer: a bracketed category token on the left, mono stats on
-   the right, ruled off from the body above. */
+/* The readout: the right-hand end of every unit, where the same four values sit
+   at the same x-position on every row. This column is the thing that gets
+   scanned; the note text is what gets read once a row is chosen. */
+/* Fixed track widths, not flex: the point of the readout is that the category,
+   the date, and the patch count land on the same x-position in every unit, so
+   the eye reads down a column instead of hunting along each row. */
 .card__meta {
-	display: flex;
+	display: grid;
+	grid-template-columns: 7rem 5.5rem auto;
 	align-items: center;
-	justify-content: space-between;
-	gap: var(--space-3);
-	padding-top: var(--space-3);
-	border-top: 1px solid var(--color-border);
-	font-size: 0.72rem;
+	gap: var(--space-4);
+	padding: var(--space-3) var(--space-4) var(--space-3) 0;
+	font-size: 0.6875rem;
 }
 
 .card__chip {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.45em;
-	padding: 0.15em 0.55em;
-	border: 1px solid var(--color-border);
-	border-radius: 3px;
-	background: var(--color-surface-alt);
-	color: var(--color-text);
+	color: var(--legend-dim);
+	font-size: 0.625rem;
 	font-weight: 600;
-	text-transform: lowercase;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	text-align: right;
 	white-space: nowrap;
-}
-
-.card__chip::before {
-	content: "";
-	width: 0.55em;
-	height: 0.55em;
-	border-radius: 2px;
-	background: var(--card-accent-color, var(--color-border));
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .card__stats {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.2em 0.7em;
-	justify-content: flex-end;
-	color: var(--color-text-dim);
+	display: grid;
+	gap: 0.25em;
+	justify-items: end;
+	color: var(--legend-dim);
+	font-family: var(--font-signal);
+	font-variant-numeric: tabular-nums;
 }
 
 .card__stat {
 	white-space: nowrap;
 }
 
+/* Patch points. Links are the panel's routing, so the count reads as how many
+   connections this unit has rather than as a generic statistic. */
 .card__stat--links {
-	font-variant-numeric: tabular-nums;
+	color: var(--legend);
+}
+
+.card__stat--links[data-patched="0"] {
+	color: var(--lamp-off);
 }
 
 .card__actions {
@@ -997,7 +1205,8 @@ pre code {
 	white-space: pre;
 	overflow: auto;
 	flex: 1;
-	font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+	font-family:
+		ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 	font-size: 0.9375rem;
 }
 
@@ -1201,10 +1410,14 @@ pre code {
 	/* With the keyboard up, ride directly above it (the Save bar is behind the
 	   keyboard anyway). With it down, sit above the Save bar instead of on top
 	   of it. */
-	bottom: max(var(--keyboard-inset, 0px), calc(var(--action-bar-height) + var(--safe-bottom)));
+	bottom: max(
+		var(--keyboard-inset, 0px),
+		calc(var(--action-bar-height) + var(--safe-bottom))
+	);
 	gap: var(--space-1);
 	align-items: center;
-	padding: var(--space-2) calc(var(--space-2) + var(--safe-left)) var(--space-2) calc(var(--space-2) + var(--safe-right));
+	padding: var(--space-2) calc(var(--space-2) + var(--safe-left)) var(--space-2)
+		calc(var(--space-2) + var(--safe-right));
 	background: var(--color-surface-alt);
 	border-top: 1px solid var(--color-border);
 	box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12);
@@ -1416,16 +1629,36 @@ pre code {
 }
 
 .page-info {
-	font-size: 0.95rem;
-	color: var(--color-text-dim);
+	font-family: var(--font-signal);
+	font-size: 0.75rem;
+	font-variant-numeric: tabular-nums;
+	color: var(--legend-dim);
 	margin-bottom: var(--space-5);
 }
 
 /* ----------------------------------------------------------------------------
    /yaks header and collapsible controls
    ---------------------------------------------------------------------------- */
+.yaks-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-4);
+	flex-wrap: wrap;
+}
+
 .yaks-head__title {
 	margin-bottom: var(--space-2);
+}
+
+/* The vault path is literal, so it is set as signal rather than as legend. */
+.yaks-head__path {
+	font-family: var(--font-signal);
+	font-size: 0.875rem;
+	font-weight: 400;
+	letter-spacing: 0;
+	text-transform: none;
+	color: var(--legend);
 }
 
 .yaks-controls__toggle {
@@ -1466,12 +1699,13 @@ pre code {
 	margin-bottom: var(--space-4);
 }
 
-.sort-controls__label {
-	font-size: 0.8rem;
+.sort-controls__label,
+.filter-controls__label {
+	font-size: 0.6875rem;
 	font-weight: 600;
 	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	color: var(--color-text-dim);
+	letter-spacing: 0.11em;
+	color: var(--legend-dim);
 }
 
 .filter-controls {
@@ -1482,39 +1716,52 @@ pre code {
 	margin-bottom: var(--space-5);
 }
 
-.filter-controls__label {
-	font-size: 0.8rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	color: var(--color-text-dim);
-}
-
 .pagination {
 	display: flex;
 	justify-content: center;
-	gap: var(--space-2);
+	align-items: center;
+	gap: var(--space-1);
 	flex-wrap: wrap;
-	margin-top: var(--space-5);
+	margin-top: var(--space-6);
 }
 
 .pagination__link {
-	padding: var(--space-2) var(--space-3);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: var(--tap-target);
+	min-height: var(--tap-target);
+	padding: 0 var(--space-3);
 	text-decoration: none;
-	border-radius: var(--radius-pill);
-	font-weight: 500;
-	transition: background var(--transition-fast);
-	color: var(--color-text);
+	border: 1px solid transparent;
+	border-radius: var(--radius-sm);
+	font-family: var(--font-signal);
+	font-size: 0.8125rem;
+	font-variant-numeric: tabular-nums;
+	transition:
+		background var(--throw),
+		transform var(--throw);
+	color: var(--legend-dim);
 }
 
 .pagination__link--active {
-	background: var(--color-accent);
-	color: #000;
+	background: var(--well);
+	border-color: var(--engrave);
+	box-shadow:
+		var(--inset-well),
+		inset 0 -2px 0 var(--color-accent);
+	color: var(--legend);
 	font-weight: 600;
 }
 
 .pagination__link:hover:not(.pagination__link--active) {
-	background: var(--color-surface-alt);
+	background: var(--panel-raised);
+	border-color: var(--engrave);
+	color: var(--legend);
+}
+
+.pagination__link:active {
+	transform: translateY(1px);
 }
 
 .text-center {
@@ -2145,7 +2392,10 @@ pre code {
 	overflow: hidden;
 	min-height: 0; /* Critical for nested flex overflow */
 	flex: 1;
-	padding-bottom: calc(var(--action-bar-height) + var(--space-3)); /* Space for fixed action bar */
+	padding-bottom: calc(
+		var(--action-bar-height) +
+		var(--space-3)
+	); /* Space for fixed action bar */
 }
 
 /* The metadata panel itself - starts off-screen */
@@ -2468,7 +2718,11 @@ pre code {
 	}
 
 	.editor-main {
-		min-height: calc(100dvh - var(--header-height, 60px) - var(--action-bar-height));
+		min-height: calc(
+			100dvh -
+			var(--header-height, 60px) -
+			var(--action-bar-height)
+		);
 		padding-bottom: calc(var(--action-bar-height) + var(--safe-bottom));
 	}
 
@@ -2500,7 +2754,12 @@ pre code {
 		/* 45vh of trailing overscroll is a desktop luxury; on a phone it reads as
 		   a broken, endlessly tall panel. */
 		padding-bottom: 25vh;
-		min-height: calc(100dvh - var(--header-height, 60px) - var(--action-bar-height) - var(--space-6));
+		min-height: calc(
+			100dvh -
+			var(--header-height, 60px) -
+			var(--action-bar-height) -
+			var(--space-6)
+		);
 	}
 
 	.editor-container .preview {

@@ -21,7 +21,7 @@ get_category_color: Callable[[str], str]
 
 {% block content %}
   <div class="yaks-head">
-    <h1 class="yaks-head__title">Yaks in {{ yak_dir_label }}</h1>
+    <h1 class="yaks-head__title">Vault <span class="yaks-head__path">{{ yak_dir_label }}</span></h1>
     <p class="page-info">{{ yaks | length }} of {{ total_yaks }} yaks &middot; page {{ current_page }} of {{ total_pages }}</p>
   </div>
 
@@ -63,32 +63,44 @@ get_category_color: Callable[[str], str]
       {% for info in yaks %}
         {% set fill = ([info.word_count, 500] | min) / 500 %}
         <a href="/edit?yak={{ info.path }}" class="card" style="--card-accent-color: {{ get_category_color(info.category) }}; --card-fill: {{ '%.3f' | format(fill) }}">
-          <div class="card__meter" title="{{ info.word_count }} words" aria-hidden="true"></div>
+          <span class="card__cap" aria-hidden="true"></span>
           <div class="card__body">
             <div class="card__preview" data-src="{{ info.preview }}">{{ info.preview }}{% if info.truncated %}…{% endif %}</div>
+            {% if info.tags %}
+              <div class="card__tags">
+                {% for tag in info.tags %}<span class="card__tag">{{ tag }}</span>{% endfor %}
+              </div>
+            {% endif %}
           </div>
-          {% if info.tags %}
-            <div class="card__tags">
-              {% for tag in info.tags %}<span class="card__tag">#{{ tag }}</span>{% endfor %}
-            </div>
-          {% endif %}
           <div class="card__meta">
-            <span class="card__chip">{{ info.category | title }}</span>
+            <span class="card__chip">{{ info.category }}</span>
             <span class="card__stats">
               <span class="card__stat card__stat--date" title="Last modified">{{ info.last_modified[:10] }}</span>
-              <span class="card__stat card__stat--links" title="{{ info.link_count }} link{{ '' if info.link_count == 1 else 's' }}">⇗ {{ info.link_count }}</span>
+              <span class="card__stat card__stat--links" data-patched="{{ info.link_count }}" title="{{ info.link_count }} link{{ '' if info.link_count == 1 else 's' }}">{{ info.link_count }} ⇗</span>
             </span>
+            <span class="card__meter" title="{{ info.word_count }} words" aria-hidden="true"></span>
           </div>
         </a>
       {% endfor %}
     </div>
     <script>
-      // Render Djot previews into cards (compact, header-styled). See main.css .card__preview.
+      // Render Djot previews into rack units (compact, header-styled). See main.css .card__preview.
       document.querySelectorAll(".card__preview").forEach((el) => {
         const src = el.dataset.src || "";
         if (window.djot && src) {
           try {
             el.innerHTML = window.djot.renderHTML(window.djot.parse(src));
+            // A strip has to be identifiable before it is read, so the note's
+            // first block is promoted out of the preview to name the unit.
+            const lead = el.querySelector("h1, h2, h3, h4, h5, h6, p, li");
+            const leadText = lead && lead.textContent.trim();
+            if (leadText) {
+              const name = document.createElement("div");
+              name.className = "card__name";
+              name.textContent = leadText;
+              el.parentElement.prepend(name);
+              lead.remove();
+            }
             // Demote rendered headings to styled divs so cards don't inject
             // page-level <h1>..<h6> into the document outline.
             el.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((h) => {

@@ -148,7 +148,10 @@
    <div class="container">
     <div class="yaks-head">
      <h1 class="yaks-head__title">
-      Yaks in ./yak_test_dir
+      Vault
+      <span class="yaks-head__path">
+       ./yak_test_dir
+      </span>
      </h1>
      <p class="page-info">
       3 of 3 yaks · page 1 of 1
@@ -198,8 +201,8 @@
     </details>
     <div class="cards">
      <a class="card" href="/edit?yak=subdirectory-3/yak3.dj" style="--card-accent-color: hsl(261, 25%, 70%); --card-fill: 0.020">
-      <div aria-hidden="true" class="card__meter" title="10 words">
-      </div>
+      <span aria-hidden="true" class="card__cap">
+      </span>
       <div class="card__body">
        <div class="card__preview" data-src="# Yak 3
   
@@ -211,21 +214,23 @@
       </div>
       <div class="card__meta">
        <span class="card__chip">
-        Subdirectory-3
+        subdirectory-3
        </span>
        <span class="card__stats">
         <span class="card__stat card__stat--date" title="Last modified">
          2025-05-01
         </span>
-        <span class="card__stat card__stat--links" title="0 links">
-         ⇗ 0
+        <span class="card__stat card__stat--links" data-patched="0" title="0 links">
+         0 ⇗
         </span>
+       </span>
+       <span aria-hidden="true" class="card__meter" title="10 words">
        </span>
       </div>
      </a>
      <a class="card" href="/edit?yak=subdirectory-2/yak2.dj" style="--card-accent-color: hsl(244, 40%, 55%); --card-fill: 0.008">
-      <div aria-hidden="true" class="card__meter" title="4 words">
-      </div>
+      <span aria-hidden="true" class="card__cap">
+      </span>
       <div class="card__body">
        <div class="card__preview" data-src="# Yak 2
   
@@ -237,21 +242,23 @@
       </div>
       <div class="card__meta">
        <span class="card__chip">
-        Subdirectory-2
+        subdirectory-2
        </span>
        <span class="card__stats">
         <span class="card__stat card__stat--date" title="Last modified">
          2025-05-01
         </span>
-        <span class="card__stat card__stat--links" title="1 link">
-         ⇗ 1
+        <span class="card__stat card__stat--links" data-patched="1" title="1 link">
+         1 ⇗
         </span>
+       </span>
+       <span aria-hidden="true" class="card__meter" title="4 words">
        </span>
       </div>
      </a>
      <a class="card" href="/edit?yak=yak1.dj" style="--card-accent-color: hsl(160, 25%, 70%); --card-fill: 0.008">
-      <div aria-hidden="true" class="card__meter" title="4 words">
-      </div>
+      <span aria-hidden="true" class="card__cap">
+      </span>
       <div class="card__body">
        <div class="card__preview" data-src="# Yak 1
   
@@ -263,26 +270,39 @@
       </div>
       <div class="card__meta">
        <span class="card__chip">
-        Yak_test_dir
+        yak_test_dir
        </span>
        <span class="card__stats">
         <span class="card__stat card__stat--date" title="Last modified">
          2025-05-01
         </span>
-        <span class="card__stat card__stat--links" title="1 link">
-         ⇗ 1
+        <span class="card__stat card__stat--links" data-patched="1" title="1 link">
+         1 ⇗
         </span>
+       </span>
+       <span aria-hidden="true" class="card__meter" title="4 words">
        </span>
       </div>
      </a>
     </div>
     <script>
-     // Render Djot previews into cards (compact, header-styled). See main.css .card__preview.
+     // Render Djot previews into rack units (compact, header-styled). See main.css .card__preview.
         document.querySelectorAll(".card__preview").forEach((el) => {
           const src = el.dataset.src || "";
           if (window.djot && src) {
             try {
               el.innerHTML = window.djot.renderHTML(window.djot.parse(src));
+              // A strip has to be identifiable before it is read, so the note's
+              // first block is promoted out of the preview to name the unit.
+              const lead = el.querySelector("h1, h2, h3, h4, h5, h6, p, li");
+              const leadText = lead && lead.textContent.trim();
+              if (leadText) {
+                const name = document.createElement("div");
+                name.className = "card__name";
+                name.textContent = leadText;
+                el.parentElement.prepend(name);
+                lead.remove();
+              }
               // Demote rendered headings to styled divs so cards don't inject
               // page-level <h1>..<h6> into the document outline.
               el.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((h) => {
