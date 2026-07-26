@@ -38,6 +38,20 @@ backlinks: list[tuple[str, str]]
         <button class="button button--sm" type="button" id="draft-local-btn">local</button>
       </div>
 
+      {# The note's identity used to live only inside the metadata panel, which
+         ships closed, so the editor gave no sign of which yak was open. This
+         plate is always visible. #}
+      <div class="editor-head" style="--head-accent: {{ category_color }}">
+        <span class="editor-head__cap" aria-hidden="true"></span>
+        <span class="editor-head__name">{{ yak_name }}</span>
+        <span class="editor-head__category">{{ category }}</span>
+        <div class="view-toggle" role="group" aria-label="View mode">
+          <button class="button button--sm" id="editor-only-btn" data-view="editor">editor</button>
+          <button class="button button--sm" id="side-by-side-btn" data-view="side-by-side">split</button>
+          <button class="button button--sm" id="preview-only-btn" data-view="preview">preview</button>
+        </div>
+      </div>
+
       <div class="editor-container" id="editor-container">
         {# Form wrapper required for HTMX POST - see handlers.py:edit_yak_handler #}
         <form id="editor-form" method="post">
@@ -111,16 +125,8 @@ backlinks: list[tuple[str, str]]
         <span class="panel-file__category">{{ category }}</span>
       </div>
 
-      {# View mode toggle: Editor | Split | Preview #}
-      <section class="metadata-section">
-        <div class="metadata-section__label">view</div>
-        <div class="view-toggle">
-          {# data-view values: "editor" | "side-by-side" | "preview" - see editor.js:setViewMode() #}
-          <button class="button button--sm" id="editor-only-btn" data-view="editor">editor</button>
-          <button class="button button--sm" id="side-by-side-btn" data-view="side-by-side">split</button>
-          <button class="button button--sm" id="preview-only-btn" data-view="preview">preview</button>
-        </div>
-      </section>
+      {# View mode toggle lives on the editor head plate (data-view values:
+         "editor" | "side-by-side" | "preview", see editor.js:setViewMode). #}
 
       {# Word wrap toggle (2.5) - default off #}
       <section class="metadata-section">

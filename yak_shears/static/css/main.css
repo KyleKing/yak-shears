@@ -237,8 +237,11 @@ h4 {
 
 /* Section headings are screen-printed onto the panel rather than set as display
    type: a console names its sections in small tracked caps, and a 2rem heading
-   over a bank of controls reads as a document, not an instrument. */
-h1 {
+   over a bank of controls reads as a document, not an instrument.
+
+   Scoped away from rendered note content. A heading the user wrote is theirs
+   and stays a heading; only the panel's own labels are legends. */
+h1:not(.preview-content h1, .card__preview h1, .search-preview h1) {
 	font-size: 0.8125rem;
 	font-weight: 700;
 	letter-spacing: 0.14em;
@@ -1084,42 +1087,109 @@ pre code {
 }
 
 /* View Mode Toggle - appears in metadata panel */
+/* ----------------------------------------------------------------------------
+   The center section
+
+   The note being edited is the signal, so it sits in a milled well and the
+   panel around it stays quiet. The head plate above the well is the one thing
+   that never scrolls away: which yak is open, what it is filed under, and
+   which source is being monitored.
+   ---------------------------------------------------------------------------- */
+.editor-head {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	min-height: var(--tap-target);
+	padding: var(--space-2) var(--space-3);
+	background: var(--panel-raised);
+	border: 1px solid var(--engrave);
+	border-bottom: 0;
+	border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.editor-head__cap {
+	width: 3px;
+	align-self: stretch;
+	margin: var(--space-1) 0;
+	border-radius: 1px;
+	background: var(--head-accent, var(--engrave));
+}
+
+.editor-head__name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-family: var(--font-signal);
+	font-size: 0.8125rem;
+	color: var(--legend);
+}
+
+.editor-head__category {
+	flex: 1;
+	font-size: 0.625rem;
+	font-weight: 600;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--legend-dim);
+}
+
+/* Source selector. One control with three positions rather than three loose
+   buttons, so the seated position reads as the monitored source. */
 .view-toggle {
 	display: flex;
-	gap: var(--space-2);
-	background: var(--color-surface-alt);
-	padding: var(--space-2);
-	border-radius: var(--radius-pill);
-	border: 1px solid var(--color-border);
+	flex-shrink: 0;
+	gap: 1px;
+	background: var(--engrave);
+	padding: 1px;
+	border-radius: var(--radius-sm);
+	border: 1px solid var(--engrave);
 }
 
 .view-toggle .button {
-	background: transparent;
-	color: var(--color-text-dim);
-	border: none;
-	font-weight: 500;
+	min-height: 1.85rem;
+	background: var(--panel-raised);
+	color: var(--legend-dim);
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.view-toggle .button:first-child {
+	border-radius: 2px 0 0 2px;
+}
+
+.view-toggle .button:last-child {
+	border-radius: 0 2px 2px 0;
 }
 
 .view-toggle .button:hover {
-	background: var(--color-surface);
-	color: var(--color-text);
+	background: var(--panel);
+	color: var(--legend);
 }
 
 .view-toggle .button.active {
-	background: var(--color-accent);
-	color: #000;
-	font-weight: 600;
+	background: var(--well);
+	color: var(--legend);
+	box-shadow:
+		var(--inset-well),
+		inset 0 -2px 0 var(--color-accent);
 }
 
-/* Main editor container - holds form (with editor) and preview */
+/* Main editor container - holds form (with editor) and preview.
+   The 1px gap lets the frame show through between source and monitor, so the
+   two panes read as bays milled into one chassis rather than as two cards. */
 .editor-container {
 	display: flex;
-	gap: var(--space-4);
+	gap: 1px;
 	/* Comfortable centered reading width so ultrawide screens leave gutters (2.6) */
 	width: 100%;
 	max-width: 1200px;
 	margin: 0 auto;
-	padding: var(--space-4);
+	padding: 0;
+	background: var(--engrave);
+	border: 1px solid var(--engrave);
+	border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 	flex: 1;
 	min-height: 0; /* Critical: allows overflow scrolling in flex children */
 	overflow: hidden;
@@ -1192,13 +1262,17 @@ pre code {
    CodeJar Editor Element
    The actual contenteditable div where users type
    ============================================================================ */
+/* The source bay. Recessed into the chassis and set in the brightest ink on
+   the panel, because what you type is the signal everything else serves. */
 .editor {
-	background: var(--color-surface);
-	border-radius: var(--radius-sm);
-	border: 2px solid var(--color-border);
+	background: var(--well);
+	box-shadow: var(--inset-well);
+	border: 0;
+	border-radius: 0;
+	color: var(--signal);
 	line-height: 1.6;
 	min-height: 300px;
-	padding: var(--space-4);
+	padding: var(--space-5);
 	/* Sublime-style room to scroll the last line up past the fold (2.1) */
 	padding-bottom: var(--editor-overscroll, 45vh);
 	/* Default is unwrapped; the wrap toggle adds .wrap (2.5) */
@@ -1255,26 +1329,23 @@ pre code {
    Djot Preview Pane
    Shows rendered HTML from Djot parser (via editor.js:renderPreview)
    ============================================================================ */
+/* The monitor bay. Sits on the panel face rather than down in a well, so
+   source and rendered output are told apart by depth alone. */
 .preview {
-	background: #fff;
-	border-radius: var(--radius-sm);
-	border: 1px solid var(--color-border);
+	background: var(--panel-raised);
+	border: 0;
+	border-radius: 0;
 	padding: var(--space-5);
 	min-height: 300px;
 	overflow-y: auto;
-	box-shadow: var(--shadow-sm);
-}
-
-@media (prefers-color-scheme: dark) {
-	.preview {
-		background: var(--color-surface);
-	}
 }
 
 .preview-content {
 	line-height: 1.7;
 	font-size: 1rem;
-	color: var(--color-text);
+	color: var(--legend);
+	/* Rendered prose is read, not scanned, so it takes a reading measure. */
+	max-width: 68ch;
 }
 
 .preview-content h1,
@@ -1366,16 +1437,18 @@ pre code {
    Contains Save button, Menu button, and status indicator
    Fixed position ensures it's always visible during scrolling
    ============================================================================ */
+/* The transport strip along the bottom of the panel. Opaque like the header:
+   a console face is solid, and translucency let note text swim under the
+   controls while scrolling. */
 .editor__actions {
 	position: fixed;
 	bottom: 0;
 	left: 0;
 	right: 0;
-	background: rgba(245, 243, 239, 0.95); /* Semi-transparent light theme */
-	backdrop-filter: blur(10px); /* Blur content behind the bar */
+	background: var(--panel-raised);
 	padding: var(--space-3) 0 calc(var(--space-3) + var(--safe-bottom));
-	border-top: 1px solid var(--color-border);
-	box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+	border-top: 1px solid var(--engrave);
+	box-shadow: 0 -1px 0 var(--engrave-light);
 	z-index: 10; /* Above editor content, below modals */
 }
 
@@ -1386,12 +1459,6 @@ pre code {
 	gap: var(--space-2);
 	align-items: center;
 	flex-wrap: nowrap;
-}
-
-@media (prefers-color-scheme: dark) {
-	.editor__actions {
-		background: rgba(18, 18, 18, 0.95); /* Semi-transparent dark theme */
-	}
 }
 
 /* ============================================================================

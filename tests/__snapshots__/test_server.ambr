@@ -18,6 +18,27 @@
         local
        </button>
       </div>
+      <div class="editor-head" style="--head-accent: var(--color-border)">
+       <span aria-hidden="true" class="editor-head__cap">
+       </span>
+       <span class="editor-head__name">
+        test.dj
+       </span>
+       <span class="editor-head__category">
+        Root
+       </span>
+       <div aria-label="View mode" class="view-toggle" role="group">
+        <button class="button button--sm" data-view="editor" id="editor-only-btn">
+         editor
+        </button>
+        <button class="button button--sm" data-view="side-by-side" id="side-by-side-btn">
+         split
+        </button>
+        <button class="button button--sm" data-view="preview" id="preview-only-btn">
+         preview
+        </button>
+       </div>
+      </div>
       <div class="editor-container" id="editor-container">
        <form id="editor-form" method="post">
         <input name="yak" type="hidden" value="test.dj"/>
@@ -98,22 +119,6 @@
         Root
        </span>
       </div>
-      <section class="metadata-section">
-       <div class="metadata-section__label">
-        view
-       </div>
-       <div class="view-toggle">
-        <button class="button button--sm" data-view="editor" id="editor-only-btn">
-         editor
-        </button>
-        <button class="button button--sm" data-view="side-by-side" id="side-by-side-btn">
-         split
-        </button>
-        <button class="button button--sm" data-view="preview" id="preview-only-btn">
-         preview
-        </button>
-       </div>
-      </section>
       <section class="metadata-section">
        <div class="metadata-section__label">
         wrap
