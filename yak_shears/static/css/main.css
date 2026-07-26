@@ -723,8 +723,10 @@ p {
 .card__meter::after {
 	content: "";
 	position: absolute;
-	inset: 1px auto 1px 1px;
-	width: calc(var(--card-fill, 0) * (100% - 2px));
+	inset: 1px 1px 1px 1px;
+	/* Clipped rather than width-animated: animating width thrashes layout, and
+	   scaling would stretch the segment mask along with the fill. */
+	clip-path: inset(0 calc((1 - var(--card-fill, 0)) * 100%) 0 0);
 	background: var(--card-accent-color, var(--legend-dim));
 	/* Segments, not a smooth bar: a bargraph reads as an instrument and makes
 	   small differences in level legible at this size. */
@@ -734,7 +736,7 @@ p {
 		transparent 3px 5px
 	);
 	/* Ballistics: the needle settles rather than snapping into place. */
-	transition: width var(--settle);
+	transition: clip-path var(--settle);
 }
 
 .card:hover {
@@ -1938,17 +1940,14 @@ pre code {
 	background: var(--panel-raised);
 }
 
+/* Seated, with the same lit underline every other latched control on the panel
+   uses. A colored edge down one side would say "selected" in a vocabulary this
+   interface does not otherwise speak. */
 .search-result.selected {
 	background: var(--well);
-	box-shadow: var(--inset-well);
-}
-
-.search-result.selected::before {
-	content: "";
-	position: absolute;
-	inset: 0 auto 0 0;
-	width: 3px;
-	background: var(--color-accent);
+	box-shadow:
+		var(--inset-well),
+		inset 0 -2px 0 var(--color-accent);
 }
 
 /* Results are focusable so closing the preview modal can return focus to the
@@ -2981,28 +2980,45 @@ pre code {
 	padding: 0;
 }
 
+/* Rows on the meter bridge. Severity used to ride on a 3px colored edge; it is
+   an indicator lamp now, which is how every other state on the panel is read
+   and which leaves the row itself quiet. */
 .doctor-item {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: baseline;
 	gap: var(--space-2) var(--space-4);
 	padding: var(--space-2) var(--space-3);
-	border-left: 3px solid var(--color-border);
-	background: var(--color-surface-alt);
-	border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+	background: var(--well);
+	box-shadow: var(--inset-well);
+	border: 1px solid var(--engrave);
+	border-radius: var(--radius-sm);
 	margin-bottom: var(--space-2);
 }
 
-.doctor-item--missing {
-	border-left-color: #d9534f;
+.doctor-item::before {
+	content: "";
+	align-self: center;
+	flex-shrink: 0;
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: var(--lamp-off);
 }
 
-.doctor-item--orphan {
-	border-left-color: #d9a441;
+.doctor-item--missing::before {
+	background: var(--lamp-fault);
+	box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-fault) 55%, transparent);
 }
 
-.doctor-item--rename {
-	border-left-color: var(--color-accent);
+.doctor-item--orphan::before {
+	background: var(--lamp-warn);
+	box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-warn) 55%, transparent);
+}
+
+.doctor-item--rename::before {
+	background: var(--color-accent);
+	box-shadow: 0 0 6px color-mix(in srgb, var(--color-accent) 55%, transparent);
 }
 
 .doctor-actions {
