@@ -410,4 +410,4 @@ The one thing on the editor that never scrolls away: category cap, filename in m
 - **Don't** style rendered note content with panel chrome. Scope panel heading and legend rules away from `.preview-content`, `.card__preview`, and `.search-preview`.
 - **Don't** animate `width` or `height` for a fill or a reveal. Clip it.
 - **Don't** make the light scheme white. Both schemes are the same instrument under different room light.
-- **Don't** ship a rule no page exercises. There is no build step to tree-shake, the asset budget is 14KB, and the e2e suite fails below 90% CSS rule coverage.
+- **Don't** ship a rule no page exercises. There is no build step to tree-shake, so an unused rule ships forever. `main.css` is render-blocking on every route and is held under 22KB gzipped by `tests/test_assets.py`; see [ASSETS.md](./ASSETS.md) for how that number is measured and what it would take to move it.

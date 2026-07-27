@@ -150,6 +150,11 @@ write_files:
               header_up X-Forwarded-Proto {scheme}
           }
 
+          # gzip first on purpose. Caddy compresses on the fly at a low
+          # level, where its zstd loses to its own gzip on this CSS
+          # (22.0KB vs 19.9KB measured). Listed order is preference order.
+          encode gzip zstd
+
           # Security headers
           header {
               Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
