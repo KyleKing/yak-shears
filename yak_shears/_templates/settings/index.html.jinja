@@ -1,0 +1,49 @@
+{#def
+from yak_shears._yak.categories import ColorSlot
+assignments: list[tuple[str, str]]
+palette: tuple[ColorSlot, ...]
+saved: bool
+-#}
+{% extends "base.html.jinja" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+  <h1>Settings</h1>
+
+  {% if saved %}
+    <p class="settings__saved" role="status">Category colors saved.</p>
+  {% endif %}
+
+  <h2 class="settings__section">Category colors</h2>
+  <p class="settings__note">
+    Twelve anodize slots, spread so no two categories land on neighbouring hues.
+    A new category takes the next free slot; change it here and it stays changed.
+    The mapping is stored in <code>.yak-shears/categories.json</code> beside your yaks.
+  </p>
+
+  {% if assignments %}
+    <form method="post" class="settings__form">
+      <div class="settings__rows">
+        {% for category, slot in assignments %}
+          <div class="settings__row">
+            <span class="settings__swatch" style="--swatch-color: {{ (palette | selectattr('name', 'equalto', slot) | first).css }}" aria-hidden="true"></span>
+            <label class="settings__category" for="slot-{{ loop.index }}">{{ category }}</label>
+            <select class="form__select settings__select" id="slot-{{ loop.index }}" name="{{ category }}">
+              {% for option in palette %}
+                <option value="{{ option.name }}" {% if option.name == slot %}selected{% endif %}>{{ option.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="form__actions">
+        <button type="submit" class="button button--primary">Save</button>
+        <a href="/yaks" class="button">Cancel</a>
+      </div>
+    </form>
+  {% else %}
+    <p class="settings__note">No categories yet. Create a yak and its category shows up here.</p>
+  {% endif %}
+{% endblock %}

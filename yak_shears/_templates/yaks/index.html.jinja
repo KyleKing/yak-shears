@@ -10,6 +10,7 @@ sort_by: SortBy
 current_category: str | None
 categories: set[str]
 get_category_color: Callable[[str], str]
+show_new: bool
 -#}
 {% extends "base.html.jinja" %}
 
@@ -61,8 +62,7 @@ get_category_color: Callable[[str], str]
   {% if yaks %}
     <div class="cards">
       {% for info in yaks %}
-        {% set fill = ([info.word_count, 500] | min) / 500 %}
-        <a href="/edit?yak={{ info.path }}" class="card" style="--card-accent-color: {{ get_category_color(info.category) }}; --card-fill: {{ '%.3f' | format(fill) }}">
+        <a href="/edit?yak={{ info.path }}" class="card" style="--card-accent-color: {{ get_category_color(info.category) }}">
           <span class="card__cap" aria-hidden="true"></span>
           <div class="card__body">
             <div class="card__preview" data-src="{{ info.preview }}">{{ info.preview }}{% if info.truncated %}…{% endif %}</div>
@@ -73,12 +73,16 @@ get_category_color: Callable[[str], str]
             {% endif %}
           </div>
           <div class="card__meta">
+            {# The cap already states the category in color. The name is here for
+               anyone who has not learned the palette yet and for screen readers,
+               and fades in on hover rather than spending a column on every row.
+               Opacity, not display, so it stays in the accessibility tree. #}
             <span class="card__chip">{{ info.category }}</span>
-            <span class="card__stats">
-              <span class="card__stat card__stat--date" title="Last modified">{{ info.last_modified[:10] }}</span>
+            <span class="card__stat card__stat--date" title="Last modified">{{ info.last_modified[:10] }}</span>
+            <span class="card__signal">
+              <span class="card__lamp card__lamp--{{ info.recency }}" title="Edited {{ info.last_modified[:10] }}" aria-hidden="true"></span>
               <span class="card__stat card__stat--links" data-patched="{{ info.link_count }}" title="{{ info.link_count }} link{{ '' if info.link_count == 1 else 's' }}">{{ info.link_count }} ⇗</span>
             </span>
-            <span class="card__meter" title="{{ info.word_count }} words" aria-hidden="true"></span>
           </div>
         </a>
       {% endfor %}
@@ -154,5 +158,54 @@ get_category_color: Callable[[str], str]
         <a href="/yaks?page={{ current_page + 1 }}&sort_by={{ sort_by }}{% if current_category %}&category={{ current_category }}{% endif %}" class="pagination__link">Next &raquo;</a>
       {% endif %}
     </div>
+  {% endif %}
+
+  {# Creating a yak is one decision, so it is a modal over the rack rather than
+     its own page. Rendered server-side and closed by a link, which means the
+     whole flow works with scripting off; the only JS is the Escape key. #}
+  {% if show_new %}
+    <div class="modal" id="new-yak" role="dialog" aria-modal="true" aria-labelledby="new-yak-title">
+      <a class="modal__scrim" href="/yaks" tabindex="-1" aria-hidden="true"></a>
+      <div class="modal__panel">
+        <div class="modal__head">
+          <h2 class="modal__title" id="new-yak-title">New Yak</h2>
+          <a class="modal__close" href="/yaks">Close</a>
+        </div>
+
+        {% if categories %}
+          {# Its own form: a submit button in the same form as the text field
+             would fire on Enter and file the note under the wrong category. #}
+          <form method="post" action="/new" class="new-yak__form">
+            <fieldset class="new-yak__group">
+              <legend class="new-yak__legend">File it under</legend>
+              <div class="new-yak__keys">
+                {% for cat in categories | sort %}
+                  <button type="submit" name="category" value="{{ cat }}" class="new-yak__key" style="--key-accent-color: {{ get_category_color(cat) }}">
+                    <span class="new-yak__key-cap" aria-hidden="true"></span>{{ cat }}
+                  </button>
+                {% endfor %}
+              </div>
+            </fieldset>
+          </form>
+        {% endif %}
+
+        <form method="post" action="/new" class="new-yak__form">
+          <fieldset class="new-yak__group">
+            <legend class="new-yak__legend">Or start a category</legend>
+            <div class="new-yak__create">
+              <label class="new-yak__label" for="new_category">New category name</label>
+              <input type="text" id="new_category" name="new_category" class="form__input new-yak__input" placeholder="category name" autocomplete="off" maxlength="64" autofocus required>
+              <button type="submit" class="button button--primary">Apply</button>
+            </div>
+          </fieldset>
+        </form>
+      </div>
+    </div>
+    <script>
+      // Escape closes the modal. Everything else about it works without JS.
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") { window.location.href = "/yaks"; }
+      });
+    </script>
   {% endif %}
 {% endblock %}

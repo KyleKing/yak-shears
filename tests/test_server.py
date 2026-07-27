@@ -122,6 +122,7 @@ def test_yaks_endpoint(client: TestClient, mock_user_session, isolated_yak_dir: 
     ):
         mock_datetime.fromtimestamp.return_value.strftime.return_value = "2025-05-01 10:00:00"
         mock_datetime.fromtimestamp.return_value = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC)
+        mock_datetime.now.return_value = datetime(2025, 5, 1, 10, 0, 0, tzinfo=UTC)
 
         response = client.get("/yaks")
         assert response.status_code == HTTPStatus.OK
@@ -296,12 +297,29 @@ def test_yak_endpoint_errors(
         assert expected_text in response.text
 
 
-def test_new_yak_get(client: TestClient, mock_user_session) -> None:
-    """Test the new yak endpoint GET."""
+def test_new_yak_get_opens_the_modal_over_the_rack(client: TestClient, mock_user_session) -> None:
+    """Test that the new yak endpoint GET redirects to the rack with the modal open."""
     with set_yak_shears_dir(MOCK_YAK_DIR):
-        response = client.get("/new")
+        response = client.get("/new", follow_redirects=False)
+        assert response.status_code == HTTPStatus.SEE_OTHER
+        assert response.headers["location"] == "/yaks?new=1"
+
+
+def test_yaks_renders_the_new_yak_modal(client: TestClient, mock_user_session) -> None:
+    """Test that ?new=1 renders the creation modal on the rack."""
+    with set_yak_shears_dir(MOCK_YAK_DIR):
+        response = client.get("/yaks?new=1")
         assert response.status_code == HTTPStatus.OK
-        assert "New Yak" in response.text
+        assert 'id="new-yak"' in response.text
+        assert 'name="new_category"' in response.text
+
+
+def test_yaks_omits_the_new_yak_modal_by_default(client: TestClient, mock_user_session) -> None:
+    """Test that the rack has no modal without ?new=1."""
+    with set_yak_shears_dir(MOCK_YAK_DIR):
+        response = client.get("/yaks")
+        assert response.status_code == HTTPStatus.OK
+        assert 'id="new-yak"' not in response.text
 
 
 def test_new_yak_post(client: TestClient, mock_user_session, tmp_path) -> None:

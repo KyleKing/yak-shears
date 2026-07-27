@@ -11,6 +11,7 @@ from .handlers import (
     media_upload_handler,
     new_yak_handler,
     search_handler,
+    settings_handler,
     thumb_file_handler,
     yak_preview_handler,
     yaks_handler,
@@ -19,6 +20,7 @@ from .handlers import (
 ROUTES = [
     Route("/yaks", endpoint=yaks_handler),
     Route("/search", endpoint=search_handler),
+    Route("/settings", endpoint=settings_handler, methods=["GET", "POST"]),
     Route("/new", endpoint=new_yak_handler, methods=["GET", "POST"]),
     Route("/edit", endpoint=edit_yak_handler, methods=["GET", "POST"]),
     Route("/delete", endpoint=delete_yak_handler, methods=["POST"]),

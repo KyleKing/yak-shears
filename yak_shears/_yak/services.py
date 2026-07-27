@@ -14,7 +14,7 @@ from pathlib import Path as SyncPath
 from anyio import Path
 
 from yak_shears._log_utils import StageTimer, log
-from yak_shears._templates import SearchResult, SortBy, YakInfo
+from yak_shears._templates import Recency, SearchResult, SortBy, YakInfo
 from yak_shears._yak.database import (
     check_tables_exist,
     close_search_db,
@@ -36,13 +36,22 @@ from yak_shears.links import extract_all_links, extract_tags, extract_wikilinks
 PREVIEW_LENGTH = 200
 PREVIEW_SOURCE_LIMIT = 600
 PREVIEW_MAX_LINES = 12
-WORD_METER_TARGET = 500
 _URL_RE = re.compile(r"https?://", re.IGNORECASE)
+
+# Lamp thresholds in days. The question a rack answers at a glance is "what have
+# I touched lately", so the scale is coarse: this week, this month, this year.
+_RECENCY_DAYS = ((7, Recency.LIVE), (30, Recency.RECENT), (365, Recency.IDLE))
 
 
 def _count_links(body: str) -> int:
     """Count hyperlinks (URLs and wikilinks) in a yak body."""
     return len(_URL_RE.findall(body)) + len(extract_wikilinks(body))
+
+
+def _recency(modified: datetime, now: datetime) -> Recency:
+    """Bucket a modification time into a lamp state."""
+    age = (now - modified).days
+    return next((state for limit, state in _RECENCY_DAYS if age < limit), Recency.COLD)
 
 
 def _truncate_source(body: str, limit: int, max_lines: int) -> tuple[str, bool]:
@@ -176,9 +185,11 @@ async def paginate_yaks(
 async def prepare_yak_info(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
     """Prepare yak data for template rendering."""
     yaks = []
+    now = datetime.now(tz=UTC)
     for yak_path in paths:
         yak_stats = await yak_path.stat()
-        last_modified = datetime.fromtimestamp(yak_stats.st_mtime, tz=UTC).strftime("%Y-%m-%d %H:%M:%S")
+        modified = datetime.fromtimestamp(yak_stats.st_mtime, tz=UTC)
+        last_modified = modified.strftime("%Y-%m-%d %H:%M:%S")
         content = await yak_path.read_text(encoding="utf-8")
         _, body = parse_frontmatter(content)
         body = body.strip()
@@ -193,9 +204,9 @@ async def prepare_yak_info(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
             name=yak_path.name,
             path=rel_path,
             preview=preview,
+            recency=_recency(modified, now),
             tags=extract_tags(body),
             truncated=truncated,
-            word_count=len(body.split()),
         )
         yaks.append(info)
     return yaks

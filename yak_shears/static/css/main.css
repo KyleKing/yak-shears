@@ -66,6 +66,8 @@
 	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
 	--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.08);
 	--shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+	/* Behind anything that genuinely leaves the panel plane. */
+	--scrim: rgba(0, 0, 0, 0.5);
 	/* A well is milled into the panel: dark at the top lip where the light is
 	   occluded, with a thin catch-light along the bottom lip. */
 	--inset-well:
@@ -84,7 +86,6 @@
 	--transition-smooth: 200ms ease-out;
 	/* Switch throw: fast to seat, slower to release, like a real key. */
 	--throw: 70ms cubic-bezier(0.2, 0, 0.1, 1);
-	--settle: 260ms cubic-bezier(0.16, 1, 0.3, 1);
 	--action-bar-height: 60px;
 	/* Logo (2rem) plus the header's vertical padding and its bottom border.
 	   Fixed elements offset themselves by this; it used to exist only as an
@@ -273,10 +274,25 @@ p {
 	flex: 1;
 }
 
-/* Roomier top/bottom breathing space with a little overscroll (1.6) */
-[data-route="yaks"] .layout__inner {
+/* Content clears the header groove on every page. The editor is the exception:
+   it is a full-height chassis that measures itself from --header-height and
+   would be pushed past the viewport by any padding here. */
+.layout__inner {
 	padding-top: var(--space-6);
 	padding-bottom: var(--space-8);
+}
+
+[data-route="edit"] .layout__inner {
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
+/* The rack sets the measure on its own page, so the vault head, the filter
+   switches, and the units all sit in one column instead of leaving the rack
+   stranded under a header that runs to the full container width. */
+[data-route="yaks"] .container,
+[data-route="new"] .container {
+	max-width: 52rem;
 }
 
 .container {
@@ -667,11 +683,13 @@ p {
    of readouts can be swept in one pass. Width is capped at reading measure
    rather than stretched to the viewport.
    ---------------------------------------------------------------------------- */
+/* Narrower than the container on purpose. A rack stretched to 72rem gave short
+   notes a single stranded line and long ones nowhere to wrap; at this measure
+   both wrap into the same block of readable lines. */
 .cards {
 	display: flex;
 	flex-direction: column;
 	gap: 1px;
-	max-width: 72rem;
 	margin-top: var(--space-6);
 	background: var(--engrave);
 	border: 1px solid var(--engrave);
@@ -687,10 +705,10 @@ p {
 .card {
 	position: relative;
 	display: grid;
-	grid-template-columns: 6px minmax(0, 1fr) auto;
+	grid-template-columns: 6px minmax(0, 1fr) 6.5rem;
 	align-items: stretch;
 	gap: 0 var(--space-4);
-	height: 5.5rem;
+	height: 8.5rem;
 	padding: 0;
 	/* The unit is tinted by its own category, faintly at rest and more strongly
 	   under the pointer. Six categories become six visibly different things,
@@ -727,53 +745,34 @@ p {
 	border-radius: 0 0 0 var(--radius-lg);
 }
 
-/* Level meter, reading word count against a 500-word full scale. Horizontal and
-   segmented like a bargraph, so a column of them reads as a bank of meters and
-   a long note is distinguishable from a stub without reading either. */
-.card__meter {
-	position: relative;
+/* Recency lamp. Both size and color carry the state, so the tier survives a
+   monochrome rendering and reads at a glance down the column: how long ago a
+   note was touched is the question a rack of notes actually gets asked. */
+.card__lamp {
 	display: block;
-	width: 3.5rem;
+	width: 4px;
+	height: 4px;
+	border-radius: var(--radius-pill);
+	background: var(--lamp-off);
+}
+
+.card__lamp--live {
+	width: 9px;
 	height: 9px;
-	border-radius: 2px;
-	background: var(--well);
-	box-shadow: var(--inset-well);
-	overflow: hidden;
+	background: var(--lamp-live);
+	box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-live) 55%, transparent);
 }
 
-/* Unlit segments, so the meter reads as a scale with a level on it rather than
-   as an empty black slot. */
-.card__meter::before {
-	content: "";
-	position: absolute;
-	inset: 1px;
-	background: rgba(255, 255, 255, 0.1);
-	mask-image: repeating-linear-gradient(
-		to right,
-		#000 0 3px,
-		transparent 3px 5px
-	);
+.card__lamp--recent {
+	width: 7px;
+	height: 7px;
+	background: color-mix(in srgb, var(--lamp-live) 70%, var(--lamp-off));
 }
 
-.card__meter::after {
-	content: "";
-	position: absolute;
-	inset: 1px;
-	box-shadow: 0 0 5px
-		color-mix(in srgb, var(--card-accent-color, transparent) 60%, transparent);
-	/* Clipped rather than width-animated: animating width thrashes layout, and
-	   scaling would stretch the segment mask along with the fill. */
-	clip-path: inset(0 calc((1 - var(--card-fill, 0)) * 100%) 0 0);
-	background: var(--card-accent-color, var(--legend-dim));
-	/* Segments, not a smooth bar: a bargraph reads as an instrument and makes
-	   small differences in level legible at this size. */
-	mask-image: repeating-linear-gradient(
-		to right,
-		#000 0 3px,
-		transparent 3px 5px
-	);
-	/* Ballistics: the needle settles rather than snapping into place. */
-	transition: clip-path var(--settle);
+.card__lamp--idle {
+	width: 5px;
+	height: 5px;
+	background: color-mix(in srgb, var(--lamp-live) 30%, var(--lamp-off));
 }
 
 .card:hover {
@@ -810,16 +809,17 @@ p {
 	white-space: nowrap;
 }
 
-/* Two lines of content and no more. Every unit is the same height, because a
-   rack whose rows jump around cannot be swept. Line-clamp rather than a max
-   height, so a partial third line never peeks under the fade. */
+/* Four lines of content and no more. Every unit is still the same height,
+   because a rack whose rows jump around cannot be swept; the fixed height just
+   buys four lines now instead of two. Line-clamp rather than a max height, so a
+   partial fifth line never peeks under the cut. */
 .card__preview {
 	position: relative;
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
-	-webkit-line-clamp: 2;
-	line-clamp: 2;
-	height: 2.2rem;
+	-webkit-line-clamp: 4;
+	line-clamp: 4;
+	height: 4.4rem;
 	overflow: hidden;
 	font-size: 0.8125rem;
 	line-height: 1.35;
@@ -836,12 +836,18 @@ p {
 	margin-top: 0;
 }
 
+/* Every block in a preview runs on the preview's own leading. The clamp counts
+   lines but the height cuts pixels, so a child with taller leading or its own
+   margin pushes a sliced line out under the bottom edge. */
+.card__preview > * {
+	line-height: inherit;
+}
+
 .card__preview .card__h {
 	font-size: 1em;
 	font-weight: 700;
-	margin: 0 0 0.2em;
+	margin: 0;
 	color: var(--legend);
-	line-height: 1.3;
 }
 
 /* Block margins inside the preview push the second line past the clip and leave
@@ -866,6 +872,11 @@ p {
 	background: rgba(255, 255, 255, 0.04);
 	border-radius: 2px;
 	overflow: hidden;
+	line-height: inherit;
+	/* Left at the UA monospace default a fenced block draws a taller line box
+	   than the prose around it, so four clamped lines overflow four lines of
+	   height and the last one gets sliced. */
+	font-size: 0.9em;
 }
 
 .card__preview code {
@@ -906,18 +917,23 @@ p {
 /* The readout: the right-hand end of every unit, where the same four values sit
    at the same x-position on every row. This column is the thing that gets
    scanned; the note text is what gets read once a row is chosen. */
-/* Fixed track widths, not flex: the point of the readout is that the category,
-   the date, and the patch count land on the same x-position in every unit, so
-   the eye reads down a column instead of hunting along each row. */
+/* Fixed rows, not flow: the point of the readout is that the category, the
+   date, and the patch count land on the same y-position in every unit, so the
+   eye reads down a column instead of hunting along each row. */
 .card__meta {
 	display: grid;
-	grid-template-columns: 7rem 5.5rem auto;
-	align-items: center;
-	gap: var(--space-4);
-	padding: var(--space-3) var(--space-4) var(--space-3) 0;
+	grid-template-rows: auto auto auto;
+	align-content: start;
+	justify-items: end;
+	gap: var(--space-2);
+	padding: var(--space-4) var(--space-4) var(--space-3) 0;
 	font-size: 0.6875rem;
 }
 
+/* The cap already names the category in color, so the word is redundant at
+   rest and only earns its place while the row is under the pointer. Faded
+   rather than removed, because it stays in the accessibility tree and its row
+   stays reserved, so nothing below it shifts on hover. */
 .card__chip {
 	color: var(--legend-dim);
 	font-size: 0.625rem;
@@ -928,19 +944,27 @@ p {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	max-width: 100%;
+	opacity: 0;
+	transition: opacity var(--throw);
 }
 
-.card__stats {
-	display: grid;
-	gap: 0.25em;
-	justify-items: end;
-	color: var(--legend-dim);
-	font-family: var(--font-signal);
-	font-variant-numeric: tabular-nums;
+.card:hover .card__chip,
+.card:focus-visible .card__chip {
+	opacity: 1;
+}
+
+.card__signal {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
 }
 
 .card__stat {
 	white-space: nowrap;
+	color: var(--legend-dim);
+	font-family: var(--font-signal);
+	font-variant-numeric: tabular-nums;
 }
 
 /* Patch points. Links are the panel's routing, so the count reads as how many
@@ -1051,43 +1075,6 @@ p {
 .form__select:focus,
 .form__input:focus {
 	border-color: var(--color-accent);
-}
-
-.combobox {
-	position: relative;
-}
-
-.combobox__list {
-	position: absolute;
-	top: calc(100% + var(--space-1));
-	left: 0;
-	right: 0;
-	z-index: 20;
-	max-height: 240px;
-	overflow-y: auto;
-	margin: 0;
-	padding: var(--space-1);
-	list-style: none;
-	background: var(--color-surface);
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-sm);
-	box-shadow: var(--shadow-md);
-}
-
-.combobox__option {
-	padding: var(--space-2) var(--space-3);
-	border-radius: var(--radius-sm);
-	cursor: pointer;
-	font-size: 0.9rem;
-}
-
-.combobox__option:hover {
-	background: var(--color-surface-alt);
-}
-
-.combobox__option--active {
-	background: var(--color-accent);
-	color: #000;
 }
 
 .form__actions {
@@ -1780,6 +1767,233 @@ pre code {
 }
 
 /* ----------------------------------------------------------------------------
+   Modal: a panel that genuinely leaves the panel plane, so it is the one place
+   allowed a scrim and a cast shadow. Rendered server-side and dismissed by a
+   link, so it needs no script to open, close, or submit.
+   ---------------------------------------------------------------------------- */
+.modal {
+	position: fixed;
+	inset: 0;
+	z-index: 2000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: var(--space-4);
+}
+
+.modal__scrim {
+	position: absolute;
+	inset: 0;
+	background: var(--scrim);
+}
+
+.modal__panel {
+	position: relative;
+	display: grid;
+	gap: var(--space-5);
+	width: 34rem;
+	max-width: 100%;
+	max-height: 100%;
+	overflow-y: auto;
+	padding: var(--space-5);
+	background: var(--anodize), var(--panel-raised);
+	border: 1px solid var(--engrave);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-lg);
+}
+
+.modal__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-3);
+}
+
+.modal__title {
+	margin: 0;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--legend-dim);
+}
+
+.modal__close {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--tap-target);
+	padding: 0 var(--space-3);
+	color: var(--legend-dim);
+	font-size: 0.75rem;
+	font-weight: 600;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	text-decoration: none;
+}
+
+.modal__close:hover {
+	color: var(--legend);
+}
+
+/* ----------------------------------------------------------------------------
+   New yak: a bank of category keys, each carrying its own anodized cap, and one
+   patch field for a category that does not exist yet. One press files the note.
+   ---------------------------------------------------------------------------- */
+.new-yak__form {
+	margin: 0;
+}
+
+.new-yak__group {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.new-yak__legend {
+	padding: 0;
+	margin-bottom: var(--space-3);
+	color: var(--legend-dim);
+	font-size: 0.6875rem;
+	font-weight: 600;
+	letter-spacing: 0.11em;
+	text-transform: uppercase;
+}
+
+.new-yak__keys {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+}
+
+.new-yak__key {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	min-height: var(--tap-target);
+	padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
+	background: var(--panel-raised);
+	color: var(--legend);
+	border: 1px solid var(--engrave);
+	border-radius: var(--radius-sm);
+	box-shadow:
+		inset 0 1px 0 var(--engrave-light),
+		0 1px 1px rgba(0, 0, 0, 0.12);
+	font-size: 0.75rem;
+	font-weight: 600;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	cursor: pointer;
+	transition:
+		background var(--throw),
+		box-shadow var(--throw),
+		transform var(--throw);
+}
+
+.new-yak__key:hover {
+	background: var(--panel);
+}
+
+.new-yak__key:active {
+	transform: translateY(1px);
+	box-shadow: var(--inset-well);
+}
+
+/* The same anodized cap the category wears in the rack, so the key and the row
+   it will produce are recognisably the same part. */
+.new-yak__key-cap {
+	width: 4px;
+	align-self: stretch;
+	border-radius: 1px;
+	background: var(--key-accent-color, var(--engrave));
+	box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.22);
+}
+
+.new-yak__create {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+}
+
+.new-yak__label {
+	flex-basis: 100%;
+	color: var(--legend-dim);
+	font-size: 0.6875rem;
+	font-weight: 600;
+	letter-spacing: 0.11em;
+	text-transform: uppercase;
+}
+
+.new-yak__input {
+	flex: 1;
+	min-width: 12rem;
+	font-family: var(--font-signal);
+}
+
+/* ----------------------------------------------------------------------------
+   /settings: the category-to-slot bench. One row per category, its swatch shown
+   at the size it will appear as a cap.
+   ---------------------------------------------------------------------------- */
+.settings__section {
+	margin-top: var(--space-6);
+}
+
+.settings__note {
+	max-width: 60ch;
+	color: var(--legend-dim);
+	font-size: 0.875rem;
+}
+
+.settings__saved {
+	color: var(--lamp-live);
+	font-size: 0.875rem;
+}
+
+.settings__rows {
+	display: grid;
+	gap: 1px;
+	max-width: 34rem;
+	margin-bottom: var(--space-5);
+	background: var(--engrave);
+	border: 1px solid var(--engrave);
+	border-radius: var(--radius-lg);
+	overflow: hidden;
+}
+
+/* The swatch leads the row at cap width, so a category is recognised here by
+   the same part that identifies it in the rack. */
+.settings__row {
+	display: grid;
+	grid-template-columns: 6px minmax(0, 1fr) 10rem;
+	align-items: center;
+	gap: var(--space-4);
+	padding-right: var(--space-4);
+	background: var(--anodize), var(--panel-raised);
+	min-height: 4rem;
+}
+
+.settings__category {
+	color: var(--legend);
+	font-size: 0.75rem;
+	font-weight: 600;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+}
+
+.settings__select {
+	min-height: var(--tap-target);
+	font-family: var(--font-signal);
+	font-size: 0.8125rem;
+}
+
+.settings__swatch {
+	align-self: stretch;
+	background: var(--swatch-color, var(--engrave));
+	box-shadow:
+		inset -1px 0 0 rgba(0, 0, 0, 0.35),
+		inset 1px 0 0 rgba(255, 255, 255, 0.22);
+}
+
+/* ----------------------------------------------------------------------------
    /yaks header and collapsible controls
    ---------------------------------------------------------------------------- */
 .yaks-head {
@@ -2341,7 +2555,7 @@ pre code {
 .search-preview-modal__overlay {
 	position: absolute;
 	inset: 0;
-	background: rgba(0, 0, 0, 0.5);
+	background: var(--scrim);
 }
 
 .search-preview-modal__content {
@@ -2463,15 +2677,53 @@ pre code {
 
 	.cards {
 		margin-top: var(--space-4);
-		gap: var(--space-3);
 	}
 
+	/* A phone has no pointer, so the category name can never be hovered into
+	   view and stays lit in the readout. The rack keeps its hairline gap here
+	   too: separated cards were the old vocabulary, not this one. */
 	.card {
-		padding: var(--space-4);
+		grid-template-columns: 6px minmax(0, 1fr) 5.5rem;
+		gap: 0 var(--space-3);
 	}
 
-	.card__preview {
-		max-height: 6.5rem;
+	.card__chip {
+		opacity: 1;
+	}
+
+	.card__meta {
+		padding-right: var(--space-3);
+	}
+
+	/* --- New yak: the key bank wants the full width of a phone ------------- */
+	.modal {
+		padding: var(--space-3);
+	}
+
+	.modal__panel {
+		padding: var(--space-4);
+		gap: var(--space-4);
+	}
+
+	.new-yak__key {
+		flex: 1 1 100%;
+	}
+
+	.new-yak__input {
+		flex-basis: 100%;
+	}
+
+	/* --- Settings: the select needs the row to itself --------------------- */
+	.settings__row {
+		grid-template-columns: 6px minmax(0, 1fr);
+		grid-template-rows: auto auto;
+		align-items: start;
+		row-gap: var(--space-2);
+		padding: var(--space-3) var(--space-3) var(--space-3) 0;
+	}
+
+	.settings__swatch {
+		grid-row: 1 / 3;
 	}
 
 	/* --- Search: results need real tap targets ----------------------------- */

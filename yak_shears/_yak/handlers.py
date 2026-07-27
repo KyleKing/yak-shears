@@ -17,9 +17,17 @@ from yak_shears._templates import (
     _render_template,
     render_error,
     render_search,
+    render_settings,
     render_yak_edit,
-    render_yak_new,
     render_yaks,
+)
+from yak_shears._yak.categories import (
+    PALETTE,
+    assign_slots,
+    load_slots,
+    resolve_colors,
+    save_slots,
+    slot_css,
 )
 from yak_shears._yak.database import (
     get_backlinks,
@@ -55,6 +63,8 @@ from yak_shears._yak.services import (
     save_yak,
 )
 from yak_shears.frontmatter import parse_frontmatter
+
+_PALETTE_NAMES = {slot.name for slot in PALETTE}
 
 
 @dataclass(frozen=True)
@@ -118,30 +128,54 @@ async def yaks_handler(request: Request) -> Response:
         sort_by=query_params.sort_by,
         current_category=query_params.category,
         categories=categories,
+        category_colors=await resolve_colors(yak_dir, categories),
+        show_new=request.query_params.get("new") == "1",
     )
 
 
 async def new_yak_handler(request: Request) -> Response:
-    """Handle requests to /new."""
-    yak_dir = await get_yak_dir()
-    all_paths = await list_yak_paths(yak_dir)
-    categories = await get_categories(all_paths)
+    """Handle requests to /new.
 
+    The picker itself lives in a modal over the rack, so GET only exists to open
+    it; POST is the form target and is the one step that creates a yak.
+    """
+    if request.method != "POST":
+        return RedirectResponse("/yaks?new=1", status_code=HTTPStatus.SEE_OTHER)
+
+    yak_dir = await get_yak_dir()
+    form_data = await request.form()
+    category = str(form_data.get("new_category", "")).strip() or str(form_data.get("category", "")).strip()
+
+    if not category:
+        return render_error("Category is required")
+
+    try:
+        yak_path = await create_yak(yak_dir, category)
+    except YakPathError:
+        return render_error("Invalid category name")
+    relative_path = yak_path.relative_to(yak_dir).as_posix()
+    return RedirectResponse(f"/edit?yak={relative_path}", status_code=HTTPStatus.SEE_OTHER)
+
+
+async def settings_handler(request: Request) -> Response:
+    """Handle requests to /settings, where categories are pinned to palette slots."""
+    yak_dir = await get_yak_dir()
+    categories = await get_categories(await list_yak_paths(yak_dir))
+
+    saved = False
     if request.method == "POST":
         form_data = await request.form()
-        category = str(form_data.get("new_category", "")).strip() or str(form_data.get("category", "")).strip()
+        stored = await load_slots(yak_dir)
+        chosen = {
+            category: str(form_data[category])
+            for category in {*stored, *categories}
+            if category in form_data and str(form_data[category]) in _PALETTE_NAMES
+        }
+        await save_slots(yak_dir, assign_slots(chosen, categories))
+        saved = True
 
-        if not category:
-            return render_error("Category is required")
-
-        try:
-            yak_path = await create_yak(yak_dir, category)
-        except YakPathError:
-            return render_error("Invalid category name")
-        relative_path = yak_path.relative_to(yak_dir).as_posix()
-        return RedirectResponse(f"/edit?yak={relative_path}", status_code=HTTPStatus.SEE_OTHER)
-
-    return render_yak_new(categories)
+    slots = assign_slots(await load_slots(yak_dir), categories)
+    return render_settings(assignments=sorted(slots.items()), saved=saved)
 
 
 async def edit_yak_handler(request: Request) -> Response:
@@ -162,8 +196,16 @@ async def edit_yak_handler(request: Request) -> Response:
         content, category = await read_yak(yak_dir, yak_path_str)
         frontmatter, _ = parse_frontmatter(content)
         backlinks = get_backlinks(yak_path_str)
+        category_color = slot_css((await load_slots(yak_dir)).get(category, ""))
 
-        return render_yak_edit(yak_path_str, content, category, frontmatter=frontmatter, backlinks=backlinks)
+        return render_yak_edit(
+            yak_path_str,
+            content,
+            category,
+            category_color,
+            frontmatter=frontmatter,
+            backlinks=backlinks,
+        )
     except (FileNotFoundError, YakPathError):
         return render_error(f"Yak not found: {yak_path_str}", status_code=HTTPStatus.NOT_FOUND)
     except Exception as exc:

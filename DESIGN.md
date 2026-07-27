@@ -19,8 +19,19 @@ colors:
   ink-on-amber: "#1b1206"
   ink-on-lit: "#000000"
   ink-on-fault: "#ffffff"
-  unlit-segment: "rgba(255, 255, 255, 0.1)"
   scrim: "rgba(0, 0, 0, 0.5)"
+  category-clay: "hsl(16, 72%, 58%)"
+  category-rose: "hsl(352, 68%, 62%)"
+  category-pink: "hsl(328, 62%, 64%)"
+  category-mauve: "hsl(302, 52%, 62%)"
+  category-violet: "hsl(276, 58%, 64%)"
+  category-indigo: "hsl(250, 62%, 62%)"
+  category-azure: "hsl(216, 72%, 56%)"
+  category-sky: "hsl(196, 74%, 50%)"
+  category-teal: "hsl(174, 62%, 44%)"
+  category-moss: "hsl(150, 52%, 46%)"
+  category-fern: "hsl(118, 46%, 48%)"
+  category-olive: "hsl(72, 52%, 46%)"
 typography:
   legend:
     fontFamily: "ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
@@ -138,7 +149,7 @@ components:
     typography: "{typography.title}"
     rounded: "0"
     padding: "0"
-    height: "5.5rem"
+    height: "8.5rem"
   input-search:
     backgroundColor: "{colors.well}"
     textColor: "{colors.signal}"
@@ -179,9 +190,9 @@ components:
 
 **Creative North Star: "The Console"**
 
-Yak Shears is an instrument you operate at speed, so the interface is a console panel rather than a page of documents. It refuses the arrangement every note app ships: a grey sidebar tree beside a white document pane, with every note drawn as an identical card. The vault is a rack of channel strips, one unit per note, each with its category cap, its readout, and its level meter in the same place. You sweep the readout column, throw a switch, and work in the center section.
+Yak Shears is an instrument you operate at speed, so the interface is a console panel rather than a page of documents. It refuses the arrangement every note app ships: a grey sidebar tree beside a white document pane, with every note drawn as an identical card. The vault is a rack of channel strips, one unit per note, each with its category cap, its four lines of note, and its readout in the same place. You sweep the readout column, throw a switch, and work in the center section.
 
-Three materials do all the structural work and every component is built from them. The **panel** is the painted face things are mounted on. The **well** is a recess milled into it, where content and inputs sit down. The **engrave** is a groove cut into the panel, drawn as a dark line over a lighter one so it reads as cut rather than as a stroked border. On top of the materials sit the parts: screen-printed legends, anodized caps carrying category color, indicator lamps, and meters with real ballistics.
+Three materials do all the structural work and every component is built from them. The **panel** is the painted face things are mounted on. The **well** is a recess milled into it, where content and inputs sit down. The **engrave** is a groove cut into the panel, drawn as a dark line over a lighter one so it reads as cut rather than as a stroked border. On top of the materials sit the parts: screen-printed legends, anodized caps carrying category color, and indicator lamps that report state in size as well as color.
 
 The panel is anodized charcoal, slightly blue rather than neutral, with a fine directional grain instead of a flat fill. This matters because a flat neutral grey is the timid rendition of this world and it takes the life out of every cap and lamp mounted on it. Both color schemes are real consoles: light is a painted panel under daylight, dark is the same desk at night. Neither is an inversion of the other, and neither turns the instrument into paper.
 
@@ -204,7 +215,9 @@ An anodized charcoal panel with a full-spectrum category system mounted on it, p
 
 ### Secondary
 
-- **Category Anodize** (generated `hsl()`, full-spectrum hue, 58–82% saturation, 48–68% lightness): Not a fixed value. `get_category_color()` hashes the category name (djb2, ported from the author's WezTerm config) into a deterministic hue and picks saturation and lightness from a band held deliberately high. The earlier 25–45% band was mud that disappeared against the dark panel. This color fills the card cap, tints the whole row, lights the level meter, and marks the editor head plate.
+- **Category Anodize** (twelve fixed slots, `clay` through `olive`): A closed palette rather than a generated value. Hashing the category name into a free hue produced neighbours 13° apart (`evergreen` at 217, `tasks` at 204) that read as two shades of one blue, so the wheel is now cut into twelve slots a category is pinned to. Hues 25–55 are left out: that band is armed amber, and a lit color that means "this will fire" must not also mean "filed under tasks". This color fills the card cap, tints the whole row, and marks the editor head plate.
+
+  Assignment is a stored mapping, not a function of the name. `.yak-shears/categories.json` beside the vault records category → slot, so colors travel with the notes over Syncthing and survive an index rebuild. A new category takes the next free slot walking the palette in steps of five, which keeps the first several categories far apart on the wheel instead of adjacent. A category named after a slot (`teal`, `moss`) claims that slot when it is free. Past twelve categories slots repeat, which is the honest failure: two categories share one color rather than drifting into two shades of it. `/settings` reassigns any of them.
 
 ### Tertiary
 
@@ -224,6 +237,8 @@ An anodized charcoal panel with a full-spectrum category system mounted on it, p
 
 - **Live** (#3ddc7f), **Warn** (#ffb02e), **Fault** (#ff5c47), **Off** (#464d55): Indicator lamps. A lamp is a 7px circle with a matching glow at ~55% mix.
 
+The rack's recency lamp is the one place a lamp varies in size as well as color: 9px lit live inside a week, 7px at 70% live within a month, 5px at 30% within a year, 4px unlit beyond. Both channels carry the tier, so it survives a monochrome rendering and reads down a column without being read.
+
 ### Ink on Lit Surfaces
 
 A lit surface takes dark ink, because the panel's text colors are built for a dark ground and would vanish on amber.
@@ -234,9 +249,8 @@ A lit surface takes dark ink, because the panel's text colors are built for a da
 
 ### Shading
 
-Shading is material, not palette. The alpha blacks and whites in inset shadows, the anodize grain, and cap catch-lights are how a material is drawn and they are recorded with their materials in the sidecar, not as color tokens. Two carry a role and are named:
+Shading is material, not palette. The alpha blacks and whites in inset shadows, the anodize grain, and cap catch-lights are how a material is drawn and they are recorded with their materials in the sidecar, not as color tokens. One carries a role and is named:
 
-- **Unlit Segment** (rgba(255, 255, 255, 0.1)): The dark half of a bargraph, so a meter reads as a scale with a level on it rather than as an empty black slot.
 - **Scrim** (rgba(0, 0, 0, 0.5)): Behind a modal that leaves the panel plane.
 
 ### Named Rules
@@ -277,11 +291,15 @@ Shading is material, not palette. The alpha blacks and whites in inset shadows, 
 
 ## Layout
 
-The container caps at 1200px with gutters that step 1rem → 1.5rem → 2rem at 640px and 768px, each adding the matching `env(safe-area-inset-*)` so content clears the notch. The single breakpoint is **768px**, duplicated as `MOBILE_BREAKPOINT` in `editor.js`, `search.js`, and `nav.js`.
+The container caps at 1200px with gutters that step 1rem → 1.5rem → 2rem at 640px and 768px, each adding the matching `env(safe-area-inset-*)` so content clears the notch. The rack page narrows the container to **52rem**, so the vault head, the filter switches, and the units sit in one column instead of leaving the rack stranded under a header running the full width. The single breakpoint is **768px**, duplicated as `MOBILE_BREAKPOINT` in `editor.js`, `search.js`, and `nav.js`.
 
-The rack is the defining layout. It is a flex column with a 1px gap over an engrave-colored ground, so the gap shows through as a hairline and the strips read as mounted in one frame rather than as floating cards. Each unit is a three-track grid (`6px | minmax(0,1fr) | auto`) at a fixed `5.5rem` height. The fixed height is load-bearing: notes whose first blocks happen to be short or tall must not change the row pitch. The preview inside is line-clamped to exactly two lines at a fixed `2.2rem`, and block margins are zeroed so a sliced third line never peeks through.
+Every page clears the header groove with `--space-6` of top padding. The editor is the only exception: it is a full-height chassis measuring itself from `--header-height`, and any padding above it runs the chassis off the viewport.
 
-The readout at the right end uses fixed grid tracks (`7rem | 5.5rem | auto`) rather than flex. The point of a readout is that category, date, and patch count land on the same x-position on every row, so the eye reads down a column instead of hunting along each row.
+The rack is the defining layout. It is a flex column with a 1px gap over an engrave-colored ground, so the gap shows through as a hairline and the strips read as mounted in one frame rather than as floating cards. Each unit is a three-track grid (`6px | minmax(0,1fr) | 6.5rem`) at a fixed `8.5rem` height. The fixed height is load-bearing: notes whose first blocks happen to be short or tall must not change the row pitch. The preview inside is line-clamped to exactly four lines at a fixed `4.4rem`. Every block in it runs on the preview's own leading and font size, including fenced code, because the clamp counts lines while the height cuts pixels: one child with a taller line box pushes a sliced fifth line out under the bottom edge.
+
+The narrow measure is what buys those four lines. Stretched to the old 72rem a long note ran as one stranded line and a short one wasted the row; at 52rem both wrap into the same block of readable text.
+
+The readout at the right end is a fixed stack of rows rather than flow: category, date, then the lamp and patch count. The point of a readout is that each value lands at the same position on every row, so the eye reads down a column instead of hunting along each row.
 
 The editor is a head plate over a two-bay chassis: `.editor-head` carries the identity and the source selector and never scrolls away, and `.editor-container` holds the source well and the preview bay separated by a 1px engrave gap. Below 768px the chassis stacks, split view gives each bay `min-height: 40dvh`, and the metadata sidebar becomes a bottom sheet capped at 70vh.
 
@@ -313,11 +331,11 @@ There are no ambient drop shadows on the panel. Depth is machined: things are ei
 
 ## Shapes
 
-Panel hardware is machined, so radii are small and deliberate: 3px on caps, keys, and switches, 5px on chassis corners, and full round only on lamps. Below that sit two hardware steps that exist because a milled part has a broken edge rather than a sharp one: 2px on a meter slot, a segmented control's outer positions, and an inline code run, and 1px on the smallest details (a lit indicator bar, a cap edge, the head plate's rule). Nothing is pillowy. The pill radius survives on two legacy controls and should not spread.
+Panel hardware is machined, so radii are small and deliberate: 3px on caps, keys, and switches, 5px on chassis corners, and full round only on lamps. Below that sit two hardware steps that exist because a milled part has a broken edge rather than a sharp one: 2px on a segmented control's outer positions, and an inline code run, and 1px on the smallest details (a lit indicator bar, a cap edge, the head plate's rule). Nothing is pillowy. The pill radius survives on two legacy controls and should not spread.
 
 Structure is carried by material rather than by outline. Where a border does appear it is `--engrave`, and it is nearly always paired with its catch-light to read as a cut. The category cap is a full-height 6px bar with an inner catch-light (`inset 1px 0 0 rgba(255,255,255,0.22)`) and an outer contact shadow, which is what makes it read as a machined part rather than a flat colored rule.
 
-The level meter is the system's recurring signature geometry: a 3.5rem × 9px recessed slot carrying a segmented bargraph, drawn as a repeating 3px-on/2px-off mask over both an unlit layer and a lit fill.
+The anodized cap is the system's recurring signature geometry: a full-height 6px bar in the category color, repeated down the rack, on the editor's head plate, on every category key in the new-yak modal, and on every row of the settings bench. Wherever a category is named, that bar names it.
 
 ### Named Rules
 
@@ -343,13 +361,16 @@ The level meter is the system's recurring signature geometry: a 3.5rem × 9px re
 - **Cap:** 6px full-height anodized bar in the category color
 - **Border:** none. Units are separated by the 1px rack gap showing the engrave ground through
 - **Shadow:** none. A unit is mounted in the rack, not floating over it
-- **Height:** fixed 5.5rem
+- **Height:** fixed 8.5rem
+- **Category:** stated once, by the cap. The name is set in nano caps in the readout at `opacity: 0` and fades in on hover and focus. Faded rather than removed, so it stays in the accessibility tree and its row stays reserved and nothing shifts under the pointer. Below 768px it is always lit, because a phone has no pointer to hover with
 
-### Level Meter (signature component)
+A word-count level meter used to sit at the end of every readout. It spent 3.5rem of every row on a number nothing was decided by, so it was removed along with `YakInfo.word_count` and the `--settle` easing that drove its ballistics. The recency lamp took the slot.
 
-Word count read against a 500-word full scale, driven by `--card-fill` (0–1). A recessed 3.5rem × 9px slot holds two masked layers: unlit segments at `rgba(255,255,255,0.1)`, and a lit fill in the category color with a matching glow. The fill is revealed by `clip-path: inset(0 calc((1 - var(--card-fill,0)) * 100%) 0 0)` and transitions on `--settle` (260ms, `cubic-bezier(0.16, 1, 0.3, 1)`), so the needle settles rather than snapping.
+### Modal
 
-Clipping is the correct mechanism here, not merely the compliant one: animating width thrashes layout, and `transform: scaleX` would stretch the segment mask along with the fill.
+The one surface allowed to leave the panel plane, so the one place a scrim (`--scrim`) and a cast shadow (`--shadow-lg`) belong. Rendered server-side from a query parameter and dismissed by a link, so opening, closing, and submitting all work with scripting off; the only JS is the Escape key.
+
+The new-yak modal is the whole of `/new`: the route redirects to `/yaks?new=1` rather than rendering a page. Creating a note is one decision and never deserved a navigation. Each existing category is a key carrying its own anodized cap, and pressing one files the note in a single click. The new-category field sits in a **separate form** from the key bank, because a submit button sharing a form with a text field fires on Enter and would file the note under whichever category happened to be first.
 
 ### Inputs
 
@@ -359,7 +380,7 @@ Clipping is the correct mechanism here, not merely the compliant one: animating 
 
 ### Navigation
 
-Switches on the panel's top strip: tracked uppercase, dim at rest, `--panel` face with an engrave border on hover, 1px drop on press. The engaged switch seats into the well and lights a 2px amber indicator across its lower edge. Below 768px the wordmark drops, the four links collapse into a `<details>` hamburger, and each link takes a full 44px row.
+Switches on the panel's top strip: tracked uppercase, dim at rest, `--panel` face with an engrave border on hover, 1px drop on press. The engaged switch seats into the well and lights a 2px amber indicator across its lower edge. Below 768px the wordmark drops, the five links collapse into a `<details>` hamburger, and each link takes a full 44px row.
 
 The header itself is opaque anodized panel-raised with an engraved bottom groove. It is not translucent, because a console face is metal and blur let content swim underneath it.
 

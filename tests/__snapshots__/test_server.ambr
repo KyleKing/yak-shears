@@ -205,7 +205,7 @@
      </div>
     </details>
     <div class="cards">
-     <a class="card" href="/edit?yak=subdirectory-3/yak3.dj" style="--card-accent-color: hsl(261, 58%, 63%); --card-fill: 0.020">
+     <a class="card" href="/edit?yak=subdirectory-3/yak3.dj" style="--card-accent-color: hsl(250, 62%, 62%)">
       <span aria-hidden="true" class="card__cap">
       </span>
       <div class="card__body">
@@ -221,19 +221,19 @@
        <span class="card__chip">
         subdirectory-3
        </span>
-       <span class="card__stats">
-        <span class="card__stat card__stat--date" title="Last modified">
-         2025-05-01
+       <span class="card__stat card__stat--date" title="Last modified">
+        2025-05-01
+       </span>
+       <span class="card__signal">
+        <span aria-hidden="true" class="card__lamp card__lamp--live" title="Edited 2025-05-01">
         </span>
         <span class="card__stat card__stat--links" data-patched="0" title="0 links">
          0 ⇗
         </span>
        </span>
-       <span aria-hidden="true" class="card__meter" title="10 words">
-       </span>
       </div>
      </a>
-     <a class="card" href="/edit?yak=subdirectory-2/yak2.dj" style="--card-accent-color: hsl(244, 76%, 48%); --card-fill: 0.008">
+     <a class="card" href="/edit?yak=subdirectory-2/yak2.dj" style="--card-accent-color: hsl(16, 72%, 58%)">
       <span aria-hidden="true" class="card__cap">
       </span>
       <div class="card__body">
@@ -249,19 +249,19 @@
        <span class="card__chip">
         subdirectory-2
        </span>
-       <span class="card__stats">
-        <span class="card__stat card__stat--date" title="Last modified">
-         2025-05-01
+       <span class="card__stat card__stat--date" title="Last modified">
+        2025-05-01
+       </span>
+       <span class="card__signal">
+        <span aria-hidden="true" class="card__lamp card__lamp--live" title="Edited 2025-05-01">
         </span>
         <span class="card__stat card__stat--links" data-patched="1" title="1 link">
          1 ⇗
         </span>
        </span>
-       <span aria-hidden="true" class="card__meter" title="4 words">
-       </span>
       </div>
      </a>
-     <a class="card" href="/edit?yak=yak1.dj" style="--card-accent-color: hsl(160, 58%, 63%); --card-fill: 0.008">
+     <a class="card" href="/edit?yak=yak1.dj" style="--card-accent-color: hsl(118, 46%, 48%)">
       <span aria-hidden="true" class="card__cap">
       </span>
       <div class="card__body">
@@ -277,15 +277,15 @@
        <span class="card__chip">
         yak_test_dir
        </span>
-       <span class="card__stats">
-        <span class="card__stat card__stat--date" title="Last modified">
-         2025-05-01
+       <span class="card__stat card__stat--date" title="Last modified">
+        2025-05-01
+       </span>
+       <span class="card__signal">
+        <span aria-hidden="true" class="card__lamp card__lamp--live" title="Edited 2025-05-01">
         </span>
         <span class="card__stat card__stat--links" data-patched="1" title="1 link">
          1 ⇗
         </span>
-       </span>
-       <span aria-hidden="true" class="card__meter" title="4 words">
        </span>
       </div>
      </a>

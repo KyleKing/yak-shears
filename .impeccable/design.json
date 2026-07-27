@@ -8,151 +8,388 @@
         "role": "neutral",
         "displayName": "Anodized Charcoal",
         "canonical": "oklch(28% 0.008 250)",
-        "tonalRamp": ["oklch(15% 0.008 250)", "oklch(26% 0.008 250)", "oklch(37% 0.008 250)", "oklch(48% 0.008 250)", "oklch(59% 0.008 250)", "oklch(70% 0.008 250)", "oklch(82% 0.008 250)", "oklch(95% 0.008 250)"]
+        "tonalRamp": [
+          "oklch(15% 0.008 250)",
+          "oklch(26% 0.008 250)",
+          "oklch(37% 0.008 250)",
+          "oklch(48% 0.008 250)",
+          "oklch(59% 0.008 250)",
+          "oklch(70% 0.008 250)",
+          "oklch(82% 0.008 250)",
+          "oklch(95% 0.008 250)"
+        ]
       },
       "panel-raised": {
         "role": "neutral",
         "displayName": "Raised Panel Face",
         "canonical": "oklch(33% 0.010 250)",
-        "tonalRamp": ["oklch(15% 0.010 250)", "oklch(26% 0.010 250)", "oklch(37% 0.010 250)", "oklch(48% 0.010 250)", "oklch(59% 0.010 250)", "oklch(70% 0.010 250)", "oklch(82% 0.010 250)", "oklch(95% 0.010 250)"]
+        "tonalRamp": [
+          "oklch(15% 0.010 250)",
+          "oklch(26% 0.010 250)",
+          "oklch(37% 0.010 250)",
+          "oklch(48% 0.010 250)",
+          "oklch(59% 0.010 250)",
+          "oklch(70% 0.010 250)",
+          "oklch(82% 0.010 250)",
+          "oklch(95% 0.010 250)"
+        ]
       },
       "well": {
         "role": "neutral",
         "displayName": "Milled Well",
         "canonical": "oklch(20% 0.006 250)",
-        "tonalRamp": ["oklch(15% 0.006 250)", "oklch(26% 0.006 250)", "oklch(37% 0.006 250)", "oklch(48% 0.006 250)", "oklch(59% 0.006 250)", "oklch(70% 0.006 250)", "oklch(82% 0.006 250)", "oklch(95% 0.006 250)"]
+        "tonalRamp": [
+          "oklch(15% 0.006 250)",
+          "oklch(26% 0.006 250)",
+          "oklch(37% 0.006 250)",
+          "oklch(48% 0.006 250)",
+          "oklch(59% 0.006 250)",
+          "oklch(70% 0.006 250)",
+          "oklch(82% 0.006 250)",
+          "oklch(95% 0.006 250)"
+        ]
       },
       "engrave": {
         "role": "neutral",
         "displayName": "Engraved Groove",
         "canonical": "oklch(13% 0.005 250)",
-        "tonalRamp": ["oklch(15% 0.005 250)", "oklch(26% 0.005 250)", "oklch(37% 0.005 250)", "oklch(48% 0.005 250)", "oklch(59% 0.005 250)", "oklch(70% 0.005 250)", "oklch(82% 0.005 250)", "oklch(95% 0.005 250)"]
+        "tonalRamp": [
+          "oklch(15% 0.005 250)",
+          "oklch(26% 0.005 250)",
+          "oklch(37% 0.005 250)",
+          "oklch(48% 0.005 250)",
+          "oklch(59% 0.005 250)",
+          "oklch(70% 0.005 250)",
+          "oklch(82% 0.005 250)",
+          "oklch(95% 0.005 250)"
+        ]
       },
       "engrave-light": {
         "role": "neutral",
         "displayName": "Groove Catch-Light",
         "canonical": "oklch(41% 0.011 252)",
-        "tonalRamp": ["oklch(15% 0.011 252)", "oklch(26% 0.011 252)", "oklch(37% 0.011 252)", "oklch(48% 0.011 252)", "oklch(59% 0.011 252)", "oklch(70% 0.011 252)", "oklch(82% 0.011 252)", "oklch(95% 0.011 252)"]
+        "tonalRamp": [
+          "oklch(15% 0.011 252)",
+          "oklch(26% 0.011 252)",
+          "oklch(37% 0.011 252)",
+          "oklch(48% 0.011 252)",
+          "oklch(59% 0.011 252)",
+          "oklch(70% 0.011 252)",
+          "oklch(82% 0.011 252)",
+          "oklch(95% 0.011 252)"
+        ]
       },
       "legend": {
         "role": "neutral",
         "displayName": "Screen-Printed Legend",
         "canonical": "oklch(94% 0.006 250)",
-        "tonalRamp": ["oklch(15% 0.006 250)", "oklch(26% 0.006 250)", "oklch(37% 0.006 250)", "oklch(48% 0.006 250)", "oklch(59% 0.006 250)", "oklch(70% 0.006 250)", "oklch(82% 0.006 250)", "oklch(95% 0.006 250)"]
+        "tonalRamp": [
+          "oklch(15% 0.006 250)",
+          "oklch(26% 0.006 250)",
+          "oklch(37% 0.006 250)",
+          "oklch(48% 0.006 250)",
+          "oklch(59% 0.006 250)",
+          "oklch(70% 0.006 250)",
+          "oklch(82% 0.006 250)",
+          "oklch(95% 0.006 250)"
+        ]
       },
       "legend-dim": {
         "role": "neutral",
         "displayName": "Dim Legend",
         "canonical": "oklch(70% 0.017 250)",
-        "tonalRamp": ["oklch(15% 0.017 250)", "oklch(26% 0.017 250)", "oklch(37% 0.017 250)", "oklch(48% 0.017 250)", "oklch(59% 0.017 250)", "oklch(70% 0.017 250)", "oklch(82% 0.017 250)", "oklch(95% 0.017 250)"]
+        "tonalRamp": [
+          "oklch(15% 0.017 250)",
+          "oklch(26% 0.017 250)",
+          "oklch(37% 0.017 250)",
+          "oklch(48% 0.017 250)",
+          "oklch(59% 0.017 250)",
+          "oklch(70% 0.017 250)",
+          "oklch(82% 0.017 250)",
+          "oklch(95% 0.017 250)"
+        ]
       },
       "signal": {
         "role": "neutral",
         "displayName": "Signal Ink",
         "canonical": "oklch(98% 0.003 250)",
-        "tonalRamp": ["oklch(15% 0.003 250)", "oklch(26% 0.003 250)", "oklch(37% 0.003 250)", "oklch(48% 0.003 250)", "oklch(59% 0.003 250)", "oklch(70% 0.003 250)", "oklch(82% 0.003 250)", "oklch(95% 0.003 250)"]
+        "tonalRamp": [
+          "oklch(15% 0.003 250)",
+          "oklch(26% 0.003 250)",
+          "oklch(37% 0.003 250)",
+          "oklch(48% 0.003 250)",
+          "oklch(59% 0.003 250)",
+          "oklch(70% 0.003 250)",
+          "oklch(82% 0.003 250)",
+          "oklch(95% 0.003 250)"
+        ]
       },
       "amber": {
         "role": "primary",
         "displayName": "Armed Amber",
         "canonical": "oklch(81% 0.155 72)",
-        "tonalRamp": ["oklch(15% 0.155 72)", "oklch(26% 0.155 72)", "oklch(37% 0.155 72)", "oklch(48% 0.155 72)", "oklch(59% 0.155 72)", "oklch(70% 0.155 72)", "oklch(82% 0.155 72)", "oklch(95% 0.155 72)"]
+        "tonalRamp": [
+          "oklch(15% 0.155 72)",
+          "oklch(26% 0.155 72)",
+          "oklch(37% 0.155 72)",
+          "oklch(48% 0.155 72)",
+          "oklch(59% 0.155 72)",
+          "oklch(70% 0.155 72)",
+          "oklch(82% 0.155 72)",
+          "oklch(95% 0.155 72)"
+        ]
       },
       "lamp-live": {
         "role": "tertiary",
         "displayName": "Live Lamp",
         "canonical": "oklch(80% 0.180 152)",
-        "tonalRamp": ["oklch(15% 0.180 152)", "oklch(26% 0.180 152)", "oklch(37% 0.180 152)", "oklch(48% 0.180 152)", "oklch(59% 0.180 152)", "oklch(70% 0.180 152)", "oklch(82% 0.180 152)", "oklch(95% 0.180 152)"]
+        "tonalRamp": [
+          "oklch(15% 0.180 152)",
+          "oklch(26% 0.180 152)",
+          "oklch(37% 0.180 152)",
+          "oklch(48% 0.180 152)",
+          "oklch(59% 0.180 152)",
+          "oklch(70% 0.180 152)",
+          "oklch(82% 0.180 152)",
+          "oklch(95% 0.180 152)"
+        ]
       },
       "lamp-warn": {
         "role": "tertiary",
         "displayName": "Warn Lamp",
         "canonical": "oklch(81% 0.155 72)",
-        "tonalRamp": ["oklch(15% 0.155 72)", "oklch(26% 0.155 72)", "oklch(37% 0.155 72)", "oklch(48% 0.155 72)", "oklch(59% 0.155 72)", "oklch(70% 0.155 72)", "oklch(82% 0.155 72)", "oklch(95% 0.155 72)"]
+        "tonalRamp": [
+          "oklch(15% 0.155 72)",
+          "oklch(26% 0.155 72)",
+          "oklch(37% 0.155 72)",
+          "oklch(48% 0.155 72)",
+          "oklch(59% 0.155 72)",
+          "oklch(70% 0.155 72)",
+          "oklch(82% 0.155 72)",
+          "oklch(95% 0.155 72)"
+        ]
       },
       "lamp-fault": {
         "role": "tertiary",
         "displayName": "Fault Lamp",
         "canonical": "oklch(68% 0.200 30)",
-        "tonalRamp": ["oklch(15% 0.200 30)", "oklch(26% 0.200 30)", "oklch(37% 0.200 30)", "oklch(48% 0.200 30)", "oklch(59% 0.200 30)", "oklch(70% 0.200 30)", "oklch(82% 0.200 30)", "oklch(95% 0.200 30)"]
+        "tonalRamp": [
+          "oklch(15% 0.200 30)",
+          "oklch(26% 0.200 30)",
+          "oklch(37% 0.200 30)",
+          "oklch(48% 0.200 30)",
+          "oklch(59% 0.200 30)",
+          "oklch(70% 0.200 30)",
+          "oklch(82% 0.200 30)",
+          "oklch(95% 0.200 30)"
+        ]
       },
       "lamp-off": {
         "role": "neutral",
         "displayName": "Unlit Lamp",
         "canonical": "oklch(40% 0.013 252)",
-        "tonalRamp": ["oklch(15% 0.013 252)", "oklch(26% 0.013 252)", "oklch(37% 0.013 252)", "oklch(48% 0.013 252)", "oklch(59% 0.013 252)", "oklch(70% 0.013 252)", "oklch(82% 0.013 252)", "oklch(95% 0.013 252)"]
+        "tonalRamp": [
+          "oklch(15% 0.013 252)",
+          "oklch(26% 0.013 252)",
+          "oklch(37% 0.013 252)",
+          "oklch(48% 0.013 252)",
+          "oklch(59% 0.013 252)",
+          "oklch(70% 0.013 252)",
+          "oklch(82% 0.013 252)",
+          "oklch(95% 0.013 252)"
+        ]
       },
       "link": {
         "role": "secondary",
         "displayName": "Routing Blue",
         "canonical": "oklch(76% 0.110 250)",
-        "tonalRamp": ["oklch(15% 0.110 250)", "oklch(26% 0.110 250)", "oklch(37% 0.110 250)", "oklch(48% 0.110 250)", "oklch(59% 0.110 250)", "oklch(70% 0.110 250)", "oklch(82% 0.110 250)", "oklch(95% 0.110 250)"]
+        "tonalRamp": [
+          "oklch(15% 0.110 250)",
+          "oklch(26% 0.110 250)",
+          "oklch(37% 0.110 250)",
+          "oklch(48% 0.110 250)",
+          "oklch(59% 0.110 250)",
+          "oklch(70% 0.110 250)",
+          "oklch(82% 0.110 250)",
+          "oklch(95% 0.110 250)"
+        ]
       },
       "ink-on-amber": {
         "role": "neutral",
         "displayName": "Ink on Amber",
         "canonical": "oklch(20% 0.030 60)",
-        "tonalRamp": ["oklch(15% 0.030 60)", "oklch(26% 0.030 60)", "oklch(37% 0.030 60)", "oklch(48% 0.030 60)", "oklch(59% 0.030 60)", "oklch(70% 0.030 60)", "oklch(82% 0.030 60)", "oklch(95% 0.030 60)"]
+        "tonalRamp": [
+          "oklch(15% 0.030 60)",
+          "oklch(26% 0.030 60)",
+          "oklch(37% 0.030 60)",
+          "oklch(48% 0.030 60)",
+          "oklch(59% 0.030 60)",
+          "oklch(70% 0.030 60)",
+          "oklch(82% 0.030 60)",
+          "oklch(95% 0.030 60)"
+        ]
       },
       "ink-on-lit": {
         "role": "neutral",
         "displayName": "Ink on Lit",
         "canonical": "oklch(0% 0 0)",
-        "tonalRamp": ["oklch(15% 0 0)", "oklch(26% 0 0)", "oklch(37% 0 0)", "oklch(48% 0 0)", "oklch(59% 0 0)", "oklch(70% 0 0)", "oklch(82% 0 0)", "oklch(95% 0 0)"]
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(37% 0 0)",
+          "oklch(48% 0 0)",
+          "oklch(59% 0 0)",
+          "oklch(70% 0 0)",
+          "oklch(82% 0 0)",
+          "oklch(95% 0 0)"
+        ]
       },
       "ink-on-fault": {
         "role": "neutral",
         "displayName": "Ink on Fault",
         "canonical": "oklch(100% 0 0)",
-        "tonalRamp": ["oklch(15% 0 0)", "oklch(26% 0 0)", "oklch(37% 0 0)", "oklch(48% 0 0)", "oklch(59% 0 0)", "oklch(70% 0 0)", "oklch(82% 0 0)", "oklch(95% 0 0)"]
-      },
-      "unlit-segment": {
-        "role": "neutral",
-        "displayName": "Unlit Segment",
-        "canonical": "rgba(255, 255, 255, 0.1)",
-        "tonalRamp": ["rgba(255,255,255,0.04)", "rgba(255,255,255,0.07)", "rgba(255,255,255,0.10)", "rgba(255,255,255,0.14)", "rgba(255,255,255,0.20)", "rgba(255,255,255,0.30)", "rgba(255,255,255,0.45)", "rgba(255,255,255,0.65)"]
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(37% 0 0)",
+          "oklch(48% 0 0)",
+          "oklch(59% 0 0)",
+          "oklch(70% 0 0)",
+          "oklch(82% 0 0)",
+          "oklch(95% 0 0)"
+        ]
       },
       "scrim": {
         "role": "neutral",
         "displayName": "Scrim",
         "canonical": "rgba(0, 0, 0, 0.5)",
-        "tonalRamp": ["rgba(0,0,0,0.12)", "rgba(0,0,0,0.20)", "rgba(0,0,0,0.30)", "rgba(0,0,0,0.40)", "rgba(0,0,0,0.50)", "rgba(0,0,0,0.60)", "rgba(0,0,0,0.72)", "rgba(0,0,0,0.85)"]
+        "tonalRamp": [
+          "rgba(0,0,0,0.12)",
+          "rgba(0,0,0,0.20)",
+          "rgba(0,0,0,0.30)",
+          "rgba(0,0,0,0.40)",
+          "rgba(0,0,0,0.50)",
+          "rgba(0,0,0,0.60)",
+          "rgba(0,0,0,0.72)",
+          "rgba(0,0,0,0.85)"
+        ]
       }
     },
     "typographyMeta": {
-      "legend": { "displayName": "Legend", "purpose": "Section names screen-printed on the panel. Replaces h1 outside rendered note content." },
-      "headline": { "displayName": "Headline", "purpose": "h2 inside rendered content and on document-shaped surfaces." },
-      "title": { "displayName": "Unit Title", "purpose": "A rack unit's name, lifted from the note's first block. Single line, ellipsized." },
-      "body": { "displayName": "Body", "purpose": "Rendered note prose in the preview bay, capped at 68ch." },
-      "label": { "displayName": "Control Label", "purpose": "Key faces, nav switches, and control legends. Tracked uppercase." },
-      "signal": { "displayName": "Signal", "purpose": "Anything literal or measured: filenames, paths, dates, counts, tags." },
-      "subhead": { "displayName": "Subhead", "purpose": "h3 in rendered content, and the one large readout value on a stat tile." },
-      "source": { "displayName": "Source", "purpose": "The editor's own text. One step up from signal, because it is read for minutes rather than glanced at." },
-      "field": { "displayName": "Field", "purpose": "Text the user is typing into a patch field." },
-      "note": { "displayName": "Note", "purpose": "Secondary panel text still meant to be read: vault paths, result first lines, backlinks, doctor references." },
-      "micro": { "displayName": "Micro Legend", "purpose": "The smallest screen-printed legend. Section labels, small keys, readout tracks, tags." },
-      "nano": { "displayName": "Nano Legend", "purpose": "A legend that sits inside a row without competing with it: category chips, editor head category." }
+      "legend": {
+        "displayName": "Legend",
+        "purpose": "Section names screen-printed on the panel. Replaces h1 outside rendered note content."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "h2 inside rendered content and on document-shaped surfaces."
+      },
+      "title": {
+        "displayName": "Unit Title",
+        "purpose": "A rack unit's name, lifted from the note's first block. Single line, ellipsized."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Rendered note prose in the preview bay, capped at 68ch."
+      },
+      "label": {
+        "displayName": "Control Label",
+        "purpose": "Key faces, nav switches, and control legends. Tracked uppercase."
+      },
+      "signal": {
+        "displayName": "Signal",
+        "purpose": "Anything literal or measured: filenames, paths, dates, counts, tags."
+      },
+      "subhead": {
+        "displayName": "Subhead",
+        "purpose": "h3 in rendered content, and the one large readout value on a stat tile."
+      },
+      "source": {
+        "displayName": "Source",
+        "purpose": "The editor's own text. One step up from signal, because it is read for minutes rather than glanced at."
+      },
+      "field": {
+        "displayName": "Field",
+        "purpose": "Text the user is typing into a patch field."
+      },
+      "note": {
+        "displayName": "Note",
+        "purpose": "Secondary panel text still meant to be read: vault paths, result first lines, backlinks, doctor references."
+      },
+      "micro": {
+        "displayName": "Micro Legend",
+        "purpose": "The smallest screen-printed legend. Section labels, small keys, readout tracks, tags."
+      },
+      "nano": {
+        "displayName": "Nano Legend",
+        "purpose": "A legend that sits inside a row without competing with it: category chips, editor head category."
+      }
     },
     "shadows": [
-      { "name": "inset-well", "value": "inset 0 2px 4px rgba(0,0,0,0.55), inset 0 -1px 0 rgba(255,255,255,0.06)", "purpose": "A recess milled into the panel. Dark at the top lip, catch-light along the bottom." },
-      { "name": "key-face", "value": "inset 0 1px 0 var(--engrave-light), 0 1px 1px rgba(0,0,0,0.12)", "purpose": "A capped button standing proud of the panel." },
-      { "name": "cap-edge", "value": "inset -1px 0 0 rgba(0,0,0,0.35), inset 1px 0 0 rgba(255,255,255,0.22)", "purpose": "The anodized category cap's machined edges." },
-      { "name": "lamp-glow", "value": "0 0 6px color-mix(in srgb, var(--lamp-fault) 55%, transparent)", "purpose": "The only glow in the system. Indicator lamps only." },
-      { "name": "engraved-rule", "value": "0 1px 0 var(--engrave-light)", "purpose": "Paired with a 1px engrave border to read as a groove rather than a line." },
-      { "name": "float", "value": "0 8px 16px rgba(0,0,0,0.1)", "purpose": "Genuine overlays that leave the panel plane: modals, popovers, combobox lists." }
+      {
+        "name": "inset-well",
+        "value": "inset 0 2px 4px rgba(0,0,0,0.55), inset 0 -1px 0 rgba(255,255,255,0.06)",
+        "purpose": "A recess milled into the panel. Dark at the top lip, catch-light along the bottom."
+      },
+      {
+        "name": "key-face",
+        "value": "inset 0 1px 0 var(--engrave-light), 0 1px 1px rgba(0,0,0,0.12)",
+        "purpose": "A capped button standing proud of the panel."
+      },
+      {
+        "name": "cap-edge",
+        "value": "inset -1px 0 0 rgba(0,0,0,0.35), inset 1px 0 0 rgba(255,255,255,0.22)",
+        "purpose": "The anodized category cap's machined edges."
+      },
+      {
+        "name": "lamp-glow",
+        "value": "0 0 6px color-mix(in srgb, var(--lamp-fault) 55%, transparent)",
+        "purpose": "The only glow in the system. Indicator lamps only."
+      },
+      {
+        "name": "engraved-rule",
+        "value": "0 1px 0 var(--engrave-light)",
+        "purpose": "Paired with a 1px engrave border to read as a groove rather than a line."
+      },
+      {
+        "name": "float",
+        "value": "0 8px 16px rgba(0,0,0,0.1)",
+        "purpose": "Genuine overlays that leave the panel plane: modals, popovers, combobox lists."
+      }
     ],
     "materials": [
-      { "name": "anodize", "value": "linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.06)), repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 3px)", "purpose": "Fine directional grain under any large panel surface. A flat fill reads as dated." }
+      {
+        "name": "anodize",
+        "value": "linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.06)), repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 3px)",
+        "purpose": "Fine directional grain under any large panel surface. A flat fill reads as dated."
+      }
     ],
     "motion": [
-      { "name": "throw", "value": "70ms cubic-bezier(0.2, 0, 0.1, 1)", "purpose": "Switch and key travel. Fast to seat, like real hardware." },
-      { "name": "settle", "value": "260ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Meter ballistics. The needle settles rather than snapping." },
-      { "name": "transition-fast", "value": "120ms ease", "purpose": "Incidental chrome state changes." },
-      { "name": "transition-smooth", "value": "200ms ease-out", "purpose": "Opacity and loading states." }
+      {
+        "name": "throw",
+        "value": "70ms cubic-bezier(0.2, 0, 0.1, 1)",
+        "purpose": "Switch and key travel. Fast to seat, like real hardware."
+      },
+      {
+        "name": "transition-fast",
+        "value": "120ms ease",
+        "purpose": "Incidental chrome state changes."
+      },
+      {
+        "name": "transition-smooth",
+        "value": "200ms ease-out",
+        "purpose": "Opacity and loading states."
+      }
     ],
     "breakpoints": [
-      { "name": "gutter-sm", "value": "640px" },
-      { "name": "mobile", "value": "768px" }
+      {
+        "name": "gutter-sm",
+        "value": "640px"
+      },
+      {
+        "name": "mobile",
+        "value": "768px"
+      }
     ],
     "schemes": {
       "dark": {
@@ -168,8 +405,20 @@
     "categoryColor": {
       "algorithm": "djb2 hash of the category name, ported from the author's WezTerm config",
       "hue": "0-359, full spectrum",
-      "saturation": [58, 64, 70, 76, 82],
-      "lightness": [48, 53, 58, 63, 68],
+      "saturation": [
+        58,
+        64,
+        70,
+        76,
+        82
+      ],
+      "lightness": [
+        48,
+        53,
+        58,
+        63,
+        68
+      ],
       "purpose": "Deterministic per-category anodize color. The band is held high deliberately; a 25-45% band was mud against the dark panel.",
       "source": "yak_shears/_templates/__init__.py:get_category_color"
     }
@@ -203,9 +452,9 @@
       "name": "Rack Unit",
       "kind": "card",
       "refersTo": "card",
-      "description": "One note in the vault listing. Fixed height, category-tinted, with its cap, readout, and meter at the same position on every row.",
-      "html": "<div class=\"ds-rack\"><a class=\"ds-unit\" style=\"--cat: hsl(196, 70%, 58%); --fill: 0.62\" href=\"#\"><span class=\"ds-unit__cap\"></span><span class=\"ds-unit__body\"><span class=\"ds-unit__name\">Console redesign notes</span><span class=\"ds-unit__preview\">Three materials do all the structural work and every component is built from them.</span></span><span class=\"ds-unit__meta\"><span class=\"ds-unit__chip\">design</span><span class=\"ds-unit__stats\"><span>2026-07-26</span><span>412 w</span></span><span class=\"ds-unit__meter\"></span></span></a></div>",
-      "css": ".ds-rack { display: flex; flex-direction: column; gap: 1px; background: var(--engrave, #0a0c0e); border: 1px solid var(--engrave, #0a0c0e); border-radius: 5px; overflow: hidden; } .ds-unit { position: relative; display: grid; grid-template-columns: 6px minmax(0,1fr) auto; align-items: stretch; gap: 0 1rem; height: 5.5rem; text-decoration: none; color: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--cat) 13%, transparent), transparent 42%), linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.06)), repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 3px), var(--panel-raised, #2b3037); transition: background-color 70ms cubic-bezier(0.2,0,0.1,1); } .ds-unit:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--cat) 30%, transparent), transparent 55%), linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.06)), repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 3px), var(--panel, #22262b); } .ds-unit__cap { background: var(--cat); box-shadow: inset -1px 0 0 rgba(0,0,0,0.35), inset 1px 0 0 rgba(255,255,255,0.22); } .ds-unit__body { min-width: 0; align-self: center; overflow: hidden; padding: 0.75rem 0; color: var(--legend-dim, #99a3ae); } .ds-unit__name { display: block; margin-bottom: 0.25rem; color: var(--legend, #e8ecf1); font-size: 0.9375rem; font-weight: 600; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-unit__preview { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; height: 2.2rem; overflow: hidden; font-size: 0.8125rem; line-height: 1.35; } .ds-unit__meta { display: grid; grid-template-columns: 7rem auto; align-items: center; gap: 1rem; padding: 0.75rem 1rem 0.75rem 0; font-size: 0.6875rem; } .ds-unit__chip { color: var(--legend-dim, #99a3ae); font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; text-align: right; } .ds-unit__stats { display: grid; gap: 0.25em; justify-items: end; color: var(--legend-dim, #99a3ae); font-family: ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; } .ds-unit__meter { position: relative; display: block; width: 3.5rem; height: 9px; border-radius: 2px; background: var(--well, #14171a); box-shadow: inset 0 2px 4px rgba(0,0,0,0.55); overflow: hidden; } .ds-unit__meter::before { content: \"\"; position: absolute; inset: 1px; background: rgba(255,255,255,0.1); mask-image: repeating-linear-gradient(to right, #000 0 3px, transparent 3px 5px); } .ds-unit__meter::after { content: \"\"; position: absolute; inset: 1px; background: var(--cat); box-shadow: 0 0 5px color-mix(in srgb, var(--cat) 60%, transparent); clip-path: inset(0 calc((1 - var(--fill,0)) * 100%) 0 0); mask-image: repeating-linear-gradient(to right, #000 0 3px, transparent 3px 5px); transition: clip-path 260ms cubic-bezier(0.16,1,0.3,1); }"
+      "description": "One note in the vault listing. Fixed height, category-tinted, with its cap, four lines of note, and its readout at the same position on every row. The category name is stated by the cap and fades in on hover.",
+      "html": "<div class=\"ds-rack\"><a class=\"ds-unit\" style=\"--cat: hsl(196, 74%, 50%)\" href=\"#\"><span class=\"ds-unit__cap\"></span><span class=\"ds-unit__body\"><span class=\"ds-unit__name\">Console redesign notes</span><span class=\"ds-unit__preview\">Three materials do all the structural work and every component is built from them. The panel is the painted face things are mounted on, the well is a recess milled into it, and the engrave is a groove cut into the panel.</span></span><span class=\"ds-unit__meta\"><span class=\"ds-unit__chip\">design</span><span class=\"ds-unit__stat\">2026-07-26</span><span class=\"ds-unit__signal\"><span class=\"ds-lamp ds-lamp--live\"></span><span class=\"ds-unit__stat\">3 &#8663;</span></span></span></a></div>",
+      "css": ".ds-rack { display: flex; flex-direction: column; gap: 1px; background: var(--engrave, #0a0c0e); border: 1px solid var(--engrave, #0a0c0e); border-radius: 5px; overflow: hidden; max-width: 52rem; } .ds-unit { position: relative; display: grid; grid-template-columns: 6px minmax(0,1fr) 6.5rem; align-items: stretch; gap: 0 1rem; height: 8.5rem; text-decoration: none; color: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--cat) 13%, transparent), transparent 42%), linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.06)), repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 3px), var(--panel-raised, #2b3037); transition: background-color 70ms cubic-bezier(0.2,0,0.1,1); } .ds-unit:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--cat) 30%, transparent), transparent 55%), linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.06)), repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 3px), var(--panel, #22262b); } .ds-unit__cap { background: var(--cat); box-shadow: inset -1px 0 0 rgba(0,0,0,0.35), inset 1px 0 0 rgba(255,255,255,0.22); } .ds-unit__body { min-width: 0; align-self: center; overflow: hidden; padding: 0.75rem 0; color: var(--legend-dim, #99a3ae); } .ds-unit__name { display: block; margin-bottom: 0.25rem; color: var(--legend, #e8ecf1); font-size: 0.9375rem; font-weight: 600; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-unit__preview { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; height: 4.4rem; overflow: hidden; font-size: 0.8125rem; line-height: 1.35; } .ds-unit__meta { display: grid; grid-template-rows: auto auto auto; align-content: start; justify-items: end; gap: 0.5rem; padding: 1rem 1rem 0.75rem 0; font-size: 0.6875rem; } .ds-unit__chip { color: var(--legend-dim, #99a3ae); font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0; transition: opacity 70ms cubic-bezier(0.2,0,0.1,1); } .ds-unit:hover .ds-unit__chip { opacity: 1; } .ds-unit__stat { color: var(--legend-dim, #99a3ae); font-family: ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; white-space: nowrap; } .ds-unit__signal { display: flex; align-items: center; gap: 0.5rem; } .ds-lamp { display: block; width: 4px; height: 4px; border-radius: 999px; background: var(--lamp-off, #464d55); } .ds-lamp--live { width: 9px; height: 9px; background: var(--lamp-live, #3ddc7f); box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-live, #3ddc7f) 55%, transparent); }"
     },
     {
       "name": "Patch Field",
@@ -242,7 +491,7 @@
   ],
   "narrative": {
     "northStar": "The Console",
-    "overview": "Yak Shears is an instrument you operate at speed, so the interface is a console panel rather than a page of documents. It refuses the arrangement every note app ships: a grey sidebar tree beside a white document pane, with every note drawn as an identical card. The vault is a rack of channel strips, one unit per note, each with its category cap, its readout, and its level meter in the same place. You sweep the readout column, throw a switch, and work in the center section.\n\nThree materials do all the structural work and every component is built from them. The panel is the painted face things are mounted on. The well is a recess milled into it, where content and inputs sit down. The engrave is a groove cut into the panel, drawn as a dark line over a lighter one so it reads as cut rather than as a stroked border. On top of the materials sit the parts: screen-printed legends, anodized caps carrying category color, indicator lamps, and meters with real ballistics.\n\nThe panel is anodized charcoal, slightly blue rather than neutral, with a fine directional grain instead of a flat fill. This matters because a flat neutral grey is the timid rendition of this world and it takes the life out of every cap and lamp mounted on it. Both color schemes are real consoles: light is a painted panel under daylight, dark is the same desk at night. Neither is an inversion of the other, and neither turns the instrument into paper.",
+    "overview": "Yak Shears is an instrument you operate at speed, so the interface is a console panel rather than a page of documents. It refuses the arrangement every note app ships: a grey sidebar tree beside a white document pane, with every note drawn as an identical card. The vault is a rack of channel strips, one unit per note, each with its category cap, its four lines of note, and its readout in the same place. You sweep the readout column, throw a switch, and work in the center section.\n\nThree materials do all the structural work and every component is built from them. The panel is the painted face things are mounted on. The well is a recess milled into it, where content and inputs sit down. The engrave is a groove cut into the panel, drawn as a dark line over a lighter one so it reads as cut rather than as a stroked border. On top of the materials sit the parts: screen-printed legends, anodized caps carrying category color, and indicator lamps that report state in size as well as color.\n\nThe panel is anodized charcoal, slightly blue rather than neutral, with a fine directional grain instead of a flat fill. This matters because a flat neutral grey is the timid rendition of this world and it takes the life out of every cap and lamp mounted on it. Both color schemes are real consoles: light is a painted panel under daylight, dark is the same desk at night. Neither is an inversion of the other, and neither turns the instrument into paper.",
     "keyCharacteristics": [
       "Three materials (panel, well, engrave) compose every component; nothing is a floating card",
       "Amber is the only lit color in the chrome and it means armed",
@@ -252,16 +501,56 @@
       "Hardware travel is 1px; controls move a little, not a lot"
     ],
     "rules": [
-      { "name": "The Lamps-Only Rule", "body": "Green, red, and amber appear as state and never as decoration. A lamp answers a question about the system right now; if nothing is being reported, no lamp lights.", "section": "colors" },
-      { "name": "The One Armed Key Rule", "body": "Amber marks the action that will fire, so exactly one primary key belongs in any control group. A full-width slab of amber on a control that is always present spends the panel's only lit color on nothing.", "section": "colors" },
-      { "name": "The Unlit-Off-Limits Rule", "body": "--lamp-off (#464d55) is for hardware that is dark, never for text. Dim text steps down to --legend-dim, which stays above the contrast floor.", "section": "colors" },
-      { "name": "The Legend-Never-Content Rule", "body": "A legend names a control. It never carries the note. Panel heading styles are scoped away from rendered content, because a heading the user wrote is theirs and stays a heading.", "section": "typography" },
-      { "name": "The Tabular Column Rule", "body": "Anything that appears at the same position on consecutive rows takes font-variant-numeric: tabular-nums. Counts and dates in a rack must line up on the digit or the readout column stops being a column.", "section": "typography" },
-      { "name": "The Row-Pitch Rule", "body": "Every rack unit is exactly one rack height. Content never sets the row height.", "section": "layout" },
-      { "name": "The dvh Rule", "body": "dvh, never vh. overflow-x: clip, never hidden, because hidden stops the sticky header from sticking.", "section": "layout" },
-      { "name": "The Machined-Depth Rule", "body": "Depth is stated by inset and catch-light, not by a blur under the element. If a surface is on the panel, it casts no shadow onto it.", "section": "elevation" },
-      { "name": "The Engraved-Pair Rule", "body": "A division is a 1px solid --engrave over a 1px solid --engrave-light. A single grey line is a border; the pair is a groove.", "section": "elevation" },
-      { "name": "The No-Side-Bar Rule", "body": "State is never communicated by a colored border down one edge of a row. That vocabulary belongs to the category cap, which means identity. Severity uses lamps; selection uses the seated well plus the lit underline.", "section": "shapes" }
+      {
+        "name": "The Lamps-Only Rule",
+        "body": "Green, red, and amber appear as state and never as decoration. A lamp answers a question about the system right now; if nothing is being reported, no lamp lights.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Armed Key Rule",
+        "body": "Amber marks the action that will fire, so exactly one primary key belongs in any control group. A full-width slab of amber on a control that is always present spends the panel's only lit color on nothing.",
+        "section": "colors"
+      },
+      {
+        "name": "The Unlit-Off-Limits Rule",
+        "body": "--lamp-off (#464d55) is for hardware that is dark, never for text. Dim text steps down to --legend-dim, which stays above the contrast floor.",
+        "section": "colors"
+      },
+      {
+        "name": "The Legend-Never-Content Rule",
+        "body": "A legend names a control. It never carries the note. Panel heading styles are scoped away from rendered content, because a heading the user wrote is theirs and stays a heading.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Column Rule",
+        "body": "Anything that appears at the same position on consecutive rows takes font-variant-numeric: tabular-nums. Counts and dates in a rack must line up on the digit or the readout column stops being a column.",
+        "section": "typography"
+      },
+      {
+        "name": "The Row-Pitch Rule",
+        "body": "Every rack unit is exactly one rack height. Content never sets the row height.",
+        "section": "layout"
+      },
+      {
+        "name": "The dvh Rule",
+        "body": "dvh, never vh. overflow-x: clip, never hidden, because hidden stops the sticky header from sticking.",
+        "section": "layout"
+      },
+      {
+        "name": "The Machined-Depth Rule",
+        "body": "Depth is stated by inset and catch-light, not by a blur under the element. If a surface is on the panel, it casts no shadow onto it.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Engraved-Pair Rule",
+        "body": "A division is a 1px solid --engrave over a 1px solid --engrave-light. A single grey line is a border; the pair is a groove.",
+        "section": "elevation"
+      },
+      {
+        "name": "The No-Side-Bar Rule",
+        "body": "State is never communicated by a colored border down one edge of a row. That vocabulary belongs to the category cap, which means identity. Severity uses lamps; selection uses the seated well plus the lit underline.",
+        "section": "shapes"
+      }
     ],
     "dos": [
       "Do build new surfaces from the three materials. Ask whether the thing is recessed, flush, or proud, and use --inset-well, the panel face, or the key shadow accordingly.",

@@ -1,6 +1,7 @@
 """Template rendering utilities."""
 
 import hashlib
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from http import HTTPStatus
@@ -10,12 +11,23 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader
 from starlette.responses import HTMLResponse
 
+from yak_shears._yak.categories import PALETTE, UNASSIGNED_COLOR
+
 
 class SortBy(StrEnum):
     """Enum for yak sorting options."""
 
     CREATED_AT = "created_at"
     MODIFIED_DATE = "modified_date"
+
+
+class Recency(StrEnum):
+    """How recently a yak was edited, as a lamp state rather than a duration."""
+
+    LIVE = "live"
+    RECENT = "recent"
+    IDLE = "idle"
+    COLD = "cold"
 
 
 @dataclass(frozen=True)
@@ -29,9 +41,9 @@ class YakInfo:
     name: str
     path: str
     preview: str
+    recency: Recency
     tags: list[str]
     truncated: bool
-    word_count: int
 
 
 @dataclass(frozen=True)
@@ -81,34 +93,17 @@ def static_url(path: str) -> str:
 ENV.globals["static_url"] = static_url
 
 
-_HASH_MASK = 2**31
-_SATURATIONS = (58, 64, 70, 76, 82)
-_LIGHTNESSES = (48, 53, 58, 63, 68)
-
-
-def get_category_color(category: str) -> str:
-    """Deterministic muted color for a category name.
-
-    Ports the djb2-based HSL scheme from the user's WezTerm config so tab and
-    category colors stay consistent: full-spectrum hue, held to a saturation
-    and lightness band that stays legible as an anodized cap against the dark
-    panel. Muted values disappear into it.
+def color_lookup(colors: Mapping[str, str]) -> Callable[[str], str]:
+    """Build the template's category-to-color accessor over a resolved mapping.
 
     Returns:
-        A CSS ``hsl(...)`` color string.
+        A callable that maps a category name to a CSS color string.
     """
-    if not category:
-        return "var(--color-border)"
 
-    hash_val = 5381
-    for char in category:
-        hash_val = ((hash_val * 33) + ord(char)) % _HASH_MASK
-    hash_val = ((hash_val * 31337) + 12345) % _HASH_MASK
+    def lookup(category: str) -> str:
+        return colors.get(category, UNASSIGNED_COLOR)
 
-    hue = hash_val % 360
-    saturation = _SATURATIONS[(hash_val // 360) % len(_SATURATIONS)]
-    lightness = _LIGHTNESSES[(hash_val // 1800) % len(_LIGHTNESSES)]
-    return f"hsl({hue}, {saturation}%, {lightness}%)"
+    return lookup
 
 
 def _render_template(template_name: str, *, status_code: HTTPStatus = HTTPStatus.OK, **context: Any) -> HTMLResponse:
@@ -167,6 +162,8 @@ def render_yaks(
     sort_by: SortBy,
     current_category: str | None,
     categories: set[str],
+    category_colors: Mapping[str, str],
+    show_new: bool,
 ) -> HTMLResponse:
     """Render the yaks listing page.
 
@@ -179,6 +176,8 @@ def render_yaks(
         sort_by: Criteria to sort yaks
         current_category: active category filter currently applied
         categories: set of available categories for filtering
+        category_colors: resolved category to CSS color mapping
+        show_new: whether the new-yak modal opens over the rack
 
     Returns:
         HTMLResponse with the yaks listing template
@@ -193,8 +192,9 @@ def render_yaks(
         sort_by=sort_by,
         current_category=current_category,
         categories=categories,
-        get_category_color=get_category_color,
-        current_route="yaks",
+        get_category_color=color_lookup(category_colors),
+        show_new=show_new,
+        current_route="new" if show_new else "yaks",
     )
 
 
@@ -202,6 +202,7 @@ def render_yak_edit(
     yak_path: str,
     content: str,
     category: str,
+    category_color: str,
     frontmatter: dict[str, Any] | None = None,
     backlinks: list[tuple[str, str]] | None = None,
 ) -> HTMLResponse:
@@ -211,6 +212,7 @@ def render_yak_edit(
         yak_path: Path of the yak being edited
         content: Current content of the yak
         category: Category name
+        category_color: CSS color assigned to the category
         frontmatter: Frontmatter metadata dictionary
         backlinks: List of (source_path, link_type) tuples
 
@@ -224,22 +226,30 @@ def render_yak_edit(
         yak_path=yak_path,
         content=content,
         category=(category or "root").title(),
-        category_color=get_category_color(category or ""),
+        category_color=category_color,
         frontmatter=frontmatter or {},
         backlinks=backlinks or [],
+        current_route="edit",
     )
 
 
-def render_yak_new(categories: set[str]) -> HTMLResponse:
-    """Render the new yak creation page.
+def render_settings(*, assignments: list[tuple[str, str]], saved: bool) -> HTMLResponse:
+    """Render the category color settings page.
 
     Args:
-        categories: Set of available categories
+        assignments: (category, slot name) pairs in display order
+        saved: whether the page follows a successful save
 
     Returns:
-        HTMLResponse with the new yak template
+        HTMLResponse with the settings template
     """
-    return _render_template("yak/new.html.jinja", categories=categories, current_route="new")
+    return _render_template(
+        "settings/index.html.jinja",
+        assignments=assignments,
+        palette=PALETTE,
+        saved=saved,
+        current_route="settings",
+    )
 
 
 def render_search(results: list[SearchResult], query: str) -> HTMLResponse:
