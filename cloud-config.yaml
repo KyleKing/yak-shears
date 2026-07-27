@@ -93,8 +93,12 @@ write_files:
         echo "Updates detected. Pulling changes..."
         git pull origin yak-shears-py || exit 1
 
+        # --no-dev: the server runs the app, never the test or lint tooling.
+        # --frozen: install exactly what uv.lock pins and fail loudly if it is
+        # stale, rather than re-resolving. Re-resolving also drags in the dev
+        # group's local editable sources, which do not exist on the server.
         echo "Installing dependencies..."
-        /home/yakshears/.local/bin/uv sync || exit 1
+        /home/yakshears/.local/bin/uv sync --no-dev --frozen || exit 1
 
         echo "Restarting service..."
         sudo systemctl restart yak-shears || exit 1
@@ -205,7 +209,7 @@ runcmd:
   # Clone repository and install dependencies
   # NOTE: For private repos, add SSH deploy key to GitHub and update URL to git@github.com:...
   - sudo -u yakshears git clone https://github.com/KyleKing/yak-shears.git /home/yakshears/yak-shears || exit 1
-  - sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/uv sync' || exit 1
+  - sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/uv sync --no-dev --frozen' || exit 1
 
   # Enable and start Syncthing
   - systemctl enable syncthing@yakshears.service || exit 1

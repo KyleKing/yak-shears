@@ -207,7 +207,7 @@ Syncthing advertises both IPv4 and IPv6 addresses for a device. If your network 
 
 The server polls `origin/yak-shears-py` every 5 minutes and automatically:
 - Pulls new commits
-- Runs `uv sync`
+- Runs `uv sync --no-dev --frozen`
 - Restarts `yak-shears` service
 
 ```sh
@@ -356,7 +356,7 @@ sudo DEBIAN_FRONTEND=noninteractive dpkg --configure -a --force-confdef --force-
 sudo mkdir -p /home/yakshears/Sync/yak-shears
 sudo chown -R yakshears:yakshears /home/yakshears/Sync
 sudo -u yakshears git clone https://github.com/KyleKing/yak-shears.git /home/yakshears/yak-shears
-sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/uv sync'
+sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/uv sync --no-dev --frozen'
 sudo systemctl enable --now syncthing@yakshears.service caddy yak-shears
 sudo systemctl daemon-reload
 sudo systemctl enable --now gitops-update.timer
@@ -497,10 +497,10 @@ echo "*/15 * * * * /usr/local/bin/health-check.sh" | crontab -
 # Update system packages
 sudo apt update && sudo apt upgrade -y
 
-# Update Python dependencies
+# Update Python dependencies. Lock from a dev machine and commit uv.lock;
+# the server installs runtime deps only and refuses a stale lockfile.
 cd /home/yakshears/yak-shears
-uv lock --upgrade
-uv sync
+uv sync --no-dev --frozen
 
 # Restart services after manual updates
 sudo systemctl restart yak-shears
