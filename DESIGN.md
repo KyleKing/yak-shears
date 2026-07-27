@@ -366,6 +366,15 @@ The anodized cap is the system's recurring signature geometry: a full-height 6px
 
 A word-count level meter used to sit at the end of every readout. It spent 3.5rem of every row on a number nothing was decided by, so it was removed along with `YakInfo.word_count` and the `--settle` easing that drove its ballistics. The recency lamp took the slot.
 
+### Empty State
+
+An empty rack: the frame at 8rem wide with three vacant `--well` slots in it, hairline
+gaps showing the engrave ground through, and no caps mounted. It reuses the rack's own
+geometry, so an empty vault looks like the thing it is rather than like a missing
+picture. The two emoji it replaced (📝 and 🔍) were the only marks in the interface
+that belonged to no world, and sizing one at 4rem was the only type on the page with
+no step on the ramp.
+
 ### Modal
 
 The one surface allowed to leave the panel plane, so the one place a scrim (`--scrim`) and a cast shadow (`--shadow-lg`) belong. Rendered server-side from a query parameter and dismissed by a link, so opening, closing, and submitting all work with scripting off; the only JS is the Escape key.

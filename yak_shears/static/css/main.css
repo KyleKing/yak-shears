@@ -2387,10 +2387,25 @@ pre code {
 	max-width: 500px;
 }
 
-.empty-state__icon {
-	font-size: 4rem;
-	margin-bottom: var(--space-5);
-	opacity: 0.4;
+/* An empty rack: the frame, with no units mounted in it. Drawn from the same
+   three materials as every other surface, because a glyph borrowed from
+   outside the panel was the one thing here that belonged to no world. */
+.empty-mark {
+	display: grid;
+	gap: 1px;
+	width: 8rem;
+	margin: 0 auto var(--space-5);
+	background: var(--engrave);
+	border: 1px solid var(--engrave);
+	border-radius: var(--radius-lg);
+	overflow: hidden;
+	opacity: 0.7;
+}
+
+.empty-mark__slot {
+	height: 1.25rem;
+	background: var(--well);
+	box-shadow: var(--inset-well);
 }
 
 .empty-state__title {

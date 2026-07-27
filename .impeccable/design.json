@@ -487,6 +487,14 @@
       "description": "The one thing on the editor that never scrolls away: which yak is open, what it is filed under, and which source is monitored.",
       "html": "<div class=\"ds-head\" style=\"--cat: hsl(196, 70%, 58%)\"><span class=\"ds-head__cap\"></span><span class=\"ds-head__name\">2026-07-26T11_04_18Z.dj</span><span class=\"ds-head__category\">Design</span></div>",
       "css": ".ds-head { display: flex; align-items: center; gap: 0.75rem; min-height: 44px; padding: 0.5rem 0.75rem; background: var(--panel-raised, #2b3037); border: 1px solid var(--engrave, #0a0c0e); border-bottom: 0; border-radius: 5px 5px 0 0; } .ds-head__cap { width: 3px; align-self: stretch; margin: 0.25rem 0; border-radius: 1px; background: var(--cat); } .ds-head__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, Menlo, monospace; font-size: 0.8125rem; color: var(--legend, #e8ecf1); } .ds-head__category { flex: 1; font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--legend-dim, #99a3ae); }"
+    },
+    {
+      "name": "Empty State",
+      "kind": "empty-state",
+      "refersTo": "empty-mark",
+      "description": "An empty rack: the frame with three vacant slots and no caps mounted. Reuses the rack's own geometry so an empty vault looks like the thing it is.",
+      "html": "<div class=\"ds-empty\" aria-hidden=\"true\"><span class=\"ds-empty__slot\"></span><span class=\"ds-empty__slot\"></span><span class=\"ds-empty__slot\"></span></div>",
+      "css": ".ds-empty { display: grid; gap: 1px; width: 8rem; background: var(--engrave, #0a0c0e); border: 1px solid var(--engrave, #0a0c0e); border-radius: 5px; overflow: hidden; opacity: 0.7; } .ds-empty__slot { height: 1.25rem; background: var(--well, #14171a); box-shadow: inset 0 2px 4px rgba(0,0,0,0.55), inset 0 -1px 0 rgba(255,255,255,0.06); }"
     }
   ],
   "narrative": {

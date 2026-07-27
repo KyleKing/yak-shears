@@ -130,7 +130,11 @@ show_new: bool
   {% else %}
     <div class="empty-state-container">
       <div class="empty-state">
-        <div class="empty-state__icon">📝</div>
+        <div class="empty-mark" aria-hidden="true">
+          <span class="empty-mark__slot"></span>
+          <span class="empty-mark__slot"></span>
+          <span class="empty-mark__slot"></span>
+        </div>
         <h2 class="empty-state__title">No yaks found</h2>
         <p class="empty-state__message">
           {% if current_category %}
