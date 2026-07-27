@@ -211,7 +211,8 @@ button {
 
 :focus-visible {
 	outline: 0;
-	box-shadow: 0 0 0 3px rgba(247, 207, 70, 0.4);
+	box-shadow: 0 0 0 3px
+		color-mix(in srgb, var(--color-accent) 40%, transparent);
 }
 
 h1,
@@ -631,8 +632,8 @@ p {
 }
 
 .button--danger:hover {
-	background: #c0392b;
-	border-color: #c0392b;
+	background: color-mix(in srgb, var(--color-danger) 82%, #000);
+	border-color: color-mix(in srgb, var(--color-danger) 82%, #000);
 }
 
 /* Low-key destructive action: reads as an outline until hovered (item 2) */
@@ -998,7 +999,8 @@ p {
 
 .login-form__control:focus {
 	border-color: var(--color-accent);
-	box-shadow: 0 0 0 3px rgba(247, 207, 70, 0.1);
+	box-shadow: 0 0 0 3px
+		color-mix(in srgb, var(--color-accent) 25%, transparent);
 }
 
 .alert {
@@ -1010,9 +1012,10 @@ p {
 }
 
 .alert--warn {
-	background: #fff8e0;
-	border-color: var(--color-accent);
-	color: #3a3100;
+	background: var(--well);
+	box-shadow: var(--inset-well);
+	border-color: var(--lamp-warn);
+	color: var(--legend);
 }
 
 .form {
@@ -1356,7 +1359,9 @@ pre code {
 .editor:focus {
 	outline: none;
 	border-color: var(--color-accent);
-	box-shadow: 0 0 0 3px rgba(247, 207, 70, 0.2); /* Accent color with 20% opacity */
+	box-shadow:
+		var(--inset-well),
+		0 0 0 3px color-mix(in srgb, var(--color-accent) 35%, transparent);
 }
 
 /* Drop target feedback while a file is dragged over the editor (editor.js). */
@@ -1585,16 +1590,36 @@ pre code {
 	border-radius: var(--radius-sm);
 }
 
-/* "Saved" status gets green background */
-.editor__status.saved {
-	background: #e8f5e8;
-	color: #2e7d32;
+/* Save state is read from a lamp, like every other state on the panel. The
+   filled pastel pills these replaced were light-scheme chips sitting on a dark
+   console face. */
+.editor__status.saved::before,
+.editor__status.error::before {
+	content: "";
+	display: inline-block;
+	width: 7px;
+	height: 7px;
+	margin-right: 0.5em;
+	border-radius: 50%;
+	vertical-align: baseline;
 }
 
-/* "Error saving!" status gets red background */
+.editor__status.saved {
+	color: var(--lamp-live);
+}
+
+.editor__status.saved::before {
+	background: var(--lamp-live);
+	box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-live) 55%, transparent);
+}
+
 .editor__status.error {
-	background: #ffebee;
-	color: var(--color-danger);
+	color: var(--lamp-fault);
+}
+
+.editor__status.error::before {
+	background: var(--lamp-fault);
+	box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-fault) 55%, transparent);
 }
 
 /* ============================================================================
