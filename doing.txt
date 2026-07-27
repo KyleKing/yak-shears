@@ -8,3 +8,8 @@ claude --resume 1dab60b7-5ea4-4493-bc39-03de92f02791
 1. Review the observability ADR and plan next steps there
 
 Consider identifying when a JSON file is out of date when it was loaded and a restart is necessary (eg when users change, or when setting are modified outside of the app?)
+
+2026-07-27
+- typed-jinja is no longer installed into the project venv, so its LSP extra is gone from my editor. Either publish typed-jinja or wire the editor at the sibling checkout
+- ruff reports 16 errors and a formatting diff in yak_shears/_yak/handlers.py that predate today. CI never ran ruff, so nothing caught them
+- consider adding ruff check and ruff format --check to CI, otherwise lint drift keeps accumulating unseen
