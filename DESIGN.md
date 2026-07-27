@@ -16,6 +16,11 @@ colors:
   lamp-fault: "#ff5c47"
   lamp-off: "#464d55"
   link: "#6fb7ff"
+  ink-on-amber: "#1b1206"
+  ink-on-lit: "#000000"
+  ink-on-fault: "#ffffff"
+  unlit-segment: "rgba(255, 255, 255, 0.1)"
+  scrim: "rgba(0, 0, 0, 0.5)"
 typography:
   legend:
     fontFamily: "ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
@@ -54,7 +59,45 @@ typography:
     lineHeight: 1.5
     letterSpacing: "normal"
     fontFeature: "tabular-nums"
+  subhead:
+    fontFamily: "ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+    fontSize: "1.25rem"
+    fontWeight: 600
+    lineHeight: 1.3
+    letterSpacing: "normal"
+  source:
+    fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace"
+    fontSize: "0.9375rem"
+    fontWeight: 400
+    lineHeight: 1.6
+    letterSpacing: "normal"
+  field:
+    fontFamily: "ui-monospace, Menlo, Monaco, 'Cascadia Mono', 'Roboto Mono', Consolas, monospace"
+    fontSize: "1.05rem"
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: "normal"
+  note:
+    fontFamily: "ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: "normal"
+  micro:
+    fontFamily: "ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+    fontSize: "0.6875rem"
+    fontWeight: 600
+    lineHeight: 1.5
+    letterSpacing: "0.11em"
+  nano:
+    fontFamily: "ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+    fontSize: "0.625rem"
+    fontWeight: 600
+    lineHeight: 1.5
+    letterSpacing: "0.1em"
 rounded:
+  hairline: "1px"
+  hardware: "2px"
   sm: "3px"
   lg: "5px"
   pill: "999px"
@@ -181,6 +224,21 @@ An anodized charcoal panel with a full-spectrum category system mounted on it, p
 
 - **Live** (#3ddc7f), **Warn** (#ffb02e), **Fault** (#ff5c47), **Off** (#464d55): Indicator lamps. A lamp is a 7px circle with a matching glow at ~55% mix.
 
+### Ink on Lit Surfaces
+
+A lit surface takes dark ink, because the panel's text colors are built for a dark ground and would vanish on amber.
+
+- **Ink on Amber** (#1b1206): The armed key's label. Warm near-black rather than pure black, so it belongs to the amber rather than punching through it.
+- **Ink on Lit** (#000000): Labels on any other fully lit surface: the skip link, the active combobox option, a pressed toolbar key, a search highlight.
+- **Ink on Fault** (#ffffff): Labels on a filled fault-red surface.
+
+### Shading
+
+Shading is material, not palette. The alpha blacks and whites in inset shadows, the anodize grain, and cap catch-lights are how a material is drawn and they are recorded with their materials in the sidecar, not as color tokens. Two carry a role and are named:
+
+- **Unlit Segment** (rgba(255, 255, 255, 0.1)): The dark half of a bargraph, so a meter reads as a scale with a level on it rather than as an empty black slot.
+- **Scrim** (rgba(0, 0, 0, 0.5)): Behind a modal that leaves the panel plane.
+
 ### Named Rules
 
 **The Lamps-Only Rule.** Green, red, and amber appear as state and never as decoration. A lamp answers a question about the system right now; if nothing is being reported, no lamp lights.
@@ -202,8 +260,14 @@ An anodized charcoal panel with a full-spectrum category system mounted on it, p
 - **Headline** (600, 1.5rem, 1.3): `h2`. Used inside rendered content and on the few document-shaped surfaces.
 - **Title** (600, 0.9375rem, 1.35): A rack unit's name, lifted from the note's first block. Single line, ellipsized.
 - **Body** (400, 1rem, 1.7, max 68ch): Rendered note prose in the preview bay. Prose is read rather than scanned, so it takes a reading measure.
+- **Subhead** (600, 1.25rem, 1.3): `h3` inside rendered content, and the one large readout value on a stat tile.
 - **Label** (600, 0.75rem, 0.09em tracking, uppercase): Every key face, nav switch, and control legend.
-- **Signal** (400, 0.8125rem, tabular figures): Filenames, paths, dates, counts, tags, and the editor's own text (0.9375rem there).
+- **Note** (400, 0.875rem): Secondary panel text that is still meant to be read rather than scanned: a vault path, a result's first line, a backlink, a doctor reference.
+- **Micro** (600, 0.6875rem, 0.11em tracking, uppercase): The smallest screen-printed legend. Section labels, small key faces, readout tracks, tags, the maker's badge.
+- **Nano** (600, 0.625rem, 0.1em tracking, uppercase): Tighter still, for a legend that has to sit inside a row without competing with it: the rack unit's category chip, the editor head's category.
+- **Signal** (400, 0.8125rem, tabular figures): Filenames, paths, dates, counts, and tags.
+- **Source** (400, 0.9375rem, 1.6): The editor's own text. One step up from signal, because it is read for minutes rather than glanced at.
+- **Field** (400, 1.05rem, mono): Text the user is typing into a patch field.
 
 ### Named Rules
 
@@ -249,7 +313,7 @@ There are no ambient drop shadows on the panel. Depth is machined: things are ei
 
 ## Shapes
 
-Panel hardware is machined, so radii are small and deliberate: 3px on caps, keys, and switches, 5px on chassis corners, and full round only on lamps. Nothing is pillowy. The pill radius survives on two legacy controls and should not spread.
+Panel hardware is machined, so radii are small and deliberate: 3px on caps, keys, and switches, 5px on chassis corners, and full round only on lamps. Below that sit two hardware steps that exist because a milled part has a broken edge rather than a sharp one: 2px on a meter slot, a segmented control's outer positions, and an inline code run, and 1px on the smallest details (a lit indicator bar, a cap edge, the head plate's rule). Nothing is pillowy. The pill radius survives on two legacy controls and should not spread.
 
 Structure is carried by material rather than by outline. Where a border does appear it is `--engrave`, and it is nearly always paired with its catch-light to read as a cut. The category cap is a full-height 6px bar with an inner catch-light (`inset 1px 0 0 rgba(255,255,255,0.22)`) and an outer contact shadow, which is what makes it read as a machined part rather than a flat colored rule.
 

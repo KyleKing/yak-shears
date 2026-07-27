@@ -87,6 +87,36 @@
         "displayName": "Routing Blue",
         "canonical": "oklch(76% 0.110 250)",
         "tonalRamp": ["oklch(15% 0.110 250)", "oklch(26% 0.110 250)", "oklch(37% 0.110 250)", "oklch(48% 0.110 250)", "oklch(59% 0.110 250)", "oklch(70% 0.110 250)", "oklch(82% 0.110 250)", "oklch(95% 0.110 250)"]
+      },
+      "ink-on-amber": {
+        "role": "neutral",
+        "displayName": "Ink on Amber",
+        "canonical": "oklch(20% 0.030 60)",
+        "tonalRamp": ["oklch(15% 0.030 60)", "oklch(26% 0.030 60)", "oklch(37% 0.030 60)", "oklch(48% 0.030 60)", "oklch(59% 0.030 60)", "oklch(70% 0.030 60)", "oklch(82% 0.030 60)", "oklch(95% 0.030 60)"]
+      },
+      "ink-on-lit": {
+        "role": "neutral",
+        "displayName": "Ink on Lit",
+        "canonical": "oklch(0% 0 0)",
+        "tonalRamp": ["oklch(15% 0 0)", "oklch(26% 0 0)", "oklch(37% 0 0)", "oklch(48% 0 0)", "oklch(59% 0 0)", "oklch(70% 0 0)", "oklch(82% 0 0)", "oklch(95% 0 0)"]
+      },
+      "ink-on-fault": {
+        "role": "neutral",
+        "displayName": "Ink on Fault",
+        "canonical": "oklch(100% 0 0)",
+        "tonalRamp": ["oklch(15% 0 0)", "oklch(26% 0 0)", "oklch(37% 0 0)", "oklch(48% 0 0)", "oklch(59% 0 0)", "oklch(70% 0 0)", "oklch(82% 0 0)", "oklch(95% 0 0)"]
+      },
+      "unlit-segment": {
+        "role": "neutral",
+        "displayName": "Unlit Segment",
+        "canonical": "rgba(255, 255, 255, 0.1)",
+        "tonalRamp": ["rgba(255,255,255,0.04)", "rgba(255,255,255,0.07)", "rgba(255,255,255,0.10)", "rgba(255,255,255,0.14)", "rgba(255,255,255,0.20)", "rgba(255,255,255,0.30)", "rgba(255,255,255,0.45)", "rgba(255,255,255,0.65)"]
+      },
+      "scrim": {
+        "role": "neutral",
+        "displayName": "Scrim",
+        "canonical": "rgba(0, 0, 0, 0.5)",
+        "tonalRamp": ["rgba(0,0,0,0.12)", "rgba(0,0,0,0.20)", "rgba(0,0,0,0.30)", "rgba(0,0,0,0.40)", "rgba(0,0,0,0.50)", "rgba(0,0,0,0.60)", "rgba(0,0,0,0.72)", "rgba(0,0,0,0.85)"]
       }
     },
     "typographyMeta": {
@@ -95,7 +125,13 @@
       "title": { "displayName": "Unit Title", "purpose": "A rack unit's name, lifted from the note's first block. Single line, ellipsized." },
       "body": { "displayName": "Body", "purpose": "Rendered note prose in the preview bay, capped at 68ch." },
       "label": { "displayName": "Control Label", "purpose": "Key faces, nav switches, and control legends. Tracked uppercase." },
-      "signal": { "displayName": "Signal", "purpose": "Anything literal or measured: filenames, paths, dates, counts, tags, editor text." }
+      "signal": { "displayName": "Signal", "purpose": "Anything literal or measured: filenames, paths, dates, counts, tags." },
+      "subhead": { "displayName": "Subhead", "purpose": "h3 in rendered content, and the one large readout value on a stat tile." },
+      "source": { "displayName": "Source", "purpose": "The editor's own text. One step up from signal, because it is read for minutes rather than glanced at." },
+      "field": { "displayName": "Field", "purpose": "Text the user is typing into a patch field." },
+      "note": { "displayName": "Note", "purpose": "Secondary panel text still meant to be read: vault paths, result first lines, backlinks, doctor references." },
+      "micro": { "displayName": "Micro Legend", "purpose": "The smallest screen-printed legend. Section labels, small keys, readout tracks, tags." },
+      "nano": { "displayName": "Nano Legend", "purpose": "A legend that sits inside a row without competing with it: category chips, editor head category." }
     },
     "shadows": [
       { "name": "inset-well", "value": "inset 0 2px 4px rgba(0,0,0,0.55), inset 0 -1px 0 rgba(255,255,255,0.06)", "purpose": "A recess milled into the panel. Dark at the top lip, catch-light along the bottom." },
