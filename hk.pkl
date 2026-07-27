@@ -56,9 +56,11 @@ local linters = new Mapping<String, Step> {
         fix = "toml-sort --in-place {{ files }}"
     }
 
+    // typed-jinja is unpublished and lives beside this repo, so it runs from that
+    // checkout instead of being a project dependency that CI cannot resolve
     ["typed-jinja"] {
         glob = "yak_shears/_templates/**/*.jinja"
-        check = "uv run typed-jinja check {{ files }}"
+        check = "uvx --from ../../local-code/typed-jinja typed-jinja check {{ files }}"
     }
 }
 

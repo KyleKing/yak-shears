@@ -8,6 +8,7 @@ from typing import Self
 from urllib.parse import quote
 
 from anyio import to_thread
+from starlette.datastructures import UploadFile
 from starlette.requests import Request
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 
@@ -298,7 +299,7 @@ async def media_upload_handler(request: Request) -> Response:
 
     yak_path_str = str(form_data.get("yak", "")).strip()
     upload = form_data.get("file")
-    if not yak_path_str or not hasattr(upload, "read"):
+    if not yak_path_str or not isinstance(upload, UploadFile):
         return JSONResponse({"error": "Missing file or yak path"}, status_code=HTTPStatus.BAD_REQUEST)
 
     data = await upload.read()

@@ -15,7 +15,6 @@ dev = [
   "pytest-watcher>=0.4.3",
   "ruff>=0.11.10",
   "syrupy>=4.9.1",
-  "typed-jinja[lsp]",
   "types-pyyaml>=6.0.12.20250915",
 ]
 
@@ -92,6 +91,11 @@ warn_redundant_casts = true
 warn_unreachable = true
 warn_unused_configs = true
 warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+# Neither ships a py.typed marker and no stub packages are published
+ignore_missing_imports = true
+module = ["filetype", "pillow_heif"]
 
 [tool.pyright]
 include = ["tests", "tests-e2e", "yak_shears"]
@@ -210,7 +214,6 @@ torch = [
   {index = "pytorch-cpu", marker = "sys_platform != 'linux'"},
   {index = "pytorch-cu128", marker = "sys_platform == 'linux'"},
 ]
-typed-jinja = {editable = true, path = "../../local-code/typed-jinja"}
 
 [tool.uv.workspace]
 members = [
