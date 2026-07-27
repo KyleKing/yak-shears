@@ -38,21 +38,29 @@ deliberately, in its own commit, with a reason.
 
 ## Over the wire
 
-Caddy compresses on the fly at a low level, so its output is worse than an offline
-pass at high quality. Measured against the live server:
+**Cloudflare is the edge, not Caddy.** The zone is proxied (orange cloud), so
+Cloudflare terminates TLS, caches, and picks the response encoding. Origin headers
+carry `via: 1.1 Caddy` behind `server: cloudflare`. DEPLOYMENT.md's setup section
+recommends "DNS only" for first provisioning and treats proxying as the later option;
+production took the later option, and any measurement that ignores that is measuring
+the wrong hop. Cache-bust with a junk query parameter (`?cb=…`) when testing, or you
+will measure a `cf-cache-status: HIT` from before your change.
 
-| encoding | wire size |
-| --- | --- |
-| zstd | 22.0KB |
-| brotli | 20.7KB |
-| gzip | 19.9KB |
-| none | 80.7KB |
+Compression levels still matter at origin, because Cloudflare fetches through them.
+Caddy's stock zstd is level 3, which on this file is worse than its own gzip:
 
-Caddy was negotiating zstd, its own worst option. The Caddyfile now lists
-`encode gzip zstd`, and listed order is preference order.
+| zstd level | size | | gzip level | size |
+| --- | --- | --- | --- | --- |
+| 3 (Caddy default) | 22.1KB | | 9 | 20.0KB |
+| 7 (`better`) | 19.9KB | | | |
+| 11 (`best`) | 19.2KB | | | |
+| 19 | 18.4KB | | | |
+
+The Caddyfile now sets `zstd best` and `gzip 9` explicitly. Measured browser-facing
+result on a cache miss: **19.9KB**, down from 22.0KB.
 
 Offline `brotli -q 11` on the same file is **16.9KB**, so precompressed assets are
-worth about 3KB over anything Caddy produces live. That needs a build step, which is
+worth about 3KB over anything produced on the fly. That needs a build step, which is
 the whole question below.
 
 ## Getting to 14KB

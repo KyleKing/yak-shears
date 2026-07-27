@@ -150,10 +150,15 @@ write_files:
               header_up X-Forwarded-Proto {scheme}
           }
 
-          # gzip first on purpose. Caddy compresses on the fly at a low
-          # level, where its zstd loses to its own gzip on this CSS
-          # (22.0KB vs 19.9KB measured). Listed order is preference order.
-          encode gzip zstd
+          # Levels are set explicitly because the defaults lose. Caddy's
+          # stock zstd is level 3, which on main.css is 22.1KB, worse than
+          # its own gzip at 20.0KB. zstd best is 19.2KB. Static assets are
+          # served immutable, so they are compressed rarely and the extra
+          # CPU per request does not repeat.
+          encode {
+              zstd best
+              gzip 9
+          }
 
           # Security headers
           header {
