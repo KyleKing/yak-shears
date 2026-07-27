@@ -1,6 +1,8 @@
 # Visual Design Review - Yak Shears App
 
 > **Archive Note**: Design recommendations from this review have been implemented. See [IMPROVEMENTS.md](IMPROVEMENTS.md) for details.
+>
+> **Superseded 2026-07-26** by the console world in [DESIGN.md](../DESIGN.md). Its central finding, that category colors were "too vibrant" and should be muted, was deliberately reversed: muted category color disappeared against the dark panel, and category now owns the whole row.
 
 **Date**: November 23, 2025
 **Reviewer**: Claude (AI Design Review)

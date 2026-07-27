@@ -6,6 +6,8 @@ Quick overview of what's implemented and what's next. Last updated: 2026-07-22.
 
 **Deployed to Hetzner** (PLAN.md Phase 1, done 2026-07-22; see [DEPLOY_LOG.md](./DEPLOY_LOG.md) for the run and [adr/0007-observability-strategy.md](./adr/0007-observability-strategy.md) for logging/alerting options). Live at `https://yak-shears.kyleking.me`.
 
+**Visual redesign (2026-07-26), in progress on `redesign-console`.** The Scandinavian-minimal look was replaced with a console-panel world recorded in [DESIGN.md](./DESIGN.md). Landed: the token layer, the `/yaks` rack, the editor head plate and recessed source bay, the search result list and patch field, and doctor severity lamps. Not yet landed: the patchbay (links as visible routing), `/new`, login, and error pages, and verification on a phone and in dark mode. See [NEXT_STEPS.md](./NEXT_STEPS.md).
+
 **Mobile round (2026-07-22)**, driven by a batch of iPhone 14 bug reports: responsive layout and header menu, the search modal, an editor accessory toolbar above the software keyboard, drag-and-drop upload, the PWA manifest, a timezone-stable filename format, and the first pass of search performance work. Two ADRs came out of it, [0008](./adr/0008-mobile-text-entry-affordances.md) on iOS text entry and [0009](./adr/0009-ios-homescreen-app-and-offline.md) on the homescreen app and offline. Next: harden auth/sessions (Phase 2), and verify the mobile fixes on the device.
 
 ## Implemented Features
@@ -22,6 +24,7 @@ Quick overview of what's implemented and what's next. Last updated: 2026-07-22.
 | Doctor | ✅ | Attachment integrity, filename migration, search index location (ADR 0010) |
 | Media upload | ✅ | Paste/toolbar/drag-drop upload, HEIC/video transcoding, thumbnails, doctor view (ADR 0004) |
 | Responsive design | ✅ | Mobile, tablet, desktop; iPhone 14 pass 2026-07-22 (header menu, search modal, editor sizing) |
+| Console design system | 🚧 | DESIGN.md written; yaks, editor, search, and doctor rebuilt. `/new`, login, and error pages still inherit tokens without the world |
 | Homescreen web app | ✅ | `manifest.webmanifest` with `display: standalone`, icons, apple meta tags (ADR 0009) |
 | Offline support | ❌ | No service worker. Read-only shell caching is the cheap first step; offline editing is undecided (ADR 0009) |
 | E2E tests | ✅ | Playwright coverage of auth, yaks, editor, search, new, media paste path |

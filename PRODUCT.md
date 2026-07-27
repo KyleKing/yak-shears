@@ -66,7 +66,7 @@ Terminology: a note is a "yak". The vault is the folder of `.dj` files.
 ## Brand Commitments
 
 - Name: Yak Shears
-- The project states "Scandinavian minimalism: clean, functional, subtle" as a design principle. Recorded as the author gave it, without expansion
+- The visual world is "The Console" (recorded in [DESIGN.md](./DESIGN.md), chosen 2026-07-26). It replaced "Scandinavian minimalism: clean, functional, subtle", which the project had stated as a design principle and which the author judged dated and boring in practice. The name remains the only binding commitment; the world is a decision that can be revisited, not an inherited constraint
 - README voice is dry and self-deprecating: it opens by listing thirty-odd alternatives the reader should probably use instead. Marketing language would be off-key
 
 ## Evidence on Hand

@@ -45,6 +45,8 @@ My personal note taking app, but you probably want to use one of these primarily
 
 ## Screenshots
 
+These predate the console redesign (see [DESIGN.md](./DESIGN.md)) and are regenerated once it covers every page.
+
 ### Login Page
 
 ![Login Page](.github/screenshots/login-page.png)

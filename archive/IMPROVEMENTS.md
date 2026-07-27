@@ -1,6 +1,8 @@
 # Yak Shears - Application Improvements Summary
 
 > **Archive Note**: This documents completed work. For current status, see [STATUS.md](../STATUS.md).
+>
+> **Superseded 2026-07-26.** The Scandinavian-minimal design system described here was replaced by the console world in [DESIGN.md](../DESIGN.md). The accent recorded below (#f7cf46) and the muted 20%-saturation category band are both gone. Kept because it records why those choices were made and what the redesign is a reaction to.
 
 This document summarizes the comprehensive improvements made to Yak Shears following Scandinavian minimalist design principles.
 

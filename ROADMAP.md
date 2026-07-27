@@ -16,12 +16,12 @@ A flexible, file-based knowledge management system supporting:
 2. **Optional metadata**: Notes work without frontmatter
 3. **No lock-in**: Files work without Yak Shears
 4. **Progressive enhancement**: Basic notes work, advanced features optional
-5. **Scandinavian minimalism**: Clean, functional, subtle design
+5. **An instrument, not a document**: the interface is a console panel built from three materials, and every surface is scanned before it is read (see [DESIGN.md](./DESIGN.md))
 
 ## Completed
 
 - Phase 0 foundation: Starlette/HTMX app, auth, listing, editor with live preview, DuckDB search
-- Scandinavian minimal design system with E2E coverage (see `archive/IMPROVEMENTS.md`)
+- The console design system with E2E coverage ([DESIGN.md](./DESIGN.md); the superseded Scandinavian-minimal system survives in `archive/IMPROVEMENTS.md`)
 - Frontmatter parsing (YAML and Apple Notes export format), link extraction, backlinks storage
 - Media upload with transcoding, thumbnails, and doctor view
 - Hetzner deployment (PLAN.md Phase 1, 2026-07-22): live at `https://yak-shears.kyleking.me`; see [DEPLOY_LOG.md](./DEPLOY_LOG.md)
@@ -44,7 +44,7 @@ Most of the product roadmap reduces to one primitive: query and aggregate notes 
 
 ### Work Streams, Backlog, and the prune queue (PLAN.md Phase 5)
 
-Personal organization as views over task-notes, not a separate task store. A stream is a note (`type: stream`) with a short id, display name, palette color, and optional WIP limit; a task is a note with `state` and an optional `stream`. The board groups tasks by state within a stream, the backlog is the same data as a table, and the triage bucket catches task-notes missing a stream or state. A curated named palette (fjord, teal, moss, ...) is the schema artifact that drives in-editor color completion, swatches, and Doctor validity checks. WIP limits are a forcing function on attention, so they live in the view, not the data. A daily prune/review queue resurfaces stale notes on a spaced interval to fight note rot.
+Personal organization as views over task-notes, not a separate task store. A stream is a note (`type: stream`) with a short id, display name, palette color, and optional WIP limit; a task is a note with `state` and an optional `stream`. The board groups tasks by state within a stream, the backlog is the same data as a table, and the triage bucket catches task-notes missing a stream or state. A curated named palette (fjord, teal, moss, ...) is the schema artifact that drives in-editor color completion, swatches, and Doctor validity checks. That palette has to reconcile with the console's category color, which is generated rather than curated: `get_category_color()` hashes the name into a hue inside a fixed saturation and lightness band so a rack of strips stays legible. Either streams draw from the same band or the two color systems will disagree on the same screen. WIP limits are a forcing function on attention, so they live in the view, not the data. A daily prune/review queue resurfaces stale notes on a spaced interval to fight note rot.
 
 ## Longer Term
 

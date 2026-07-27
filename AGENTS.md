@@ -84,6 +84,7 @@ yak_shears/
 
 ### Frontend Approach
 
+- **Read [DESIGN.md](./DESIGN.md) before changing anything visual.** The interface is a console panel: three materials (panel face, milled well, engraved groove) build every component, amber is the only lit color and means armed, state is reported by indicator lamps, and category color owns whole rows. New components are composed from those materials rather than styled ad hoc
 - Server-side rendering with Jinja2 templates
 - Responsive design for iPhone 14 (390x844), iPad, and Desktop
 - Installable as a homescreen web app via `static/manifest.webmanifest` (`display: standalone`). Without it, iOS opens every navigation in an in-app browser overlay (ADR 0009)
@@ -120,7 +121,7 @@ The 768px breakpoint is the mobile/desktop split and is duplicated in `editor.js
 - Favor server-side Python over client-side HTMX and JavaScript when all else equal
 - Write easy to read code, *no one letter variables*, and follow YAGNI and DRY
 - Update docstrings when making changes
-- Keep CSS minimal and scoped to BEM component
+- Keep CSS minimal and scoped to BEM component, and keep literal values on the DESIGN.md ramps (type sizes, radii, palette). A one-off literal is either drift or a system addition that belongs in DESIGN.md
 
 ## Component Specifications
 
