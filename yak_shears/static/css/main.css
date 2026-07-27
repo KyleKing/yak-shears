@@ -1086,7 +1086,7 @@ p {
 code {
 	background: var(--color-surface-alt);
 	padding: 0.2em 0.4em;
-	border-radius: 0.25rem;
+	border-radius: 2px;
 }
 
 pre {
@@ -2649,9 +2649,8 @@ pre code {
 		padding-top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
 	}
 
-	/* --- /yaks: shrink the title block and collapse the control rows ------- */
+	/* --- /yaks: tighten the title block and collapse the control rows ------ */
 	.yaks-head__title {
-		font-size: 1.35rem;
 		margin-bottom: var(--space-1);
 	}
 
