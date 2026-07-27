@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-radius",
+        "value": "2px)",
+        "createdAt": "2026-07-27T01:46:03.585Z",
+        "reason": "calc(var(--radius-sm) - 2px) parsed as a literal radius"
+      }
+    ]
+  }
+}
