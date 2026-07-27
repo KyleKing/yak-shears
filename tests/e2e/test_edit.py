@@ -676,6 +676,12 @@ async def _set_code_and_select(page: Page, code: str, start: int, end: int) -> N
     await page.evaluate(_SET_CODE_AND_CARET, [code, start, end])
 
 
+async def _open_panel(page: Page) -> None:
+    """Open the command panel, which closes itself after every applied change."""
+    await page.click("#cmd-trigger")
+    await expect(page.locator("#cmd-panel")).to_be_visible()
+
+
 async def _expect_editor_text(page: Page, expected: str) -> None:
     """Wait for the editor to hold exactly `expected`.
 
@@ -692,66 +698,226 @@ async def _expect_editor_text(page: Page, expected: str) -> None:
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_toolbar_indents_and_outdents_on_mobile(context: BrowserContext, page: Page, server_lifecycle):
-    """The accessory toolbar appears on a phone viewport and drives list indentation."""
-    await login(context, page)
-    await page.set_viewport_size(IPHONE_14_VIEWPORT)
+async def test_command_panel_indents_and_outdents(touch_page: Page, server_lifecycle):
+    """The panel opens from its trigger and drives list indentation."""
+    page = touch_page
+    await login(page.context, page)
     await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
-
-    toolbar = page.locator("#editor-toolbar")
-    await expect(toolbar).to_be_visible()
+    await expect(page.locator(".editor")).to_be_editable()
 
     await _set_code_and_select(page, "- item", 6, 6)
+    await _open_panel(page)
     await page.locator("[data-action='indent']").click()
     await _expect_editor_text(page, "    - item")
 
+    await _open_panel(page)
     await page.locator("[data-action='outdent']").click()
     await _expect_editor_text(page, "- item")
 
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_toolbar_hidden_on_desktop(context: BrowserContext, page: Page, server_lifecycle):
-    """The accessory toolbar is a mobile affordance and stays hidden on wide viewports."""
+async def test_command_panel_closes_after_applying(touch_page: Page, server_lifecycle):
+    """Every applied change closes the panel, so it never holds stale state."""
+    page = touch_page
+    await login(page.context, page)
+    await page.goto("/edit?yak=yak1.dj")
+    await expect(page.locator(".editor")).to_be_editable()
+
+    await _set_code_and_select(page, "- item", 6, 6)
+    await _open_panel(page)
+    await page.locator("[data-action='indent']").click()
+
+    await expect(page.locator("#cmd-panel")).to_be_hidden()
+    await expect(page.locator("#cmd-trigger")).to_have_attribute("aria-expanded", "false")
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_command_panel_cancel_applies_nothing(touch_page: Page, server_lifecycle):
+    """Cancel closes the panel and leaves the note alone."""
+    page = touch_page
+    await login(page.context, page)
+    await page.goto("/edit?yak=yak1.dj")
+    await expect(page.locator(".editor")).to_be_editable()
+
+    await _set_code_and_select(page, "- item", 6, 6)
+    await _open_panel(page)
+    await page.click("#cmd-cancel")
+
+    await expect(page.locator("#cmd-panel")).to_be_hidden()
+    await _expect_editor_text(page, "- item")
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_command_panel_hidden_for_a_fine_pointer(context: BrowserContext, page: Page, server_lifecycle):
+    """A touchscreen is what makes the key bindings unreachable, so a mouse gets no panel."""
     await login(context, page)
     await page.set_viewport_size({"width": 1280, "height": 900})
     await page.goto("/edit?yak=yak1.dj")
 
     await expect(page.locator(".editor")).to_be_editable()
-    await expect(page.locator("#editor-toolbar")).to_be_hidden()
+    await expect(page.locator("#cmd")).to_be_hidden()
 
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_toolbar_bold_wraps_selection(context: BrowserContext, page: Page, server_lifecycle):
-    """Bold wraps the selection in Djot strong markers."""
-    await login(context, page)
-    await page.set_viewport_size(IPHONE_14_VIEWPORT)
+async def test_count_repeats_outdent(touch_page: Page, server_lifecycle):
+    """A count of 3 outdents three levels in one press."""
+    page = touch_page
+    await login(page.context, page)
     await page.goto("/edit?yak=yak1.dj")
+    await expect(page.locator(".editor")).to_be_editable()
 
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
+    await _set_code_and_select(page, "            - item", 18, 18)
+    await _open_panel(page)
+    await page.click("[data-count='3']")
+    await page.locator("[data-action='outdent']").click()
+
+    await _expect_editor_text(page, "- item")
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_count_stops_early_rather_than_refusing(touch_page: Page, server_lifecycle):
+    """Outdenting five levels from two levels deep outdents twice."""
+    page = touch_page
+    await login(page.context, page)
+    await page.goto("/edit?yak=yak1.dj")
+    await expect(page.locator(".editor")).to_be_editable()
+
+    await _set_code_and_select(page, "        - item", 14, 14)
+    await _open_panel(page)
+    await page.click("[data-count='5']")
+    await page.locator("[data-action='outdent']").click()
+
+    await _expect_editor_text(page, "- item")
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_count_leaves_a_non_repeating_command_alone(touch_page: Page, server_lifecycle):
+    """Bold at a count of 3 is bold once, and its key never goes dead."""
+    page = touch_page
+    await login(page.context, page)
+    await page.goto("/edit?yak=yak1.dj")
+    await expect(page.locator(".editor")).to_be_editable()
 
     await _set_code_and_select(page, "hello world", 6, 11)
+    await _open_panel(page)
+    await page.click("[data-count='3']")
+
+    bold = page.locator("[data-action='bold']")
+    await expect(bold).to_be_enabled()
+    await bold.click()
+
+    await _expect_editor_text(page, "hello *world*")
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_compose_applies_several_commands(touch_page: Page, server_lifecycle):
+    """Composing lights commands and applies them together."""
+    page = touch_page
+    await login(page.context, page)
+    await page.goto("/edit?yak=yak1.dj")
+    await expect(page.locator(".editor")).to_be_editable()
+
+    await _set_code_and_select(page, "- item", 6, 6)
+    await _open_panel(page)
+    await page.click("#cmd-compose")
+
+    await page.locator("[data-action='indent']").click()
+    await page.locator("[data-action='bold']").click()
+    await _expect_editor_text(page, "- item")
+
+    await page.click("#cmd-apply")
+    await _expect_editor_text(page, "    - *item*")
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_compose_unlights_a_second_tap(touch_page: Page, server_lifecycle):
+    """A second tap takes a command out rather than queueing it twice."""
+    page = touch_page
+    await login(page.context, page)
+    await page.goto("/edit?yak=yak1.dj")
+    await expect(page.locator(".editor")).to_be_editable()
+
+    await _set_code_and_select(page, "    - item", 10, 10)
+    await _open_panel(page)
+    await page.click("#cmd-compose")
+
+    outdent = page.locator("[data-action='outdent']")
+    await outdent.click()
+    await expect(outdent).to_have_class(re.compile(r"cmd__key--lit"))
+    await outdent.click()
+    await expect(outdent).not_to_have_class(re.compile(r"cmd__key--lit"))
+
+    await page.click("#cmd-apply")
+    await _expect_editor_text(page, "    - item")
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_scope_line_wraps_past_the_list_marker(touch_page: Page, server_lifecycle):
+    """With no selection, line scope wraps the line's text and leaves the marker outside."""
+    page = touch_page
+    await login(page.context, page)
+    await page.goto("/edit?yak=yak1.dj")
+    await expect(page.locator(".editor")).to_be_editable()
+
+    await _set_code_and_select(page, "- buy more milk", 8, 8)
+    await _open_panel(page)
+    await page.locator("[data-action='bold']").click()
+
+    await _expect_editor_text(page, "- *buy more milk*")
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_scope_word_wraps_only_the_caret_word(touch_page: Page, server_lifecycle):
+    """Thrown to word, the same press wraps just the word the caret is touching."""
+    page = touch_page
+    await login(page.context, page)
+    await page.goto("/edit?yak=yak1.dj")
+    await expect(page.locator(".editor")).to_be_editable()
+
+    await _set_code_and_select(page, "- buy more milk", 8, 8)
+    await _open_panel(page)
+    await page.click("[data-scope='word']")
+    await page.locator("[data-action='bold']").click()
+
+    await _expect_editor_text(page, "- buy *more* milk")
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_command_panel_bold_wraps_selection(touch_page: Page, server_lifecycle):
+    """Bold wraps the selection in Djot strong markers."""
+    page = touch_page
+    await login(page.context, page)
+    await page.goto("/edit?yak=yak1.dj")
+    await expect(page.locator(".editor")).to_be_editable()
+
+    await _set_code_and_select(page, "hello world", 6, 11)
+    await _open_panel(page)
     await page.locator("[data-action='bold']").click()
     await _expect_editor_text(page, "hello *world*")
 
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_toolbar_bold_unwraps_selection(context: BrowserContext, page: Page, server_lifecycle):
+async def test_command_panel_bold_unwraps_selection(touch_page: Page, server_lifecycle):
     """Bold strips the markers when the selection is already strong."""
-    await login(context, page)
-    await page.set_viewport_size(IPHONE_14_VIEWPORT)
+    page = touch_page
+    await login(page.context, page)
     await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
+    await expect(page.locator(".editor")).to_be_editable()
 
     await _set_code_and_select(page, "hello *world*", 6, 13)
+    await _open_panel(page)
     await page.locator("[data-action='bold']").click()
     await _expect_editor_text(page, "hello world")
 

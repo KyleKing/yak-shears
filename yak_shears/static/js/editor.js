@@ -562,7 +562,7 @@ function initEditor() {
 			requestAnimationFrame(() => _stripInjectedElements(editor, jar));
 		});
 
-		_setupEditorToolbar(editor, jar);
+		_setupCommandPanel(editor, jar);
 
 		// Initialize menu button toggle
 		const menuBtn = document.getElementById('menu-btn');
@@ -949,7 +949,7 @@ function _runToolbarAction(action, editorEl, jarInstance) {
 	}
 }
 
-// Height of the software keyboard, published to CSS so the toolbar can sit on top of it.
+// Height of the software keyboard, published to CSS so the panel opens clear of it.
 function _syncKeyboardInset() {
 	const viewport = window.visualViewport;
 	const inset = viewport
@@ -958,21 +958,272 @@ function _syncKeyboardInset() {
 	document.documentElement.style.setProperty("--keyboard-inset", `${inset}px`);
 }
 
-function _setupEditorToolbar(editorEl, jarInstance) {
-	const toolbar = document.getElementById("editor-toolbar");
-	if (!toolbar) return;
+function _setSelectionRange(editorEl, start, end) {
+	const from = getNodeAtOffset(editorEl, start);
+	const to = getNodeAtOffset(editorEl, end);
+	if (!from.node || !to.node) return;
+	const range = document.createRange();
+	range.setStart(from.node, from.offset);
+	range.setEnd(to.node, to.offset);
+	const sel = window.getSelection();
+	sel.removeAllRanges();
+	sel.addRange(range);
+}
 
+// Group 1 is indent plus any list marker, group 2 is the line's own text. Wrapping
+// a whole line has to leave "1. " outside the markers or the list stops being one.
+const LINE_CONTENT_RE = /^(\s*(?:[-*+] (?:\[[ x]\] )?|\d+[.)] )?)(.*?)\s*$/;
+
+function _scopeRange(text, cursorPos, scope) {
+	if (scope === "word") {
+		let from = cursorPos;
+		let to = cursorPos;
+		while (from > 0 && /\S/.test(text[from - 1])) from -= 1;
+		while (to < text.length && /\S/.test(text[to])) to += 1;
+		return from === to ? null : { from, to };
+	}
+	const { lineStart, lineText } = _getCurrentLine(text, cursorPos);
+	const [, prefix, content] = LINE_CONTENT_RE.exec(lineText);
+	const from = lineStart + prefix.length;
+	return content ? { from, to: from + content.length } : null;
+}
+
+const INLINE_ACTIONS = new Set(["bold", "italic"]);
+const REPEATABLE_ACTIONS = new Set(["indent", "outdent"]);
+
+const _nextFrame = () => new Promise(requestAnimationFrame);
+
+/**
+ * Run one command, repeating it up to `count` times when it is a command that
+ * repeats. Stops early once a repetition changes nothing, which is what "no
+ * longer valid Djot" looks like from here: outdenting five levels from three
+ * levels deep outdents three times.
+ *
+ * A frame is awaited between repetitions because every command restores the
+ * caret in a requestAnimationFrame, and the next one reads that caret.
+ */
+async function _applyCommand(action, editorEl, jarInstance, { count, scope }) {
+	if (INLINE_ACTIONS.has(action)) {
+		const { start, end } = _getSelectionRange(editorEl);
+		if (start === end) {
+			const range = _scopeRange(jarInstance.toString(), start, scope);
+			if (!range) return;
+			_setSelectionRange(editorEl, range.from, range.to);
+		}
+	}
+
+	const times = REPEATABLE_ACTIONS.has(action) ? count : 1;
+	for (let i = 0; i < times; i += 1) {
+		const before = jarInstance.toString();
+		_runToolbarAction(action, editorEl, jarInstance);
+		// The command restores the caret in a requestAnimationFrame, and the next
+		// repetition reads that caret.
+		await _nextFrame();
+		if (jarInstance.toString() === before) return;
+	}
+}
+
+/**
+ * The command panel. See adr/0011.
+ *
+ * Offered only to a coarse pointer, because a touchscreen is what makes the
+ * keyboard commands unreachable. That takes in iPad and leaves out a narrow
+ * desktop window, which a width breakpoint gets backwards.
+ */
+function _setupCommandPanel(editorEl, jarInstance) {
+	const root = document.getElementById("cmd");
+	if (!root) return;
+
+	const trigger = document.getElementById("cmd-trigger");
+	const panel = document.getElementById("cmd-panel");
+	const scopeRack = document.getElementById("cmd-scope");
+	const composeBtn = document.getElementById("cmd-compose");
+	const applyBtn = document.getElementById("cmd-apply");
+	const coarse = window.matchMedia("(pointer: coarse)");
+
+	const state = { open: false, count: 1, scope: "line", composing: false, lit: [] };
+
+	const setPressed = (nodes, isOn) => {
+		for (const node of nodes) node.setAttribute("aria-pressed", String(isOn(node)));
+	};
+
+	const render = () => {
+		root.classList.toggle("cmd--open", state.open);
+		root.classList.toggle("cmd--counted", state.count > 1);
+		root.classList.toggle("cmd--composing", state.composing);
+		panel.hidden = !state.open;
+		trigger.setAttribute("aria-expanded", String(state.open));
+		composeBtn.setAttribute("aria-pressed", String(state.composing));
+		applyBtn.hidden = !state.composing;
+		setPressed(panel.querySelectorAll(".cmd__count"), (n) => Number(n.dataset.count) === state.count);
+		setPressed(panel.querySelectorAll(".cmd__scope"), (n) => n.dataset.scope === state.scope);
+		for (const key of panel.querySelectorAll(".cmd__key")) {
+			key.classList.toggle("cmd__key--lit", state.lit.includes(key.dataset.action));
+		}
+		// A selection is its own scope, so the switch has no say while one exists.
+		const { start, end } = _getSelectionRange(editorEl);
+		scopeRack.classList.toggle("cmd__rack--mute", start !== end);
+	};
+
+	const close = () => {
+		state.open = false;
+		state.composing = false;
+		state.lit = [];
+		state.count = 1;
+		render();
+	};
+
+	// Opening away from the caret keeps the line being edited visible. The panel
+	// hangs below the trigger when the caret is above it, and above it otherwise.
+	const placePanel = () => {
+		const sel = window.getSelection();
+		if (!sel.rangeCount) return;
+		const caret = sel.getRangeAt(0).getBoundingClientRect();
+		const anchor = trigger.getBoundingClientRect();
+		root.classList.toggle("cmd--above", caret.top >= anchor.bottom);
+	};
+
+	// The instruction is read before the panel closes, because closing resets it.
+	const runInstruction = async (actions) => {
+		const instruction = { count: state.count, scope: state.scope };
+		close();
+		for (const action of actions) {
+			await _applyCommand(action, editorEl, jarInstance, instruction);
+		}
+	};
+
+	trigger.addEventListener("click", () => {
+		if (dragged) return;
+		state.open = !state.open;
+		if (state.open) placePanel();
+		render();
+	});
+
+	// Suppressing the default keeps focus, and the keyboard, on the editor. Without
+	// it the tap blurs the contenteditable and the selection the command needs is gone.
+	panel.addEventListener("pointerdown", (event) => {
+		if (event.target.closest("button")) event.preventDefault();
+	});
+
+	panel.addEventListener("click", (event) => {
+		const button = event.target.closest("button");
+		if (!button) return;
+
+		if (button.dataset.count) {
+			state.count = Number(button.dataset.count);
+			render();
+			return;
+		}
+		if (button.dataset.scope) {
+			state.scope = button.dataset.scope;
+			render();
+			return;
+		}
+		if (button === composeBtn) {
+			state.composing = !state.composing;
+			state.lit = [];
+			render();
+			return;
+		}
+		if (button === applyBtn) {
+			runInstruction(state.lit);
+			return;
+		}
+		if (button.id === "cmd-cancel") {
+			close();
+			return;
+		}
+		if (!button.dataset.action) return;
+
+		// Composing lights a command instead of firing it, and a second tap puts it
+		// out. Tapping twice never means doing it twice, because repeating is the
+		// count's job.
+		if (state.composing) {
+			const action = button.dataset.action;
+			state.lit = state.lit.includes(action)
+				? state.lit.filter((lit) => lit !== action)
+				: [...state.lit, action];
+			render();
+			return;
+		}
+		runInstruction([button.dataset.action]);
+	});
+
+	// Dragging the trigger moves it within the editor, so it can be kept away from
+	// whichever hand is holding the phone. Past the halfway line it changes sides.
+	//
+	// A tap is never perfectly still, and a tap that moved the trigger a pixel and
+	// then refused to open would be maddening, so travel has to clear a threshold
+	// before any of this counts as a drag.
+	const DRAG_THRESHOLD = 6; // px
+	let dragged = false;
+	let dragOrigin = null;
+	let pointerId = null;
+
+	const positionKey = "yakShears.cmdTrigger";
+	const savedPosition = window.localStorage.getItem(positionKey);
+	if (savedPosition) {
+		const [side, top] = savedPosition.split(":");
+		root.dataset.side = side === "left" ? "left" : "right";
+		root.style.setProperty("--cmd-top", `${Number(top) || 0}px`);
+	}
+
+	trigger.addEventListener("pointerdown", (event) => {
+		// Same reason as the panel above: without this the tap blurs the editor,
+		// which dismisses the keyboard and throws away the selection the command
+		// was going to act on. Capture still works through a prevented default.
+		event.preventDefault();
+		pointerId = event.pointerId;
+		dragged = false;
+		dragOrigin = { x: event.clientX, y: event.clientY };
+		trigger.setPointerCapture(pointerId);
+	});
+
+	trigger.addEventListener("pointermove", (event) => {
+		if (pointerId !== event.pointerId || !trigger.hasPointerCapture(pointerId)) return;
+		const travel = Math.hypot(event.clientX - dragOrigin.x, event.clientY - dragOrigin.y);
+		if (!dragged && travel < DRAG_THRESHOLD) return;
+		dragged = true;
+
+		const bounds = root.parentElement.getBoundingClientRect();
+		const top = Math.min(
+			Math.max(event.clientY - bounds.top - trigger.offsetHeight / 2, 0),
+			Math.max(bounds.height - trigger.offsetHeight, 0),
+		);
+		root.dataset.side = event.clientX < bounds.left + bounds.width / 2 ? "left" : "right";
+		root.style.setProperty("--cmd-top", `${top}px`);
+	});
+
+	const endDrag = (event) => {
+		if (pointerId !== event.pointerId) return;
+		trigger.releasePointerCapture(pointerId);
+		pointerId = null;
+		if (!dragged) return;
+		const top = root.style.getPropertyValue("--cmd-top").replace("px", "");
+		window.localStorage.setItem(positionKey, `${root.dataset.side}:${top}`);
+		// The tap that ended the drag is not a request to open the panel.
+		requestAnimationFrame(() => {
+			dragged = false;
+		});
+	};
+	trigger.addEventListener("pointerup", endDrag);
+	trigger.addEventListener("pointercancel", endDrag);
+
+	// Every command acts on a cursor, so a panel with nothing to act on is
+	// occlusion for its own sake.
 	const refresh = () => {
-		const visible =
-			window.innerWidth <= MOBILE_BREAKPOINT && document.activeElement === editorEl;
-		toolbar.hidden = !visible;
-		toolbar.classList.toggle("editor-toolbar--visible", visible);
+		const available = coarse.matches && document.activeElement === editorEl;
+		root.hidden = !available;
+		if (!available && state.open) close();
 	};
 
 	editorEl.addEventListener("focus", refresh);
-	// Buttons cancel their own blur below, so a blur that survives a frame is a real one.
+	// Buttons cancel their own blur above, so a blur that survives a frame is real.
 	editorEl.addEventListener("blur", () => requestAnimationFrame(refresh));
-	window.addEventListener("resize", refresh);
+	document.addEventListener("selectionchange", () => {
+		if (state.open) render();
+	});
+	coarse.addEventListener("change", refresh);
 
 	_syncKeyboardInset();
 	if (window.visualViewport) {
@@ -980,25 +1231,11 @@ function _setupEditorToolbar(editorEl, jarInstance) {
 		window.visualViewport.addEventListener("scroll", _syncKeyboardInset);
 	}
 
-	// Suppressing the default keeps focus (and the keyboard) on the editor while tapping
-	const keepFocus = (event) => {
-		const button = event.target.closest(".editor-toolbar__btn");
-		if (button && button.dataset.action !== "dismiss") event.preventDefault();
-	};
-	toolbar.addEventListener("pointerdown", keepFocus);
-	toolbar.addEventListener("mousedown", keepFocus);
-
-	toolbar.addEventListener("click", (event) => {
-		const button = event.target.closest(".editor-toolbar__btn");
-		if (!button) return;
-		if (button.dataset.action === "dismiss") {
-			editorEl.blur();
-			refresh();
-			return;
-		}
-		_runToolbarAction(button.dataset.action, editorEl, jarInstance);
+	document.addEventListener("keydown", (event) => {
+		if (event.key === "Escape" && state.open) close();
 	});
 
+	render();
 	refresh();
 }
 

@@ -1558,69 +1558,209 @@ pre code {
 }
 
 /* ============================================================================
-   Mobile editor accessory toolbar
+   Editor command panel
 
-   iOS has no Tab key and no way for a web page to supply a keyboard accessory
-   view, so list indent/outdent and bold/italic get buttons instead. editor.js
-   writes --keyboard-inset from visualViewport so the bar rides above the
-   on-screen keyboard. See adr/0008.
+   A trigger tab on one edge of the editor, opening a panel that composes one
+   instruction (count, scope, commands), applies it, and closes. It replaced a
+   bar pinned above the keyboard, because that strip belongs to Safari's form
+   assistant, which a page cannot measure, detect, or hide. See adr/0011.
    ============================================================================ */
-.editor-toolbar {
-	display: none;
-	position: fixed;
-	left: 0;
-	right: 0;
-	/* With the keyboard up, ride directly above it (the Save bar is behind the
-	   keyboard anyway). With it down, sit above the Save bar instead of on top
-	   of it. */
-	bottom: max(
-		var(--keyboard-inset, 0px),
-		calc(var(--action-bar-height) + var(--safe-bottom))
-	);
-	gap: var(--space-1);
-	align-items: center;
-	padding: var(--space-2) calc(var(--space-2) + var(--safe-left)) var(--space-2)
-		calc(var(--space-2) + var(--safe-right));
-	background: var(--color-surface-alt);
-	border-top: 1px solid var(--color-border);
-	box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12);
-	overflow-x: auto;
-	scrollbar-width: none;
+.cmd {
+	position: absolute;
+	top: var(--cmd-top, 35%);
 	z-index: 60; /* Above the action bar, below the metadata panel */
+	display: flex;
+	align-items: flex-start;
+	gap: var(--space-2);
 }
 
-.editor-toolbar::-webkit-scrollbar {
+/* An author display value beats the UA rule behind the hidden attribute, so
+   everything in here has to opt back out by hand. */
+.cmd[hidden],
+.cmd [hidden] {
 	display: none;
 }
 
-.editor-toolbar--visible {
-	display: flex;
+.cmd[data-side="right"] {
+	right: 0;
+	flex-direction: row-reverse;
 }
 
-.editor-toolbar__btn {
-	flex: 1 0 auto;
-	min-width: var(--tap-target);
+.cmd[data-side="left"] {
+	left: 0;
+}
+
+/* A half-width tab seated into the editor edge: present enough to find, small
+   enough that it is not in the way of the line being written. */
+.cmd__trigger {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.75rem;
 	min-height: var(--tap-target);
+	padding: 0;
+	background: var(--panel-raised);
+	border: 1px solid var(--engrave);
+	box-shadow:
+		inset 0 1px 0 var(--engrave-light),
+		0 1px 2px rgba(0, 0, 0, 0.18);
+	color: var(--legend-dim);
+	cursor: grab;
+	touch-action: none; /* The trigger drags, so the page must not scroll under it */
+}
+
+.cmd[data-side="right"] .cmd__trigger {
+	border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+	border-right: 0;
+}
+
+.cmd[data-side="left"] .cmd__trigger {
+	border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+	border-left: 0;
+}
+
+.cmd--open .cmd__trigger {
+	color: var(--color-accent);
+}
+
+/* Drawn, not typed: three stacked grips, the same vocabulary as the hamburger. */
+.cmd__trigger-mark,
+.cmd__trigger-mark::before,
+.cmd__trigger-mark::after {
+	display: block;
+	width: 12px;
+	height: 2px;
+	background: currentColor;
+	border-radius: 1px;
+}
+
+.cmd__trigger-mark::before,
+.cmd__trigger-mark::after {
+	content: "";
+	position: relative;
+}
+
+.cmd__trigger-mark::before {
+	top: -5px;
+}
+
+.cmd__trigger-mark::after {
+	top: 3px;
+}
+
+.cmd__panel {
+	display: grid;
+	gap: var(--space-3);
+	width: 15rem;
+	max-width: calc(100vw - 4rem);
+	padding: var(--space-3);
+	background: var(--anodize), var(--panel-raised);
+	border: 1px solid var(--engrave);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-lg);
+}
+
+/* Opens away from the caret, so the line being edited stays visible. */
+.cmd--above .cmd__panel {
+	position: relative;
+	top: calc(var(--tap-target) * -1);
+}
+
+.cmd__rack {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+}
+
+.cmd__rack--mute {
+	opacity: 0.4;
+}
+
+.cmd__legend {
+	flex: 1 0 auto;
+	color: var(--legend-dim);
+	font-size: 0.625rem;
+	font-weight: 600;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+}
+
+.cmd__count,
+.cmd__scope,
+.cmd__key,
+.cmd__compose,
+.cmd__apply,
+.cmd__cancel {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
+	min-height: var(--tap-target);
 	padding: 0 var(--space-2);
-	font-size: 1.05rem;
-	background: var(--color-surface);
-	color: var(--color-text);
-	border: 1px solid var(--color-border);
+	background: var(--panel);
+	color: var(--legend-dim);
+	border: 1px solid var(--engrave);
 	border-radius: var(--radius-sm);
+	font-size: 0.6875rem;
+	font-weight: 600;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	cursor: pointer;
 }
 
-.editor-toolbar__btn:active {
+.cmd__count {
+	min-width: 2rem;
+	font-variant-numeric: tabular-nums;
+}
+
+.cmd__count[aria-pressed="true"],
+.cmd__scope[aria-pressed="true"],
+.cmd__compose[aria-pressed="true"] {
+	background: var(--well);
+	box-shadow: var(--inset-well);
+	color: var(--legend);
+}
+
+.cmd__keys {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: var(--space-1);
+}
+
+.cmd__key {
+	font-size: 1rem;
+	letter-spacing: 0;
+	text-transform: none;
+	color: var(--legend);
+}
+
+/* A count reaches only the commands that mean something repeated. They tint
+   rather than the rest going dead, so no key is ever unavailable and the panel
+   keeps one shape. Bold at count 3 is bold once. */
+.cmd--counted .cmd__key[data-repeats] {
+	border-color: var(--color-accent);
+	color: var(--color-accent);
+}
+
+/* Composing: a lit key is in the instruction, waiting for apply. */
+.cmd__key--lit {
+	background: var(--well);
+	box-shadow: var(--inset-well);
+	border-color: var(--color-accent);
+}
+
+.cmd__foot {
+	display: flex;
+	gap: var(--space-1);
+}
+
+.cmd__foot > * {
+	flex: 1;
+}
+
+.cmd__apply {
 	background: var(--color-accent);
+	border-color: var(--color-accent);
 	color: #000;
-}
-
-.editor-toolbar__btn--dismiss {
-	margin-left: auto;
-	flex: 0 0 auto;
-	color: var(--color-text-dim);
 }
 
 /* Save status indicator text */
@@ -2837,6 +2977,7 @@ pre code {
 .editor-main {
 	display: flex;
 	flex-direction: column;
+	position: relative; /* Positioning context for the command panel's trigger */
 	overflow: hidden;
 	min-height: 0; /* Critical for nested flex overflow */
 	flex: 1;
@@ -3222,13 +3363,6 @@ pre code {
 	.editor-container.sidebyside .preview {
 		flex: 1 1 0;
 		min-height: 40dvh;
-	}
-
-	/* Leave room for the accessory toolbar while the keyboard is up so the last
-	   line of the note is not hidden behind it. */
-	.editor-container:has(~ .editor-toolbar--visible) .editor,
-	.editor-main:has(.editor-toolbar--visible) .editor {
-		scroll-padding-bottom: var(--tap-target);
 	}
 
 	/* Metadata panel - bottom sheet */

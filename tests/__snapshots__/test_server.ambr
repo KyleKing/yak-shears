@@ -50,32 +50,79 @@
         </div>
        </div>
       </div>
-      <div aria-label="Editor formatting" class="editor-toolbar" hidden="" id="editor-toolbar" role="toolbar">
-       <button aria-label="Outdent list item" class="editor-toolbar__btn" data-action="outdent" type="button">
-        ⇤
+      <div class="cmd" data-side="right" hidden="" id="cmd">
+       <button aria-controls="cmd-panel" aria-expanded="false" aria-label="Editor commands" class="cmd__trigger" id="cmd-trigger" title="Editor commands" type="button">
+        <span aria-hidden="true" class="cmd__trigger-mark">
+        </span>
        </button>
-       <button aria-label="Indent list item" class="editor-toolbar__btn" data-action="indent" type="button">
-        ⇥
-       </button>
-       <button aria-label="Toggle bullet" class="editor-toolbar__btn" data-action="bullet" type="button">
-        •
-       </button>
-       <button aria-label="Toggle checklist" class="editor-toolbar__btn" data-action="checklist" type="button">
-        ☐
-       </button>
-       <button aria-label="Bold" class="editor-toolbar__btn" data-action="bold" type="button">
-        <b>
-         B
-        </b>
-       </button>
-       <button aria-label="Italic" class="editor-toolbar__btn" data-action="italic" type="button">
-        <i>
-         I
-        </i>
-       </button>
-       <button aria-label="Dismiss keyboard" class="editor-toolbar__btn editor-toolbar__btn--dismiss" data-action="dismiss" type="button">
-        ▾
-       </button>
+       <div aria-label="Editor commands" class="cmd__panel" hidden="" id="cmd-panel" role="group">
+        <div aria-label="Repeat count" class="cmd__rack" role="group">
+         <span class="cmd__legend">
+          count
+         </span>
+         <button aria-pressed="true" class="cmd__count" data-count="1" type="button">
+          1
+         </button>
+         <button aria-pressed="false" class="cmd__count" data-count="2" type="button">
+          2
+         </button>
+         <button aria-pressed="false" class="cmd__count" data-count="3" type="button">
+          3
+         </button>
+         <button aria-pressed="false" class="cmd__count" data-count="4" type="button">
+          4
+         </button>
+         <button aria-pressed="false" class="cmd__count" data-count="5" type="button">
+          5
+         </button>
+        </div>
+        <div aria-label="Target when nothing is selected" class="cmd__rack" id="cmd-scope" role="group">
+         <span class="cmd__legend">
+          scope
+         </span>
+         <button aria-pressed="true" class="cmd__scope" data-scope="line" type="button">
+          line
+         </button>
+         <button aria-pressed="false" class="cmd__scope" data-scope="word" type="button">
+          word
+         </button>
+        </div>
+        <div aria-label="Commands" class="cmd__keys" role="group">
+         <button aria-label="Outdent list item" class="cmd__key" data-action="outdent" data-repeats="" type="button">
+          ⇤
+         </button>
+         <button aria-label="Indent list item" class="cmd__key" data-action="indent" data-repeats="" type="button">
+          ⇥
+         </button>
+         <button aria-label="Toggle bullet" class="cmd__key" data-action="bullet" type="button">
+          •
+         </button>
+         <button aria-label="Toggle checklist" class="cmd__key" data-action="checklist" type="button">
+          ☐
+         </button>
+         <button aria-label="Bold" class="cmd__key" data-action="bold" type="button">
+          <b>
+           B
+          </b>
+         </button>
+         <button aria-label="Italic" class="cmd__key" data-action="italic" type="button">
+          <i>
+           I
+          </i>
+         </button>
+        </div>
+        <div class="cmd__foot">
+         <button aria-pressed="false" class="cmd__compose" id="cmd-compose" type="button">
+          compose
+         </button>
+         <button class="cmd__apply" hidden="" id="cmd-apply" type="button">
+          apply
+         </button>
+         <button class="cmd__cancel" id="cmd-cancel" type="button">
+          cancel
+         </button>
+        </div>
+       </div>
       </div>
       <div class="editor__actions">
        <div class="container">

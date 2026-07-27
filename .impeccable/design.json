@@ -495,6 +495,13 @@
       "description": "An empty rack: the frame with three vacant slots and no caps mounted. Reuses the rack's own geometry so an empty vault looks like the thing it is.",
       "html": "<div class=\"ds-empty\" aria-hidden=\"true\"><span class=\"ds-empty__slot\"></span><span class=\"ds-empty__slot\"></span><span class=\"ds-empty__slot\"></span></div>",
       "css": ".ds-empty { display: grid; gap: 1px; width: 8rem; background: var(--engrave, #0a0c0e); border: 1px solid var(--engrave, #0a0c0e); border-radius: 5px; overflow: hidden; opacity: 0.7; } .ds-empty__slot { height: 1.25rem; background: var(--well, #14171a); box-shadow: inset 0 2px 4px rgba(0,0,0,0.55), inset 0 -1px 0 rgba(255,255,255,0.06); }"
+    },
+    {
+      "name": "Command Panel",
+      "kind": "control",
+      "refersTo": "cmd",
+      "description": "A draggable grip tab on the editor edge, opening a panel that composes one instruction (count, scope, commands), applies it, and closes.",
+      "html": "<div class=\"ds-cmd\"><button class=\"ds-cmd-trigger\"><span class=\"ds-grip\"></span></button><div class=\"ds-cmd-panel\"><div class=\"ds-rack\"><span class=\"ds-legend\">count</span><button aria-pressed=\"true\">1</button><button>2</button><button>3</button></div><div class=\"ds-keys\"><button data-repeats>&#8676;</button><button data-repeats>&#8677;</button><button>B</button></div></div></div>"
     }
   ],
   "narrative": {

@@ -69,6 +69,22 @@ def browser_context_args(browser_context_args):
 
 
 @pytest_asyncio.fixture(loop_scope="session")
+async def touch_page(browser):
+    """A phone-sized page reporting a coarse pointer, which is what gates the command panel."""
+    context = await browser.new_context(
+        base_url=BASE_URL,
+        viewport={"width": 390, "height": 844},
+        has_touch=True,
+        is_mobile=True,
+    )
+    page = await context.new_page()
+    try:
+        yield page
+    finally:
+        await context.close()
+
+
+@pytest_asyncio.fixture(loop_scope="session")
 async def unauthenticated_page(browser):
     """Create a page without authentication."""
     # Create a new context without any storage state (unauthenticated)

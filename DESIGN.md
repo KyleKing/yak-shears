@@ -403,6 +403,12 @@ The header itself is opaque anodized panel-raised with an engraved bottom groove
 
 The one thing on the editor that never scrolls away: category cap, filename in mono, category in tracked caps, and the three-position source selector. The selector is one control with three positions rather than three loose buttons, so the seated position reads as the monitored source.
 
+### Command Panel
+
+A grip tab seated into one edge of the editor, drawn from three stacked bars in `currentColor` per the Drawn-Mark Rule. Dragging moves it and flips it between edges, so it can be kept clear of whichever hand is holding the phone. It shows only while the editor holds focus, because every command it carries acts on a cursor.
+
+The panel it opens is one instruction: a count rack, a scope switch, a bank of command keys, and a foot of compose, apply, and cancel. It opens away from the caret so the line being edited stays visible, and it closes on every applied change. Nothing in it is ever disabled. A count above 1 tints the keys it reaches with the amber accent and leaves the rest plain, which reports what the count does without taking a key away. Full reasoning in `adr/0011`.
+
 ## Do's and Don'ts
 
 ### Do:
