@@ -3,6 +3,8 @@ build-backend = "hatchling.build"
 requires = ["hatchling"]
 
 [dependency-groups]
+# FIXME: add "typed-jinja[lsp]" back here once it is published to PyPI. It is
+# checked via `uvx --from` in hk.pkl meanwhile, so the editor LSP does not see it
 dev = [
   "beautifulsoup4>=4.13.4",
   "freezegun>=1.5.5",

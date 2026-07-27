@@ -58,6 +58,8 @@ local linters = new Mapping<String, Step> {
 
     // typed-jinja is unpublished and lives beside this repo, so it runs from that
     // checkout instead of being a project dependency that CI cannot resolve
+    // FIXME: once typed-jinja is on PyPI, move it back into the dev group so the
+    // editor LSP picks it up again, and drop the path below
     ["typed-jinja"] {
         glob = "yak_shears/_templates/**/*.jinja"
         check = "uvx --from ../../local-code/typed-jinja typed-jinja check {{ files }}"
