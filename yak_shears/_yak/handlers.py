@@ -16,6 +16,7 @@ from yak_shears._templates import (
     SortBy,
     _render_template,
     render_error,
+    render_new,
     render_search,
     render_settings,
     render_yak_edit,
@@ -129,20 +130,16 @@ async def yaks_handler(request: Request) -> Response:
         current_category=query_params.category,
         categories=categories,
         category_colors=await resolve_colors(yak_dir, categories),
-        show_new=request.query_params.get("new") == "1",
     )
 
 
 async def new_yak_handler(request: Request) -> Response:
-    """Handle requests to /new.
-
-    The picker itself lives in a modal over the rack, so GET only exists to open
-    it; POST is the form target and is the one step that creates a yak.
-    """
-    if request.method != "POST":
-        return RedirectResponse("/yaks?new=1", status_code=HTTPStatus.SEE_OTHER)
-
+    """Handle requests to /new."""
     yak_dir = await get_yak_dir()
+    if request.method != "POST":
+        categories = await get_categories(await list_yak_paths(yak_dir))
+        return render_new(categories=categories, category_colors=await resolve_colors(yak_dir, categories))
+
     form_data = await request.form()
     category = str(form_data.get("new_category", "")).strip() or str(form_data.get("category", "")).strip()
 

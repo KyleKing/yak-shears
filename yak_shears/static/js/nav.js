@@ -33,6 +33,22 @@ window.addEventListener("resize", () => {
 	}
 });
 
+// The back control is an anchor to /yaks so it works with scripting off and in
+// a fresh tab. When there is a same-origin page behind this one, go there
+// instead, which is the only real back a standalone homescreen app has.
+const backLink = document.getElementById("header-back");
+
+if (backLink) {
+	backLink.addEventListener("click", (event) => {
+		const sameOrigin =
+			document.referrer && new URL(document.referrer).origin === window.location.origin;
+		if (sameOrigin && window.history.length > 1) {
+			event.preventDefault();
+			window.history.back();
+		}
+	});
+}
+
 const navMenu = document.getElementById("nav-menu");
 
 if (navMenu) {

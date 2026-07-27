@@ -297,29 +297,21 @@ def test_yak_endpoint_errors(
         assert expected_text in response.text
 
 
-def test_new_yak_get_opens_the_modal_over_the_rack(client: TestClient, mock_user_session) -> None:
-    """Test that the new yak endpoint GET redirects to the rack with the modal open."""
+def test_new_yak_get_renders_the_category_keys(client: TestClient, mock_user_session) -> None:
+    """Test that the new yak endpoint GET renders the picker on its own page."""
     with set_yak_shears_dir(MOCK_YAK_DIR):
-        response = client.get("/new", follow_redirects=False)
-        assert response.status_code == HTTPStatus.SEE_OTHER
-        assert response.headers["location"] == "/yaks?new=1"
-
-
-def test_yaks_renders_the_new_yak_modal(client: TestClient, mock_user_session) -> None:
-    """Test that ?new=1 renders the creation modal on the rack."""
-    with set_yak_shears_dir(MOCK_YAK_DIR):
-        response = client.get("/yaks?new=1")
+        response = client.get("/new")
         assert response.status_code == HTTPStatus.OK
-        assert 'id="new-yak"' in response.text
+        assert 'class="new-yak__key"' in response.text
         assert 'name="new_category"' in response.text
 
 
-def test_yaks_omits_the_new_yak_modal_by_default(client: TestClient, mock_user_session) -> None:
-    """Test that the rack has no modal without ?new=1."""
+def test_yaks_does_not_carry_the_new_yak_form(client: TestClient, mock_user_session) -> None:
+    """Test that the rack no longer pays to render the creation form."""
     with set_yak_shears_dir(MOCK_YAK_DIR):
         response = client.get("/yaks")
         assert response.status_code == HTTPStatus.OK
-        assert 'id="new-yak"' not in response.text
+        assert 'name="new_category"' not in response.text
 
 
 def test_new_yak_post(client: TestClient, mock_user_session, tmp_path) -> None:

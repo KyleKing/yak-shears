@@ -49,12 +49,26 @@
     <header class="header" role="banner">
       <div class="container">
         <div class="header__bar">
+          {# A standalone homescreen app has no browser chrome, so nothing but an
+             unreliable edge swipe goes back. nav.js upgrades this to
+             history.back() when there is a same-origin page behind it. #}
+          {% if current_route != 'yaks' %}
+            <a href="/yaks" class="header__back" id="header-back" aria-label="Back">
+              <span class="header__back-mark" aria-hidden="true"></span>
+            </a>
+          {% endif %}
           <a href="/yaks" class="brand" aria-label="Yak Shears home">
             <div class="brand__logo" aria-hidden="true">YS</div>
             <span class="brand__name">Yak Shears</span>
           </a>
           <div class="header__center">
             {% block header_center %}{% endblock %}
+          </div>
+          {# The two things done from a phone constantly. They stay on the bar at
+             every width rather than behind the menu, which is a tap and a wait. #}
+          <div class="header__actions">
+            <a href="/new" class="nav__link{% if current_route == 'new' %} nav__link--active{% endif %}" {% if current_route == 'new' %}aria-current="page"{% endif %}>New</a>
+            <a href="/search" class="nav__link{% if current_route == 'search' %} nav__link--active{% endif %}" {% if current_route == 'search' %}aria-current="page"{% endif %}>Search</a>
           </div>
           {# <details> rather than a JS toggle, for browser-native keyboard and
              ARIA behavior. It ships open and nav.js collapses it on phones,
@@ -68,8 +82,6 @@
             <nav class="nav__panel" role="navigation" aria-label="Main navigation">
               <ul class="nav__list">
                 <li><a href="/yaks" class="nav__link{% if current_route == 'yaks' %} nav__link--active{% endif %}" {% if current_route == 'yaks' %}aria-current="page"{% endif %}>Yaks</a></li>
-                <li><a href="/search" class="nav__link{% if current_route == 'search' %} nav__link--active{% endif %}" {% if current_route == 'search' %}aria-current="page"{% endif %}>Search</a></li>
-                <li><a href="/new" class="nav__link{% if current_route == 'new' %} nav__link--active{% endif %}" {% if current_route == 'new' %}aria-current="page"{% endif %}>New</a></li>
                 <li><a href="/doctor" class="nav__link{% if current_route == 'doctor' %} nav__link--active{% endif %}" {% if current_route == 'doctor' %}aria-current="page"{% endif %}>Doctor</a></li>
                 <li><a href="/settings" class="nav__link{% if current_route == 'settings' %} nav__link--active{% endif %}" {% if current_route == 'settings' %}aria-current="page"{% endif %}>Settings</a></li>
               </ul>

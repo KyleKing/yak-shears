@@ -337,6 +337,53 @@ p {
 	min-width: 0;
 }
 
+/* Pulled tight against the panel edge so the badge keeps its place on the bar. */
+.header__back {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--tap-target);
+	height: var(--tap-target);
+	margin-left: calc(var(--space-3) * -1);
+	flex-shrink: 0;
+	color: var(--legend-dim);
+	text-decoration: none;
+	border-radius: var(--radius-sm);
+}
+
+.header__back:hover {
+	color: var(--legend);
+}
+
+/* Drawn, not typed, so it takes no step off the ramp. Same construction as the
+   hamburger at the other end of the bar: a shaft with a head hung off it. */
+.header__back-mark {
+	display: block;
+	width: 12px;
+	height: 2px;
+	background: currentColor;
+	border-radius: 2px;
+}
+
+.header__back-mark::before {
+	content: "";
+	display: block;
+	position: relative;
+	top: -3px;
+	width: 8px;
+	height: 8px;
+	border-left: 2px solid currentColor;
+	border-bottom: 2px solid currentColor;
+	border-radius: 1px;
+	transform: rotate(45deg);
+}
+
+.header__actions {
+	display: flex;
+	gap: var(--space-2);
+	flex-shrink: 0;
+}
+
 .header__center {
 	flex: 1;
 	min-width: 0;
@@ -554,6 +601,12 @@ p {
 		min-height: var(--tap-target);
 		padding: var(--space-2) var(--space-4);
 		border-radius: var(--radius-sm);
+	}
+
+	/* On the bar rather than in the dropdown, so they take the tighter padding
+	   the row has room for. */
+	.header__actions .nav__link {
+		padding: var(--space-2) var(--space-3);
 	}
 }
 
@@ -1767,80 +1820,12 @@ pre code {
 }
 
 /* ----------------------------------------------------------------------------
-   Modal: a panel that genuinely leaves the panel plane, so it is the one place
-   allowed a scrim and a cast shadow. Rendered server-side and dismissed by a
-   link, so it needs no script to open, close, or submit.
-   ---------------------------------------------------------------------------- */
-.modal {
-	position: fixed;
-	inset: 0;
-	z-index: 2000;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: var(--space-4);
-}
-
-.modal__scrim {
-	position: absolute;
-	inset: 0;
-	background: var(--scrim);
-}
-
-.modal__panel {
-	position: relative;
-	display: grid;
-	gap: var(--space-5);
-	width: 34rem;
-	max-width: 100%;
-	max-height: 100%;
-	overflow-y: auto;
-	padding: var(--space-5);
-	background: var(--anodize), var(--panel-raised);
-	border: 1px solid var(--engrave);
-	border-radius: var(--radius-lg);
-	box-shadow: var(--shadow-lg);
-}
-
-.modal__head {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--space-3);
-}
-
-.modal__title {
-	margin: 0;
-	font-size: 0.8125rem;
-	font-weight: 700;
-	letter-spacing: 0.14em;
-	text-transform: uppercase;
-	color: var(--legend-dim);
-}
-
-.modal__close {
-	display: inline-flex;
-	align-items: center;
-	min-height: var(--tap-target);
-	padding: 0 var(--space-3);
-	color: var(--legend-dim);
-	font-size: 0.75rem;
-	font-weight: 600;
-	letter-spacing: 0.09em;
-	text-transform: uppercase;
-	text-decoration: none;
-}
-
-.modal__close:hover {
-	color: var(--legend);
-}
-
-/* ----------------------------------------------------------------------------
    New yak: a bank of category keys, each carrying its own anodized cap, and one
    patch field for a category that does not exist yet. One press files the note.
    ---------------------------------------------------------------------------- */
 .new-yak__form {
-	margin: 0;
+	max-width: 34rem;
+	margin: 0 0 var(--space-5);
 }
 
 .new-yak__group {

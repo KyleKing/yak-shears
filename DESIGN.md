@@ -251,7 +251,7 @@ A lit surface takes dark ink, because the panel's text colors are built for a da
 
 Shading is material, not palette. The alpha blacks and whites in inset shadows, the anodize grain, and cap catch-lights are how a material is drawn and they are recorded with their materials in the sidecar, not as color tokens. One carries a role and is named:
 
-- **Scrim** (rgba(0, 0, 0, 0.5)): Behind a modal that leaves the panel plane.
+- **Scrim** (rgba(0, 0, 0, 0.5)): Behind a surface that leaves the panel plane, which today is the editor's metadata panel and the search preview.
 
 ### Named Rules
 
@@ -335,7 +335,7 @@ Panel hardware is machined, so radii are small and deliberate: 3px on caps, keys
 
 Structure is carried by material rather than by outline. Where a border does appear it is `--engrave`, and it is nearly always paired with its catch-light to read as a cut. The category cap is a full-height 6px bar with an inner catch-light (`inset 1px 0 0 rgba(255,255,255,0.22)`) and an outer contact shadow, which is what makes it read as a machined part rather than a flat colored rule.
 
-The anodized cap is the system's recurring signature geometry: a full-height 6px bar in the category color, repeated down the rack, on the editor's head plate, on every category key in the new-yak modal, and on every row of the settings bench. Wherever a category is named, that bar names it.
+The anodized cap is the system's recurring signature geometry: a full-height 6px bar in the category color, repeated down the rack, on the editor's head plate, on every category key on `/new`, and on every row of the settings bench. Wherever a category is named, that bar names it.
 
 ### Named Rules
 
@@ -375,11 +375,11 @@ picture. The two emoji it replaced (📝 and 🔍) were the only marks in the in
 that belonged to no world, and sizing one at 4rem was the only type on the page with
 no step on the ramp.
 
-### Modal
+### New yak
 
-The one surface allowed to leave the panel plane, so the one place a scrim (`--scrim`) and a cast shadow (`--shadow-lg`) belong. Rendered server-side from a query parameter and dismissed by a link, so opening, closing, and submitting all work with scripting off; the only JS is the Escape key.
+`/new` is a page of its own. It carries a bank of category keys, each with its own anodized cap, and pressing one files the note in a single click. The new-category field sits in a **separate form** from the key bank, because a submit button sharing a form with a text field fires on Enter and would file the note under whichever category happened to be first. Nothing autofocuses, so arriving does not throw the software keyboard over the keys.
 
-The new-yak modal is the whole of `/new`: the route redirects to `/yaks?new=1` rather than rendering a page. Creating a note is one decision and never deserved a navigation. Each existing category is a key carrying its own anodized cap, and pressing one files the note in a single click. The new-category field sits in a **separate form** from the key bank, because a submit button sharing a form with a text field fires on Enter and would file the note under whichever category happened to be first.
+It was briefly a modal over the rack. Rendering it meant rendering the whole rack behind it, which is the most expensive page in the app and the one a phone waits on.
 
 ### Inputs
 
@@ -389,7 +389,13 @@ The new-yak modal is the whole of `/new`: the route redirects to `/yaks?new=1` r
 
 ### Navigation
 
-Switches on the panel's top strip: tracked uppercase, dim at rest, `--panel` face with an engrave border on hover, 1px drop on press. The engaged switch seats into the well and lights a 2px amber indicator across its lower edge. Below 768px the wordmark drops, the five links collapse into a `<details>` hamburger, and each link takes a full 44px row.
+Switches on the panel's top strip: tracked uppercase, dim at rest, `--panel` face with an engrave border on hover, 1px drop on press. The engaged switch seats into the well and lights a 2px amber indicator across its lower edge.
+
+New and Search stay on the bar at every width. They are what a phone reaches for constantly, and a tap-then-wait through the hamburger for either of them is a tax on the two most common actions. Yaks, Doctor, and Settings collapse into a `<details>` hamburger below 768px, where the wordmark also drops and each link takes a full 44px row.
+
+Every route but the rack carries a back control at the left edge of the bar. A standalone homescreen app has no browser chrome, so an unreliable edge swipe is otherwise the only way back. It is an anchor to `/yaks`, which is what it does with scripting off or in a fresh tab. When a same-origin page is behind it, `nav.js` sends it to `history.back()` instead.
+
+**The Drawn-Mark Rule.** Panel chrome is drawn from boxes and borders in `currentColor`, never typed as a glyph. The hamburger is a 2px bar with two pseudo-element bars hung off it, and the back mark at the other end of the same bar is built the same way: a 12px shaft with an 8px square rotated 45° for the head, two borders showing. A drawn mark takes no step off the type ramp, inherits the switch's dim-to-lit color, and scales with the panel rather than with a font. The empty-state mark follows the same rule at a larger size.
 
 The header itself is opaque anodized panel-raised with an engraved bottom groove. It is not translucent, because a console face is metal and blur let content swim underneath it.
 

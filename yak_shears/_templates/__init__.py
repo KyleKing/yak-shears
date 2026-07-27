@@ -163,7 +163,6 @@ def render_yaks(
     current_category: str | None,
     categories: set[str],
     category_colors: Mapping[str, str],
-    show_new: bool,
 ) -> HTMLResponse:
     """Render the yaks listing page.
 
@@ -177,7 +176,6 @@ def render_yaks(
         current_category: active category filter currently applied
         categories: set of available categories for filtering
         category_colors: resolved category to CSS color mapping
-        show_new: whether the new-yak modal opens over the rack
 
     Returns:
         HTMLResponse with the yaks listing template
@@ -193,8 +191,25 @@ def render_yaks(
         current_category=current_category,
         categories=categories,
         get_category_color=color_lookup(category_colors),
-        show_new=show_new,
-        current_route="new" if show_new else "yaks",
+        current_route="yaks",
+    )
+
+
+def render_new(*, categories: set[str], category_colors: Mapping[str, str]) -> HTMLResponse:
+    """Render the new-yak page.
+
+    Args:
+        categories: set of categories a note can be filed under
+        category_colors: resolved category to CSS color mapping
+
+    Returns:
+        HTMLResponse with the new yak template
+    """
+    return _render_template(
+        "yak/new.html.jinja",
+        categories=categories,
+        get_category_color=color_lookup(category_colors),
+        current_route="new",
     )
 
 

@@ -1,0 +1,40 @@
+{#def
+from collections.abc import Callable
+categories: set[str]
+get_category_color: Callable[[str], str]
+-#}
+{% extends "base.html.jinja" %}
+
+{% block title %}New Yak{% endblock %}
+
+{% block content %}
+  <h1>New Yak</h1>
+
+  {% if categories %}
+    {# Its own form: a submit button in the same form as the text field
+       would fire on Enter and file the note under the wrong category. #}
+    <form method="post" action="/new" class="new-yak__form">
+      <fieldset class="new-yak__group">
+        <legend class="new-yak__legend">File it under</legend>
+        <div class="new-yak__keys">
+          {% for cat in categories | sort %}
+            <button type="submit" name="category" value="{{ cat }}" class="new-yak__key" style="--key-accent-color: {{ get_category_color(cat) }}">
+              <span class="new-yak__key-cap" aria-hidden="true"></span>{{ cat }}
+            </button>
+          {% endfor %}
+        </div>
+      </fieldset>
+    </form>
+  {% endif %}
+
+  <form method="post" action="/new" class="new-yak__form">
+    <fieldset class="new-yak__group">
+      <legend class="new-yak__legend">Or start a category</legend>
+      <div class="new-yak__create">
+        <label class="new-yak__label" for="new_category">New category name</label>
+        <input type="text" id="new_category" name="new_category" class="form__input new-yak__input" placeholder="category name" autocomplete="off" maxlength="64" required>
+        <button type="submit" class="button button--primary">Apply</button>
+      </div>
+    </fieldset>
+  </form>
+{% endblock %}

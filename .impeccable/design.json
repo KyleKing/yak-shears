@@ -354,7 +354,7 @@
       {
         "name": "float",
         "value": "0 8px 16px rgba(0,0,0,0.1)",
-        "purpose": "Genuine overlays that leave the panel plane: modals, popovers, combobox lists."
+        "purpose": "Genuine overlays that leave the panel plane: the editor's metadata panel, the search preview, the mobile nav popover."
       }
     ],
     "materials": [
@@ -468,7 +468,7 @@
       "name": "Panel Switch",
       "kind": "nav",
       "refersTo": "nav-link",
-      "description": "Header navigation. The engaged switch seats into the well and lights its lower edge.",
+      "description": "Header navigation. The engaged switch seats into the well and lights its lower edge. New and Search stay on the bar at every width; the rest collapse into the hamburger below 768px.",
       "html": "<nav class=\"ds-switches\"><a class=\"ds-switch is-active\" href=\"#\">Yaks</a><a class=\"ds-switch\" href=\"#\">Search</a><a class=\"ds-switch\" href=\"#\">New</a><a class=\"ds-switch\" href=\"#\">Doctor</a></nav>",
       "css": ".ds-switches { display: flex; gap: 0.75rem; padding: 1rem; background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.06)), var(--panel-raised, #2b3037); border-bottom: 1px solid var(--engrave, #0a0c0e); box-shadow: 0 1px 0 var(--engrave-light, #3d434b); } .ds-switch { position: relative; display: block; padding: 0.5rem 0.75rem; color: var(--legend-dim, #99a3ae); text-decoration: none; border: 1px solid transparent; border-radius: 3px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; transition: background 70ms cubic-bezier(0.2,0,0.1,1), color 70ms cubic-bezier(0.2,0,0.1,1), transform 70ms cubic-bezier(0.2,0,0.1,1); } .ds-switch:hover { background: var(--panel, #22262b); border-color: var(--engrave, #0a0c0e); color: var(--legend, #e8ecf1); } .ds-switch:active { transform: translateY(1px); } .ds-switch.is-active { background: var(--well, #14171a); border-color: var(--engrave, #0a0c0e); box-shadow: inset 0 2px 4px rgba(0,0,0,0.55), inset 0 -1px 0 rgba(255,255,255,0.06); color: var(--legend, #e8ecf1); } .ds-switch.is-active::after { content: \"\"; position: absolute; left: 0.75rem; right: 0.75rem; bottom: 3px; height: 2px; border-radius: 1px; background: #ffb02e; }"
     },
@@ -558,6 +558,11 @@
         "name": "The No-Side-Bar Rule",
         "body": "State is never communicated by a colored border down one edge of a row. That vocabulary belongs to the category cap, which means identity. Severity uses lamps; selection uses the seated well plus the lit underline.",
         "section": "shapes"
+      },
+      {
+        "name": "The Drawn-Mark Rule",
+        "body": "Panel chrome is drawn from boxes and borders in currentColor, never typed as a glyph. The hamburger is a 2px bar with two pseudo-element bars hung off it, and the back mark at the other end of the same bar is a 12px shaft with an 8px square rotated 45 degrees for the head. A drawn mark takes no step off the type ramp, inherits the switch's dim-to-lit color, and scales with the panel rather than with a font.",
+        "section": "typography"
       }
     ],
     "dos": [
@@ -572,7 +577,7 @@
     ],
     "donts": [
       "Don't mark state with a colored border down one side of a row. Lamps for severity, seated well plus lit underline for selection.",
-      "Don't cast a drop shadow onto the panel. Only genuine overlays (modals, popovers) leave the panel plane.",
+      "Don't cast a drop shadow onto the panel. Only genuine overlays (popovers, the metadata panel) leave the panel plane.",
       "Don't use --lamp-off for text; it sits near 2:1 on the panel. Dim text is --legend-dim.",
       "Don't let a lit color decorate. If it is not reporting state or arming an action, it is not lit.",
       "Don't style rendered note content with panel chrome. Scope panel heading and legend rules away from .preview-content, .card__preview, and .search-preview.",
