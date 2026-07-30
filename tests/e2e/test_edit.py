@@ -1,11 +1,20 @@
 import re
 
 import pytest
-from playwright.async_api import BrowserContext, Page, ViewportSize, expect
+from playwright.async_api import BrowserContext, Locator, Page, ViewportSize, expect
 
 from tests.conftest import MOCK_YAK_DIR
 
 from ._helpers import login, maybe_screenshot, open_menu
+
+
+async def _open_editor(context: BrowserContext, page: Page, yak: str = "yak1.dj") -> Locator:
+    """Log in, open the editor on `yak`, and hand back the editor locator."""
+    await login(context, page)
+    await page.goto(f"/edit?yak={yak}")
+    editor = page.locator(".editor")
+    await expect(editor).to_be_editable()
+    return editor
 
 
 async def _fill_editor(page: Page, fill: str) -> None:
@@ -162,11 +171,7 @@ async def test_preview_syntax_highlighting(context: BrowserContext, page: Page, 
 @pytest.mark.asyncio
 async def test_text_stability_during_editing(context: BrowserContext, page: Page, server_lifecycle):
     """Test that text doesn't jump around when editing with highlighting enabled."""
-    await login(context, page)
-
-    await page.goto("/edit?yak=yak1.dj")
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
+    editor = await _open_editor(context, page)
 
     # Test case: clicking after "1" in "line 1\n\n```py\nimport *\n```" and pressing backspace
     # should not cause newlines to disappear
@@ -224,64 +229,31 @@ async def test_view_mode_toggles(context: BrowserContext, page: Page, server_lif
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_list_continuation_bullet(context: BrowserContext, page: Page, server_lifecycle):
-    """Test bullet list auto-continues on Enter."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
+@pytest.mark.parametrize(
+    ("typed", "expected"),
+    [
+        ("- item 1", "- item 1\n- "),
+        ("1. first item", "1. first item\n2. "),
+        ("- [ ] task 1", "- [ ] task 1\n- [ ] "),
+    ],
+    ids=["bullet-repeats", "number-increments", "checklist-comes-back-unchecked"],
+)
+async def test_enter_continues_a_list(context: BrowserContext, page: Page, server_lifecycle, *, typed, expected):
+    """Enter carries the list marker onto the next line."""
+    editor = await _open_editor(context, page)
 
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
-
-    await _fill_editor(page, "- item 1")
+    await _fill_editor(page, typed)
     await page.keyboard.press("Enter")
 
     content = await editor.text_content()
-    assert content == "- item 1\n- ", f"Expected '- item 1\\n- ' but got {content!r}"
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
-async def test_list_continuation_numbered(context: BrowserContext, page: Page, server_lifecycle):
-    """Test numbered list increments on Enter."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
-
-    await _fill_editor(page, "1. first item")
-    await page.keyboard.press("Enter")
-
-    content = await editor.text_content()
-    assert content == "1. first item\n2. ", f"Expected '1. first item\\n2. ' but got {content!r}"
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
-async def test_list_continuation_checklist(context: BrowserContext, page: Page, server_lifecycle):
-    """Test checklist continues with unchecked box."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
-
-    await _fill_editor(page, "- [ ] task 1")
-    await page.keyboard.press("Enter")
-
-    content = await editor.text_content()
-    assert content == "- [ ] task 1\n- [ ] ", f"Expected checklist continuation but got {content!r}"
+    assert content == expected, f"Expected {expected!r} but got {content!r}"
 
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
 async def test_list_continuation_exit_on_empty(context: BrowserContext, page: Page, server_lifecycle):
     """Test empty list item removes marker and exits list mode."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
+    editor = await _open_editor(context, page)
 
     # Type a list item, press Enter to get continuation, then Enter again to exit
     await _fill_editor(page, "- item")
@@ -300,70 +272,27 @@ async def test_list_continuation_exit_on_empty(context: BrowserContext, page: Pa
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_checklist_toggle_plain_to_unchecked(context: BrowserContext, page: Page, server_lifecycle):
-    """Test Ctrl+L adds unchecked checkbox to plain line."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
+@pytest.mark.parametrize(
+    ("typed", "expected"),
+    [
+        ("some text", "- [ ] some text"),
+        ("- bullet item", "- [ ] bullet item"),
+        ("- [ ] task", "- [x] task"),
+        ("- [x] done task", "- done task"),
+    ],
+    ids=["plain-to-unchecked", "bullet-to-unchecked", "unchecked-to-checked", "checked-to-bullet"],
+)
+async def test_ctrl_l_cycles_the_checklist_marker(
+    context: BrowserContext, page: Page, server_lifecycle, *, typed, expected
+):
+    """Ctrl+L walks a line around the checked, bullet, unchecked cycle."""
+    editor = await _open_editor(context, page)
 
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
-
-    await _fill_editor(page, "some text")
+    await _fill_editor(page, typed)
     await page.keyboard.press("Control+l")
 
     content = await editor.text_content()
-    assert content == "- [ ] some text", f"Expected '- [ ] some text' but got {content!r}"
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
-async def test_checklist_toggle_bullet_to_unchecked(context: BrowserContext, page: Page, server_lifecycle):
-    """Test Ctrl+L converts bullet to unchecked checkbox."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
-
-    await _fill_editor(page, "- bullet item")
-    await page.keyboard.press("Control+l")
-
-    content = await editor.text_content()
-    assert content == "- [ ] bullet item", f"Expected '- [ ] bullet item' but got {content!r}"
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
-async def test_checklist_toggle_unchecked_to_checked(context: BrowserContext, page: Page, server_lifecycle):
-    """Test Ctrl+L checks an unchecked checkbox."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
-
-    await _fill_editor(page, "- [ ] task")
-    await page.keyboard.press("Control+l")
-
-    content = await editor.text_content()
-    assert content == "- [x] task", f"Expected '- [x] task' but got {content!r}"
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
-async def test_checklist_toggle_checked_to_bullet(context: BrowserContext, page: Page, server_lifecycle):
-    """Test Ctrl+L on checked removes checkbox."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
-
-    await _fill_editor(page, "- [x] done task")
-    await page.keyboard.press("Control+l")
-
-    content = await editor.text_content()
-    assert content == "- done task", f"Expected '- done task' but got {content!r}"
+    assert content == expected, f"Expected {expected!r} but got {content!r}"
 
 
 # ============================================================================
@@ -373,64 +302,31 @@ async def test_checklist_toggle_checked_to_bullet(context: BrowserContext, page:
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_list_indent_tab(context: BrowserContext, page: Page, server_lifecycle):
-    """Test Tab indents list item."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
+@pytest.mark.parametrize(
+    ("typed", "key", "expected"),
+    [
+        ("- item", "Tab", "    - item"),
+        ("1. numbered item", "Tab", "    1. numbered item"),
+        ("    - indented item", "Shift+Tab", "- indented item"),
+    ],
+    ids=["bullet-indents", "number-keeps-its-content", "shift-tab-outdents"],
+)
+async def test_tab_shifts_one_list_item(context: BrowserContext, page: Page, server_lifecycle, *, typed, key, expected):
+    """Tab and Shift+Tab move a single item one level."""
+    editor = await _open_editor(context, page)
 
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
-
-    await _fill_editor(page, "- item")
-    await page.keyboard.press("Tab")
-
-    content = await editor.text_content()
-    assert content == "    - item", f"Expected '    - item' but got {content!r}"
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
-async def test_list_outdent_shift_tab(context: BrowserContext, page: Page, server_lifecycle):
-    """Test Shift+Tab outdents list item."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
-
-    await _fill_editor(page, "    - indented item")
-    await page.keyboard.press("Shift+Tab")
+    await _fill_editor(page, typed)
+    await page.keyboard.press(key)
 
     content = await editor.text_content()
-    assert content == "- indented item", f"Expected '- indented item' but got {content!r}"
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
-async def test_list_indent_preserves_content(context: BrowserContext, page: Page, server_lifecycle):
-    """Test indentation preserves list content on numbered lists."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
-
-    await _fill_editor(page, "1. numbered item")
-    await page.keyboard.press("Tab")
-
-    content = await editor.text_content()
-    assert content == "    1. numbered item", f"Expected '    1. numbered item' but got {content!r}"
+    assert content == expected, f"Expected {expected!r} but got {content!r}"
 
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
 async def test_list_indent_inserts_blank_before_nested(context: BrowserContext, page: Page, server_lifecycle):
     """Indenting an item under a parent inserts the blank line Djot needs to nest it."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
+    editor = await _open_editor(context, page)
 
     # Set a flat two-item list with the caret at the end of the child line so this
     # exercises only the indent path.
@@ -457,11 +353,7 @@ async def test_list_indent_inserts_blank_before_nested(context: BrowserContext, 
 @pytest.mark.asyncio
 async def test_list_outdent_removes_nested_blank(context: BrowserContext, page: Page, server_lifecycle):
     """Outdenting a nested item removes the blank separator that indenting added."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
+    editor = await _open_editor(context, page)
 
     # Set the nested state directly with the caret at the end of the child line so
     # this exercises only the outdent path (chaining Tab+Shift+Tab races the caret).
@@ -488,11 +380,7 @@ async def test_list_outdent_removes_nested_blank(context: BrowserContext, page: 
 @pytest.mark.asyncio
 async def test_list_indent_stops_beyond_one_level(context: BrowserContext, page: Page, server_lifecycle):
     """A child already one level under its parent cannot indent a second level deeper."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
+    editor = await _open_editor(context, page)
 
     # Child is nested one level under a top-level parent; a further Tab would make it
     # two levels deeper than the parent, which Djot cannot parse, so it must no-op.
@@ -519,11 +407,7 @@ async def test_list_indent_stops_beyond_one_level(context: BrowserContext, page:
 @pytest.mark.asyncio
 async def test_wrap_toggle_rewraps_editor(context: BrowserContext, page: Page, server_lifecycle):
     """The wrap toggle flips the editor itself between soft-wrap and no-wrap."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
+    await _open_editor(context, page)
 
     async def white_space() -> str:
         return await page.evaluate("() => getComputedStyle(document.querySelector('.editor')).whiteSpace")
@@ -561,11 +445,7 @@ async def test_wrap_default_on_with_no_stored_preference(context: BrowserContext
 @pytest.mark.asyncio
 async def test_wrap_off_preference_persists_across_pages(context: BrowserContext, page: Page, server_lifecycle):
     """Turning wrap off is written to localStorage and still applies after navigating away and back."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
+    editor = await _open_editor(context, page)
 
     await open_menu(page)
     await page.locator("#wrap-toggle").click()
@@ -588,11 +468,7 @@ async def test_wrap_off_preference_persists_across_pages(context: BrowserContext
 @pytest.mark.asyncio
 async def test_wrap_toggle_rewraps_editor_code_block(context: BrowserContext, page: Page, server_lifecycle):
     """Wrap must also reach code blocks, which the highlighter nests in a <pre>."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
+    await _open_editor(context, page)
 
     await page.evaluate('() => window.jar.updateCode("```py\\nx = 1\\n```")')
 
@@ -616,11 +492,7 @@ async def test_wrap_toggle_rewraps_editor_code_block(context: BrowserContext, pa
 @pytest.mark.asyncio
 async def test_draft_toggle_recovers_local_changes(context: BrowserContext, page: Page, server_lifecycle):
     """Draft bar appears for unsaved localStorage changes and swaps versions losslessly."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
+    editor = await _open_editor(context, page)
     toggle = page.locator("#draft-toggle")
     await expect(toggle).to_be_hidden()
 
@@ -699,9 +571,7 @@ async def _expect_editor_text(page: Page, expected: str) -> None:
 async def test_command_panel_indents_and_outdents(touch_page: Page, server_lifecycle):
     """The panel opens from its trigger and drives list indentation."""
     page = touch_page
-    await login(page.context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(page.context, page)
 
     await _set_code_and_select(page, "- item", 6, 6)
     await _open_panel(page)
@@ -718,9 +588,7 @@ async def test_command_panel_indents_and_outdents(touch_page: Page, server_lifec
 async def test_command_panel_closes_after_applying(touch_page: Page, server_lifecycle):
     """Every applied change closes the panel, so it never holds stale state."""
     page = touch_page
-    await login(page.context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(page.context, page)
 
     await _set_code_and_select(page, "- item", 6, 6)
     await _open_panel(page)
@@ -735,9 +603,7 @@ async def test_command_panel_closes_after_applying(touch_page: Page, server_life
 async def test_command_panel_cancel_applies_nothing(touch_page: Page, server_lifecycle):
     """Cancel closes the panel and leaves the note alone."""
     page = touch_page
-    await login(page.context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(page.context, page)
 
     await _set_code_and_select(page, "- item", 6, 6)
     await _open_panel(page)
@@ -764,9 +630,7 @@ async def test_command_panel_hidden_for_a_fine_pointer(context: BrowserContext, 
 async def test_count_repeats_outdent(touch_page: Page, server_lifecycle):
     """A count of 3 outdents three levels in one press."""
     page = touch_page
-    await login(page.context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(page.context, page)
 
     await _set_code_and_select(page, "            - item", 18, 18)
     await _open_panel(page)
@@ -781,9 +645,7 @@ async def test_count_repeats_outdent(touch_page: Page, server_lifecycle):
 async def test_count_stops_early_rather_than_refusing(touch_page: Page, server_lifecycle):
     """Outdenting five levels from two levels deep outdents twice."""
     page = touch_page
-    await login(page.context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(page.context, page)
 
     await _set_code_and_select(page, "        - item", 14, 14)
     await _open_panel(page)
@@ -798,9 +660,7 @@ async def test_count_stops_early_rather_than_refusing(touch_page: Page, server_l
 async def test_count_leaves_a_non_repeating_command_alone(touch_page: Page, server_lifecycle):
     """Bold at a count of 3 is bold once, and its key never goes dead."""
     page = touch_page
-    await login(page.context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(page.context, page)
 
     await _set_code_and_select(page, "hello world", 6, 11)
     await _open_panel(page)
@@ -818,9 +678,7 @@ async def test_count_leaves_a_non_repeating_command_alone(touch_page: Page, serv
 async def test_compose_applies_several_commands(touch_page: Page, server_lifecycle):
     """Composing lights commands and applies them together."""
     page = touch_page
-    await login(page.context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(page.context, page)
 
     await _set_code_and_select(page, "- item", 6, 6)
     await _open_panel(page)
@@ -839,9 +697,7 @@ async def test_compose_applies_several_commands(touch_page: Page, server_lifecyc
 async def test_compose_unlights_a_second_tap(touch_page: Page, server_lifecycle):
     """A second tap takes a command out rather than queueing it twice."""
     page = touch_page
-    await login(page.context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(page.context, page)
 
     await _set_code_and_select(page, "    - item", 10, 10)
     await _open_panel(page)
@@ -862,9 +718,7 @@ async def test_compose_unlights_a_second_tap(touch_page: Page, server_lifecycle)
 async def test_scope_line_wraps_past_the_list_marker(touch_page: Page, server_lifecycle):
     """With no selection, line scope wraps the line's text and leaves the marker outside."""
     page = touch_page
-    await login(page.context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(page.context, page)
 
     await _set_code_and_select(page, "- buy more milk", 8, 8)
     await _open_panel(page)
@@ -878,9 +732,7 @@ async def test_scope_line_wraps_past_the_list_marker(touch_page: Page, server_li
 async def test_scope_word_wraps_only_the_caret_word(touch_page: Page, server_lifecycle):
     """Thrown to word, the same press wraps just the word the caret is touching."""
     page = touch_page
-    await login(page.context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(page.context, page)
 
     await _set_code_and_select(page, "- buy more milk", 8, 8)
     await _open_panel(page)
@@ -895,9 +747,7 @@ async def test_scope_word_wraps_only_the_caret_word(touch_page: Page, server_lif
 async def test_command_panel_bold_wraps_selection(touch_page: Page, server_lifecycle):
     """Bold wraps the selection in Djot strong markers."""
     page = touch_page
-    await login(page.context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(page.context, page)
 
     await _set_code_and_select(page, "hello world", 6, 11)
     await _open_panel(page)
@@ -910,9 +760,7 @@ async def test_command_panel_bold_wraps_selection(touch_page: Page, server_lifec
 async def test_command_panel_bold_unwraps_selection(touch_page: Page, server_lifecycle):
     """Bold strips the markers when the selection is already strong."""
     page = touch_page
-    await login(page.context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(page.context, page)
 
     await _set_code_and_select(page, "hello *world*", 6, 13)
     await _open_panel(page)
@@ -924,11 +772,7 @@ async def test_command_panel_bold_unwraps_selection(touch_page: Page, server_lif
 @pytest.mark.asyncio
 async def test_dropped_image_uploads_instead_of_embedding(context: BrowserContext, page: Page, server_lifecycle):
     """A dropped image is uploaded and inserted as Djot, never as a raw <img> node."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-
-    editor = page.locator(".editor")
-    await expect(editor).to_be_editable()
+    editor = await _open_editor(context, page)
 
     uploads: list[str] = []
 
@@ -962,22 +806,20 @@ async def test_dropped_image_uploads_instead_of_embedding(context: BrowserContex
 # Caret Stability Tests
 # ============================================================================
 
-# An independent walker, so these assertions do not measure the caret with the
-# same helper they are checking.
+# Measured with a Range rather than with getTextOffset, so these assertions do not
+# check the helper against itself. A caret at the very end of the note is anchored
+# on the editor element, not on a text node, and both forms have to read alike.
 _READ_CARET = """
     () => {
         const ed = document.querySelector(".editor");
         const sel = getSelection();
         if (!sel.rangeCount) return null;
         const range = sel.getRangeAt(0);
-        if (range.startContainer.nodeType !== Node.TEXT_NODE) return "element";
-        let seen = 0;
-        const walker = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT);
-        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-            if (node === range.startContainer) return seen + range.startOffset;
-            seen += node.textContent.length;
-        }
-        return "outside";
+        if (!ed.contains(range.startContainer)) return "outside";
+        const probe = document.createRange();
+        probe.selectNodeContents(ed);
+        probe.setEnd(range.startContainer, range.startOffset);
+        return probe.toString().length;
     }
 """
 
@@ -1012,9 +854,7 @@ async def test_caret_offset_of_an_element_container(context: BrowserContext, pag
     Its offset is a child index, and reading it as a text offset must give the
     position that index stands for, never the end of the document.
     """
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(context, page)
 
     offsets = await page.evaluate(
         """() => {
@@ -1036,9 +876,7 @@ async def test_caret_offset_of_an_element_container(context: BrowserContext, pag
 @pytest.mark.asyncio
 async def test_caret_outside_the_editor_has_no_offset(context: BrowserContext, page: Page, server_lifecycle):
     """A caret elsewhere on the page has no position in the editor, so it reports none."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(context, page)
 
     offset = await page.evaluate(
         """() => {
@@ -1057,9 +895,7 @@ async def test_highlighting_leaves_a_selection_outside_the_editor_alone(
     context: BrowserContext, page: Page, server_lifecycle
 ):
     """Re-highlighting must not drag a selection made elsewhere back into the editor."""
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(context, page)
 
     still_outside = await page.evaluate(
         """() => {
@@ -1089,9 +925,7 @@ async def test_indent_never_parks_the_caret_at_the_end(context: BrowserContext, 
     deferred to a later frame reads as the jump to the end of the document that
     it looks like on screen.
     """
-    await login(context, page)
-    await page.goto("/edit?yak=yak1.dj")
-    await expect(page.locator(".editor")).to_be_editable()
+    await _open_editor(context, page)
 
     document_text = _long_document()
     caret = document_text.index("- bravo") + len("- bravo")
@@ -1105,3 +939,149 @@ async def test_indent_never_parks_the_caret_at_the_end(context: BrowserContext, 
     during = await page.evaluate("() => window.__caretAfterKeydown")
     assert during == expected, f"Caret was at {during} rather than {expected} when the indent finished"
     assert await page.evaluate(_READ_CARET) == expected
+
+
+# ============================================================================
+# Undo, Multi-line Indentation, and Media Insertion Tests
+# ============================================================================
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_undo_steps_back_over_a_list_command(context: BrowserContext, page: Page, server_lifecycle):
+    """Indenting is one undo step.
+
+    The commands preventDefault past CodeJar's own keydown handler, which is where
+    it records history, so each has to bracket its own edit or undo skips it and
+    lands on a much older state.
+    """
+    await _open_editor(context, page)
+
+    flat = "- alpha\n- bravo"
+    caret = len(flat)
+    await _set_code_and_select(page, flat, caret, caret)
+    await page.keyboard.press("Tab")
+    await _expect_editor_text(page, "- alpha\n\n    - bravo")
+
+    await page.keyboard.press("ControlOrMeta+z")
+
+    await _expect_editor_text(page, flat)
+    assert await page.evaluate(_READ_CARET) == caret
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_tab_indents_every_selected_list_item(context: BrowserContext, page: Page, server_lifecycle):
+    """A selection spanning several items indents all of them, not just the first."""
+    await _open_editor(context, page)
+
+    # From inside "alpha" to inside "charlie", so every item is touched.
+    await _set_code_and_select(page, "- intro\n\n- alpha\n- bravo\n- charlie", 12, 31)
+    await page.keyboard.press("Tab")
+
+    await _expect_editor_text(page, "- intro\n\n    - alpha\n    - bravo\n    - charlie")
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_tab_keeps_the_selection_across_the_indent(context: BrowserContext, page: Page, server_lifecycle):
+    """The selection still covers the same items, so a second Tab indents them again."""
+    await _open_editor(context, page)
+
+    await _set_code_and_select(page, "- intro\n\n- alpha\n- bravo", 11, 24)
+    await page.keyboard.press("Tab")
+    await _expect_editor_text(page, "- intro\n\n    - alpha\n    - bravo")
+
+    selected = await page.evaluate("() => getSelection().toString()")
+    assert selected == "alpha\n    - bravo", f"Selection became {selected!r}"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_shift_tab_outdents_every_selected_list_item(context: BrowserContext, page: Page, server_lifecycle):
+    """Shift+Tab walks the whole selected block back one level."""
+    await _open_editor(context, page)
+
+    await _set_code_and_select(page, "- intro\n\n    - alpha\n    - bravo", 16, 30)
+    await page.keyboard.press("Shift+Tab")
+
+    await _expect_editor_text(page, "- intro\n- alpha\n- bravo")
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_media_snippet_lands_at_the_caret_without_exec_command(
+    context: BrowserContext, page: Page, server_lifecycle
+):
+    """With execCommand refused, the snippet still goes where the caret is.
+
+    The fallback used to append to the end of the note, which moves content the
+    reader never asked to move.
+    """
+    await _open_editor(context, page)
+
+    async def handle_upload(route):
+        await route.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"snippet": "![drop](/media/drop.png)"}',
+        )
+
+    await page.route("**/media/upload", handle_upload)
+
+    await _set_code_and_select(page, "alpha\nbravo\ncharlie", 5, 5)
+    await page.evaluate("() => { document.execCommand = () => false; }")
+    await page.evaluate(
+        """() => {
+            const transfer = new DataTransfer();
+            transfer.items.add(new File([new Uint8Array([1])], "drop.png", { type: "image/png" }));
+            const ed = document.querySelector(".editor");
+            ed.dispatchEvent(new DragEvent("drop", { dataTransfer: transfer, bubbles: true, cancelable: true }));
+        }"""
+    )
+
+    await _expect_editor_text(page, "alpha\n![drop](/media/drop.png)\n\nbravo\ncharlie")
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_stripping_injected_nodes_keeps_the_caret(context: BrowserContext, page: Page, server_lifecycle):
+    """Rebuilding the editor after an extension injects a node leaves the caret alone."""
+    await _open_editor(context, page)
+
+    caret = 20
+    await _set_code_and_select(page, "alpha line\nbravo line\ncharlie", caret, caret)
+    await page.evaluate(
+        """() => {
+            const ed = document.querySelector(".editor");
+            ed.appendChild(document.createElement("img"));
+            ed.dispatchEvent(new ClipboardEvent("paste", { clipboardData: new DataTransfer(), bubbles: true }));
+        }"""
+    )
+
+    await page.wait_for_function("() => document.querySelector('.editor img') === null")
+    assert await page.evaluate(_READ_CARET) == caret
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_a_command_with_the_caret_elsewhere_edits_nothing(context: BrowserContext, page: Page, server_lifecycle):
+    """A caret outside the editor has no line to act on, so a command must decline it."""
+    await _open_editor(context, page)
+
+    await page.evaluate('() => window.jar.updateCode("- alpha\\n- bravo")')
+    await page.evaluate(
+        """() => {
+            const range = document.createRange();
+            range.setStart(document.getElementById("save-status").firstChild, 1);
+            range.collapse(true);
+            const sel = getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            document.querySelector(".editor").dispatchEvent(
+                new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }),
+            );
+        }"""
+    )
+
+    assert await page.evaluate("() => window.jar.toString()") == "- alpha\n- bravo"
