@@ -480,10 +480,13 @@ function initEditor() {
 		const insertAtCursor = (text) => {
 			editor.focus();
 			// execCommand fires an input event, so CodeJar re-highlights and onUpdate runs.
-			const ok = document.execCommand("insertText", false, text);
-			if (!ok) {
-				jar.updateCode(`${jar.toString()}\n${text}`);
-			}
+			if (document.execCommand("insertText", false, text)) return;
+			// Splice it in by hand rather than appending, which would move the snippet
+			// to the end of a note the reader never asked to reorder.
+			const selection = _getSelectionRange(editor);
+			const code = jar.toString();
+			const { start, end } = selection || { start: code.length, end: code.length };
+			_applyEdit(editor, jar, code.substring(0, start) + text + code.substring(end), start + text.length);
 		};
 
 		const uploadOne = async (file) => {
@@ -637,11 +640,28 @@ function initEditor() {
 	}
 }
 
+// Null when there is no caret in the editor to act on. Commands decline rather
+// than coerce it, because a missing position reads as offset 0 and silently
+// rewrites the first line.
 function _getCursorPosition(editorEl) {
 	const sel = window.getSelection();
-	if (!sel.rangeCount) return 0;
+	if (!sel.rangeCount) return null;
 	const range = sel.getRangeAt(0);
 	return getTextOffset(editorEl, range.startContainer, range.startOffset);
+}
+
+/**
+ * Replace the note and put the caret at `caretPos`, as one undo step.
+ *
+ * CodeJar records history from its own keydown handler, which every command here
+ * preventDefaults past, so an edit that does not bracket itself is invisible to
+ * undo: Ctrl+Z skips it and lands on a much older state.
+ */
+function _applyEdit(editorEl, jarInstance, newText, caretPos) {
+	jarInstance.recordHistory();
+	jarInstance.updateCode(newText);
+	_setCursorPosition(editorEl, Math.max(0, caretPos));
+	jarInstance.recordHistory();
 }
 
 function _setCursorPosition(editorEl, offset) {
@@ -667,6 +687,7 @@ function _getCurrentLine(text, cursorPos) {
 function _handleListContinuation(editorEl, jarInstance) {
 	const text = jarInstance.toString();
 	const cursorPos = _getCursorPosition(editorEl);
+	if (cursorPos === null) return false;
 	const { lineStart, lineEnd, lineText } = _getCurrentLine(text, cursorPos);
 
 	// Check each pattern in order of specificity
@@ -679,8 +700,7 @@ function _handleListContinuation(editorEl, jarInstance) {
 			// If content is empty, remove the list marker and exit list mode
 			if (content === "") {
 				const newText = text.substring(0, lineStart) + text.substring(lineEnd);
-				jarInstance.updateCode(newText);
-				_setCursorPosition(editorEl, lineStart);
+				_applyEdit(editorEl, jarInstance, newText, lineStart);
 				return true;
 			}
 
@@ -704,8 +724,7 @@ function _handleListContinuation(editorEl, jarInstance) {
 			const newText =
 				text.substring(0, cursorPos) + "\n" + continuation + text.substring(cursorPos);
 			const newCursorPos = cursorPos + 1 + continuation.length;
-			jarInstance.updateCode(newText);
-			_setCursorPosition(editorEl, newCursorPos);
+			_applyEdit(editorEl, jarInstance, newText, newCursorPos);
 			return true;
 		}
 	}
@@ -737,20 +756,87 @@ function _previousNonBlankIndent(text, lineStart) {
 	return null;
 }
 
-function _handleListIndentation(editorEl, jarInstance, outdent) {
-	const text = jarInstance.toString();
-	const cursorPos = _getCursorPosition(editorEl);
-	const { lineStart, lineEnd, lineText } = _getCurrentLine(text, cursorPos);
-	const indentSize = 4;
-	const indentStr = " ".repeat(indentSize);
+const INDENT_SIZE = 4;
+const INDENT_STR = " ".repeat(INDENT_SIZE);
 
-	// Check if current line is a list item
-	const isListItem = Object.values(LIST_PATTERNS).some((p) => p.test(lineText));
-	if (!isListItem) return false;
+function _isListItem(line) {
+	return Object.values(LIST_PATTERNS).some((p) => p.test(line));
+}
+
+/**
+ * Shift every line the selection touches by one level, and keep the selection on
+ * those same lines so a second Tab carries on from here.
+ *
+ * The block moves as a unit: only its first line is measured against the item
+ * above it, so the nesting the reader built inside the block survives the move.
+ */
+function _indentSelection(editorEl, jarInstance, outdent, start, end) {
+	const text = jarInstance.toString();
+	const first = _getCurrentLine(text, start);
+	const last = _getCurrentLine(text, end);
+	const lines = text.substring(first.lineStart, last.lineEnd).split("\n");
+	if (!lines.some(_isListItem)) return false;
+
+	const shift = (line) => {
+		if (line.trim() === "") return line;
+		if (!outdent) return INDENT_STR + line;
+		return line.substring(Math.min(INDENT_SIZE, _leadingSpaces(line)));
+	};
+	const shifted = lines.map(shift);
+	if (shifted.every((line, idx) => line === lines[idx])) return true;
+
+	// Only the block's first line can break the one-level-at-a-time rule, since
+	// the rest keep their offsets from it.
+	const parentIndent = _previousNonBlankIndent(text, first.lineStart);
+	if (!outdent && parentIndent !== null && _leadingSpaces(shifted[0]) > parentIndent + INDENT_SIZE) {
+		return true;
+	}
+
+	// Djot only nests a list when a blank line precedes it, so the separator is
+	// added or dropped ahead of the block rather than ahead of every line.
+	const prev = _getPreviousLine(text, first.lineStart);
+	let head = text.substring(0, first.lineStart);
+	let headDelta = 0;
+	if (!outdent && prev && prev.text.trim() !== "" && _leadingSpaces(prev.text) < _leadingSpaces(shifted[0])) {
+		head += "\n";
+		headDelta = 1;
+	} else if (outdent && prev && prev.text.trim() === "") {
+		const grand = _getPreviousLine(text, prev.start);
+		if (grand && grand.text.trim() !== "" && _leadingSpaces(grand.text) <= _leadingSpaces(shifted[0])) {
+			head = text.substring(0, prev.start);
+			headDelta = -1;
+		}
+	}
+
+	_applyEdit(editorEl, jarInstance, head + shifted.join("\n") + text.substring(last.lineEnd), start);
+	const firstDelta = shifted[0].length - lines[0].length;
+	const totalDelta = shifted.reduce((sum, line, idx) => sum + line.length - lines[idx].length, 0);
+	const newFirstStart = first.lineStart + headDelta;
+	_setSelectionRange(
+		editorEl,
+		Math.max(newFirstStart, start + headDelta + firstDelta),
+		Math.max(newFirstStart, end + headDelta + totalDelta),
+	);
+	return true;
+}
+
+function _handleListIndentation(editorEl, jarInstance, outdent) {
+	const selection = _getSelectionRange(editorEl);
+	if (!selection) return false;
+	if (selection.start !== selection.end) {
+		return _indentSelection(editorEl, jarInstance, outdent, selection.start, selection.end);
+	}
+
+	const text = jarInstance.toString();
+	const cursorPos = selection.start;
+	const { lineStart, lineEnd, lineText } = _getCurrentLine(text, cursorPos);
+	const indentSize = INDENT_SIZE;
+	const indentStr = INDENT_STR;
+
+	if (!_isListItem(lineText)) return false;
 
 	const apply = (newText, newCursorPos) => {
-		jarInstance.updateCode(newText);
-		_setCursorPosition(editorEl, Math.max(0, newCursorPos));
+		_applyEdit(editorEl, jarInstance, newText, newCursorPos);
 		return true;
 	};
 
@@ -802,6 +888,7 @@ function _handleListIndentation(editorEl, jarInstance, outdent) {
 function _toggleChecklistState(editorEl, jarInstance) {
 	const text = jarInstance.toString();
 	const cursorPos = _getCursorPosition(editorEl);
+	if (cursorPos === null) return;
 	const { lineStart, lineEnd, lineText } = _getCurrentLine(text, cursorPos);
 
 	let newLineText;
@@ -831,8 +918,7 @@ function _toggleChecklistState(editorEl, jarInstance) {
 
 	const newText = text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
 	const newCursorPos = Math.max(lineStart, cursorPos + cursorDelta);
-	jarInstance.updateCode(newText);
-	_setCursorPosition(editorEl, newCursorPos);
+	_applyEdit(editorEl, jarInstance, newText, newCursorPos);
 }
 
 function _isMediaType(type) {
@@ -858,12 +944,15 @@ function _stripInjectedElements(editorEl, jarInstance) {
 	jarInstance.updateCode(jarInstance.toString());
 }
 
+// Null when either end of the selection is outside the editor, for the same
+// reason as _getCursorPosition.
 function _getSelectionRange(editorEl) {
 	const sel = window.getSelection();
-	if (!sel.rangeCount) return { start: 0, end: 0 };
+	if (!sel.rangeCount) return null;
 	const range = sel.getRangeAt(0);
 	const anchor = getTextOffset(editorEl, range.startContainer, range.startOffset);
 	const focus = getTextOffset(editorEl, range.endContainer, range.endOffset);
+	if (anchor === null || focus === null) return null;
 	return anchor <= focus ? { start: anchor, end: focus } : { start: focus, end: anchor };
 }
 
@@ -872,6 +961,7 @@ const BULLET_PREFIX_RE = /^(\s*)- (\[[ x]\] )?/;
 function _toggleBullet(editorEl, jarInstance) {
 	const text = jarInstance.toString();
 	const cursorPos = _getCursorPosition(editorEl);
+	if (cursorPos === null) return;
 	const { lineStart, lineEnd, lineText } = _getCurrentLine(text, cursorPos);
 
 	const match = lineText.match(BULLET_PREFIX_RE);
@@ -887,19 +977,19 @@ function _toggleBullet(editorEl, jarInstance) {
 	}
 
 	const newText = text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
-	jarInstance.updateCode(newText);
-	_setCursorPosition(editorEl, Math.max(lineStart, cursorPos + cursorDelta));
+	_applyEdit(editorEl, jarInstance, newText, Math.max(lineStart, cursorPos + cursorDelta));
 }
 
 function _toggleInlineMarker(editorEl, jarInstance, marker) {
 	const text = jarInstance.toString();
-	const { start, end } = _getSelectionRange(editorEl);
+	const selection = _getSelectionRange(editorEl);
+	if (!selection) return;
+	const { start, end } = selection;
 	const selected = text.substring(start, end);
 	const width = marker.length;
 
 	const apply = (newText, caret) => {
-		jarInstance.updateCode(newText);
-		_setCursorPosition(editorEl, caret);
+		_applyEdit(editorEl, jarInstance, newText, caret);
 	};
 
 	if (selected.length >= 2 * width && selected.startsWith(marker) && selected.endsWith(marker)) {
@@ -997,7 +1087,9 @@ const REPEATABLE_ACTIONS = new Set(["indent", "outdent"]);
  */
 function _applyCommand(action, editorEl, jarInstance, { count, scope }) {
 	if (INLINE_ACTIONS.has(action)) {
-		const { start, end } = _getSelectionRange(editorEl);
+		const selection = _getSelectionRange(editorEl);
+		if (!selection) return;
+		const { start, end } = selection;
 		if (start === end) {
 			const range = _scopeRange(jarInstance.toString(), start, scope);
 			if (!range) return;
@@ -1051,8 +1143,8 @@ function _setupCommandPanel(editorEl, jarInstance) {
 			key.classList.toggle("cmd__key--lit", state.lit.includes(key.dataset.action));
 		}
 		// A selection is its own scope, so the switch has no say while one exists.
-		const { start, end } = _getSelectionRange(editorEl);
-		scopeRack.classList.toggle("cmd__rack--mute", start !== end);
+		const selection = _getSelectionRange(editorEl);
+		scopeRack.classList.toggle("cmd__rack--mute", Boolean(selection) && selection.start !== selection.end);
 	};
 
 	const close = () => {
