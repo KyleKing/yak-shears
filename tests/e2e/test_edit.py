@@ -433,7 +433,7 @@ async def test_list_indent_inserts_blank_before_nested(context: BrowserContext, 
     await expect(editor).to_be_editable()
 
     # Set a flat two-item list with the caret at the end of the child line so this
-    # exercises only the indent path (chaining type+Tab races the caret rAF).
+    # exercises only the indent path.
     await page.evaluate(
         """() => {
             window.jar.updateCode("- parent\\n- child");
@@ -597,9 +597,7 @@ async def test_wrap_toggle_rewraps_editor_code_block(context: BrowserContext, pa
     await page.evaluate('() => window.jar.updateCode("```py\\nx = 1\\n```")')
 
     async def pre_white_space() -> str:
-        return await page.evaluate(
-            "() => getComputedStyle(document.querySelector('.editor pre')).whiteSpace"
-        )
+        return await page.evaluate("() => getComputedStyle(document.querySelector('.editor pre')).whiteSpace")
 
     assert await pre_white_space() == "pre-wrap"
 
@@ -685,10 +683,10 @@ async def _open_panel(page: Page) -> None:
 async def _expect_editor_text(page: Page, expected: str) -> None:
     """Wait for the editor to hold exactly `expected`.
 
-    A bare `text_content()` read races the toolbar action: CodeJar rewrites the
-    DOM and then restores the caret on the next animation frame, so the first
-    read can land before either. Playwright's `to_have_text` is not usable here
-    because it normalises whitespace and these assertions are about indentation.
+    A bare `text_content()` read races the click that drives the toolbar action,
+    so the first read can land before CodeJar has rewritten the DOM. Playwright's
+    `to_have_text` is not usable here because it normalises whitespace and these
+    assertions are about indentation.
     """
     await page.wait_for_function(
         "expected => document.querySelector('.editor').textContent === expected",
@@ -958,3 +956,152 @@ async def test_dropped_image_uploads_instead_of_embedding(context: BrowserContex
     await expect(editor).to_contain_text("![drop](/media/drop.png)")
     assert uploads == ["POST"], f"Expected one POST to /media/upload but got {uploads}"
     assert await editor.locator("img").count() == 0, "A raw <img> was inserted into the editor"
+
+
+# ============================================================================
+# Caret Stability Tests
+# ============================================================================
+
+# An independent walker, so these assertions do not measure the caret with the
+# same helper they are checking.
+_READ_CARET = """
+    () => {
+        const ed = document.querySelector(".editor");
+        const sel = getSelection();
+        if (!sel.rangeCount) return null;
+        const range = sel.getRangeAt(0);
+        if (range.startContainer.nodeType !== Node.TEXT_NODE) return "element";
+        let seen = 0;
+        const walker = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+            if (node === range.startContainer) return seen + range.startOffset;
+            seen += node.textContent.length;
+        }
+        return "outside";
+    }
+"""
+
+# The editor handles keys in the capture phase, so a bubble-phase listener on the
+# document reads the caret the handler left behind, within the same event.
+_RECORD_CARET_AFTER_KEYDOWN = f"""
+    () => {{
+        const read = {_READ_CARET};
+        document.addEventListener("keydown", () => {{
+            window.__caretAfterKeydown = read();
+        }});
+    }}
+"""
+
+
+def _long_document() -> str:
+    """A document long enough that a caret slipping to either end is unmistakable."""
+    lines = ["# Long note", ""]
+    for idx in range(20):
+        lines += [f"## Section {idx}", "", f"Prose paragraph {idx} with *bold* and _em_ text.", ""]
+    lines += ["- alpha", "- bravo", "- charlie", ""]
+    for idx in range(20):
+        lines += [f"Trailing paragraph {idx}.", ""]
+    return "\n".join(lines)
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_caret_offset_of_an_element_container(context: BrowserContext, page: Page, server_lifecycle):
+    """Replacing the text collapses the selection onto the editor element itself.
+
+    Its offset is a child index, and reading it as a text offset must give the
+    position that index stands for, never the end of the document.
+    """
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+    await expect(page.locator(".editor")).to_be_editable()
+
+    offsets = await page.evaluate(
+        """() => {
+            const ed = document.querySelector(".editor");
+            window.jar.updateCode("alpha\\nbravo\\ncharlie");
+            return {
+                start: getTextOffset(ed, ed, 0),
+                end: getTextOffset(ed, ed, ed.childNodes.length),
+                total: ed.textContent.length,
+            };
+        }"""
+    )
+
+    assert offsets["start"] == 0, f"Caret at the first child read as {offsets['start']}"
+    assert offsets["end"] == offsets["total"]
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_caret_outside_the_editor_has_no_offset(context: BrowserContext, page: Page, server_lifecycle):
+    """A caret elsewhere on the page has no position in the editor, so it reports none."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+    await expect(page.locator(".editor")).to_be_editable()
+
+    offset = await page.evaluate(
+        """() => {
+            const ed = document.querySelector(".editor");
+            window.jar.updateCode("alpha bravo");
+            return getTextOffset(ed, document.getElementById("save-status").firstChild, 1);
+        }"""
+    )
+
+    assert offset is None, f"A caret outside the editor reported offset {offset}"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_highlighting_leaves_a_selection_outside_the_editor_alone(
+    context: BrowserContext, page: Page, server_lifecycle
+):
+    """Re-highlighting must not drag a selection made elsewhere back into the editor."""
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+    await expect(page.locator(".editor")).to_be_editable()
+
+    still_outside = await page.evaluate(
+        """() => {
+            const ed = document.querySelector(".editor");
+            window.jar.updateCode("alpha bravo charlie");
+            const outside = document.getElementById("save-status").firstChild;
+            const range = document.createRange();
+            range.setStart(outside, 1);
+            range.collapse(true);
+            const sel = getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            highlight(ed);
+            return !ed.contains(getSelection().getRangeAt(0).startContainer);
+        }"""
+    )
+
+    assert still_outside, "Highlighting stole the selection out of the save status and into the editor"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_indent_never_parks_the_caret_at_the_end(context: BrowserContext, page: Page, server_lifecycle):
+    """Indenting mid-document leaves the caret on the line being edited.
+
+    The caret is read inside the keydown that triggered the indent, so a restore
+    deferred to a later frame reads as the jump to the end of the document that
+    it looks like on screen.
+    """
+    await login(context, page)
+    await page.goto("/edit?yak=yak1.dj")
+    await expect(page.locator(".editor")).to_be_editable()
+
+    document_text = _long_document()
+    caret = document_text.index("- bravo") + len("- bravo")
+    await page.evaluate(_RECORD_CARET_AFTER_KEYDOWN)
+    await _set_code_and_select(page, document_text, caret, caret)
+
+    await page.keyboard.press("Tab")
+
+    # Four spaces of indent plus the blank line Djot needs ahead of a nested list.
+    expected = caret + 5
+    during = await page.evaluate("() => window.__caretAfterKeydown")
+    assert during == expected, f"Caret was at {during} rather than {expected} when the indent finished"
+    assert await page.evaluate(_READ_CARET) == expected

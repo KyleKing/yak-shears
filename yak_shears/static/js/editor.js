@@ -680,7 +680,7 @@ function _handleListContinuation(editorEl, jarInstance) {
 			if (content === "") {
 				const newText = text.substring(0, lineStart) + text.substring(lineEnd);
 				jarInstance.updateCode(newText);
-				requestAnimationFrame(() => _setCursorPosition(editorEl, lineStart));
+				_setCursorPosition(editorEl, lineStart);
 				return true;
 			}
 
@@ -705,7 +705,7 @@ function _handleListContinuation(editorEl, jarInstance) {
 				text.substring(0, cursorPos) + "\n" + continuation + text.substring(cursorPos);
 			const newCursorPos = cursorPos + 1 + continuation.length;
 			jarInstance.updateCode(newText);
-			requestAnimationFrame(() => _setCursorPosition(editorEl, newCursorPos));
+			_setCursorPosition(editorEl, newCursorPos);
 			return true;
 		}
 	}
@@ -750,7 +750,7 @@ function _handleListIndentation(editorEl, jarInstance, outdent) {
 
 	const apply = (newText, newCursorPos) => {
 		jarInstance.updateCode(newText);
-		requestAnimationFrame(() => _setCursorPosition(editorEl, Math.max(0, newCursorPos)));
+		_setCursorPosition(editorEl, Math.max(0, newCursorPos));
 		return true;
 	};
 
@@ -832,7 +832,7 @@ function _toggleChecklistState(editorEl, jarInstance) {
 	const newText = text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
 	const newCursorPos = Math.max(lineStart, cursorPos + cursorDelta);
 	jarInstance.updateCode(newText);
-	requestAnimationFrame(() => _setCursorPosition(editorEl, newCursorPos));
+	_setCursorPosition(editorEl, newCursorPos);
 }
 
 function _isMediaType(type) {
@@ -888,9 +888,7 @@ function _toggleBullet(editorEl, jarInstance) {
 
 	const newText = text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
 	jarInstance.updateCode(newText);
-	requestAnimationFrame(() =>
-		_setCursorPosition(editorEl, Math.max(lineStart, cursorPos + cursorDelta)),
-	);
+	_setCursorPosition(editorEl, Math.max(lineStart, cursorPos + cursorDelta));
 }
 
 function _toggleInlineMarker(editorEl, jarInstance, marker) {
@@ -901,7 +899,7 @@ function _toggleInlineMarker(editorEl, jarInstance, marker) {
 
 	const apply = (newText, caret) => {
 		jarInstance.updateCode(newText);
-		requestAnimationFrame(() => _setCursorPosition(editorEl, caret));
+		_setCursorPosition(editorEl, caret);
 	};
 
 	if (selected.length >= 2 * width && selected.startsWith(marker) && selected.endsWith(marker)) {
@@ -991,18 +989,13 @@ function _scopeRange(text, cursorPos, scope) {
 const INLINE_ACTIONS = new Set(["bold", "italic"]);
 const REPEATABLE_ACTIONS = new Set(["indent", "outdent"]);
 
-const _nextFrame = () => new Promise(requestAnimationFrame);
-
 /**
  * Run one command, repeating it up to `count` times when it is a command that
  * repeats. Stops early once a repetition changes nothing, which is what "no
  * longer valid Djot" looks like from here: outdenting five levels from three
  * levels deep outdents three times.
- *
- * A frame is awaited between repetitions because every command restores the
- * caret in a requestAnimationFrame, and the next one reads that caret.
  */
-async function _applyCommand(action, editorEl, jarInstance, { count, scope }) {
+function _applyCommand(action, editorEl, jarInstance, { count, scope }) {
 	if (INLINE_ACTIONS.has(action)) {
 		const { start, end } = _getSelectionRange(editorEl);
 		if (start === end) {
@@ -1016,9 +1009,6 @@ async function _applyCommand(action, editorEl, jarInstance, { count, scope }) {
 	for (let i = 0; i < times; i += 1) {
 		const before = jarInstance.toString();
 		_runToolbarAction(action, editorEl, jarInstance);
-		// The command restores the caret in a requestAnimationFrame, and the next
-		// repetition reads that caret.
-		await _nextFrame();
 		if (jarInstance.toString() === before) return;
 	}
 }
@@ -1084,11 +1074,11 @@ function _setupCommandPanel(editorEl, jarInstance) {
 	};
 
 	// The instruction is read before the panel closes, because closing resets it.
-	const runInstruction = async (actions) => {
+	const runInstruction = (actions) => {
 		const instruction = { count: state.count, scope: state.scope };
 		close();
 		for (const action of actions) {
-			await _applyCommand(action, editorEl, jarInstance, instruction);
+			_applyCommand(action, editorEl, jarInstance, instruction);
 		}
 	};
 

@@ -124,7 +124,7 @@ function highlight(editor) {
 
 	// Save cursor position
 	const sel = window.getSelection();
-	let cursorOffset = 0;
+	let cursorOffset = null;
 	if (sel.rangeCount > 0) {
 		const range = sel.getRangeAt(0);
 		cursorOffset = getTextOffset(
@@ -136,8 +136,10 @@ function highlight(editor) {
 
 	editor.innerHTML = out;
 
-	// Restore cursor position
-	if (cursorOffset > 0) {
+	// Restore cursor position. A null offset means the caret was somewhere else on
+	// the page, and moving it here would take it away from whatever the reader is
+	// actually pointing at.
+	if (cursorOffset !== null) {
 		const newRange = document.createRange();
 		const { node, offset } = getNodeAtOffset(editor, cursorOffset);
 		if (node) {
@@ -150,8 +152,13 @@ function highlight(editor) {
 
 }
 
-// Helper function to get text offset from a DOM node and offset
+// Text offset of a DOM position within `root`, or null when the position is not
+// inside `root`. An element container's offset is a child index rather than a
+// character count, which is how the browser reports a caret in a node whose
+// children have just been replaced.
 function getTextOffset(root, node, offset) {
+	if (!node || !root.contains(node)) return null;
+
 	let totalOffset = 0;
 	const walker = document.createTreeWalker(
 		root,
@@ -160,9 +167,24 @@ function getTextOffset(root, node, offset) {
 		false,
 	);
 	let currentNode = walker.nextNode();
+
+	if (node.nodeType === Node.TEXT_NODE) {
+		while (currentNode) {
+			if (currentNode === node) {
+				return totalOffset + offset;
+			}
+			totalOffset += currentNode.textContent.length;
+			currentNode = walker.nextNode();
+		}
+		return null;
+	}
+
+	// The position sits ahead of the child at `offset`, so it is the text length
+	// of everything before that child. No such child means the element's end.
+	const boundary = node.childNodes[offset] || null;
 	while (currentNode) {
-		if (currentNode === node) {
-			return totalOffset + offset;
+		if (boundary && (currentNode === boundary || boundary.contains(currentNode))) {
+			return totalOffset;
 		}
 		totalOffset += currentNode.textContent.length;
 		currentNode = walker.nextNode();
@@ -172,7 +194,9 @@ function getTextOffset(root, node, offset) {
 
 // Helper function to get node and offset at a given text offset
 function getNodeAtOffset(root, targetOffset) {
+	const target = Math.max(0, targetOffset);
 	let totalOffset = 0;
+	let lastNode = null;
 	const walker = document.createTreeWalker(
 		root,
 		NodeFilter.SHOW_TEXT,
@@ -182,11 +206,16 @@ function getNodeAtOffset(root, targetOffset) {
 	let currentNode = walker.nextNode();
 	while (currentNode) {
 		const nodeLength = currentNode.textContent.length;
-		if (totalOffset + nodeLength >= targetOffset) {
-			return { node: currentNode, offset: targetOffset - totalOffset };
+		if (totalOffset + nodeLength >= target) {
+			return { node: currentNode, offset: target - totalOffset };
 		}
 		totalOffset += nodeLength;
+		lastNode = currentNode;
 		currentNode = walker.nextNode();
 	}
-	return { node: null, offset: 0 };
+	// An offset past the text lands at its end rather than nowhere, so a caret is
+	// never left wherever the last DOM rewrite happened to drop it.
+	return lastNode
+		? { node: lastNode, offset: lastNode.textContent.length }
+		: { node: null, offset: 0 };
 }
