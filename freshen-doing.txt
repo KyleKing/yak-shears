@@ -1,0 +1,17 @@
+## 2026-08-01
+
+Stashed uncommitted work before the freshen pass: `freshen 672bb50f: pre-existing WIP`
+(stash@{0}). Restore with `git stash apply stash@{0}` when you pick it back up.
+
+Files in the stash:
+
+- doing.txt — added two Notes items (show the commit of the currently deployed
+  version, create a new note quickly from Yaks while filtering) and turned the
+  "Logout is too frequent?" question into a statement. Next: fold these into the
+  Notes list and decide whether the deployed-commit display belongs in the
+  settings page or the footer
+- dot_gitignore_global — despite the name this is a scratch note, not a gitignore.
+  It holds a touch-panel review checklist, a `claude --resume` session id, and a
+  reminder to pull the annotated iOS screenshot out of Photos. Next: move the
+  content into doing.txt (or NEXT_STEPS.md) and delete the file, since a global
+  gitignore does not belong in this repo
