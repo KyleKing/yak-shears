@@ -74,6 +74,19 @@ def _list_preview_source(body: str) -> str:
     return "\n".join([title, "", *open_items] if title else open_items)
 
 
+_HABIT_COMPLETION_RE = re.compile(r"^\s*[-*+]\s+\[[xX]\]\s+\d{4}-\d{2}-\d{2}\s*$")
+
+
+def _habit_preview_source(body: str) -> str:
+    """Preview source for a `type: habit` note: the body minus its completion log.
+
+    Returns:
+        The body with dated completion items dropped; the log is history, not
+        a preview.
+    """
+    return "\n".join(line for line in body.splitlines() if not _HABIT_COMPLETION_RE.match(line)).strip()
+
+
 def _truncate_source(body: str, limit: int, max_lines: int) -> tuple[str, bool]:
     """Clip a preview source to at most `max_lines` lines and `limit` chars.
 
@@ -213,7 +226,13 @@ async def prepare_yak_info(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
         content = await yak_path.read_text(encoding="utf-8")
         meta, body = parse_frontmatter(content)
         body = body.strip()
-        preview_source = _list_preview_source(body) if meta.get("type") == "list" else body
+        match meta.get("type"):
+            case "list":
+                preview_source = _list_preview_source(body)
+            case "habit":
+                preview_source = _habit_preview_source(body)
+            case _:
+                preview_source = body
         preview, truncated = _truncate_source(preview_source, PREVIEW_SOURCE_LIMIT, PREVIEW_MAX_LINES)
         rel_path = yak_path.relative_to(yak_dir).as_posix()
 
