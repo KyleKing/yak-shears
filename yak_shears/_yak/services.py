@@ -54,6 +54,26 @@ def _recency(modified: datetime, now: datetime) -> Recency:
     return next((state for limit, state in _RECENCY_DAYS if age < limit), Recency.COLD)
 
 
+_TASK_ITEM_RE = re.compile(r"^\s*[-*+]\s+\[( |x|X)\]\s+(.*)$")
+
+
+def _list_preview_source(body: str) -> str:
+    """Preview source for a `type: list` note: its title plus open items.
+
+    The card is glanced at to answer "what do I still need", so unchecked
+    items outrank the body head. One pass over the lines, no extra I/O.
+
+    Returns:
+        The rebuilt preview source, or the body unchanged when nothing is open.
+    """
+    lines = body.splitlines()
+    title = next((line for line in lines if line.startswith("#")), "")
+    open_items = [f"- [ ] {match[2]}" for line in lines if (match := _TASK_ITEM_RE.match(line)) and match[1] == " "]
+    if not open_items:
+        return body
+    return "\n".join([title, "", *open_items] if title else open_items)
+
+
 def _truncate_source(body: str, limit: int, max_lines: int) -> tuple[str, bool]:
     """Clip a preview source to at most `max_lines` lines and `limit` chars.
 
@@ -191,9 +211,10 @@ async def prepare_yak_info(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
         modified = datetime.fromtimestamp(yak_stats.st_mtime, tz=UTC)
         last_modified = modified.strftime("%Y-%m-%d %H:%M:%S")
         content = await yak_path.read_text(encoding="utf-8")
-        _, body = parse_frontmatter(content)
+        meta, body = parse_frontmatter(content)
         body = body.strip()
-        preview, truncated = _truncate_source(body, PREVIEW_SOURCE_LIMIT, PREVIEW_MAX_LINES)
+        preview_source = _list_preview_source(body) if meta.get("type") == "list" else body
+        preview, truncated = _truncate_source(preview_source, PREVIEW_SOURCE_LIMIT, PREVIEW_MAX_LINES)
         rel_path = yak_path.relative_to(yak_dir).as_posix()
 
         info = YakInfo(
