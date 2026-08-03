@@ -173,7 +173,10 @@ async def settings_handler(request: Request) -> Response:
         saved = True
 
     slots = assign_slots(await load_slots(yak_dir), categories)
-    return render_settings(assignments=sorted(slots.items()), saved=saved)
+    owners: dict[str, list[str]] = {}
+    for category, slot in sorted(slots.items()):
+        owners.setdefault(slot, []).append(category)
+    return render_settings(assignments=sorted(slots.items()), owners=owners, saved=saved)
 
 
 async def edit_yak_handler(request: Request) -> Response:

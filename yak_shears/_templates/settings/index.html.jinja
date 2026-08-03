@@ -1,12 +1,71 @@
 {#def
+from collections.abc import Mapping
 from yak_shears._yak.categories import ColorSlot
 assignments: list[tuple[str, str]]
 palette: tuple[ColorSlot, ...]
+owners: Mapping[str, list[str]]
 saved: bool
 -#}
 {% extends "base.html.jinja" %}
 
 {% block title %}Settings{% endblock %}
+
+{% block extra_head %}
+  {# Swatch-bank styles inlined while the picker settles; promote into
+     main.css when the settings surface is rebuilt for the console world. #}
+  <style>
+    .visually-hidden {
+      position: absolute; width: 1px; height: 1px; margin: -1px;
+      clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+    }
+    .swatchbank { display: flex; flex-direction: column; gap: 1rem; }
+    .swatchbank__row {
+      display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 0.75rem;
+      align-items: center; border: 0; margin: 0;
+      background: var(--panel-raised); background-image: var(--anodize);
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-sm);
+      box-shadow: inset 0 1px 0 var(--engrave-light), 0 1px 1px rgba(0, 0, 0, 0.12);
+    }
+    .swatchbank__category {
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .swatchbank__slots { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+    .swatchbank__slot { position: relative; display: inline-flex; }
+    .swatchbank__slot input {
+      position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer;
+    }
+    .swatchbank__chip {
+      width: 2rem; height: 2rem; margin: 6px;
+      border-radius: var(--radius-sm);
+      background: var(--chip-color);
+      box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.22), 0 1px 1px rgba(0, 0, 0, 0.12);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+      color: rgba(0, 0, 0, 0.75);
+      transition: transform var(--throw), box-shadow var(--throw);
+    }
+    .swatchbank__slot input:hover + .swatchbank__chip { transform: translateY(1px); }
+    /* The seated slot drops into a well and lights the underline, the same
+       latched vocabulary as every other engaged control. */
+    .swatchbank__slot input:checked + .swatchbank__chip {
+      transform: translateY(1px);
+      box-shadow: var(--inset-well), inset 0 -2px 0 var(--color-accent);
+    }
+    .swatchbank__slot input:focus-visible + .swatchbank__chip {
+      box-shadow: 0 0 0 3px rgba(247, 207, 70, 0.4);
+    }
+    .swatchbank__shared {
+      display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem;
+      font-size: 0.875rem; color: var(--legend-dim);
+    }
+    .swatchbank__shared .lamp {
+      width: 7px; height: 7px; border-radius: var(--radius-pill); flex: none;
+      background: var(--lamp-warn); box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-warn) 55%, transparent);
+    }
+  </style>
+{% endblock %}
 
 {% block content %}
   <h1>Settings</h1>
@@ -17,26 +76,45 @@ saved: bool
 
   <h2 class="settings__section">Category colors</h2>
   <p class="settings__note">
-    Twelve anodize slots, spread so no two categories land on neighbouring hues.
-    A new category takes the next free slot; change it here and it stays changed.
-    The mapping is stored in <code>.yak-shears/categories.json</code> beside your yaks.
+    Twelve anodize slots. Pick a category's swatch directly; a swatch carrying
+    another category's initial is already taken (choosing it shares the color,
+    which is allowed but flagged). The mapping is stored in
+    <code>.yak-shears/categories.json</code> beside your yaks.
   </p>
 
   {% if assignments %}
     <form method="post" class="settings__form">
-      <div class="settings__rows">
+      <div class="swatchbank">
         {% for category, slot in assignments %}
-          <div class="settings__row">
-            <span class="settings__swatch" style="--swatch-color: {{ (palette | selectattr('name', 'equalto', slot) | first).css }}" aria-hidden="true"></span>
-            <label class="settings__category" for="slot-{{ loop.index }}">{{ category }}</label>
-            <select class="form__select settings__select" id="slot-{{ loop.index }}" name="{{ category }}">
+          <fieldset class="swatchbank__row">
+            <legend class="visually-hidden">Color for {{ category }}</legend>
+            <span class="swatchbank__category" aria-hidden="true">{{ category }}</span>
+            <span class="swatchbank__slots">
               {% for option in palette %}
-                <option value="{{ option.name }}" {% if option.name == slot %}selected{% endif %}>{{ option.name }}</option>
+                {% set other = owners.get(option.name, []) | reject("equalto", category) | list %}
+                <span class="swatchbank__slot">
+                  <input type="radio"
+                         name="{{ category }}"
+                         value="{{ option.name }}"
+                         {% if option.name == slot %}checked{% endif %}
+                         aria-label="{{ option.name }}{% if other %}, used by {{ other | join(', ') }}{% endif %}">
+                  <span class="swatchbank__chip" style="--chip-color: {{ option.css }}"
+                        title="{{ option.name }}{% if other %} &middot; used by {{ other | join(', ') }}{% endif %}">
+                    {{- other | map("first") | join("") | upper -}}
+                  </span>
+                </span>
               {% endfor %}
-            </select>
-          </div>
+            </span>
+          </fieldset>
         {% endfor %}
       </div>
+
+      {% for slot_name, cats in owners.items() %}
+        {% if cats | length > 1 %}
+          <p class="swatchbank__shared"><span class="lamp" aria-hidden="true"></span>
+            {{ cats | join(" and ") }} share {{ slot_name }}</p>
+        {% endif %}
+      {% endfor %}
 
       <div class="form__actions">
         <button type="submit" class="button button--primary">Save</button>

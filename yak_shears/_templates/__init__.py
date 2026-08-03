@@ -251,11 +251,12 @@ def render_yak_edit(
     )
 
 
-def render_settings(*, assignments: list[tuple[str, str]], saved: bool) -> HTMLResponse:
+def render_settings(*, assignments: list[tuple[str, str]], owners: Mapping[str, list[str]], saved: bool) -> HTMLResponse:
     """Render the category color settings page.
 
     Args:
         assignments: (category, slot name) pairs in display order
+        owners: slot name to the categories currently assigned to it
         saved: whether the page follows a successful save
 
     Returns:
@@ -265,6 +266,7 @@ def render_settings(*, assignments: list[tuple[str, str]], saved: bool) -> HTMLR
         "settings/index.html.jinja",
         assignments=assignments,
         palette=PALETTE,
+        owners=owners,
         saved=saved,
         current_route="settings",
     )
