@@ -14,6 +14,7 @@ from starlette.responses import HTMLResponse
 from yak_shears._yak.categories import PALETTE, UNASSIGNED_COLOR
 
 if TYPE_CHECKING:
+    from yak_shears._yak.lists import ListInfo
     from yak_shears._yak.streams import StreamInfo, TaskInfo
 
 
@@ -270,6 +271,15 @@ def render_settings(*, assignments: list[tuple[str, str]], owners: Mapping[str, 
         saved=saved,
         current_route="settings",
     )
+
+
+def render_lists(*, lists: list["ListInfo"]) -> HTMLResponse:
+    """Render the reference lists page.
+
+    Returns:
+        HTMLResponse with the lists template
+    """
+    return _render_template("yak/lists.html.jinja", lists=lists, current_route="lists")
 
 
 def render_streams(

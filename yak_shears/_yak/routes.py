@@ -16,10 +16,13 @@ from .handlers import (
     yak_preview_handler,
     yaks_handler,
 )
+from .lists import list_toggle_handler, lists_handler
 from .streams import streams_handler
 
 ROUTES = [
     Route("/yaks", endpoint=yaks_handler),
+    Route("/lists", endpoint=lists_handler),
+    Route("/lists/toggle", endpoint=list_toggle_handler, methods=["POST"]),
     Route("/streams", endpoint=streams_handler),
     Route("/search", endpoint=search_handler),
     Route("/settings", endpoint=settings_handler, methods=["GET", "POST"]),

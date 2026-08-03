@@ -1,0 +1,84 @@
+{#def
+from yak_shears._yak.lists import ListInfo
+lists: list[ListInfo]
+-#}
+{% extends "base.html.jinja" %}
+
+{% block title %}Lists{% endblock %}
+
+{% block extra_head %}
+  {# Prototype-only styles, inlined like the streams view; promote into
+     main.css if the surface graduates. #}
+  <style>
+    .lists { display: flex; flex-direction: column; gap: 2rem; max-width: 34rem; }
+    .lists__head { display: flex; align-items: baseline; gap: 1rem; margin: 0 0 0.75rem; }
+    .lists__name { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin: 0; }
+    .lists__count { font-family: var(--font-signal); font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--legend-dim); }
+    .reflist { background: var(--well); box-shadow: var(--inset-well); border-radius: var(--radius-lg); padding: 0.25rem 0 0.75rem; }
+    .reflist__section {
+      padding: 0.6rem 1.25rem 0.15rem;
+      font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase;
+      color: var(--legend-dim);
+    }
+    .refitem { margin: 0; }
+    .refitem__press {
+      display: flex; align-items: center; gap: 0.75rem; width: 100%;
+      min-height: var(--tap-target);
+      padding: 0.35rem 1.25rem;
+      background: transparent; border: 0; color: var(--legend);
+      font-family: var(--font-legend); font-size: 0.9375rem; text-align: left;
+      cursor: pointer;
+      transition: background var(--throw);
+    }
+    .refitem__press:hover { background: rgba(255, 255, 255, 0.03); }
+    .refitem__box {
+      width: 18px; height: 18px; flex: none;
+      background: var(--panel); box-shadow: var(--inset-well);
+      border-radius: 2px;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .refitem--done .refitem__press { color: var(--legend-dim); text-decoration: line-through; text-decoration-color: var(--engrave-light); }
+    .refitem--done .refitem__box::after {
+      content: ""; width: 8px; height: 4px;
+      border-left: 2px solid var(--lamp-live);
+      border-bottom: 2px solid var(--lamp-live);
+      transform: rotate(-45deg) translate(1px, -1px);
+    }
+    .lists__source { font-family: var(--font-signal); font-size: 0.8125rem; color: var(--legend-dim); text-decoration: none; }
+    .lists__source:hover { color: var(--legend); }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="lists">
+    {% for info in lists %}
+      <section>
+        <div class="lists__head">
+          <h1 class="lists__name">{{ info.name }}</h1>
+          <span class="lists__count">{{ info.open_count }} open</span>
+          <a class="lists__source" href="/edit?path={{ info.path | urlencode }}">edit</a>
+        </div>
+        <div class="reflist">
+          {% for section in info.sections %}
+            {% if section.heading and section.heading != info.name %}
+              <p class="reflist__section">{{ section.heading }}</p>
+            {% endif %}
+            {% for item in section.items %}
+              <form class="refitem{% if item.checked %} refitem--done{% endif %}" method="post" action="/lists/toggle">
+                <input type="hidden" name="path" value="{{ info.path }}">
+                <input type="hidden" name="ordinal" value="{{ item.ordinal }}">
+                <button type="submit" class="refitem__press" aria-pressed="{{ 'true' if item.checked else 'false' }}">
+                  <span class="refitem__box" aria-hidden="true"></span>
+                  {{ item.text }}
+                </button>
+              </form>
+            {% endfor %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+    {% if not lists %}
+      <p>No lists yet. A list is a note with <code>type: list</code> and task items (<code>- [ ]</code>) in its body.</p>
+    {% endif %}
+  </div>
+{% endblock %}
