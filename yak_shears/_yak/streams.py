@@ -11,7 +11,7 @@ from typing import Any
 from starlette.requests import Request
 from starlette.responses import Response
 
-from yak_shears._templates import render_streams
+from yak_shears._templates import Recency, render_streams
 from yak_shears.frontmatter import parse_frontmatter
 
 from .categories import resolve_colors, slot_css
@@ -20,6 +20,9 @@ from .services import get_yak_dir, list_yak_paths
 CANAL_STATES = ("in-progress", "queue", "backlog")
 DRAIN_STATES = ("complete", "not-planned")
 TASK_STATES = frozenset(CANAL_STATES) | frozenset(DRAIN_STATES)
+
+
+_RECENCY_DAYS = ((7, Recency.LIVE), (30, Recency.RECENT), (365, Recency.IDLE))
 
 
 @dataclass(frozen=True)
@@ -33,6 +36,8 @@ class TaskInfo:
     flex: int
     urgency: str
     waiting: str
+    relations: int
+    recency: Recency
 
 
 @dataclass
@@ -79,10 +84,17 @@ def _urgency(due: date | None, flex: int, today: date) -> str:
     return "scheduled"
 
 
-def _task_info(meta: dict[str, Any], body: str, path: str, today: date) -> TaskInfo:
+def _list_len(value: Any) -> int:
+    if isinstance(value, list):
+        return len(value)
+    return 1 if value else 0
+
+
+def _task_info(meta: dict[str, Any], body: str, path: str, today: date, modified: datetime) -> TaskInfo:
     title = next((line.lstrip("# ").strip() for line in body.splitlines() if line.strip()), path)
     due = _as_date(meta.get("due"))
     flex = int(meta.get("flex") or 0)
+    age = (datetime.now(tz=UTC) - modified).days
     return TaskInfo(
         title=title,
         path=path,
@@ -91,6 +103,8 @@ def _task_info(meta: dict[str, Any], body: str, path: str, today: date) -> TaskI
         flex=flex,
         urgency=_urgency(due, flex, today),
         waiting=str(meta.get("waiting") or ""),
+        relations=_list_len(meta.get("blocked-by")) + _list_len(meta.get("relates")),
+        recency=next((state for limit, state in _RECENCY_DAYS if age < limit), Recency.COLD),
     )
 
 
@@ -122,7 +136,8 @@ async def collect_streams(today: date | None = None) -> tuple[list[StreamInfo], 
                 wip_limit=int(meta.get("wip-limit") or 0),
             )
         elif str(meta.get("state", "")) in TASK_STATES:
-            tasks.append((str(meta.get("stream") or ""), _task_info(meta, body, rel_path, today)))
+            modified = datetime.fromtimestamp((await yak_path.stat()).st_mtime, tz=UTC)
+            tasks.append((str(meta.get("stream") or ""), _task_info(meta, body, rel_path, today, modified)))
 
     triage: list[TaskInfo] = []
     for stream_key, task in tasks:

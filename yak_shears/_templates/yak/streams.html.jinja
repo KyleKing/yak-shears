@@ -18,8 +18,14 @@ category_colors: Mapping[str, str]
     .streams__dock { display: flex; flex-direction: column; gap: 1.25rem; }
     .streams__cat { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
     .streams__catdot { width: 10px; height: 6px; border-radius: 1px; }
+    /* The two-color designation: category and stream as touching vertical
+       stripes, category thicker. A single-stream category collapses to one
+       13px stripe because the stream stripe matches the cap color. */
+    .mark { display: flex; align-self: stretch; }
+    .mark__cat { width: 8px; box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.22); }
+    .mark__stream { width: 5px; }
     .streams__meter {
-      display: grid; grid-template-columns: 6px 3px minmax(0, 1fr) auto; gap: 0 0.6rem;
+      display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 0.6rem;
       align-items: stretch; min-height: var(--tap-target);
       background: var(--panel-raised); background-image: var(--anodize);
       border-radius: var(--radius-sm);
@@ -27,10 +33,10 @@ category_colors: Mapping[str, str]
       color: inherit; text-decoration: none;
       transition: background var(--throw), box-shadow var(--throw);
       margin-bottom: 0.5rem;
+      overflow: hidden;
     }
     .streams__meter:hover { background: var(--panel); }
     .streams__meter--focused { background: var(--well); box-shadow: var(--inset-well), inset 0 -2px 0 var(--color-accent); }
-    .streams__meter-cap { border-radius: var(--radius-sm) 0 0 var(--radius-sm); box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.22); }
     .streams__meter-body { padding: 0.4rem 0; min-width: 0; }
     .streams__meter-name {
       display: block; font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em;
@@ -42,14 +48,16 @@ category_colors: Mapping[str, str]
     .streams__meter-lamp { align-self: center; padding-right: 0.75rem; display: flex; }
     .lamp { width: 7px; height: 7px; border-radius: var(--radius-pill); background: var(--lamp-off); flex: none; }
     .lamp--warn { background: var(--lamp-warn); box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-warn) 55%, transparent); }
-    .lamp--live { background: var(--lamp-live); box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-live) 55%, transparent); }
+    /* Recency lamps carry the tier in size and brightness, like the rack. */
+    .lamp--recency-live { width: 9px; height: 9px; background: var(--lamp-live); box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-live) 55%, transparent); }
+    .lamp--recency-recent { background: color-mix(in srgb, var(--lamp-live) 70%, var(--lamp-off)); }
+    .lamp--recency-idle { width: 5px; height: 5px; background: color-mix(in srgb, var(--lamp-live) 30%, var(--lamp-off)); }
+    .lamp--recency-cold { width: 4px; height: 4px; }
     .canal__head {
-      display: grid; grid-template-columns: 6px 3px minmax(0, 1fr) auto; gap: 0 0.75rem;
+      display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 0.75rem;
       align-items: center; min-height: 3.25rem; margin-bottom: 1px;
       background: var(--panel-raised); background-image: var(--anodize);
     }
-    .canal__cap { height: 100%; box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.22); }
-    .canal__band { height: 100%; }
     .canal__key { font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--legend-dim); display: block; }
     .canal__name { font-size: 0.9375rem; font-weight: 600; }
     .canal__stats { display: flex; align-items: center; gap: 1rem; padding-right: 1rem; }
@@ -64,8 +72,10 @@ category_colors: Mapping[str, str]
       font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase; color: var(--legend-dim);
     }
     .canal__sill-count { margin-left: auto; font-family: var(--font-signal); font-variant-numeric: tabular-nums; }
+    /* Fixed readout tracks: relations, due, recency land at the same position
+       on every strip so the columns sweep. */
     .canal__strip {
-      display: grid; grid-template-columns: 6px 3px minmax(0, 1fr) auto; gap: 0 1rem;
+      display: grid; grid-template-columns: auto minmax(0, 1fr) 2.5rem 7.5rem 1.5rem; gap: 0 0.75rem;
       align-items: center; height: 3.25rem;
       background: var(--panel-raised); background-image: var(--anodize);
     }
@@ -77,9 +87,11 @@ category_colors: Mapping[str, str]
       color: inherit; text-decoration: none;
     }
     .canal__title small { display: block; font-size: 0.875rem; font-weight: 400; color: var(--legend-dim); }
-    .canal__due { padding-right: 1rem; font-family: var(--font-signal); font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--legend-dim); text-align: right; }
+    .canal__rel { font-family: var(--font-signal); font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--legend-dim); text-align: right; }
+    .canal__due { font-family: var(--font-signal); font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--legend-dim); text-align: right; }
     .canal__due--pressing { color: var(--lamp-warn); }
     .canal__due--overdue { color: var(--lamp-fault); }
+    .canal__lampcell { display: flex; justify-content: center; padding-right: 0.5rem; }
     .canal__empty { padding: 0.75rem 1rem; font-size: 0.875rem; color: var(--legend-dim); }
     .streams-triage { margin-top: 2rem; }
     .streams-triage__legend { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 0.75rem; }
@@ -87,6 +99,8 @@ category_colors: Mapping[str, str]
       .streams { grid-template-columns: 1fr; }
       .streams__dock { flex-direction: row; flex-wrap: wrap; }
       .streams__dock > div { min-width: 10rem; }
+      .canal__strip { grid-template-columns: auto minmax(0, 1fr) 7.5rem 1.5rem; }
+      .canal__rel { display: none; }
     }
   </style>
 {% endblock %}
@@ -103,8 +117,10 @@ category_colors: Mapping[str, str]
           {% for stream in group %}
             <a class="streams__meter{% if focused and stream.key == focused.key %} streams__meter--focused{% endif %}"
                href="/streams?stream={{ stream.key | urlencode }}">
-              <span class="streams__meter-cap" style="background: {{ category_colors.get(stream.category, 'var(--color-border)') }}"></span>
-              <span style="background: {{ stream.color }}"></span>
+              <span class="mark" aria-hidden="true">
+                <span class="mark__cat" style="background: {{ category_colors.get(stream.category, 'var(--color-border)') }}"></span>
+                <span class="mark__stream" style="background: {{ stream.color }}"></span>
+              </span>
               <span class="streams__meter-body">
                 <span class="streams__meter-name">{{ stream.name }}</span>
                 <span class="streams__flow">
@@ -125,8 +141,10 @@ category_colors: Mapping[str, str]
     <main>
       {% if focused %}
         <header class="canal__head">
-          <span class="canal__cap" style="background: {{ category_colors.get(focused.category, 'var(--color-border)') }}"></span>
-          <span class="canal__band" style="background: {{ focused.color }}"></span>
+          <span class="mark" aria-hidden="true">
+            <span class="mark__cat" style="background: {{ category_colors.get(focused.category, 'var(--color-border)') }}"></span>
+            <span class="mark__stream" style="background: {{ focused.color }}"></span>
+          </span>
           <span>
             <span class="canal__key">{{ focused.key }}</span>
             <span class="canal__name">{{ focused.name }}</span>
@@ -147,14 +165,20 @@ category_colors: Mapping[str, str]
             </div>
             {% for task in focused.reaches[state] %}
               <div class="canal__strip{% if task.waiting %} canal__strip--waiting{% endif %}">
-                <span class="canal__cap" style="background: {{ category_colors.get(focused.category, 'var(--color-border)') }}"></span>
-                <span class="canal__band" style="background: {{ focused.color }}"></span>
+                <span class="mark" aria-hidden="true">
+                  <span class="mark__cat" style="background: {{ category_colors.get(focused.category, 'var(--color-border)') }}"></span>
+                  <span class="mark__stream" style="background: {{ focused.color }}"></span>
+                </span>
                 <a class="canal__title" href="/edit?path={{ task.path | urlencode }}">{{ task.title }}
                   {%- if task.waiting %}<small>waiting: {{ task.waiting }}</small>{% endif -%}
                 </a>
+                <span class="canal__rel" {% if task.relations %}title="{{ task.relations }} linked task(s)"{% endif %}>
+                  {{- task.relations if task.relations else "" -}}
+                </span>
                 <span class="canal__due{% if task.urgency in ('pressing', 'overdue') %} canal__due--{{ task.urgency }}{% endif %}">
                   {{- task.due or "—" }}{% if task.flex %} +{{ task.flex }}{% endif -%}
                 </span>
+                <span class="canal__lampcell"><span class="lamp lamp--recency-{{ task.recency }}" title="modified: {{ task.recency }}"></span></span>
               </div>
             {% endfor %}
             {# A separate guard rather than for-else: typed-jinja's stub emits an
@@ -173,12 +197,16 @@ category_colors: Mapping[str, str]
           <h1 class="streams-triage__legend">Triage <span class="canal__sill-count">{{ triage | length }}</span></h1>
           {% for task in triage %}
             <div class="canal__strip">
-              <span class="canal__cap" style="background: var(--lamp-off)"></span>
-              <span></span>
+              <span class="mark" aria-hidden="true">
+                <span class="mark__cat" style="background: var(--lamp-off)"></span>
+                <span class="mark__stream"></span>
+              </span>
               <a class="canal__title" href="/edit?path={{ task.path | urlencode }}">{{ task.title }}
                 <small>no stream &middot; {{ task.state }}</small>
               </a>
+              <span class="canal__rel"></span>
               <span class="canal__due">{{ task.due or "—" }}</span>
+              <span class="canal__lampcell"><span class="lamp lamp--recency-{{ task.recency }}"></span></span>
             </div>
           {% endfor %}
         </section>
