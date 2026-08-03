@@ -14,17 +14,45 @@ category_colors: Mapping[str, str]
   {# Prototype-only styles, inlined so the throwaway route leaves main.css and
      its budget untouched. Promote into main.css if the view graduates. #}
   <style>
-    .streams { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 2rem; align-items: start; }
-    .streams__dock { display: flex; flex-direction: column; gap: 1.25rem; }
-    .streams__cat { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
-    .streams__catdot { width: 10px; height: 6px; border-radius: 1px; }
-    /* The two-color designation: category and stream as touching vertical
-       stripes, category thicker. A single-stream category collapses to one
-       13px stripe because the stream stripe matches the cap color. */
+    .streams { max-width: 52rem; margin: 0 auto; }
+    /* The dock is a pull-down tray: closed it is one bar naming the focused
+       stream, open it drops the full meter bank. Same control at every width. */
+    .tray { margin-bottom: 1.5rem; }
+    .tray__bar {
+      display: flex; align-items: center; gap: 0.75rem;
+      min-height: var(--tap-target);
+      padding: 0 1rem 0 0;
+      background: var(--panel-raised); background-image: var(--anodize);
+      border-radius: var(--radius-sm);
+      box-shadow: inset 0 1px 0 var(--engrave-light), 0 1px 1px rgba(0, 0, 0, 0.12);
+      cursor: pointer; list-style: none;
+    }
+    .tray__bar::-webkit-details-marker { display: none; }
+    .tray[open] .tray__bar { border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+    .tray__label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--legend-dim); }
+    .tray__name { font-size: 0.9375rem; font-weight: 600; }
+    .tray__stats { margin-left: auto; display: flex; align-items: center; gap: 1rem; }
+    .tray__chevron {
+      width: 8px; height: 8px; flex: none;
+      border-right: 2px solid var(--legend-dim); border-bottom: 2px solid var(--legend-dim);
+      transform: rotate(45deg) translateY(-1px);
+      transition: transform var(--throw);
+    }
+    .tray[open] .tray__chevron { transform: rotate(225deg) translateY(-1px); }
+    .tray__bank {
+      background: var(--well); box-shadow: var(--inset-well);
+      border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+      padding: 1rem;
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+    .tray__cat { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .tray__catdot { width: 10px; height: 6px; border-radius: 1px; }
+    .tray__catname { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase; color: var(--legend-dim); }
+    .tray__meters { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 0.5rem; }
     .mark { display: flex; align-self: stretch; }
     .mark__cat { width: 8px; box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.22); }
     .mark__stream { width: 5px; }
-    .streams__meter {
+    .meter {
       display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 0.6rem;
       align-items: stretch; min-height: var(--tap-target);
       background: var(--panel-raised); background-image: var(--anodize);
@@ -32,23 +60,21 @@ category_colors: Mapping[str, str]
       box-shadow: inset 0 1px 0 var(--engrave-light), 0 1px 1px rgba(0, 0, 0, 0.12);
       color: inherit; text-decoration: none;
       transition: background var(--throw), box-shadow var(--throw);
-      margin-bottom: 0.5rem;
       overflow: hidden;
     }
-    .streams__meter:hover { background: var(--panel); }
-    .streams__meter--focused { background: var(--well); box-shadow: var(--inset-well), inset 0 -2px 0 var(--color-accent); }
-    .streams__meter-body { padding: 0.4rem 0; min-width: 0; }
-    .streams__meter-name {
+    .meter:hover { background: var(--panel); }
+    .meter--focused { background: var(--well); box-shadow: var(--inset-well), inset 0 -2px 0 var(--color-accent); }
+    .meter__body { padding: 0.4rem 0; min-width: 0; }
+    .meter__name {
       display: block; font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em;
       text-transform: uppercase; color: var(--legend);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .streams__flow { display: flex; align-items: flex-end; gap: 3px; height: 14px; margin-top: 0.3rem; }
-    .streams__seg { width: 14px; border-radius: 1px; }
-    .streams__meter-lamp { align-self: center; padding-right: 0.75rem; display: flex; }
+    .meter__flow { display: flex; align-items: flex-end; gap: 3px; height: 14px; margin-top: 0.3rem; }
+    .meter__seg { width: 14px; border-radius: 1px; }
+    .meter__lamp { align-self: center; padding-right: 0.75rem; display: flex; }
     .lamp { width: 7px; height: 7px; border-radius: var(--radius-pill); background: var(--lamp-off); flex: none; }
     .lamp--warn { background: var(--lamp-warn); box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-warn) 55%, transparent); }
-    /* Recency lamps carry the tier in size and brightness, like the rack. */
     .lamp--recency-live { width: 9px; height: 9px; background: var(--lamp-live); box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-live) 55%, transparent); }
     .lamp--recency-recent { background: color-mix(in srgb, var(--lamp-live) 70%, var(--lamp-off)); }
     .lamp--recency-idle { width: 5px; height: 5px; background: color-mix(in srgb, var(--lamp-live) 30%, var(--lamp-off)); }
@@ -72,8 +98,6 @@ category_colors: Mapping[str, str]
       font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase; color: var(--legend-dim);
     }
     .canal__sill-count { margin-left: auto; font-family: var(--font-signal); font-variant-numeric: tabular-nums; }
-    /* Fixed readout tracks: relations, due, recency land at the same position
-       on every strip so the columns sweep. */
     .canal__strip {
       display: grid; grid-template-columns: auto minmax(0, 1fr) 2.5rem 7.5rem 1.5rem; gap: 0 0.75rem;
       align-items: center; height: 3.25rem;
@@ -95,10 +119,25 @@ category_colors: Mapping[str, str]
     .canal__empty { padding: 0.75rem 1rem; font-size: 0.875rem; color: var(--legend-dim); }
     .streams-triage { margin-top: 2rem; }
     .streams-triage__legend { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 0.75rem; }
+    /* Terminology explainer: same details mechanics as the tray, printed small. */
+    .help { margin-top: 2.5rem; }
+    .help__bar {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      min-height: var(--tap-target); padding: 0 0.25rem;
+      font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase;
+      color: var(--legend-dim); cursor: pointer; list-style: none;
+    }
+    .help__bar::-webkit-details-marker { display: none; }
+    .help__bar:hover { color: var(--legend); }
+    .help dl {
+      margin: 0.5rem 0 0; padding: 1rem 1.25rem;
+      background: var(--well); box-shadow: var(--inset-well); border-radius: var(--radius-sm);
+      display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 0.5rem 1rem;
+      font-size: 0.875rem; color: var(--legend-dim);
+    }
+    .help dt { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase; color: var(--legend); align-self: baseline; }
+    .help dd { margin: 0; }
     @media (max-width: 768px) {
-      .streams { grid-template-columns: 1fr; }
-      .streams__dock { flex-direction: row; flex-wrap: wrap; }
-      .streams__dock > div { min-width: 10rem; }
       .canal__strip { grid-template-columns: auto minmax(0, 1fr) 7.5rem 1.5rem; }
       .canal__rel { display: none; }
     }
@@ -107,36 +146,56 @@ category_colors: Mapping[str, str]
 
 {% block content %}
   <div class="streams">
-    <aside class="streams__dock" aria-label="Stream dock">
-      {% for category, group in streams | groupby("category") %}
-        <div>
-          <div class="streams__cat">
-            <span class="streams__catdot" style="background: {{ category_colors.get(category, 'var(--color-border)') }}"></span>
-            <span class="canal__stat">{{ category or "uncategorized" }}</span>
+    <details class="tray">
+      <summary class="tray__bar">
+        {% if focused %}
+          <span class="mark" aria-hidden="true">
+            <span class="mark__cat" style="background: {{ category_colors.get(focused.category, 'var(--color-border)') }}"></span>
+            <span class="mark__stream" style="background: {{ focused.color }}"></span>
+          </span>
+          <span class="tray__label">Stream</span>
+          <span class="tray__name">{{ focused.name }}</span>
+        {% else %}
+          <span class="tray__label" style="padding-left: 1rem">Streams</span>
+        {% endif %}
+        <span class="tray__stats">
+          <span class="canal__stat">{{ streams | length }} streams</span>
+          <span class="tray__chevron" aria-hidden="true"></span>
+        </span>
+      </summary>
+      <div class="tray__bank">
+        {% for category, group in streams | groupby("category") %}
+          <div>
+            <div class="tray__cat">
+              <span class="tray__catdot" style="background: {{ category_colors.get(category, 'var(--color-border)') }}"></span>
+              <span class="tray__catname">{{ category or "uncategorized" }}</span>
+            </div>
+            <div class="tray__meters">
+              {% for stream in group %}
+                <a class="meter{% if focused and stream.key == focused.key %} meter--focused{% endif %}"
+                   href="/streams?stream={{ stream.key | urlencode }}">
+                  <span class="mark" aria-hidden="true">
+                    <span class="mark__cat" style="background: {{ category_colors.get(stream.category, 'var(--color-border)') }}"></span>
+                    <span class="mark__stream" style="background: {{ stream.color }}"></span>
+                  </span>
+                  <span class="meter__body">
+                    <span class="meter__name">{{ stream.name }}</span>
+                    <span class="meter__flow">
+                      {% for state in ["backlog", "queue", "in-progress"] %}
+                        {% set count = stream.reaches[state] | length %}
+                        <span class="meter__seg"
+                              style="height: {{ [2 + count * 3, 14] | min }}px; background: color-mix(in srgb, {{ stream.color }} {{ {'backlog': '28%', 'queue': '55%', 'in-progress': '85%'}[state] }}, {{ 'white' if state == 'in-progress' else 'var(--panel)' }})"></span>
+                      {% endfor %}
+                    </span>
+                  </span>
+                  <span class="meter__lamp"><span class="lamp{% if stream.over_wip %} lamp--warn{% endif %}"></span></span>
+                </a>
+              {% endfor %}
+            </div>
           </div>
-          {% for stream in group %}
-            <a class="streams__meter{% if focused and stream.key == focused.key %} streams__meter--focused{% endif %}"
-               href="/streams?stream={{ stream.key | urlencode }}">
-              <span class="mark" aria-hidden="true">
-                <span class="mark__cat" style="background: {{ category_colors.get(stream.category, 'var(--color-border)') }}"></span>
-                <span class="mark__stream" style="background: {{ stream.color }}"></span>
-              </span>
-              <span class="streams__meter-body">
-                <span class="streams__meter-name">{{ stream.name }}</span>
-                <span class="streams__flow">
-                  {% for state in ["backlog", "queue", "in-progress"] %}
-                    {% set count = stream.reaches[state] | length %}
-                    <span class="streams__seg"
-                          style="height: {{ [2 + count * 3, 14] | min }}px; background: color-mix(in srgb, {{ stream.color }} {{ {'backlog': '28%', 'queue': '55%', 'in-progress': '85%'}[state] }}, {{ 'white' if state == 'in-progress' else 'var(--panel)' }})"></span>
-                  {% endfor %}
-                </span>
-              </span>
-              <span class="streams__meter-lamp"><span class="lamp{% if stream.over_wip %} lamp--warn{% endif %}"></span></span>
-            </a>
-          {% endfor %}
-        </div>
-      {% endfor %}
-    </aside>
+        {% endfor %}
+      </div>
+    </details>
 
     <main>
       {% if focused %}
@@ -211,6 +270,21 @@ category_colors: Mapping[str, str]
           {% endfor %}
         </section>
       {% endif %}
+
+      <details class="help">
+        <summary class="help__bar">Terminology</summary>
+        <dl>
+          <dt>Stream</dt><dd>A durable thread of related work. A note with <code>type: stream</code>; tasks name it by <code>category/id</code>.</dd>
+          <dt>Reach</dt><dd>One section of the canal, holding every task in one state. Work flows upward: backlog, queue, in progress.</dd>
+          <dt>Sill</dt><dd>The bar between reaches. Moving a task across a sill is a state change.</dd>
+          <dt>Waiting</dt><dd>A task holding for something external (<code>waiting:</code> in its frontmatter). It stays in its reach, dimmed, with the reason printed.</dd>
+          <dt>WIP</dt><dd>Tasks in progress right now. Over the stream's <code>wip-limit</code>, the lamp goes amber. Nothing blocks.</dd>
+          <dt>Drained</dt><dd>Tasks that left the canal: complete or not planned.</dd>
+          <dt>Due +n</dt><dd>The deadline, plus days of acceptable slip (<code>flex</code>). Amber inside the flex window, red past it.</dd>
+          <dt>Lamp</dt><dd>The small dot at the row's end reports how recently the note changed: bigger and brighter is fresher.</dd>
+          <dt>Triage</dt><dd>Task notes with no stream, or naming one that does not exist.</dd>
+        </dl>
+      </details>
     </main>
   </div>
 {% endblock %}
