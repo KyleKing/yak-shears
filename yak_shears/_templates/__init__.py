@@ -6,12 +6,15 @@ from dataclasses import dataclass
 from enum import StrEnum
 from http import HTTPStatus
 from pathlib import Path as SyncPath
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from jinja2 import Environment, FileSystemLoader
 from starlette.responses import HTMLResponse
 
 from yak_shears._yak.categories import PALETTE, UNASSIGNED_COLOR
+
+if TYPE_CHECKING:
+    from yak_shears._yak.streams import StreamInfo, TaskInfo
 
 
 class SortBy(StrEnum):
@@ -264,6 +267,28 @@ def render_settings(*, assignments: list[tuple[str, str]], saved: bool) -> HTMLR
         palette=PALETTE,
         saved=saved,
         current_route="settings",
+    )
+
+
+def render_streams(
+    *,
+    streams: list["StreamInfo"],
+    focused: "StreamInfo | None",
+    triage: list["TaskInfo"],
+    category_colors: Mapping[str, str],
+) -> HTMLResponse:
+    """Render the streams canal prototype.
+
+    Returns:
+        HTMLResponse with the streams template
+    """
+    return _render_template(
+        "yak/streams.html.jinja",
+        streams=streams,
+        focused=focused,
+        triage=triage,
+        category_colors=category_colors,
+        current_route="streams",
     )
 
 

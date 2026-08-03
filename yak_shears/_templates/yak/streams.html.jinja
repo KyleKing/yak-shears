@@ -1,0 +1,188 @@
+{#def
+from collections.abc import Mapping
+from yak_shears._yak.streams import StreamInfo, TaskInfo
+streams: list[StreamInfo]
+focused: StreamInfo | None
+triage: list[TaskInfo]
+category_colors: Mapping[str, str]
+-#}
+{% extends "base.html.jinja" %}
+
+{% block title %}Streams{% endblock %}
+
+{% block extra_head %}
+  {# Prototype-only styles, inlined so the throwaway route leaves main.css and
+     its budget untouched. Promote into main.css if the view graduates. #}
+  <style>
+    .streams { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 2rem; align-items: start; }
+    .streams__dock { display: flex; flex-direction: column; gap: 1.25rem; }
+    .streams__cat { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .streams__catdot { width: 10px; height: 6px; border-radius: 1px; }
+    .streams__meter {
+      display: grid; grid-template-columns: 6px 3px minmax(0, 1fr) auto; gap: 0 0.6rem;
+      align-items: stretch; min-height: var(--tap-target);
+      background: var(--panel-raised); background-image: var(--anodize);
+      border-radius: var(--radius-sm);
+      box-shadow: inset 0 1px 0 var(--engrave-light), 0 1px 1px rgba(0, 0, 0, 0.12);
+      color: inherit; text-decoration: none;
+      transition: background var(--throw), box-shadow var(--throw);
+      margin-bottom: 0.5rem;
+    }
+    .streams__meter:hover { background: var(--panel); }
+    .streams__meter--focused { background: var(--well); box-shadow: var(--inset-well), inset 0 -2px 0 var(--color-accent); }
+    .streams__meter-cap { border-radius: var(--radius-sm) 0 0 var(--radius-sm); box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.22); }
+    .streams__meter-body { padding: 0.4rem 0; min-width: 0; }
+    .streams__meter-name {
+      display: block; font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--legend);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .streams__flow { display: flex; align-items: flex-end; gap: 3px; height: 14px; margin-top: 0.3rem; }
+    .streams__seg { width: 14px; border-radius: 1px; }
+    .streams__meter-lamp { align-self: center; padding-right: 0.75rem; display: flex; }
+    .lamp { width: 7px; height: 7px; border-radius: var(--radius-pill); background: var(--lamp-off); flex: none; }
+    .lamp--warn { background: var(--lamp-warn); box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-warn) 55%, transparent); }
+    .lamp--live { background: var(--lamp-live); box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-live) 55%, transparent); }
+    .canal__head {
+      display: grid; grid-template-columns: 6px 3px minmax(0, 1fr) auto; gap: 0 0.75rem;
+      align-items: center; min-height: 3.25rem; margin-bottom: 1px;
+      background: var(--panel-raised); background-image: var(--anodize);
+    }
+    .canal__cap { height: 100%; box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.22); }
+    .canal__band { height: 100%; }
+    .canal__key { font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--legend-dim); display: block; }
+    .canal__name { font-size: 0.9375rem; font-weight: 600; }
+    .canal__stats { display: flex; align-items: center; gap: 1rem; padding-right: 1rem; }
+    .canal__stat { display: flex; align-items: center; gap: 0.5rem; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase; color: var(--legend-dim); }
+    .canal__stat-value { font-family: var(--font-signal); font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--legend); }
+    .canal__stat-value--warn { color: var(--lamp-warn); }
+    .canal__reach { background: var(--well); box-shadow: var(--inset-well); }
+    .canal__sill {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.35rem 1rem;
+      border-top: 1px solid var(--engrave-light); border-bottom: 1px solid var(--engrave);
+      background: var(--panel); background-image: var(--anodize);
+      font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase; color: var(--legend-dim);
+    }
+    .canal__sill-count { margin-left: auto; font-family: var(--font-signal); font-variant-numeric: tabular-nums; }
+    .canal__strip {
+      display: grid; grid-template-columns: 6px 3px minmax(0, 1fr) auto; gap: 0 1rem;
+      align-items: center; height: 3.25rem;
+      background: var(--panel-raised); background-image: var(--anodize);
+    }
+    .canal__strip + .canal__strip { margin-top: 1px; }
+    .canal__strip--waiting .canal__title, .canal__strip--waiting .canal__due { opacity: 0.55; }
+    .canal__title {
+      font-size: 0.9375rem; font-weight: 600; line-height: 1.35;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 0.5rem;
+      color: inherit; text-decoration: none;
+    }
+    .canal__title small { display: block; font-size: 0.875rem; font-weight: 400; color: var(--legend-dim); }
+    .canal__due { padding-right: 1rem; font-family: var(--font-signal); font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--legend-dim); text-align: right; }
+    .canal__due--pressing { color: var(--lamp-warn); }
+    .canal__due--overdue { color: var(--lamp-fault); }
+    .canal__empty { padding: 0.75rem 1rem; font-size: 0.875rem; color: var(--legend-dim); }
+    .streams-triage { margin-top: 2rem; }
+    .streams-triage__legend { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 0.75rem; }
+    @media (max-width: 768px) {
+      .streams { grid-template-columns: 1fr; }
+      .streams__dock { flex-direction: row; flex-wrap: wrap; }
+      .streams__dock > div { min-width: 10rem; }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="streams">
+    <aside class="streams__dock" aria-label="Stream dock">
+      {% for category, group in streams | groupby("category") %}
+        <div>
+          <div class="streams__cat">
+            <span class="streams__catdot" style="background: {{ category_colors.get(category, 'var(--color-border)') }}"></span>
+            <span class="canal__stat">{{ category or "uncategorized" }}</span>
+          </div>
+          {% for stream in group %}
+            <a class="streams__meter{% if focused and stream.key == focused.key %} streams__meter--focused{% endif %}"
+               href="/streams?stream={{ stream.key | urlencode }}">
+              <span class="streams__meter-cap" style="background: {{ category_colors.get(stream.category, 'var(--color-border)') }}"></span>
+              <span style="background: {{ stream.color }}"></span>
+              <span class="streams__meter-body">
+                <span class="streams__meter-name">{{ stream.name }}</span>
+                <span class="streams__flow">
+                  {% for state in ["backlog", "queue", "in-progress"] %}
+                    {% set count = stream.reaches[state] | length %}
+                    <span class="streams__seg"
+                          style="height: {{ [2 + count * 3, 14] | min }}px; background: color-mix(in srgb, {{ stream.color }} {{ {'backlog': '28%', 'queue': '55%', 'in-progress': '85%'}[state] }}, {{ 'white' if state == 'in-progress' else 'var(--panel)' }})"></span>
+                  {% endfor %}
+                </span>
+              </span>
+              <span class="streams__meter-lamp"><span class="lamp{% if stream.over_wip %} lamp--warn{% endif %}"></span></span>
+            </a>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </aside>
+
+    <main>
+      {% if focused %}
+        <header class="canal__head">
+          <span class="canal__cap" style="background: {{ category_colors.get(focused.category, 'var(--color-border)') }}"></span>
+          <span class="canal__band" style="background: {{ focused.color }}"></span>
+          <span>
+            <span class="canal__key">{{ focused.key }}</span>
+            <span class="canal__name">{{ focused.name }}</span>
+          </span>
+          <span class="canal__stats">
+            <span class="canal__stat">Drained <span class="canal__stat-value">{{ focused.drained }}</span></span>
+            <span class="canal__stat">WIP
+              <span class="canal__stat-value{% if focused.over_wip %} canal__stat-value--warn{% endif %}">{{ focused.wip }}{% if focused.wip_limit %}/{{ focused.wip_limit }}{% endif %}</span>
+            </span>
+            {% if focused.over_wip %}<span class="lamp lamp--warn"></span>{% endif %}
+          </span>
+        </header>
+        {% for state in ["in-progress", "queue", "backlog"] %}
+          <div class="canal__reach">
+            <div class="canal__sill">
+              <span>{{ state.replace("-", " ") }}</span>
+              <span class="canal__sill-count">{{ focused.reaches[state] | length }}</span>
+            </div>
+            {% for task in focused.reaches[state] %}
+              <div class="canal__strip{% if task.waiting %} canal__strip--waiting{% endif %}">
+                <span class="canal__cap" style="background: {{ category_colors.get(focused.category, 'var(--color-border)') }}"></span>
+                <span class="canal__band" style="background: {{ focused.color }}"></span>
+                <a class="canal__title" href="/edit?path={{ task.path | urlencode }}">{{ task.title }}
+                  {%- if task.waiting %}<small>waiting: {{ task.waiting }}</small>{% endif -%}
+                </a>
+                <span class="canal__due{% if task.urgency in ('pressing', 'overdue') %} canal__due--{{ task.urgency }}{% endif %}">
+                  {{- task.due or "—" }}{% if task.flex %} +{{ task.flex }}{% endif -%}
+                </span>
+              </div>
+            {% endfor %}
+            {# A separate guard rather than for-else: typed-jinja's stub emits an
+               empty else block when the branch holds no expressions. #}
+            {% if not focused.reaches[state] %}
+              <p class="canal__empty">Empty reach</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="canal__empty">No stream notes yet. A stream is a note with <code>type: stream</code>, an <code>id</code>, and a <code>name</code>; a task is a note with <code>state</code> and <code>stream</code>.</p>
+      {% endif %}
+
+      {% if triage %}
+        <section class="streams-triage">
+          <h1 class="streams-triage__legend">Triage <span class="canal__sill-count">{{ triage | length }}</span></h1>
+          {% for task in triage %}
+            <div class="canal__strip">
+              <span class="canal__cap" style="background: var(--lamp-off)"></span>
+              <span></span>
+              <a class="canal__title" href="/edit?path={{ task.path | urlencode }}">{{ task.title }}
+                <small>no stream &middot; {{ task.state }}</small>
+              </a>
+              <span class="canal__due">{{ task.due or "—" }}</span>
+            </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+    </main>
+  </div>
+{% endblock %}

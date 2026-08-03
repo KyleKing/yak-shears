@@ -62,7 +62,7 @@ local linters = new Mapping<String, Step> {
     // editor LSP picks it up again, and drop the path below
     ["typed-jinja"] {
         glob = "yak_shears/_templates/**/*.jinja"
-        check = "uvx --from ../../local-code/typed-jinja typed-jinja check {{ files }}"
+        check = "uvx --from ../typed-jinja typed-jinja check {{ files }}"
     }
 }
 

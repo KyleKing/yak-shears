@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yak Shears — Streams mockups</title>
+<style>
+/* Console tokens, copied from static/css/main.css so this file stands alone. */
+:root {
+	--panel: #22262b;
+	--panel-raised: #2b3037;
+	--well: #14171a;
+	--engrave: #0a0c0e;
+	--engrave-light: #3d434b;
+	--legend: #e8ecf1;
+	--legend-dim: #99a3ae;
+	--signal: #f7f9fb;
+	--amber: #ffb02e;
+	--ink-on-amber: #1b1206;
+	--lamp-live: #3ddc7f;
+	--lamp-warn: #ffb02e;
+	--lamp-fault: #ff5c47;
+	--lamp-off: #464d55;
+	--link: #6fb7ff;
+	--cat-work: hsl(216, 72%, 56%);
+	--cat-personal: hsl(150, 52%, 46%);
+	--cat-evergreen: hsl(72, 52%, 46%);
+	--st-sky: hsl(196, 74%, 50%);
+	--st-indigo: hsl(250, 62%, 62%);
+	--st-teal: hsl(174, 62%, 44%);
+	--st-clay: hsl(16, 72%, 58%);
+	--st-mauve: hsl(302, 52%, 62%);
+	--inset-well:
+		inset 0 2px 4px rgba(0, 0, 0, 0.55), inset 0 -1px 0
+		rgba(255, 255, 255, 0.06);
+	--anodize:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.06)),
+		repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.015) 0 1px, transparent 1px 3px);
+	--key-face: inset 0 1px 0 var(--engrave-light), 0 1px 1px rgba(0, 0, 0, 0.12);
+	--throw: 70ms cubic-bezier(0.2, 0, 0.1, 1);
+	--font-legend: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	--font-signal: ui-monospace, Menlo, Monaco, "Cascadia Mono", "Roboto Mono", Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { background: var(--panel); }
+body {
+	margin: 0;
+	background: var(--panel);
+	background-image: var(--anodize);
+	color: var(--legend);
+	font-family: var(--font-legend);
+	font-size: 1rem;
+	line-height: 1.5;
+}
+a { color: var(--link); }
+
+/* ── Page chrome: which mock is on the bench ─────────────────────────── */
+.bench {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 1.5rem 2rem 4rem;
+}
+.bench__head {
+	display: flex;
+	align-items: baseline;
+	gap: 1rem;
+	flex-wrap: wrap;
+	padding-bottom: 1rem;
+	border-bottom: 1px solid var(--engrave);
+	box-shadow: 0 1px 0 var(--engrave-light);
+	margin-bottom: 2rem;
+}
+.legend {
+	font-size: 0.8125rem;
+	font-weight: 700;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+.legend--dim { color: var(--legend-dim); font-weight: 600; }
+.tabs { display: flex; gap: 0.25rem; flex-wrap: wrap; margin-left: auto; }
+.tab {
+	font: 600 0.75rem/1.5 var(--font-legend);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--legend-dim);
+	background: transparent;
+	border: 0;
+	border-radius: 3px;
+	padding: 0.5rem 0.75rem;
+	cursor: pointer;
+	transition: background var(--throw), color var(--throw);
+}
+.tab:hover { background: var(--panel-raised); color: var(--legend); }
+.tab.is-on {
+	background: var(--well);
+	box-shadow: var(--inset-well), inset 0 -2px 0 var(--amber);
+	color: var(--legend);
+}
+.mock { display: none; }
+.mock.is-on { display: block; }
+.mock__note {
+	font-size: 0.875rem;
+	color: var(--legend-dim);
+	max-width: 68ch;
+	margin: 0 0 1.5rem;
+}
+.mock__note code {
+	font-family: var(--font-signal);
+	font-size: 0.8125rem;
+	color: var(--legend);
+}
+
+/* ── Shared parts ────────────────────────────────────────────────────── */
+.lamp {
+	width: 7px; height: 7px; border-radius: 999px;
+	background: var(--lamp-off);
+	display: inline-block;
+	flex: none;
+}
+.lamp--live { background: var(--lamp-live); box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-live) 55%, transparent); }
+.lamp--warn { background: var(--lamp-warn); box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-warn) 55%, transparent); }
+.lamp--fault { background: var(--lamp-fault); box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-fault) 55%, transparent); }
+.sig {
+	font-family: var(--font-signal);
+	font-size: 0.8125rem;
+	font-variant-numeric: tabular-nums;
+	color: var(--legend-dim);
+}
+.micro {
+	font-size: 0.6875rem; font-weight: 600;
+	letter-spacing: 0.11em; text-transform: uppercase;
+	color: var(--legend-dim);
+}
+.nano {
+	font-size: 0.625rem; font-weight: 600;
+	letter-spacing: 0.1em; text-transform: uppercase;
+	color: var(--legend-dim);
+}
+
+/* ── The canal: dock + focus ─────────────────────────────────────────── */
+.deck { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 2rem; align-items: start; }
+
+.dock { display: flex; flex-direction: column; gap: 1.25rem; }
+.dock__group { display: flex; flex-direction: column; gap: 0.5rem; }
+.dock__cat { display: flex; align-items: center; gap: 0.5rem; }
+.dock__cat .micro { color: var(--legend-dim); }
+.dock__capdot { width: 10px; height: 6px; border-radius: 1px; }
+.meter {
+	display: grid;
+	grid-template-columns: 6px 3px minmax(0, 1fr) auto;
+	gap: 0 0.6rem;
+	align-items: stretch;
+	background: var(--panel-raised);
+	background-image: var(--anodize);
+	border-radius: 3px;
+	box-shadow: var(--key-face);
+	padding: 0;
+	min-height: 44px;
+	cursor: pointer;
+	border: 0;
+	text-align: left;
+	color: inherit;
+	font: inherit;
+	transition: background var(--throw), box-shadow var(--throw);
+}
+.meter__cap { border-radius: 3px 0 0 3px; box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.22); }
+.meter__band { }
+.meter__body { padding: 0.4rem 0; min-width: 0; }
+.meter__name {
+	font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em;
+	text-transform: uppercase; color: var(--legend);
+	white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.meter__flow { display: flex; align-items: flex-end; gap: 3px; height: 14px; margin-top: 0.3rem; }
+.meter__seg { width: 14px; border-radius: 1px; background: var(--engrave-light); }
+.meter__seg--ip { background: color-mix(in srgb, var(--seg-hue, var(--legend-dim)) 85%, white); }
+.meter__seg--q { background: color-mix(in srgb, var(--seg-hue, var(--legend-dim)) 55%, var(--panel)); }
+.meter__seg--b { background: color-mix(in srgb, var(--seg-hue, var(--legend-dim)) 28%, var(--panel)); }
+.meter__lamp { align-self: center; padding: 0 0.75rem 0 0; display: flex; }
+.meter.is-focused {
+	background: var(--well);
+	box-shadow: var(--inset-well), inset 0 -2px 0 var(--amber);
+}
+.meter:hover:not(.is-focused) { background: var(--panel); }
+
+/* Focus pane: the expanded canal. */
+.canal { min-width: 0; }
+.canal__head {
+	display: grid;
+	grid-template-columns: 6px 3px minmax(0, 1fr) auto;
+	gap: 0 0.75rem;
+	align-items: center;
+	background: var(--panel-raised);
+	background-image: var(--anodize);
+	margin-bottom: 1px;
+	min-height: 3.25rem;
+}
+.canal__cap { height: 100%; box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.22); }
+.canal__band { height: 100%; }
+.canal__title { font-size: 0.9375rem; font-weight: 600; }
+.canal__title .nano { display: block; margin-bottom: 0.1rem; }
+.canal__stats { display: flex; align-items: center; gap: 1rem; padding-right: 1rem; }
+.canal__drain { display: flex; align-items: center; gap: 0.5rem; }
+
+.reach { background: var(--well); box-shadow: var(--inset-well); }
+.reach + .reach { margin-top: 0; }
+.sill {
+	display: flex; align-items: center; gap: 0.75rem;
+	padding: 0.35rem 1rem;
+	border-top: 1px solid var(--engrave-light);
+	border-bottom: 1px solid var(--engrave);
+	background: var(--panel);
+	background-image: var(--anodize);
+}
+.sill__mark {
+	width: 8px; height: 8px; flex: none;
+	border-top: 2px solid var(--legend-dim);
+	border-left: 2px solid var(--legend-dim);
+	transform: rotate(45deg) translateY(2px);
+}
+.sill__legend { color: var(--legend-dim); }
+.sill__count { margin-left: auto; }
+.sill--closed .sill__mark { border-color: var(--lamp-off); transform: none; width: 6px; height: 6px; border: 2px solid var(--lamp-off); border-radius: 1px; }
+.sill__wait { color: var(--legend-dim); font-size: 0.875rem; font-style: normal; }
+
+.strip {
+	display: grid;
+	grid-template-columns: 6px 3px minmax(0, 1fr) 7.5rem 5.5rem;
+	gap: 0 1rem;
+	align-items: center;
+	height: 3.25rem;
+	background: var(--panel-raised);
+	background-image: var(--anodize);
+	position: relative;
+}
+.strip + .strip { margin-top: 1px; }
+.strip__cap { height: 100%; box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.22); }
+.strip__band { height: 100%; }
+.strip__title {
+	font-size: 0.9375rem; font-weight: 600; line-height: 1.35;
+	white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+	padding-right: 0.5rem;
+}
+.strip__title small { display: block; font-size: 0.875rem; font-weight: 400; color: var(--legend-dim); }
+.strip__due { text-align: right; }
+.strip__due--pressing { color: var(--lamp-warn); }
+.strip__due--overdue { color: var(--lamp-fault); }
+.strip__state { display: flex; align-items: center; gap: 0.5rem; justify-content: flex-end; padding-right: 1rem; }
+.strip--waiting { }
+.strip--waiting .strip__title, .strip--waiting .strip__due { opacity: 0.55; }
+.strip--armed { outline: 2px solid var(--amber); outline-offset: -2px; }
+
+/* Command deck under the canal */
+.cmdeck {
+	margin-top: 1.5rem;
+	background: var(--panel-raised);
+	background-image: var(--anodize);
+	border-radius: 5px;
+	box-shadow: var(--key-face);
+	padding: 0.75rem 1rem;
+	display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+}
+.key {
+	display: inline-flex; align-items: center; gap: 0.5rem;
+	background: var(--panel-raised);
+	box-shadow: var(--key-face);
+	border: 1px solid var(--engrave);
+	border-radius: 3px;
+	padding: 0.4rem 0.75rem;
+	font: 600 0.75rem/1 var(--font-legend);
+	letter-spacing: 0.09em; text-transform: uppercase;
+	color: var(--legend);
+	cursor: pointer;
+	transition: background var(--throw), transform var(--throw), box-shadow var(--throw);
+}
+.key:hover { background: var(--panel); }
+.key:active { transform: translateY(1px); box-shadow: var(--inset-well); }
+.key kbd {
+	font-family: var(--font-signal); font-size: 0.6875rem;
+	background: var(--well); box-shadow: var(--inset-well);
+	border-radius: 2px; padding: 0.1rem 0.35rem;
+	color: var(--signal);
+}
+.key--armed { background: var(--amber); color: var(--ink-on-amber); border-color: color-mix(in srgb, var(--amber) 70%, black); }
+.key--armed kbd { background: color-mix(in srgb, var(--amber) 70%, black); color: var(--amber); box-shadow: none; }
+.cmdeck__sep { width: 1px; align-self: stretch; background: var(--engrave); box-shadow: 1px 0 0 var(--engrave-light); margin: 0 0.5rem; }
+.cmdeck__hist { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.cmdeck__hist .sig { color: var(--legend-dim); }
+.chip {
+	font-family: var(--font-signal); font-size: 0.8125rem;
+	color: var(--signal);
+	background: var(--well); box-shadow: var(--inset-well);
+	border: 0; border-radius: 3px;
+	padding: 0.35rem 0.6rem;
+	cursor: pointer;
+}
+.chip:hover { color: var(--amber); }
+
+/* ── Phone frame ─────────────────────────────────────────────────────── */
+.phones { display: flex; gap: 3rem; flex-wrap: wrap; align-items: flex-start; }
+.phone {
+	width: 390px; height: 720px; flex: none;
+	background: var(--panel);
+	background-image: var(--anodize);
+	border: 1px solid var(--engrave);
+	box-shadow: 0 1px 0 var(--engrave-light), 0 8px 16px rgba(0, 0, 0, 0.1);
+	border-radius: 5px;
+	display: flex; flex-direction: column;
+	overflow: hidden;
+}
+.phone__bar {
+	flex: none;
+	display: flex; align-items: center; gap: 0.75rem;
+	padding: 0.6rem 1rem;
+	background: var(--panel-raised);
+	background-image: var(--anodize);
+	border-bottom: 1px solid var(--engrave);
+	box-shadow: 0 1px 0 var(--engrave-light);
+}
+.phone__canal { flex: 1; overflow: hidden; position: relative; display: flex; }
+.phone__flow { flex: 1; min-width: 0; overflow-y: auto; }
+.phone .strip { grid-template-columns: 6px 3px minmax(0, 1fr) auto; height: 3rem; }
+.phone .strip__due { padding-right: 0.75rem; }
+.phone__minimap {
+	flex: none; width: 2.25rem;
+	background: var(--well); box-shadow: var(--inset-well);
+	display: flex; flex-direction: column-reverse;
+	align-items: center;
+	padding: 0.5rem 0;
+	gap: 0;
+}
+.mini__reach { display: flex; flex-direction: column-reverse; align-items: center; gap: 4px; padding: 6px 0; }
+.mini__notch { width: 12px; height: 3px; border-radius: 1px; background: var(--engrave-light); }
+.mini__notch--here { background: var(--amber); box-shadow: 0 0 6px color-mix(in srgb, var(--amber) 55%, transparent); }
+.mini__gate { width: 18px; height: 0; border-top: 1px solid var(--engrave); box-shadow: 0 1px 0 var(--engrave-light); }
+.mini__label { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 0.625rem; letter-spacing: 0.1em; color: var(--legend-dim); font-weight: 600; text-transform: uppercase; padding: 2px 0; }
+.phone__dockrail {
+	flex: none;
+	display: flex; align-items: stretch; gap: 1px;
+	background: var(--engrave);
+	border-top: 1px solid var(--engrave);
+	box-shadow: 0 -1px 0 var(--engrave-light) inset;
+	padding-top: 1px;
+}
+.railmeter {
+	flex: 1;
+	background: var(--panel-raised);
+	background-image: var(--anodize);
+	border: 0; color: inherit; cursor: pointer;
+	display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+	gap: 0.25rem;
+	padding: 0.5rem 0 0.55rem;
+	min-height: 54px;
+}
+.railmeter__bars { display: flex; align-items: flex-end; gap: 2px; height: 16px; }
+.railmeter__bars i { display: block; width: 6px; border-radius: 1px; }
+.railmeter.is-focused { background: var(--well); box-shadow: var(--inset-well), inset 0 -2px 0 var(--amber); }
+
+/* ── Horizon / across-stream racks ───────────────────────────────────── */
+.rack { background: var(--engrave); border-radius: 5px; overflow: hidden; display: flex; flex-direction: column; gap: 1px; }
+.rack .strip { grid-template-columns: 6px 3px minmax(0, 1fr) 10rem 7.5rem 6rem; }
+.rack .strip:first-child .strip__cap { border-top-left-radius: 5px; }
+.rack .strip:last-child .strip__cap { border-bottom-left-radius: 5px; }
+.strip__stream { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.strip__stream .nano { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rackhead { display: flex; align-items: baseline; gap: 1rem; margin: 2rem 0 0.75rem; }
+.rackhead:first-of-type { margin-top: 0; }
+
+/* ── Backlog table ───────────────────────────────────────────────────── */
+.table { width: 100%; border-collapse: collapse; }
+.table th {
+	text-align: left;
+	font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase;
+	color: var(--legend-dim);
+	padding: 0.5rem 0.75rem;
+	border-bottom: 1px solid var(--engrave);
+	box-shadow: 0 1px 0 var(--engrave-light);
+}
+.table th.is-sorted { color: var(--legend); box-shadow: 0 1px 0 var(--engrave-light), inset 0 -2px 0 var(--amber); }
+.table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--engrave); font-size: 0.875rem; }
+.table td.sig, .table td .sig { color: var(--legend-dim); }
+.table .capchip { display: inline-flex; width: 6px; height: 1.1rem; border-radius: 1px; margin-right: 0.5rem; vertical-align: middle; box-shadow: inset 1px 0 0 rgba(255,255,255,0.22); }
+.table .bandchip { display: inline-flex; width: 3px; height: 1.1rem; border-radius: 1px; margin-right: 0.5rem; vertical-align: middle; }
+
+/* ── Reference list ──────────────────────────────────────────────────── */
+.reflist { max-width: 34rem; background: var(--well); box-shadow: var(--inset-well); border-radius: 5px; padding: 0.25rem 0 0.75rem; }
+.reflist__section { padding: 0.6rem 1.25rem 0.15rem; }
+.refitem {
+	display: flex; align-items: center; gap: 0.75rem;
+	padding: 0.45rem 1.25rem;
+	min-height: 40px;
+	font-size: 0.9375rem;
+}
+.refitem__box {
+	width: 18px; height: 18px; flex: none;
+	background: var(--panel); box-shadow: var(--inset-well);
+	border-radius: 2px;
+	display: inline-flex; align-items: center; justify-content: center;
+}
+.refitem--done .refitem__box::after {
+	content: ""; width: 8px; height: 4px;
+	border-left: 2px solid var(--lamp-live);
+	border-bottom: 2px solid var(--lamp-live);
+	transform: rotate(-45deg) translate(1px, -1px);
+}
+.refitem--done { color: var(--legend-dim); text-decoration: line-through; text-decoration-color: var(--engrave-light); }
+
+@media (max-width: 900px) {
+	.deck { grid-template-columns: 1fr; }
+	.dock { flex-direction: row; flex-wrap: wrap; }
+	.rack .strip { grid-template-columns: 6px 3px minmax(0, 1fr) 7rem 5rem; }
+	.rack .strip__stream { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="bench">
+	<div class="bench__head">
+		<span class="legend">Streams · Mockups</span>
+		<span class="sig">2026-08-02</span>
+		<nav class="tabs" id="tabs">
+			<button class="tab is-on" data-mock="canal">Canal</button>
+			<button class="tab" data-mock="phone">Phone</button>
+			<button class="tab" data-mock="horizon">Horizon</button>
+			<button class="tab" data-mock="triage">Triage + Backlog</button>
+			<button class="tab" data-mock="reference">Reference</button>
+		</nav>
+	</div>
+
+	<!-- ════════════════ CANAL: dock + focus, desktop ════════════════ -->
+	<section class="mock is-on" id="mock-canal">
+		<p class="mock__note">The home surface. Dock of flow meters at the left, one per stream under its category legend; the focused meter seats with the amber underline. The focus pane is the canal: work flows bottom to top through gates. A closed gate (<code>waiting:</code>) holds a strip against the sill, dimmed, reason printed. The command deck below carries the verb keys, the repeat key, and the frecency history.</p>
+		<div class="deck">
+			<aside class="dock" aria-label="Stream dock">
+				<div class="dock__group">
+					<div class="dock__cat"><span class="dock__capdot" style="background: var(--cat-work)"></span><span class="micro">Work</span></div>
+					<button class="meter is-focused" style="--seg-hue: var(--st-sky)">
+						<span class="meter__cap" style="background: var(--cat-work)"></span>
+						<span class="meter__band" style="background: var(--st-sky)"></span>
+						<span class="meter__body">
+							<span class="meter__name">TLR Migration</span>
+							<span class="meter__flow">
+								<i class="meter__seg meter__seg--b" style="height: 14px"></i>
+								<i class="meter__seg meter__seg--q" style="height: 9px"></i>
+								<i class="meter__seg meter__seg--ip" style="height: 11px"></i>
+							</span>
+						</span>
+						<span class="meter__lamp"><span class="lamp lamp--warn" title="Over WIP limit"></span></span>
+					</button>
+					<button class="meter" style="--seg-hue: var(--st-indigo)">
+						<span class="meter__cap" style="background: var(--cat-work)"></span>
+						<span class="meter__band" style="background: var(--st-indigo)"></span>
+						<span class="meter__body">
+							<span class="meter__name">Interviews</span>
+							<span class="meter__flow">
+								<i class="meter__seg meter__seg--b" style="height: 6px"></i>
+								<i class="meter__seg meter__seg--q" style="height: 8px"></i>
+								<i class="meter__seg meter__seg--ip" style="height: 5px"></i>
+							</span>
+						</span>
+						<span class="meter__lamp"><span class="lamp"></span></span>
+					</button>
+				</div>
+				<div class="dock__group">
+					<div class="dock__cat"><span class="dock__capdot" style="background: var(--cat-personal)"></span><span class="micro">Personal</span></div>
+					<button class="meter" style="--seg-hue: var(--st-teal)">
+						<span class="meter__cap" style="background: var(--cat-personal)"></span>
+						<span class="meter__band" style="background: var(--st-teal)"></span>
+						<span class="meter__body">
+							<span class="meter__name">House</span>
+							<span class="meter__flow">
+								<i class="meter__seg meter__seg--b" style="height: 12px"></i>
+								<i class="meter__seg meter__seg--q" style="height: 6px"></i>
+								<i class="meter__seg meter__seg--ip" style="height: 8px"></i>
+							</span>
+						</span>
+						<span class="meter__lamp"><span class="lamp"></span></span>
+					</button>
+					<button class="meter" style="--seg-hue: var(--st-clay)">
+						<span class="meter__cap" style="background: var(--cat-personal)"></span>
+						<span class="meter__band" style="background: var(--st-clay)"></span>
+						<span class="meter__body">
+							<span class="meter__name">Writing</span>
+							<span class="meter__flow">
+								<i class="meter__seg meter__seg--b" style="height: 9px"></i>
+								<i class="meter__seg meter__seg--q" style="height: 5px"></i>
+								<i class="meter__seg meter__seg--ip" style="height: 5px"></i>
+							</span>
+						</span>
+						<span class="meter__lamp"><span class="lamp"></span></span>
+					</button>
+					<button class="meter" style="--seg-hue: var(--st-mauve)">
+						<span class="meter__cap" style="background: var(--cat-personal)"></span>
+						<span class="meter__band" style="background: var(--st-mauve)"></span>
+						<span class="meter__body">
+							<span class="meter__name">Español</span>
+							<span class="meter__flow">
+								<i class="meter__seg meter__seg--b" style="height: 7px"></i>
+								<i class="meter__seg meter__seg--q" style="height: 4px"></i>
+								<i class="meter__seg meter__seg--ip" style="height: 0px"></i>
+							</span>
+						</span>
+						<span class="meter__lamp"><span class="lamp"></span></span>
+					</button>
+				</div>
+				<div class="dock__group">
+					<div class="dock__cat"><span class="dock__capdot" style="background: var(--cat-evergreen)"></span><span class="micro">Evergreen</span></div>
+					<button class="meter" style="--seg-hue: var(--cat-evergreen)">
+						<span class="meter__cap" style="background: var(--cat-evergreen)"></span>
+						<span class="meter__band" style="background: var(--cat-evergreen)"></span>
+						<span class="meter__body">
+							<span class="meter__name">Evergreen</span>
+							<span class="meter__flow">
+								<i class="meter__seg meter__seg--b" style="height: 10px"></i>
+								<i class="meter__seg meter__seg--q" style="height: 3px"></i>
+								<i class="meter__seg meter__seg--ip" style="height: 0px"></i>
+							</span>
+						</span>
+						<span class="meter__lamp"><span class="lamp"></span></span>
+					</button>
+				</div>
+			</aside>
+
+			<main class="canal">
+				<header class="canal__head">
+					<span class="canal__cap" style="background: var(--cat-work)"></span>
+					<span class="canal__band" style="background: var(--st-sky)"></span>
+					<span class="canal__title">
+						<span class="nano">Work / tlr-migration</span>
+						TLR Migration
+					</span>
+					<span class="canal__stats">
+						<span class="canal__drain"><span class="micro">Through this week</span><span class="sig" style="color: var(--legend)">4</span></span>
+						<span class="canal__drain"><span class="micro">WIP</span><span class="sig" style="color: var(--lamp-warn)">3/2</span><span class="lamp lamp--warn"></span></span>
+					</span>
+				</header>
+
+				<!-- In-progress reach (top of the canal) -->
+				<div class="reach">
+					<div class="sill">
+						<span class="sill__mark"></span>
+						<span class="micro sill__legend">In progress</span>
+						<span class="sig sill__count">3</span>
+					</div>
+					<div class="strip strip--armed">
+						<span class="strip__cap" style="background: var(--cat-work)"></span>
+						<span class="strip__band" style="background: var(--st-sky)"></span>
+						<span class="strip__title">Port capacity deflation to the snapshot reader</span>
+						<span class="strip__due sig strip__due--pressing">due today</span>
+						<span class="strip__state"><span class="lamp lamp--live"></span><span class="nano">Active</span></span>
+					</div>
+					<div class="strip strip--waiting">
+						<span class="strip__cap" style="background: var(--cat-work)"></span>
+						<span class="strip__band" style="background: var(--st-sky)"></span>
+						<span class="strip__title">Chain-risk parity tests against July snapshots
+							<small>waiting: code review from Sam</small></span>
+						<span class="strip__due sig">aug 05 +2</span>
+						<span class="strip__state"><span class="lamp"></span><span class="nano">Gated</span></span>
+					</div>
+					<div class="strip">
+						<span class="strip__cap" style="background: var(--cat-work)"></span>
+						<span class="strip__band" style="background: var(--st-sky)"></span>
+						<span class="strip__title">Write the weekly update from stream queries</span>
+						<span class="strip__due sig">aug 08</span>
+						<span class="strip__state"><span class="lamp lamp--live"></span><span class="nano">Active</span></span>
+					</div>
+				</div>
+
+				<!-- Queue reach -->
+				<div class="reach">
+					<div class="sill">
+						<span class="sill__mark"></span>
+						<span class="micro sill__legend">Queue</span>
+						<span class="sig sill__count">2</span>
+					</div>
+					<div class="strip">
+						<span class="strip__cap" style="background: var(--cat-work)"></span>
+						<span class="strip__band" style="background: var(--st-sky)"></span>
+						<span class="strip__title">Decide the stream-id mapping with Linear labels</span>
+						<span class="strip__due sig">aug 12</span>
+						<span class="strip__state"><span class="nano">Next</span></span>
+					</div>
+					<div class="strip">
+						<span class="strip__cap" style="background: var(--cat-work)"></span>
+						<span class="strip__band" style="background: var(--st-sky)"></span>
+						<span class="strip__title">Prune the ordering-risk code path</span>
+						<span class="strip__due sig">—</span>
+						<span class="strip__state"><span class="nano"></span></span>
+					</div>
+				</div>
+
+				<!-- Backlog reach (bottom of the canal) -->
+				<div class="reach">
+					<div class="sill">
+						<span class="sill__mark"></span>
+						<span class="micro sill__legend">Backlog</span>
+						<span class="sig sill__count">5</span>
+					</div>
+					<div class="strip">
+						<span class="strip__cap" style="background: var(--cat-work)"></span>
+						<span class="strip__band" style="background: var(--st-sky)"></span>
+						<span class="strip__title">Treemap grouping spike over the relationships plane</span>
+						<span class="strip__due sig">—</span>
+						<span class="strip__state"></span>
+					</div>
+					<div class="strip">
+						<span class="strip__cap" style="background: var(--cat-work)"></span>
+						<span class="strip__band" style="background: var(--st-sky)"></span>
+						<span class="strip__title">Second-tracker schema notes for ADR 0006</span>
+						<span class="strip__due sig">—</span>
+						<span class="strip__state"></span>
+					</div>
+					<div class="strip">
+						<span class="strip__cap" style="background: var(--cat-work)"></span>
+						<span class="strip__band" style="background: var(--st-sky)"></span>
+						<span class="strip__title">Slop-detection prompt tuning pass</span>
+						<span class="strip__due sig">—</span>
+						<span class="strip__state"></span>
+					</div>
+				</div>
+
+				<!-- Command deck -->
+				<div class="cmdeck" role="toolbar" aria-label="Task commands">
+					<button class="key key--armed"><kbd>&gt;</kbd> Advance</button>
+					<button class="key"><kbd>d t</kbd> Due today</button>
+					<button class="key"><kbd>d +7</kbd> Due +7d</button>
+					<button class="key"><kbd>m</kbd> Move stream</button>
+					<button class="key"><kbd>w</kbd> Waiting</button>
+					<button class="key"><kbd>.</kbd> Repeat</button>
+					<span class="cmdeck__sep"></span>
+					<span class="cmdeck__hist">
+						<span class="micro">History</span>
+						<button class="chip">due +7d</button>
+						<button class="chip">state → queue</button>
+						<button class="chip">stream → personal/house</button>
+					</span>
+				</div>
+			</main>
+		</div>
+	</section>
+
+	<!-- ════════════════ PHONE ════════════════ -->
+	<section class="mock" id="mock-phone">
+		<p class="mock__note">390px, homescreen app. The dock compresses to a bottom rail of meters above the safe area, thumb-reachable. Left frame: zoomed out, full strips. Right frame: zoomed in, ticks plus the side minimap; the lit notch is the current position, tapping a reach label jumps to it.</p>
+		<div class="phones">
+			<div class="phone">
+				<div class="phone__bar">
+					<span class="legend" style="font-size: 0.6875rem">TLR Migration</span>
+					<span class="sig" style="margin-left: auto">wip 3/2</span>
+					<span class="lamp lamp--warn"></span>
+				</div>
+				<div class="phone__canal">
+					<div class="phone__flow">
+						<div class="reach">
+							<div class="sill"><span class="sill__mark"></span><span class="micro sill__legend">In progress</span><span class="sig sill__count">3</span></div>
+							<div class="strip">
+								<span class="strip__cap" style="background: var(--cat-work)"></span>
+								<span class="strip__band" style="background: var(--st-sky)"></span>
+								<span class="strip__title">Port capacity deflation</span>
+								<span class="strip__due sig strip__due--pressing">today</span>
+							</div>
+							<div class="strip strip--waiting">
+								<span class="strip__cap" style="background: var(--cat-work)"></span>
+								<span class="strip__band" style="background: var(--st-sky)"></span>
+								<span class="strip__title">Chain-risk parity tests<small>waiting: review, Sam</small></span>
+								<span class="strip__due sig">aug 05</span>
+							</div>
+							<div class="strip">
+								<span class="strip__cap" style="background: var(--cat-work)"></span>
+								<span class="strip__band" style="background: var(--st-sky)"></span>
+								<span class="strip__title">Weekly update from streams</span>
+								<span class="strip__due sig">aug 08</span>
+							</div>
+						</div>
+						<div class="reach">
+							<div class="sill"><span class="sill__mark"></span><span class="micro sill__legend">Queue</span><span class="sig sill__count">2</span></div>
+							<div class="strip">
+								<span class="strip__cap" style="background: var(--cat-work)"></span>
+								<span class="strip__band" style="background: var(--st-sky)"></span>
+								<span class="strip__title">Stream-id mapping decision</span>
+								<span class="strip__due sig">aug 12</span>
+							</div>
+							<div class="strip">
+								<span class="strip__cap" style="background: var(--cat-work)"></span>
+								<span class="strip__band" style="background: var(--st-sky)"></span>
+								<span class="strip__title">Prune ordering-risk path</span>
+								<span class="strip__due sig">—</span>
+							</div>
+						</div>
+						<div class="reach">
+							<div class="sill"><span class="sill__mark"></span><span class="micro sill__legend">Backlog</span><span class="sig sill__count">5</span></div>
+							<div class="strip">
+								<span class="strip__cap" style="background: var(--cat-work)"></span>
+								<span class="strip__band" style="background: var(--st-sky)"></span>
+								<span class="strip__title">Treemap grouping spike</span>
+								<span class="strip__due sig">—</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="phone__dockrail">
+					<button class="railmeter is-focused">
+						<span class="railmeter__bars">
+							<i style="height: 14px; background: color-mix(in srgb, var(--st-sky) 28%, var(--panel))"></i>
+							<i style="height: 9px; background: color-mix(in srgb, var(--st-sky) 55%, var(--panel))"></i>
+							<i style="height: 11px; background: color-mix(in srgb, var(--st-sky) 85%, white)"></i>
+						</span>
+						<span class="nano">TLR</span>
+					</button>
+					<button class="railmeter">
+						<span class="railmeter__bars">
+							<i style="height: 6px; background: color-mix(in srgb, var(--st-indigo) 28%, var(--panel))"></i>
+							<i style="height: 8px; background: color-mix(in srgb, var(--st-indigo) 55%, var(--panel))"></i>
+							<i style="height: 5px; background: color-mix(in srgb, var(--st-indigo) 85%, white)"></i>
+						</span>
+						<span class="nano">Intvw</span>
+					</button>
+					<button class="railmeter">
+						<span class="railmeter__bars">
+							<i style="height: 12px; background: color-mix(in srgb, var(--st-teal) 28%, var(--panel))"></i>
+							<i style="height: 6px; background: color-mix(in srgb, var(--st-teal) 55%, var(--panel))"></i>
+							<i style="height: 8px; background: color-mix(in srgb, var(--st-teal) 85%, white)"></i>
+						</span>
+						<span class="nano">House</span>
+					</button>
+					<button class="railmeter">
+						<span class="railmeter__bars">
+							<i style="height: 9px; background: color-mix(in srgb, var(--st-clay) 28%, var(--panel))"></i>
+							<i style="height: 5px; background: color-mix(in srgb, var(--st-clay) 55%, var(--panel))"></i>
+							<i style="height: 5px; background: color-mix(in srgb, var(--st-clay) 85%, white)"></i>
+						</span>
+						<span class="nano">Write</span>
+					</button>
+					<button class="railmeter">
+						<span class="railmeter__bars">
+							<i style="height: 7px; background: color-mix(in srgb, var(--st-mauve) 28%, var(--panel))"></i>
+							<i style="height: 4px; background: color-mix(in srgb, var(--st-mauve) 55%, var(--panel))"></i>
+							<i style="height: 2px; background: color-mix(in srgb, var(--st-mauve) 85%, white)"></i>
+						</span>
+						<span class="nano">Esp</span>
+					</button>
+				</div>
+			</div>
+
+			<div class="phone">
+				<div class="phone__bar">
+					<span class="legend" style="font-size: 0.6875rem">TLR Migration</span>
+					<span class="micro" style="margin-left: auto">Compact</span>
+				</div>
+				<div class="phone__canal">
+					<div class="phone__flow">
+						<div class="reach">
+							<div class="sill"><span class="sill__mark"></span><span class="micro sill__legend">In progress</span><span class="sig sill__count">3</span></div>
+							<div class="strip" style="height: 2rem"><span class="strip__cap" style="background: var(--cat-work)"></span><span class="strip__band" style="background: var(--st-sky)"></span><span class="strip__title" style="font-weight: 400; font-size: 0.875rem">Port capacity deflation</span><span class="strip__due sig strip__due--pressing">·</span></div>
+							<div class="strip strip--waiting" style="height: 2rem"><span class="strip__cap" style="background: var(--cat-work)"></span><span class="strip__band" style="background: var(--st-sky)"></span><span class="strip__title" style="font-weight: 400; font-size: 0.875rem">Chain-risk parity tests</span><span class="strip__due sig">◦</span></div>
+							<div class="strip" style="height: 2rem"><span class="strip__cap" style="background: var(--cat-work)"></span><span class="strip__band" style="background: var(--st-sky)"></span><span class="strip__title" style="font-weight: 400; font-size: 0.875rem">Weekly update from streams</span><span class="strip__due sig"> </span></div>
+						</div>
+						<div class="reach">
+							<div class="sill"><span class="sill__mark"></span><span class="micro sill__legend">Queue</span><span class="sig sill__count">2</span></div>
+							<div class="strip" style="height: 2rem"><span class="strip__cap" style="background: var(--cat-work)"></span><span class="strip__band" style="background: var(--st-sky)"></span><span class="strip__title" style="font-weight: 400; font-size: 0.875rem">Stream-id mapping decision</span><span class="strip__due sig"> </span></div>
+							<div class="strip" style="height: 2rem"><span class="strip__cap" style="background: var(--cat-work)"></span><span class="strip__band" style="background: var(--st-sky)"></span><span class="strip__title" style="font-weight: 400; font-size: 0.875rem">Prune ordering-risk path</span><span class="strip__due sig"> </span></div>
+						</div>
+						<div class="reach">
+							<div class="sill"><span class="sill__mark"></span><span class="micro sill__legend">Backlog</span><span class="sig sill__count">5</span></div>
+							<div class="strip" style="height: 2rem"><span class="strip__cap" style="background: var(--cat-work)"></span><span class="strip__band" style="background: var(--st-sky)"></span><span class="strip__title" style="font-weight: 400; font-size: 0.875rem">Treemap grouping spike</span><span class="strip__due sig"> </span></div>
+							<div class="strip" style="height: 2rem"><span class="strip__cap" style="background: var(--cat-work)"></span><span class="strip__band" style="background: var(--st-sky)"></span><span class="strip__title" style="font-weight: 400; font-size: 0.875rem">ADR 0006 schema notes</span><span class="strip__due sig"> </span></div>
+							<div class="strip" style="height: 2rem"><span class="strip__cap" style="background: var(--cat-work)"></span><span class="strip__band" style="background: var(--st-sky)"></span><span class="strip__title" style="font-weight: 400; font-size: 0.875rem">Slop prompt tuning</span><span class="strip__due sig"> </span></div>
+						</div>
+					</div>
+					<div class="phone__minimap" aria-label="Position in stream">
+						<span class="mini__label">Backlog</span>
+						<span class="mini__reach">
+							<i class="mini__notch"></i><i class="mini__notch"></i><i class="mini__notch"></i>
+						</span>
+						<span class="mini__gate"></span>
+						<span class="mini__label">Queue</span>
+						<span class="mini__reach">
+							<i class="mini__notch"></i><i class="mini__notch"></i>
+						</span>
+						<span class="mini__gate"></span>
+						<span class="mini__label">Active</span>
+						<span class="mini__reach">
+							<i class="mini__notch"></i><i class="mini__notch"></i><i class="mini__notch mini__notch--here"></i>
+						</span>
+					</div>
+				</div>
+				<div class="phone__dockrail">
+					<button class="railmeter is-focused"><span class="railmeter__bars"><i style="height: 14px; background: color-mix(in srgb, var(--st-sky) 28%, var(--panel))"></i><i style="height: 9px; background: color-mix(in srgb, var(--st-sky) 55%, var(--panel))"></i><i style="height: 11px; background: color-mix(in srgb, var(--st-sky) 85%, white)"></i></span><span class="nano">TLR</span></button>
+					<button class="railmeter"><span class="railmeter__bars"><i style="height: 6px; background: color-mix(in srgb, var(--st-indigo) 28%, var(--panel))"></i><i style="height: 8px; background: color-mix(in srgb, var(--st-indigo) 55%, var(--panel))"></i><i style="height: 5px; background: color-mix(in srgb, var(--st-indigo) 85%, white)"></i></span><span class="nano">Intvw</span></button>
+					<button class="railmeter"><span class="railmeter__bars"><i style="height: 12px; background: color-mix(in srgb, var(--st-teal) 28%, var(--panel))"></i><i style="height: 6px; background: color-mix(in srgb, var(--st-teal) 55%, var(--panel))"></i><i style="height: 8px; background: color-mix(in srgb, var(--st-teal) 85%, white)"></i></span><span class="nano">House</span></button>
+					<button class="railmeter"><span class="railmeter__bars"><i style="height: 9px; background: color-mix(in srgb, var(--st-clay) 28%, var(--panel))"></i><i style="height: 5px; background: color-mix(in srgb, var(--st-clay) 55%, var(--panel))"></i><i style="height: 5px; background: color-mix(in srgb, var(--st-clay) 85%, white)"></i></span><span class="nano">Write</span></button>
+					<button class="railmeter"><span class="railmeter__bars"><i style="height: 7px; background: color-mix(in srgb, var(--st-mauve) 28%, var(--panel))"></i><i style="height: 4px; background: color-mix(in srgb, var(--st-mauve) 55%, var(--panel))"></i><i style="height: 2px; background: color-mix(in srgb, var(--st-mauve) 85%, white)"></i></span><span class="nano">Esp</span></button>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ════════════════ HORIZON ════════════════ -->
+	<section class="mock" id="mock-horizon">
+		<p class="mock__note">The do-today / do-tomorrow surface. Every task with a <code>due</code>, across streams, ranked by derived urgency: overdue (past due plus flex, fault lamp), pressing (inside the flex window, warn lamp), then scheduled. Each strip keeps its two-color designation so the stream reads without a legend.</p>
+		<div class="rackhead"><span class="legend">Horizon</span><span class="sig">today 2026-08-02</span></div>
+		<div class="rack">
+			<div class="strip">
+				<span class="strip__cap" style="background: var(--cat-personal)"></span>
+				<span class="strip__band" style="background: var(--st-teal)"></span>
+				<span class="strip__title">Call the roofer back about the gutter quote</span>
+				<span class="strip__stream"><span class="nano">personal / house</span></span>
+				<span class="strip__due sig strip__due--overdue">jul 31 +1</span>
+				<span class="strip__state"><span class="lamp lamp--fault"></span><span class="nano">Overdue</span></span>
+			</div>
+			<div class="strip">
+				<span class="strip__cap" style="background: var(--cat-work)"></span>
+				<span class="strip__band" style="background: var(--st-sky)"></span>
+				<span class="strip__title">Port capacity deflation to the snapshot reader</span>
+				<span class="strip__stream"><span class="nano">work / tlr-migration</span></span>
+				<span class="strip__due sig strip__due--pressing">today</span>
+				<span class="strip__state"><span class="lamp lamp--warn"></span><span class="nano">Today</span></span>
+			</div>
+			<div class="strip">
+				<span class="strip__cap" style="background: var(--cat-work)"></span>
+				<span class="strip__band" style="background: var(--st-indigo)"></span>
+				<span class="strip__title">Prep loop questions for Thursday's onsite</span>
+				<span class="strip__stream"><span class="nano">work / interviews</span></span>
+				<span class="strip__due sig strip__due--pressing">tomorrow</span>
+				<span class="strip__state"><span class="lamp lamp--warn"></span><span class="nano">Tomorrow</span></span>
+			</div>
+			<div class="strip strip--waiting">
+				<span class="strip__cap" style="background: var(--cat-work)"></span>
+				<span class="strip__band" style="background: var(--st-sky)"></span>
+				<span class="strip__title">Chain-risk parity tests against July snapshots
+					<small>waiting: code review from Sam</small></span>
+				<span class="strip__stream"><span class="nano">work / tlr-migration</span></span>
+				<span class="strip__due sig">aug 05 +2</span>
+				<span class="strip__state"><span class="lamp"></span><span class="nano">Gated</span></span>
+			</div>
+			<div class="strip">
+				<span class="strip__cap" style="background: var(--cat-personal)"></span>
+				<span class="strip__band" style="background: var(--st-clay)"></span>
+				<span class="strip__title">Draft the DuckDB WAL post outline</span>
+				<span class="strip__stream"><span class="nano">personal / writing</span></span>
+				<span class="strip__due sig">aug 09 +3</span>
+				<span class="strip__state"><span class="nano">Sched</span></span>
+			</div>
+		</div>
+	</section>
+
+	<!-- ════════════════ TRIAGE + BACKLOG ════════════════ -->
+	<section class="mock" id="mock-triage">
+		<p class="mock__note">Triage catches task-notes missing a <code>stream</code> or carrying an unknown one; the first command on each strip is Move (the stream resolver). Below it, the backlog table: the same query flat and sortable, sorted column marked with the seated underline.</p>
+		<div class="rackhead"><span class="legend">Triage</span><span class="sig">3 unfiled</span></div>
+		<div class="rack" style="margin-bottom: 2.5rem">
+			<div class="strip">
+				<span class="strip__cap" style="background: var(--lamp-off)"></span>
+				<span class="strip__band" style="background: transparent"></span>
+				<span class="strip__title">Look into Playwright screenshot baselines</span>
+				<span class="strip__stream"><span class="nano" style="color: var(--lamp-warn)">no stream</span></span>
+				<span class="strip__due sig">—</span>
+				<span class="strip__state"><span class="lamp lamp--warn"></span><span class="nano">Unfiled</span></span>
+			</div>
+			<div class="strip">
+				<span class="strip__cap" style="background: var(--lamp-off)"></span>
+				<span class="strip__band" style="background: transparent"></span>
+				<span class="strip__title">Replace the bathroom fan (loud bearing)</span>
+				<span class="strip__stream"><span class="nano" style="color: var(--lamp-warn)">no state</span></span>
+				<span class="strip__due sig">—</span>
+				<span class="strip__state"><span class="lamp lamp--warn"></span><span class="nano">Unfiled</span></span>
+			</div>
+			<div class="strip">
+				<span class="strip__cap" style="background: var(--lamp-off)"></span>
+				<span class="strip__band" style="background: transparent"></span>
+				<span class="strip__title">Bookmarklet importer for archived tabs</span>
+				<span class="strip__stream"><span class="nano" style="color: var(--lamp-fault)">stream: work/extension?</span></span>
+				<span class="strip__due sig">—</span>
+				<span class="strip__state"><span class="lamp lamp--fault"></span><span class="nano">Bad ref</span></span>
+			</div>
+		</div>
+
+		<div class="rackhead"><span class="legend">Backlog</span><span class="sig">14 tasks</span></div>
+		<table class="table">
+			<thead>
+				<tr>
+					<th>Task</th><th>Stream</th><th>State</th><th class="is-sorted">Due</th><th>Waiting</th><th>Modified</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td><span class="capchip" style="background: var(--cat-personal)"></span><span class="bandchip" style="background: var(--st-teal)"></span>Call the roofer back</td>
+					<td class="sig">personal/house</td><td class="sig">queue</td>
+					<td class="sig" style="color: var(--lamp-fault)">2026-07-31 +1</td>
+					<td class="sig">—</td><td class="sig">jul 30</td>
+				</tr>
+				<tr>
+					<td><span class="capchip" style="background: var(--cat-work)"></span><span class="bandchip" style="background: var(--st-sky)"></span>Port capacity deflation</td>
+					<td class="sig">work/tlr-migration</td><td class="sig">in-progress</td>
+					<td class="sig" style="color: var(--lamp-warn)">2026-08-02</td>
+					<td class="sig">—</td><td class="sig">aug 01</td>
+				</tr>
+				<tr>
+					<td><span class="capchip" style="background: var(--cat-work)"></span><span class="bandchip" style="background: var(--st-sky)"></span>Chain-risk parity tests</td>
+					<td class="sig">work/tlr-migration</td><td class="sig">in-progress</td>
+					<td class="sig">2026-08-05 +2</td>
+					<td class="sig">review, Sam</td><td class="sig">aug 01</td>
+				</tr>
+				<tr>
+					<td><span class="capchip" style="background: var(--cat-personal)"></span><span class="bandchip" style="background: var(--st-clay)"></span>DuckDB WAL post outline</td>
+					<td class="sig">personal/writing</td><td class="sig">queue</td>
+					<td class="sig">2026-08-09 +3</td>
+					<td class="sig">—</td><td class="sig">jul 28</td>
+				</tr>
+				<tr>
+					<td><span class="capchip" style="background: var(--cat-work)"></span><span class="bandchip" style="background: var(--st-indigo)"></span>Onsite loop questions</td>
+					<td class="sig">work/interviews</td><td class="sig">queue</td>
+					<td class="sig">2026-08-03</td>
+					<td class="sig">—</td><td class="sig">aug 01</td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+
+	<!-- ════════════════ REFERENCE ════════════════ -->
+	<section class="mock" id="mock-reference">
+		<p class="mock__note">A pinned <code>type: list</code> note rendered live: the in-the-store scene. Sections come from the note's own headings; checking writes the task item back to the body. One-tap reach from the nav, no stream, no states, no due dates.</p>
+		<div class="rackhead"><span class="legend">Groceries</span><span class="sig">9 open</span></div>
+		<div class="reflist">
+			<div class="reflist__section micro">Produce</div>
+			<div class="refitem"><span class="refitem__box"></span>Bananas</div>
+			<div class="refitem"><span class="refitem__box"></span>Baby spinach</div>
+			<div class="refitem refitem--done"><span class="refitem__box"></span>Limes</div>
+			<div class="reflist__section micro">Frozen</div>
+			<div class="refitem"><span class="refitem__box"></span>Peas</div>
+			<div class="refitem"><span class="refitem__box"></span>Gyoza</div>
+			<div class="reflist__section micro">Staples</div>
+			<div class="refitem"><span class="refitem__box"></span>Olive oil</div>
+			<div class="refitem refitem--done"><span class="refitem__box"></span>Coffee beans</div>
+			<div class="refitem"><span class="refitem__box"></span>Paper towels</div>
+		</div>
+	</section>
+</div>
+
+<script>
+	const tabs = document.querySelectorAll(".tab");
+	for (const tab of tabs) {
+		tab.addEventListener("click", () => {
+			for (const t of tabs) t.classList.toggle("is-on", t === tab);
+			for (const m of document.querySelectorAll(".mock")) {
+				m.classList.toggle("is-on", m.id === `mock-${tab.dataset.mock}`);
+			}
+		});
+	}
+</script>
+</body>
+</html>

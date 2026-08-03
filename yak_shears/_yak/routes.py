@@ -16,9 +16,11 @@ from .handlers import (
     yak_preview_handler,
     yaks_handler,
 )
+from .streams import streams_handler
 
 ROUTES = [
     Route("/yaks", endpoint=yaks_handler),
+    Route("/streams", endpoint=streams_handler),
     Route("/search", endpoint=search_handler),
     Route("/settings", endpoint=settings_handler, methods=["GET", "POST"]),
     Route("/new", endpoint=new_yak_handler, methods=["GET", "POST"]),
