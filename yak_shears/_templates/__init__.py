@@ -14,6 +14,7 @@ from starlette.responses import HTMLResponse
 from yak_shears._yak.categories import PALETTE, UNASSIGNED_COLOR
 
 if TYPE_CHECKING:
+    from yak_shears._yak.habits import HabitInfo
     from yak_shears._yak.lists import ListInfo
     from yak_shears._yak.streams import StreamInfo, TaskInfo
 
@@ -271,6 +272,15 @@ def render_settings(*, assignments: list[tuple[str, str]], owners: Mapping[str, 
         saved=saved,
         current_route="settings",
     )
+
+
+def render_habits(*, habits: list["HabitInfo"]) -> HTMLResponse:
+    """Render the habit bench.
+
+    Returns:
+        HTMLResponse with the habits template
+    """
+    return _render_template("yak/habits.html.jinja", habits=habits, current_route="habits")
 
 
 def render_list_fragment(*, info: "ListInfo") -> HTMLResponse:

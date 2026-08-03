@@ -1,0 +1,87 @@
+{#def
+from yak_shears._yak.habits import HabitInfo
+habits: list[HabitInfo]
+-#}
+{% extends "base.html.jinja" %}
+
+{% block title %}Habits{% endblock %}
+
+{% block extra_head %}
+  {# Prototype-only styles, inlined like the streams and lists views. #}
+  <style>
+    .habits { max-width: 52rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1px; background: var(--engrave); border-radius: var(--radius-lg); overflow: hidden; }
+    .habit {
+      display: grid; grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr) auto auto; gap: 0 1.25rem;
+      align-items: center; min-height: 4rem; padding: 0.5rem 1rem;
+      background: var(--panel-raised); background-image: var(--anodize);
+    }
+    .habit__id { min-width: 0; }
+    .habit__name { display: block; font-size: 0.9375rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .habit__schedule { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase; color: var(--legend-dim); }
+    .habit__heat { display: flex; gap: 2px; align-items: center; }
+    .habit__cell { width: 8px; height: 14px; border-radius: 1px; background: var(--well); box-shadow: var(--inset-well); }
+    .habit__cell--off { opacity: 0.35; }
+    .habit__cell--done { background: color-mix(in srgb, var(--lamp-live) 65%, var(--panel)); box-shadow: none; }
+    .habit__readout { text-align: right; }
+    .habit__streak { font-family: var(--font-signal); font-size: 1.25rem; font-variant-numeric: tabular-nums; display: block; line-height: 1.2; }
+    .habit__grace { font-family: var(--font-signal); font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--legend-dim); }
+    .habit__done { margin: 0; }
+    .habit__key {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      min-height: var(--tap-target); min-width: 5.5rem; padding: 0 1rem;
+      background: var(--panel-raised);
+      border: 1px solid var(--engrave); border-radius: var(--radius-sm);
+      box-shadow: inset 0 1px 0 var(--engrave-light), 0 1px 1px rgba(0, 0, 0, 0.12);
+      font-family: var(--font-legend); font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.09em; text-transform: uppercase; color: var(--legend);
+      cursor: pointer;
+      transition: background var(--throw), transform var(--throw), box-shadow var(--throw);
+    }
+    .habit__key:hover { background: var(--panel); }
+    .habit__key:active { transform: translateY(1px); box-shadow: var(--inset-well); }
+    .habit__key--done { background: var(--well); box-shadow: var(--inset-well), inset 0 -2px 0 var(--color-accent); }
+    .habit__lamp { width: 7px; height: 7px; border-radius: var(--radius-pill); background: var(--lamp-off); flex: none; }
+    .habit__lamp--live { background: var(--lamp-live); box-shadow: 0 0 6px color-mix(in srgb, var(--lamp-live) 55%, transparent); }
+    .habits-note { max-width: 52rem; margin: 1rem auto 0; font-size: 0.875rem; color: var(--legend-dim); }
+    @media (max-width: 768px) {
+      .habit { grid-template-columns: minmax(0, 1fr) auto auto; }
+      .habit__heat { display: none; }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="habits">
+    {% for habit in habits %}
+      <div class="habit">
+        <span class="habit__id">
+          <span class="habit__name">{{ habit.name }}</span>
+          <span class="habit__schedule">{{ habit.schedule }}</span>
+        </span>
+        <span class="habit__heat" aria-label="last {{ habit.heat | length }} days">
+          {% for cell in habit.heat %}
+            <span class="habit__cell{% if cell.done %} habit__cell--done{% elif not cell.scheduled %} habit__cell--off{% endif %}"
+                  title="{{ cell.day }}{{ ' done' if cell.done else '' }}"></span>
+          {% endfor %}
+        </span>
+        <span class="habit__readout">
+          <span class="habit__streak">{{ habit.streak }}{{ habit.streak_unit }}</span>
+          <span class="habit__grace" title="banked grace days">+{{ habit.grace }}</span>
+        </span>
+        <form class="habit__done" method="post" action="/habits/toggle">
+          <input type="hidden" name="path" value="{{ habit.path }}">
+          <button type="submit" class="habit__key{% if habit.done_today %} habit__key--done{% endif %}"
+                  aria-pressed="{{ 'true' if habit.done_today else 'false' }}">
+            <span class="habit__lamp{% if habit.done_today %} habit__lamp--live{% endif %}" aria-hidden="true"></span>
+            {{ "Done" if habit.done_today else "Mark" }}
+          </button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+  {% if not habits %}
+    <p class="habits-note">No habits yet. A habit is a note with <code>type: habit</code>, a <code>name</code>, and a <code>schedule</code> (<code>daily</code>, <code>weekdays</code>, or <code>3/week</code>); completions collect in its body as <code>- [x] 2026-08-02</code>.</p>
+  {% else %}
+    <p class="habits-note">Grace (+n) is earned by completing outside the schedule and spends itself to cover a miss before the streak breaks. Capped at 7.</p>
+  {% endif %}
+{% endblock %}
