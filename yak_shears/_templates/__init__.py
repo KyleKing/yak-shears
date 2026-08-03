@@ -273,6 +273,15 @@ def render_settings(*, assignments: list[tuple[str, str]], owners: Mapping[str, 
     )
 
 
+def render_list_fragment(*, info: "ListInfo") -> HTMLResponse:
+    """Render one list card for an HTMX swap.
+
+    Returns:
+        HTMLResponse with the list fragment template
+    """
+    return _render_template("yak/_list.html.jinja", info=info)
+
+
 def render_lists(*, lists: list["ListInfo"]) -> HTMLResponse:
     """Render the reference lists page.
 

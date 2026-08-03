@@ -11,9 +11,10 @@ from dataclasses import dataclass, field
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 
-from yak_shears._templates import render_error, render_lists
+from yak_shears._templates import render_error, render_list_fragment, render_lists
 from yak_shears.frontmatter import parse_frontmatter
 
+from .request_utils import is_htmx_request
 from .services import YakPathError, get_yak_dir, list_yak_paths, resolve_yak_path
 
 _ITEM_RE = re.compile(r"^(\s*[-*+]\s+)\[( |x|X)\]\s+(.*)$")
@@ -134,4 +135,9 @@ async def list_toggle_handler(request: Request) -> Response:
     if updated is None:
         return render_error("Item not found; the note may have changed")
     await yak_path.write_text(updated)
+
+    if is_htmx_request(request):
+        refreshed = next((info for info in await collect_lists() if info.path == rel_path), None)
+        if refreshed is not None:
+            return render_list_fragment(info=refreshed)
     return RedirectResponse("/lists", status_code=303)

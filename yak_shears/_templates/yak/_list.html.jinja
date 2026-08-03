@@ -1,0 +1,29 @@
+{#def
+from yak_shears._yak.lists import ListInfo
+info: ListInfo
+-#}
+<section class="listcard" id="list-{{ info.path | replace('/', '-') | replace('.', '-') }}">
+  <div class="lists__head">
+    <h1 class="lists__name">{{ info.name }}</h1>
+    <span class="lists__count">{{ info.open_count }} open</span>
+    <a class="lists__source" href="/edit?path={{ info.path | urlencode }}">edit</a>
+  </div>
+  <div class="reflist">
+    {% for section in info.sections %}
+      {% if section.heading and section.heading != info.name %}
+        <p class="reflist__section">{{ section.heading }}</p>
+      {% endif %}
+      {% for item in section.items %}
+        <form class="refitem{% if item.checked %} refitem--done{% endif %}" method="post" action="/lists/toggle"
+              hx-post="/lists/toggle" hx-target="closest .listcard" hx-swap="outerHTML">
+          <input type="hidden" name="path" value="{{ info.path }}">
+          <input type="hidden" name="ordinal" value="{{ item.ordinal }}">
+          <button type="submit" class="refitem__press" aria-pressed="{{ 'true' if item.checked else 'false' }}">
+            <span class="refitem__box" aria-hidden="true"></span>
+            {{ item.text }}
+          </button>
+        </form>
+      {% endfor %}
+    {% endfor %}
+  </div>
+</section>
