@@ -167,6 +167,28 @@ The views above impose the engine's minimum surface:
 4. History/frecency panel, batch, saved views via `views.toml`, Horizon and Backlog
 5. Reference lists surface; prune queue rides the same strip grammar
 
+## Performance as the vault scales
+
+The prototype scans the vault per request, which is fine today: frontmatter parsing measures 0.318ms per file (validated in ROADMAP.md targets), so even a few thousand notes stay under a second and a few hundred under 100ms.
+
+The scaling answer is the Phase 4 store, not a parallel aggregate file. The frontmatter table lives in the existing DuckDB index (outside the vault per ADR 0010), and invalidation reuses the search index's proven mechanics: compare file mtimes, then delete and re-insert rows for only the changed files. A TOML or JSON aggregation cache is rejected on three grounds: it is a second derived store that can drift from the first, it answers no query the store cannot, and ADR 0010 already established that derived data is rebuilt, not maintained. `views.toml` stays configuration, never cache.
+
+Lessons from the 2026-07 search perf work carry over: one process-wide connection, `read_csv` staging for bulk rebuilds instead of per-row `executemany`, and `ANALYZE` after a bulk refresh.
+
+## Habits (draft, needs a spec session)
+
+Raised in NEXT_STEPS ("a habit is a meter with real ballistics") and adjacent to the deferred workout planner. Working proposal to react to, not a decision:
+
+```yaml
+type: habit
+name: Morning stretch
+schedule: daily
+```
+
+- A habit is a note; completions are appended dated task items in its body (`- [x] 2026-08-02`), so history is plain text and streaks are derived views
+- The surface is a meter bench: one meter per habit with real ballistics, current streak, and today's state as a lamp. Marking done is one press, the same write mechanics as list toggling
+- Open: schedule vocabulary (daily, weekdays, n-per-week), whether a miss breaks a streak or spends a grace budget (flex for habits), counts versus booleans (8 glasses of water), and whether habits surface in Horizon or stay on their own bench
+
 ## Open decisions
 
 - Inline task surfacing: whether a Djot task item (`- [ ]`) or a TODO-like line inside a non-task note can surface into Triage as a candidate task, and what marks it. Deferred; frontmatter-only is the first release
