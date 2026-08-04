@@ -71,6 +71,9 @@ Task management is not a kanban board here. It is a canal with locks: work enter
 - **Mark** — the two touching vertical stripes at each task's left edge: 8px category color, then 5px stream color, both from the same 12-slot palette. Category outranks stream, so its stripe is thicker.
 - **Due +n** — the KISS deadline model: one `due` date plus `flex` days of acceptable slip. Amber inside the flex window, red past it. No priorities, no estimates.
 - **Triage** — task notes with no stream, or naming a stream that does not exist. Surfaced so nothing silently vanishes.
+- **Latch** — the recessed socket at a strip's head. Latching a strip arms it (amber) as the target the deck's keys fire on.
+- **Deck** — the command deck that surfaces once a strip is latched: Raise/Lower across sills, due shifts (`today`, `+1d`, `+7d`, `-1d`, clear), the waiting toggle with its reason, and Move to another stream. Every key prints its keyboard binding; J/K walk the latch, Esc releases, `.` repeats the last action.
+- **Toast** — after any write, the bar naming what was applied with an Undo key holding the exact inverse action.
 
 ## Habits (the /habits bench)
 
@@ -111,7 +114,7 @@ A note with `state:` but no `type:` still reads as a task everywhere; Doctor lis
 |---|---|
 | /yaks | rack, rack unit / channel strip, cap, readout, recency lamp, kind legend |
 | /benches | hub of kind-specific surfaces with live counts |
-| /streams | canal, reach, sill, tray, mark, WIP lamp, waiting, drained, triage, due +n |
+| /streams | canal, reach, sill, tray, mark, WIP lamp, waiting, drained, triage, due +n, latch, deck, toast |
 | /habits | bench, heat row, streak, grace, makeup, key |
 | /lists | rack of list cards; first unchecked item as the preview |
 | /yaks list cards | arm + apply: tapping an item arms it in amber, the Apply key writes the batch |
