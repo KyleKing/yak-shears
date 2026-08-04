@@ -4,6 +4,7 @@ Throwaway proof of the canal view: scans the vault directly instead of the
 Phase 4 query engine, and writes nothing.
 """
 
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any
@@ -23,6 +24,10 @@ TASK_STATES = frozenset(CANAL_STATES) | frozenset(DRAIN_STATES)
 
 
 _RECENCY_DAYS = ((7, Recency.LIVE), (30, Recency.RECENT), (365, Recency.IDLE))
+
+# The undo toast renders a one-press write form from query params, so only
+# actions inside the board grammar (and sane paths) may reach it.
+_UNDO_ACTION_RE = re.compile(r"advance|lower|waiting|state:[a-z-]+|due:(?:clear|\d{4}-\d{2}-\d{2})|stream:[\w./-]+")
 
 
 @dataclass(frozen=True)
@@ -184,10 +189,12 @@ async def streams_handler(request: Request) -> Response:
         max(streams, key=lambda stream: stream.wip, default=None),
     )
     undo = None
-    if request.query_params.get("u_path") and request.query_params.get("u_action"):
+    undo_path = request.query_params.get("u_path", "")
+    undo_action = request.query_params.get("u_action", "")
+    if undo_path and ".." not in undo_path and _UNDO_ACTION_RE.fullmatch(undo_action):
         undo = UndoInfo(
-            path=request.query_params["u_path"],
-            action=request.query_params["u_action"],
+            path=undo_path,
+            action=undo_action,
             reason=request.query_params.get("u_reason", ""),
             label=request.query_params.get("u_label", "undo"),
         )
