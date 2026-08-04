@@ -8,6 +8,24 @@
         "value": "2px)",
         "createdAt": "2026-07-27T01:46:03.585Z",
         "reason": "calc(var(--radius-sm) - 2px) parsed as a literal radius"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "mockups/streams.html"
+        ],
+        "createdAt": "2026-08-04T21:40:40.657Z",
+        "reason": "Mockup copies the sanctioned lamp glow from main.css; DESIGN.md permits glow on lamps only"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "mockups/streams.html"
+        ],
+        "createdAt": "2026-08-04T21:41:13.437Z",
+        "reason": "Mockup mirrors the committed Console type ramp; hierarchy is carried by weight, tracking, case, and mono/sans, not size ratios"
       }
     ]
   }
