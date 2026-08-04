@@ -45,7 +45,7 @@ My personal note taking app, but you probably want to use one of these primarily
 
 ## Screenshots
 
-These predate the console redesign (see [DESIGN.md](./DESIGN.md)) and are regenerated once it covers every page.
+These predate the console redesign (see [DESIGN.md](./docs/DESIGN.md)) and are regenerated once it covers every page.
 
 ### Login Page
 
@@ -65,7 +65,7 @@ These predate the console redesign (see [DESIGN.md](./DESIGN.md)) and are regene
 
 ## Deployment
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for production deployment instructions to Hetzner Cloud VPS.
+See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for production deployment instructions to Hetzner Cloud VPS.
 
 ## Quick Start
 

@@ -84,7 +84,7 @@ yak_shears/
 
 ### Frontend Approach
 
-- **Read [DESIGN.md](./DESIGN.md) before changing anything visual.** The interface is a console panel: three materials (panel face, milled well, engraved groove) build every component, amber is the only lit color and means armed, state is reported by indicator lamps, and category color owns whole rows. New components are composed from those materials rather than styled ad hoc
+- **Read [DESIGN.md](./docs/DESIGN.md) before changing anything visual.** The interface is a console panel: three materials (panel face, milled well, engraved groove) build every component, amber is the only lit color and means armed, state is reported by indicator lamps, and category color owns whole rows. New components are composed from those materials rather than styled ad hoc
 - Server-side rendering with Jinja2 templates
 - Responsive design for iPhone 14 (390x844), iPad, and Desktop
 - Installable as a homescreen web app via `static/manifest.webmanifest` (`display: standalone`). Without it, iOS opens every navigation in an in-app browser overlay (ADR 0009)
@@ -200,6 +200,6 @@ A read-mostly integrity report at `/doctor`, covering attachments, filenames, an
 
 ## Related Documentation
 
-- **[STATUS.md](STATUS.md)** - Current implementation status
-- **[ROADMAP.md](ROADMAP.md)** - Vision and planned features
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
+- **[STATUS.md](docs/STATUS.md)** - Current implementation status
+- **[ROADMAP.md](docs/ROADMAP.md)** - Vision and planned features
+- **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Production deployment guide
