@@ -10,7 +10,8 @@ lists: list[ListInfo]
   {# Prototype-only styles, inlined like the streams view; promote into
      main.css if the surface graduates. #}
   <style>
-    .lists { display: flex; flex-direction: column; gap: 2rem; max-width: 34rem; }
+    .lists { display: grid; grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr)); gap: 1.5rem; align-items: start; }
+    @media (max-width: 768px) { .lists { grid-template-columns: 1fr; } }
     .lists__head { display: flex; align-items: baseline; gap: 1rem; margin: 0 0 0.75rem; }
     .lists__name { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin: 0; }
     .lists__count { font-family: var(--font-signal); font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--legend-dim); }

@@ -287,16 +287,8 @@ p {
 	padding-bottom: 0;
 }
 
-/* The rack sets the measure on its own page, so the vault head, the filter
-   switches, and the units all sit in one column instead of leaving the rack
-   stranded under a header that runs to the full container width. */
-[data-route="yaks"] .container,
-[data-route="new"] .container {
-	max-width: 52rem;
-}
-
 .container {
-	max-width: 1200px;
+	max-width: 68rem;
 	margin: 0 auto;
 	padding-left: calc(var(--space-4) + var(--safe-left));
 	padding-right: calc(var(--space-4) + var(--safe-right));
@@ -1039,7 +1031,7 @@ p {
 }
 
 .login-form {
-	max-width: 420px;
+	max-width: 26rem;
 	margin: var(--space-8) auto;
 	display: grid;
 	gap: var(--space-5);
@@ -1096,7 +1088,7 @@ p {
 }
 
 .form {
-	max-width: 600px;
+	max-width: 34rem;
 	margin: 0 auto;
 	display: grid;
 	gap: var(--space-4);
@@ -1278,7 +1270,7 @@ pre code {
 	gap: 1px;
 	/* Comfortable centered reading width so ultrawide screens leave gutters (2.6) */
 	width: 100%;
-	max-width: 1200px;
+	max-width: 68rem;
 	margin: 0 auto;
 	padding: 0;
 	background: var(--engrave);
@@ -2509,7 +2501,7 @@ pre code {
 
 .empty-state {
 	text-align: center;
-	max-width: 500px;
+	max-width: 34rem;
 }
 
 /* An empty rack: the frame, with no units mounted in it. Drawn from the same

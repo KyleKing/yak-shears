@@ -291,13 +291,13 @@ Shading is material, not palette. The alpha blacks and whites in inset shadows, 
 
 ## Layout
 
-The container caps at 1200px with gutters that step 1rem → 1.5rem → 2rem at 640px and 768px, each adding the matching `env(safe-area-inset-*)` so content clears the notch. The rack page narrows the container to **52rem**, so the vault head, the filter switches, and the units sit in one column instead of leaving the rack stranded under a header running the full width. The single breakpoint is **768px**, duplicated as `MOBILE_BREAKPOINT` in `editor.js`, `search.js`, and `nav.js`.
+The container caps at **68rem** on every page, with gutters that step 1rem → 1.5rem → 2rem at 640px and 768px, each adding the matching `env(safe-area-inset-*)` so content clears the notch. One operating width is the rule: pages differentiate by what is mounted on the panel, never by how wide the panel is. Narrower measures live inside the container and belong to content, not pages: prose reads at `68ch`, forms sit at `34rem`, the login card at `26rem`. The single breakpoint is **768px**, duplicated as `MOBILE_BREAKPOINT` in `editor.js`, `search.js`, and `nav.js`.
 
 Every page clears the header groove with `--space-6` of top padding. The editor is the only exception: it is a full-height chassis measuring itself from `--header-height`, and any padding above it runs the chassis off the viewport.
 
 The rack is the defining layout. It is a flex column with a 1px gap over an engrave-colored ground, so the gap shows through as a hairline and the strips read as mounted in one frame rather than as floating cards. Each unit is a three-track grid (`6px | minmax(0,1fr) | 6.5rem`) at a fixed `8.5rem` height. The fixed height is load-bearing: notes whose first blocks happen to be short or tall must not change the row pitch. The preview inside is line-clamped to exactly four lines at a fixed `4.4rem`. Every block in it runs on the preview's own leading and font size, including fenced code, because the clamp counts lines while the height cuts pixels: one child with a taller line box pushes a sliced fifth line out under the bottom edge.
 
-The narrow measure is what buys those four lines. Stretched to the old 72rem a long note ran as one stranded line and a short one wasted the row; at 52rem both wrap into the same block of readable text.
+The capped measure is what buys those four lines. Stretched to the old 72rem a long note ran as one stranded line and a short one wasted the row; under the 68rem container both wrap into the same block of readable text.
 
 The readout at the right end is a fixed stack of rows rather than flow: category, date, then the lamp and patch count. The point of a readout is that each value lands at the same position on every row, so the eye reads down a column instead of hunting along each row.
 
