@@ -23,6 +23,7 @@ from PIL import Image, ImageOps
 from pillow_heif import register_heif_opener
 
 from yak_shears._log_utils import log
+from yak_shears.frontmatter import parse_frontmatter
 
 register_heif_opener()
 
@@ -278,13 +279,16 @@ class DoctorReport:
     ``missing`` are ``/media/...`` references with no file on disk (broken
     embeds); ``orphans`` are attachment files no note references (safe to
     delete). Both hold ``(category, filename)`` pairs; ``missing`` also carries
-    the referencing note path.
+    the referencing note path. ``untyped_tasks`` are notes carrying ``state:``
+    without ``type: task``, the implicit form the kind system reads but
+    Doctor asks to make explicit.
     """
 
     missing: list[tuple[str, str, str]] = field(default_factory=list)
     orphans: list[tuple[str, str, int]] = field(default_factory=list)
     referenced_count: int = 0
     file_count: int = 0
+    untyped_tasks: list[str] = field(default_factory=list)
 
 
 async def build_doctor_report(yak_dir: Path) -> DoctorReport:
@@ -297,6 +301,9 @@ async def build_doctor_report(yak_dir: Path) -> DoctorReport:
             continue
         rel = note.relative_to(yak_dir).as_posix()
         content = await note.read_text(encoding="utf-8")
+        meta, _ = parse_frontmatter(content)
+        if meta.get("state") and not meta.get("type"):
+            report.untyped_tasks.append(rel)
         for category, filename in _MEDIA_REF_RE.findall(content):
             referenced.add((category, filename))
             attachment = yak_dir / category / ATTACHMENTS_DIRNAME / filename

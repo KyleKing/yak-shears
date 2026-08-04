@@ -41,6 +41,7 @@ class YakInfo:
 
     backlink_count: int
     category: str
+    kind: str
     last_modified: str
     link_count: int
     name: str
@@ -271,6 +272,34 @@ def render_settings(*, assignments: list[tuple[str, str]], owners: Mapping[str, 
         owners=owners,
         saved=saved,
         current_route="settings",
+    )
+
+
+def render_benches(
+    *,
+    done_today: int,
+    habits_count: int,
+    in_progress_count: int,
+    lists_count: int,
+    open_items: int,
+    streams_count: int,
+    triage_count: int,
+) -> HTMLResponse:
+    """Render the benches hub.
+
+    Returns:
+        HTMLResponse with the benches template
+    """
+    return _render_template(
+        "yak/benches.html.jinja",
+        done_today=done_today,
+        habits_count=habits_count,
+        in_progress_count=in_progress_count,
+        lists_count=lists_count,
+        open_items=open_items,
+        streams_count=streams_count,
+        triage_count=triage_count,
+        current_route="benches",
     )
 
 

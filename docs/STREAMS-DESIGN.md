@@ -65,6 +65,7 @@ The body of a stream note is free prose (the stream's charter, links, whatever).
 ### Task note
 
 ```yaml
+type: task
 state: queue
 stream: work/tlr-migration
 due: 2026-08-09
@@ -76,7 +77,7 @@ relates:
   - "[[2026-07-30T09_12_04Z]]"
 ```
 
-- A note is a task when it carries `state`. No new syntax, no separate task store. One task per note
+- `type: task` is the kind marker, matching every other kind (`stream`, `list`, `habit`). A note carrying `state` without `type` still reads as a task, and Doctor asks to make it explicit. No separate task store; one task per note
 - `state` keeps the decided enum: `backlog | queue | in-progress | complete | not-planned`
 - `stream` is optional. A task with `state` and no `stream` lands in Triage
 - `due` is a date, optionally with a time. `flex` is days of acceptable slip (default 0). Urgency is derived: overdue when past `due + flex`, pressing when inside the flex window, scheduled otherwise. No estimates, no priority field. "Do today" is `due: <today>`; "do tomorrow" is `due: <tomorrow>`

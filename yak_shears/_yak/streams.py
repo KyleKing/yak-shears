@@ -98,7 +98,7 @@ def _task_info(meta: dict[str, Any], body: str, path: str, today: date, modified
     return TaskInfo(
         title=title,
         path=path,
-        state=str(meta.get("state", "")),
+        state=str(meta.get("state") or "backlog"),
         due=due.isoformat() if due else "",
         flex=flex,
         urgency=_urgency(due, flex, today),
@@ -135,7 +135,7 @@ async def collect_streams(today: date | None = None) -> tuple[list[StreamInfo], 
                 color=str(meta.get("color") or ""),
                 wip_limit=int(meta.get("wip-limit") or 0),
             )
-        elif str(meta.get("state", "")) in TASK_STATES:
+        elif meta.get("type") == "task" or str(meta.get("state", "")) in TASK_STATES:
             modified = datetime.fromtimestamp((await yak_path.stat()).st_mtime, tz=UTC)
             tasks.append((str(meta.get("stream") or ""), _task_info(meta, body, rel_path, today, modified)))
 

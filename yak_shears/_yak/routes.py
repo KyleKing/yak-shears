@@ -16,12 +16,14 @@ from .handlers import (
     yak_preview_handler,
     yaks_handler,
 )
+from .benches import benches_handler
 from .habits import habit_toggle_handler, habits_handler
 from .lists import list_toggle_handler, lists_handler
 from .streams import streams_handler
 
 ROUTES = [
     Route("/yaks", endpoint=yaks_handler),
+    Route("/benches", endpoint=benches_handler),
     Route("/habits", endpoint=habits_handler),
     Route("/habits/toggle", endpoint=habit_toggle_handler, methods=["POST"]),
     Route("/lists", endpoint=lists_handler),

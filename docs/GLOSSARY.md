@@ -85,11 +85,32 @@ Morning stretch   WEEKDAYS   ▪▪▪▫▪▪·▪▪▪▪▫▪·  4d +1   [
                                         streak  grace
 ```
 
+## Kinds of notes
+
+Every note is a plain `.dj` file; a note that participates in a bench declares its kind with one frontmatter key, `type:`, always a singular kebab-case noun:
+
+| `type:` | What it is | Bench |
+|---|---|---|
+| (none) | An ordinary note | the rack |
+| `task` | One unit of work with `state`, `stream`, `due`/`flex` | /streams |
+| `stream` | A durable thread of work that tasks name | /streams (tray) |
+| `list` | A long-lived reference checklist | /lists |
+| `habit` | A practice with a `schedule`, completions as dated items | /habits |
+| `workout` | One movement or exercise (planned) | — |
+| `routine` | An ordered program of workouts with a habit `schedule` (planned) | — |
+| `workout-log` | One session's actuals (planned) | — |
+
+A note with `state:` but no `type:` still reads as a task everywhere; Doctor lists it so the kind can be made explicit.
+
+- **Bench (hub)** — /benches lists every kind-specific surface with live counts, so the nav carries one entry instead of one per kind.
+- **Kind legend** — typed notes show their kind as a printed legend on their rack unit.
+
 ## One-line map, term to page
 
 | You see it on | The words for it |
 |---|---|
-| /yaks | rack, rack unit / channel strip, cap, readout, recency lamp |
+| /yaks | rack, rack unit / channel strip, cap, readout, recency lamp, kind legend |
+| /benches | hub of kind-specific surfaces with live counts |
 | /streams | canal, reach, sill, tray, mark, WIP lamp, waiting, drained, triage, due +n |
 | /habits | bench, heat row, streak, grace, makeup, key |
 | /lists | rack of list cards; first unchecked item as the preview |

@@ -4,6 +4,7 @@ missing: list[tuple[str, str, str]]
 orphans: list[tuple[str, str, int]]
 referenced_count: int
 file_count: int
+untyped_tasks: list[str]
 filenames: FilenameReport
 index_path: str
 index_in_vault: bool
@@ -35,6 +36,22 @@ stray_index: str | None
       </ul>
     {% else %}
       <p class="doctor-empty">All referenced media resolves.</p>
+    {% endif %}
+  </section>
+
+  <section class="doctor-section">
+    <h2 class="doctor-section__title">Untyped tasks</h2>
+    {% if untyped_tasks %}
+      <p class="doctor-section__hint">These notes carry <code>state:</code> but no <code>type: task</code>. They still work everywhere, but every kind of note should say its kind.</p>
+      <ul class="doctor-list">
+        {% for note in untyped_tasks %}
+          <li class="doctor-item">
+            <a class="doctor-item__note" href="/edit?yak={{ note }}">{{ note }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="doctor-empty">Every task note declares <code>type: task</code>.</p>
     {% endif %}
   </section>
 

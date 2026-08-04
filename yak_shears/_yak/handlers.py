@@ -363,6 +363,7 @@ async def doctor_handler(request: Request) -> Response:  # noqa: ARG001
         orphans=report.orphans,
         referenced_count=report.referenced_count,
         file_count=report.file_count,
+        untyped_tasks=report.untyped_tasks,
         filenames=filenames,
         index_path=str(get_search_db_path()),
         index_in_vault=index_is_inside_vault(),

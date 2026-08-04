@@ -999,6 +999,13 @@ p {
 	opacity: 1;
 }
 
+/* The kind legend stays printed: category color already carries the category,
+   but nothing else on the strip says what the note is. */
+.card__chip--kind {
+	color: var(--legend);
+	opacity: 1;
+}
+
 .card__signal {
 	display: flex;
 	align-items: center;
@@ -3503,6 +3510,8 @@ pre code {
 .doctor-item__note {
 	font-size: 0.8125rem;
 	opacity: 0.85;
+	color: var(--legend);
+	text-decoration-color: var(--engrave-light);
 }
 
 .doctor-item__size {

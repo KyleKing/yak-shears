@@ -239,6 +239,7 @@ async def prepare_yak_info(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
         info = YakInfo(
             backlink_count=len(get_backlinks(rel_path)),
             category=yak_path.parent.name,
+            kind=str(meta.get("type") or ("task" if meta.get("state") else "")),
             last_modified=last_modified,
             link_count=_count_links(body),
             name=yak_path.name,

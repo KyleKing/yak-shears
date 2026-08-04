@@ -77,6 +77,7 @@ get_category_color: Callable[[str], str]
                and fades in on hover rather than spending a column on every row.
                Opacity, not display, so it stays in the accessibility tree. #}
             <span class="card__chip">{{ info.category }}</span>
+            {% if info.kind %}<span class="card__chip card__chip--kind">{{ info.kind }}</span>{% endif %}
             <span class="card__stat card__stat--date" title="Last modified">{{ info.last_modified[:10] }}</span>
             <span class="card__signal">
               <span class="card__lamp card__lamp--{{ info.recency }}" title="Edited {{ info.last_modified[:10] }}" aria-hidden="true"></span>

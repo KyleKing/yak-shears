@@ -1,0 +1,66 @@
+{#def
+done_today: int
+habits_count: int
+in_progress_count: int
+lists_count: int
+open_items: int
+streams_count: int
+triage_count: int
+-#}
+{% extends "base.html.jinja" %}
+
+{% block title %}Benches{% endblock %}
+
+{% block extra_head %}
+  {# Prototype-only styles, inlined like the streams and lists views. #}
+  <style>
+    .benches { display: flex; flex-direction: column; gap: 1px; background: var(--engrave); border-radius: var(--radius-lg); overflow: hidden; }
+    .bench-card {
+      display: grid; grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr) auto; gap: 0 1.25rem;
+      align-items: center; min-height: 4.5rem; padding: 0.75rem 1rem;
+      background: var(--panel-raised); background-image: var(--anodize);
+      text-decoration: none; color: inherit; transition: background-color var(--throw);
+    }
+    .bench-card:hover { background-color: var(--panel); }
+    .bench-card__name { font-weight: 600; font-size: 0.9375rem; }
+    .bench-card__desc { color: var(--legend-dim); font-size: 0.8125rem; line-height: 1.4; }
+    .bench-card__counts {
+      font-family: var(--font-signal); font-variant-numeric: tabular-nums;
+      font-size: 0.8125rem; color: var(--legend); text-align: right; white-space: nowrap;
+    }
+    .bench-card__counts .warn { color: var(--lamp-warn); }
+    .benches-note { max-width: 68ch; margin: 1rem auto 0; font-size: 0.875rem; color: var(--legend-dim); }
+    @media (max-width: 768px) {
+      .bench-card { grid-template-columns: minmax(0, 1fr); gap: 0.25rem 0; }
+      .bench-card__desc { display: none; }
+      .bench-card__counts { text-align: left; white-space: normal; }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <h1>Benches</h1>
+  <p class="page-info">Kind-specific surfaces over the vault. A note declares its kind with <code>type:</code> in frontmatter; each bench is a view over one kind.</p>
+
+  <div class="benches">
+    <a class="bench-card" href="/streams">
+      <span class="bench-card__name">Streams</span>
+      <span class="bench-card__desc">The canal: tasks flowing bottom to top through backlog, queue, and in progress, grouped by stream.</span>
+      <span class="bench-card__counts">
+        {{ streams_count }} stream{{ '' if streams_count == 1 else 's' }} · {{ in_progress_count }} in progress{% if triage_count %} · <span class="warn">{{ triage_count }} triage</span>{% endif %}
+      </span>
+    </a>
+    <a class="bench-card" href="/lists">
+      <span class="bench-card__name">Lists</span>
+      <span class="bench-card__desc">Long-lived reference checklists: groceries, hardware, packing. Items toggle in place.</span>
+      <span class="bench-card__counts">{{ lists_count }} list{{ '' if lists_count == 1 else 's' }} · {{ open_items }} open</span>
+    </a>
+    <a class="bench-card" href="/habits">
+      <span class="bench-card__name">Habits</span>
+      <span class="bench-card__desc">Daily and weekly practices with streaks and earned grace. One press marks today.</span>
+      <span class="bench-card__counts">{{ done_today }}/{{ habits_count }} today</span>
+    </a>
+  </div>
+
+  <p class="benches-note">Task, list, habit, and stream notes are ordinary yaks and appear in the rack too, marked with their kind. Workouts and routines are planned kinds (see the workout design notes).</p>
+{% endblock %}
