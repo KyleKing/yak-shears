@@ -18,6 +18,7 @@ Example:
     'Content goes here...\n'
 """
 
+import json
 import re
 from typing import Any
 
@@ -136,6 +137,54 @@ def update_frontmatter(content: str, updates: dict[str, Any]) -> str:
     frontmatter, body = parse_frontmatter(content)
     frontmatter.update(updates)
     return write_frontmatter(frontmatter, body)
+
+
+_PLAIN_SCALAR_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 _/+.:-]*[A-Za-z0-9]|[A-Za-z0-9]")
+
+
+_YAML_RESERVED = {"true", "false", "yes", "no", "on", "off", "null"}
+
+
+def _yaml_scalar(value: str) -> str:
+    if _PLAIN_SCALAR_RE.fullmatch(value) and ": " not in value and value.lower() not in _YAML_RESERVED:
+        return value
+    return json.dumps(value, ensure_ascii=False)
+
+
+def rewrite_frontmatter_field(content: str, field: str, value: str | None) -> str:
+    """Set or remove one scalar frontmatter field, rewriting only its lines.
+
+    Unlike update_frontmatter, the rest of the file round-trips byte for byte:
+    no reserialization, no key reordering, comments preserved. A multi-line
+    value under the field (a block list) is consumed along with its key line.
+
+    Args:
+        content: Original Djot file content
+        field: Top-level frontmatter key
+        value: Scalar to write, or None to remove the field
+
+    Returns:
+        Updated Djot file content
+    """
+    field_re = re.compile(rf"^{re.escape(field)}\s*:")
+    new_line = None if value is None else f"{field}: {_yaml_scalar(value)}\n"
+
+    lines = content.splitlines(keepends=True) if content.startswith("---\n") else []
+    closing = next((index for index, line in enumerate(lines[1:], start=1) if line.rstrip("\n") == "---"), None)
+    if closing is None:
+        return content if new_line is None else f"---\n{new_line}---\n\n{content}"
+
+    for index in range(1, closing):
+        if field_re.match(lines[index]):
+            end = index + 1
+            while end < closing and (lines[end].startswith((" ", "\t")) or not lines[end].strip()):
+                end += 1
+            replacement = [] if new_line is None else [new_line]
+            return "".join([*lines[:index], *replacement, *lines[end:]])
+
+    if new_line is None:
+        return content
+    return "".join([*lines[:closing], new_line, *lines[closing:]])
 
 
 def remove_frontmatter_field(content: str, *fields: str) -> str:
