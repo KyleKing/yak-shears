@@ -114,5 +114,6 @@ A note with `state:` but no `type:` still reads as a task everywhere; Doctor lis
 | /streams | canal, reach, sill, tray, mark, WIP lamp, waiting, drained, triage, due +n |
 | /habits | bench, heat row, streak, grace, makeup, key |
 | /lists | rack of list cards; first unchecked item as the preview |
+| /yaks list cards | arm + apply: tapping an item arms it in amber, the Apply key writes the batch |
 | /settings | swatch bank (the 12-slot color picker; taken slots carry the owner's initial) |
 | everywhere | panel, well, engrave, legend, lamp, armed amber |
