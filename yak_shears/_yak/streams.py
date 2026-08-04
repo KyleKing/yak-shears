@@ -40,6 +40,16 @@ class TaskInfo:
     recency: Recency
 
 
+@dataclass(frozen=True)
+class UndoInfo:
+    """The inverse of the last board write, rendered as the undo toast."""
+
+    path: str
+    action: str
+    reason: str
+    label: str
+
+
 @dataclass
 class StreamInfo:
     """One stream note plus its member tasks grouped by state."""
@@ -173,9 +183,18 @@ async def streams_handler(request: Request) -> Response:
         (stream for stream in streams if stream.key == focused_key),
         max(streams, key=lambda stream: stream.wip, default=None),
     )
+    undo = None
+    if request.query_params.get("u_path") and request.query_params.get("u_action"):
+        undo = UndoInfo(
+            path=request.query_params["u_path"],
+            action=request.query_params["u_action"],
+            reason=request.query_params.get("u_reason", ""),
+            label=request.query_params.get("u_label", "undo"),
+        )
     return render_streams(
         streams=streams,
         focused=focused,
         triage=triage,
         category_colors=category_colors,
+        undo=undo,
     )

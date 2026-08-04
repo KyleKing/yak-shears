@@ -17,6 +17,7 @@ from .handlers import (
     yaks_handler,
 )
 from .benches import benches_handler
+from .board import board_act_handler
 from .habits import habit_toggle_handler, habits_handler
 from .lists import list_toggle_handler, lists_handler
 from .streams import streams_handler
@@ -29,6 +30,7 @@ ROUTES = [
     Route("/lists", endpoint=lists_handler),
     Route("/lists/toggle", endpoint=list_toggle_handler, methods=["POST"]),
     Route("/streams", endpoint=streams_handler),
+    Route("/streams/act", endpoint=board_act_handler, methods=["POST"]),
     Route("/search", endpoint=search_handler),
     Route("/settings", endpoint=settings_handler, methods=["GET", "POST"]),
     Route("/new", endpoint=new_yak_handler, methods=["GET", "POST"]),

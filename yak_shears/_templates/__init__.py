@@ -16,7 +16,7 @@ from yak_shears._yak.categories import PALETTE, UNASSIGNED_COLOR
 if TYPE_CHECKING:
     from yak_shears._yak.habits import HabitInfo
     from yak_shears._yak.lists import ListInfo
-    from yak_shears._yak.streams import StreamInfo, TaskInfo
+    from yak_shears._yak.streams import StreamInfo, TaskInfo, UndoInfo
 
 
 class SortBy(StrEnum):
@@ -337,6 +337,7 @@ def render_streams(
     focused: "StreamInfo | None",
     triage: list["TaskInfo"],
     category_colors: Mapping[str, str],
+    undo: "UndoInfo | None" = None,
 ) -> HTMLResponse:
     """Render the streams canal prototype.
 
@@ -349,6 +350,7 @@ def render_streams(
         focused=focused,
         triage=triage,
         category_colors=category_colors,
+        undo=undo,
         current_route="streams",
     )
 

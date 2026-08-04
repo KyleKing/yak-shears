@@ -1,10 +1,11 @@
 {#def
 from collections.abc import Mapping
-from yak_shears._yak.streams import StreamInfo, TaskInfo
+from yak_shears._yak.streams import StreamInfo, TaskInfo, UndoInfo
 streams: list[StreamInfo]
 focused: StreamInfo | None
 triage: list[TaskInfo]
 category_colors: Mapping[str, str]
+undo: UndoInfo | None
 -#}
 {% extends "base.html.jinja" %}
 
@@ -99,10 +100,21 @@ category_colors: Mapping[str, str]
     }
     .canal__sill-count { margin-left: auto; font-family: var(--font-signal); font-variant-numeric: tabular-nums; }
     .canal__strip {
-      display: grid; grid-template-columns: auto minmax(0, 1fr) 2.5rem 7.5rem 1.5rem; gap: 0 0.75rem;
+      display: grid; grid-template-columns: 2.25rem auto minmax(0, 1fr) 2.5rem 7.5rem 1.5rem; gap: 0 0.75rem;
       align-items: center; height: 3.25rem;
       background: var(--panel-raised); background-image: var(--anodize);
     }
+    /* The latch: a recessed socket at the strip's head. Latching a strip arms
+       it as the target the deck's keys fire on, so checked reads armed amber. */
+    .canal__latchcell { display: flex; align-items: center; justify-content: center; align-self: stretch; cursor: pointer; }
+    .latch {
+      appearance: none; margin: 0; width: 14px; height: 14px; flex: none;
+      border-radius: var(--radius-pill); background: var(--well);
+      box-shadow: var(--inset-well); cursor: pointer;
+    }
+    .latch:checked { background: var(--color-accent); box-shadow: var(--inset-well), inset 0 0 0 3px var(--well); }
+    .latch:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+    .canal__strip:has(.latch:checked) { box-shadow: inset 0 -2px 0 var(--color-accent); }
     .canal__strip + .canal__strip { margin-top: 1px; }
     .canal__strip--waiting .canal__title, .canal__strip--waiting .canal__due { opacity: 0.55; }
     .canal__title {
@@ -117,6 +129,64 @@ category_colors: Mapping[str, str]
     .canal__due--overdue { color: var(--lamp-fault); }
     .canal__lampcell { display: flex; justify-content: center; padding-right: 0.5rem; }
     .canal__empty { padding: 0.75rem 1rem; font-size: 0.875rem; color: var(--legend-dim); }
+    /* The command deck: a sticky panel of keys that surfaces once a strip is
+       latched. One instruction per press, ADR 0011's grammar brought to the
+       board; every binding is printed on its key. */
+    .deck {
+      display: none;
+      position: sticky; bottom: 0; z-index: 2;
+      margin-top: 1.5rem; padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+      background: var(--panel-raised); background-image: var(--anodize);
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      box-shadow: inset 0 1px 0 var(--engrave-light), 0 -4px 12px rgba(0, 0, 0, 0.25);
+    }
+    .board:has(.latch:checked) .deck { display: flex; flex-wrap: wrap; gap: 1rem 1.75rem; align-items: end; }
+    .deck__group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .deck__group[hidden] { display: none; }
+    .deck__legend { font-size: 0.625rem; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase; color: var(--legend-dim); }
+    .deck__keys { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    .deck__key {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+      min-height: var(--tap-target); padding: 0 0.75rem;
+      background: var(--panel-raised);
+      border: 1px solid var(--engrave); border-radius: var(--radius-sm);
+      box-shadow: inset 0 1px 0 var(--engrave-light), 0 1px 1px rgba(0, 0, 0, 0.12);
+      font-family: var(--font-legend); font-size: 0.6875rem; font-weight: 600;
+      letter-spacing: 0.09em; text-transform: uppercase; color: var(--legend);
+      cursor: pointer; white-space: nowrap;
+      transition: background var(--throw), transform var(--throw), box-shadow var(--throw);
+    }
+    .deck__key:hover { background: var(--panel); }
+    .deck__key:active { transform: translateY(1px); box-shadow: var(--inset-well); }
+    .deck__key--raise { box-shadow: inset 0 1px 0 var(--engrave-light), inset 0 -2px 0 var(--color-accent), 0 1px 1px rgba(0, 0, 0, 0.12); }
+    .deck__key kbd {
+      font-family: var(--font-signal); font-size: 0.625rem; font-weight: 400;
+      color: var(--legend-dim); border: 1px solid var(--engrave);
+      border-radius: 2px; padding: 0 0.25rem; line-height: 1.4;
+    }
+    .deck__reason, .deck__select {
+      min-height: var(--tap-target); padding: 0 0.6rem;
+      background: var(--well); box-shadow: var(--inset-well);
+      border: none; border-radius: var(--radius-sm);
+      font-size: 0.8125rem; color: inherit;
+    }
+    .deck__reason { width: 9rem; }
+    .deck__reason::placeholder { color: var(--legend-dim); }
+    .deck__hint { font-size: 0.625rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--legend-dim); margin-left: auto; align-self: center; }
+    /* The undo toast: the last write's inverse, one press away. */
+    .toast {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin-bottom: 1rem; padding: 0 0.35rem 0 1rem; min-height: var(--tap-target);
+      background: var(--panel-raised); background-image: var(--anodize);
+      border-radius: var(--radius-sm);
+      box-shadow: inset 0 1px 0 var(--engrave-light), 0 1px 1px rgba(0, 0, 0, 0.12);
+    }
+    .toast__label { font-size: 0.8125rem; color: var(--legend); }
+    .toast__label b { font-family: var(--font-signal); font-weight: 400; }
+    .toast__key { margin-left: auto; }
+    @media (max-width: 768px) {
+      .deck__key kbd, .deck__hint { display: none; }
+    }
     .streams-triage { margin-top: 2rem; }
     .streams-triage__legend { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 0.75rem; }
     /* Terminology explainer: same details mechanics as the tray, printed small. */
@@ -138,7 +208,7 @@ category_colors: Mapping[str, str]
     .help dt { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase; color: var(--legend); align-self: baseline; }
     .help dd { margin: 0; }
     @media (max-width: 768px) {
-      .canal__strip { grid-template-columns: auto minmax(0, 1fr) 7.5rem 1.5rem; }
+      .canal__strip { grid-template-columns: 2.25rem auto minmax(0, 1fr) 7.5rem 1.5rem; }
       .canal__rel { display: none; }
     }
   </style>
@@ -198,6 +268,22 @@ category_colors: Mapping[str, str]
     </details>
 
     <main>
+      {# Direction contract: the board's writes ride a command deck, ADR 0011's
+         one-instruction grammar mounted on the canal. Latch a strip (armed
+         amber), press a key, the write lands and the toast offers its inverse.
+         Zero-JS baseline: radio latch + form post; JS adds bindings and repeat. #}
+      {% if undo %}
+        <form class="toast" method="post" action="/streams/act" role="status" aria-live="polite">
+          <input type="hidden" name="path" value="{{ undo.path }}">
+          <input type="hidden" name="action" value="{{ undo.action }}">
+          {% if undo.reason %}<input type="hidden" name="reason" value="{{ undo.reason }}">{% endif %}
+          <input type="hidden" name="focus" value="{{ focused.key if focused else '' }}">
+          <span class="toast__label">Applied: <b>{{ undo.label }}</b></span>
+          <button type="submit" class="deck__key toast__key">Undo</button>
+        </form>
+      {% endif %}
+      <form class="board" method="post" action="/streams/act">
+      <input type="hidden" name="focus" value="{{ focused.key if focused else '' }}">
       {% if focused %}
         <header class="canal__head">
           <span class="mark" aria-hidden="true">
@@ -224,6 +310,9 @@ category_colors: Mapping[str, str]
             </div>
             {% for task in focused.reaches[state] %}
               <div class="canal__strip{% if task.waiting %} canal__strip--waiting{% endif %}">
+                <label class="canal__latchcell">
+                  <input class="latch" type="radio" name="path" value="{{ task.path }}" aria-label="Latch {{ task.title }}">
+                </label>
                 <span class="mark" aria-hidden="true">
                   <span class="mark__cat" style="background: {{ category_colors.get(focused.category, 'var(--color-border)') }}"></span>
                   <span class="mark__stream" style="background: {{ focused.color }}"></span>
@@ -256,6 +345,9 @@ category_colors: Mapping[str, str]
           <h1 class="streams-triage__legend">Triage <span class="canal__sill-count">{{ triage | length }}</span></h1>
           {% for task in triage %}
             <div class="canal__strip">
+              <label class="canal__latchcell">
+                <input class="latch" type="radio" name="path" value="{{ task.path }}" aria-label="Latch {{ task.title }}">
+              </label>
               <span class="mark" aria-hidden="true">
                 <span class="mark__cat" style="background: var(--lamp-off)"></span>
                 <span class="mark__stream"></span>
@@ -270,6 +362,54 @@ category_colors: Mapping[str, str]
           {% endfor %}
         </section>
       {% endif %}
+
+      <div class="deck" role="group" aria-label="Command deck">
+        <div class="deck__group">
+          <span class="deck__legend">Gate</span>
+          <div class="deck__keys">
+            <button type="submit" class="deck__key deck__key--raise" name="action" value="advance">Raise <kbd>R</kbd></button>
+            <button type="submit" class="deck__key" name="action" value="lower">Lower <kbd>L</kbd></button>
+            <button type="submit" class="deck__key" name="action" value="state:not-planned">Not planned <kbd>N</kbd></button>
+          </div>
+        </div>
+        <div class="deck__group">
+          <span class="deck__legend">Due</span>
+          <div class="deck__keys">
+            <button type="submit" class="deck__key" name="action" value="due:today">Today <kbd>T</kbd></button>
+            <button type="submit" class="deck__key" name="action" value="due:+1d">+1d <kbd>1</kbd></button>
+            <button type="submit" class="deck__key" name="action" value="due:+7d">+7d <kbd>7</kbd></button>
+            <button type="submit" class="deck__key" name="action" value="due:-1d">&minus;1d <kbd>-</kbd></button>
+            <button type="submit" class="deck__key" name="action" value="due:clear">Clear <kbd>C</kbd></button>
+          </div>
+        </div>
+        <div class="deck__group">
+          <span class="deck__legend">Waiting</span>
+          <div class="deck__keys">
+            <input class="deck__reason" name="reason" placeholder="waiting on&hellip;" maxlength="80" aria-label="Waiting reason">
+            <button type="submit" class="deck__key" name="action" value="waiting">Wait / reopen <kbd>W</kbd></button>
+          </div>
+        </div>
+        <div class="deck__group">
+          <span class="deck__legend">Stream</span>
+          <div class="deck__keys">
+            <select class="deck__select" name="to" aria-label="Target stream">
+              {% for stream in streams %}
+                <option value="{{ stream.key }}">{{ stream.key }}</option>
+              {% endfor %}
+              <option value="clear">none (triage)</option>
+            </select>
+            <button type="submit" class="deck__key" name="action" value="stream">Move <kbd>M</kbd></button>
+          </div>
+        </div>
+        <div class="deck__group" hidden data-repeat-group>
+          <span class="deck__legend">Repeat</span>
+          <div class="deck__keys">
+            <button type="button" class="deck__key" data-repeat><span></span> <kbd>.</kbd></button>
+          </div>
+        </div>
+        <span class="deck__hint">J / K move the latch &middot; Esc releases</span>
+      </div>
+      </form>
 
       <details class="help">
         <summary class="help__bar">Terminology</summary>
@@ -287,4 +427,72 @@ category_colors: Mapping[str, str]
       </details>
     </main>
   </div>
+  <script>
+    (() => {
+      "use strict";
+      const board = document.querySelector(".board");
+      if (!board) { return; }
+      const latches = Array.from(board.querySelectorAll(".latch"));
+      const bindings = {
+        r: "advance", l: "lower", n: "state:not-planned",
+        t: "due:today", 1: "due:+1d", 7: "due:+7d", "-": "due:-1d", c: "due:clear",
+        w: "waiting", m: "stream",
+      };
+      const press = (action) => {
+        const key = board.querySelector(`.deck [name="action"][value="${action}"]`);
+        if (key) { key.click(); }
+      };
+
+      const repeatGroup = board.querySelector("[data-repeat-group]");
+      const repeatKey = board.querySelector("[data-repeat]");
+      let last = null;
+      try { last = JSON.parse(sessionStorage.getItem("board-last") || "null"); } catch { /* stale */ }
+      if (last && last.action) {
+        repeatGroup.hidden = false;
+        repeatKey.querySelector("span").textContent = last.action === "stream" ? `stream ${last.to}` : last.action.replace(":", " ");
+      }
+      const repeat = () => {
+        if (!last || !last.action) { return; }
+        const reason = board.querySelector('[name="reason"]');
+        const to = board.querySelector('[name="to"]');
+        if (reason && last.reason) { reason.value = last.reason; }
+        if (to && last.to) { to.value = last.to; }
+        press(last.action);
+      };
+      repeatKey.addEventListener("click", repeat);
+
+      board.addEventListener("submit", (event) => {
+        const action = event.submitter && event.submitter.value;
+        if (!action) { return; }
+        sessionStorage.setItem("board-last", JSON.stringify({
+          action,
+          reason: (board.querySelector('[name="reason"]') || {}).value || "",
+          to: (board.querySelector('[name="to"]') || {}).value || "",
+        }));
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.metaKey || event.ctrlKey || event.altKey) { return; }
+        if (event.target.closest("input, select, textarea")) { return; }
+        const key = event.key.toLowerCase();
+        if (key === "escape") {
+          latches.forEach((latch) => { latch.checked = false; });
+          return;
+        }
+        if (key === "j" || key === "k") {
+          const index = latches.findIndex((latch) => latch.checked);
+          const next = (index < 0) ? 0 : Math.min(latches.length - 1, Math.max(0, index + (key === "j" ? 1 : -1)));
+          if (latches[next]) {
+            latches[next].checked = true;
+            latches[next].scrollIntoView({ block: "nearest" });
+          }
+          event.preventDefault();
+          return;
+        }
+        if (!latches.some((latch) => latch.checked)) { return; }
+        if (key === ".") { repeat(); event.preventDefault(); return; }
+        if (bindings[key]) { press(bindings[key]); event.preventDefault(); }
+      });
+    })();
+  </script>
 {% endblock %}
