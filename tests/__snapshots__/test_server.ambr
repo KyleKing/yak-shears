@@ -376,6 +376,49 @@
             }
           }
         });
+        // Arm-and-apply for list cards: tapping an open item arms it (amber,
+        // nothing written), the Apply key commits every armed toggle in one
+        // POST. Taps never write directly, so a stray scroll-tap is free.
+        document.querySelectorAll(".card[data-list-path]").forEach((card) => {
+          const ordinals = card.dataset.openOrdinals.split(",").filter(Boolean).map(Number);
+          const items = Array.from(card.querySelectorAll(".card__preview .task-list li")).slice(0, ordinals.length);
+          if (!items.length) return;
+          const armed = new Set();
+          const key = document.createElement("button");
+          key.type = "button";
+          key.className = "button button--sm button--primary card__apply";
+          key.textContent = "Apply";
+          key.hidden = true;
+          card.querySelector(".card__meta").append(key);
+          items.forEach((item, index) => {
+            item.classList.add("card__item--togglable");
+            item.addEventListener("click", (ev) => {
+              ev.preventDefault();
+              ev.stopPropagation();
+              const ordinal = ordinals[index];
+              if (!armed.delete(ordinal)) armed.add(ordinal);
+              item.classList.toggle("card__item--armed", armed.has(ordinal));
+              const box = item.querySelector("input[type=checkbox]");
+              if (box) box.checked = armed.has(ordinal);
+              key.hidden = armed.size === 0;
+            });
+          });
+          key.addEventListener("click", async (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const form = new URLSearchParams();
+            form.set("path", card.dataset.listPath);
+            armed.forEach((ordinal) => form.append("ordinal", String(ordinal)));
+            const res = await fetch("/lists/toggle", { method: "POST", body: form, redirect: "manual" });
+            if (res.ok || res.type === "opaqueredirect") {
+              items.forEach((item, index) => {
+                if (armed.has(ordinals[index])) item.remove();
+              });
+              armed.clear();
+              key.hidden = true;
+            }
+          });
+        });
     </script>
    </div>
   </main>

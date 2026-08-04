@@ -114,7 +114,10 @@ async def lists_handler(_request: Request) -> Response:
 
 
 async def list_toggle_handler(request: Request) -> Response:
-    """Toggle one task item in a list note, identified by item ordinal.
+    """Toggle task items in a list note, identified by item ordinal.
+
+    Accepts one or more ``ordinal`` fields so the rack's arm-and-apply key
+    can commit a batch in a single write.
 
     Returns:
         A redirect back to /lists, or an error page for a bad reference.
@@ -122,8 +125,10 @@ async def list_toggle_handler(request: Request) -> Response:
     form = await request.form()
     rel_path = str(form.get("path", ""))
     try:
-        ordinal = int(str(form.get("ordinal", "")))
+        ordinals = [int(str(raw)) for raw in form.getlist("ordinal")]
     except ValueError:
+        return render_error("Missing or invalid item ordinal")
+    if not ordinals:
         return render_error("Missing or invalid item ordinal")
 
     yak_dir = await get_yak_dir()
@@ -131,10 +136,13 @@ async def list_toggle_handler(request: Request) -> Response:
         yak_path = await resolve_yak_path(yak_dir, rel_path)
     except YakPathError:
         return render_error("Invalid list path")
-    updated = _toggle_item(await yak_path.read_text(), ordinal)
-    if updated is None:
-        return render_error("Item not found; the note may have changed")
-    await yak_path.write_text(updated)
+    content = await yak_path.read_text()
+    for ordinal in ordinals:
+        toggled = _toggle_item(content, ordinal)
+        if toggled is None:
+            return render_error("Item not found; the note may have changed")
+        content = toggled
+    await yak_path.write_text(content)
 
     if is_htmx_request(request):
         refreshed = next((info for info in await collect_lists() if info.path == rel_path), None)

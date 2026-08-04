@@ -1006,6 +1006,33 @@ p {
 	opacity: 1;
 }
 
+/* Arm-and-apply on list cards: a tapped item only arms (amber, the color of
+   "this will fire"); the Apply key is the single control that writes. */
+.card__item--togglable:hover {
+	color: var(--legend);
+}
+
+.card__item--armed,
+.card__item--armed:hover {
+	color: var(--color-accent);
+}
+
+.card__item--armed input[type="checkbox"] {
+	accent-color: var(--color-accent);
+}
+
+/* Pinned inside the unit so the fixed row pitch never grows, and display is
+   guarded because .button's inline-flex would otherwise defeat [hidden]. */
+.card__apply {
+	position: absolute;
+	right: var(--space-3);
+	bottom: var(--space-2);
+}
+
+.card__apply[hidden] {
+	display: none;
+}
+
 .card__signal {
 	display: flex;
 	align-items: center;

@@ -77,6 +77,16 @@ def _list_preview_source(body: str) -> str:
 _HABIT_COMPLETION_RE = re.compile(r"^\s*[-*+]\s+\[[xX]\]\s+\d{4}-\d{2}-\d{2}\s*$")
 
 
+def _open_ordinals(body: str) -> list[int]:
+    """Ordinals of unchecked items, counted across all task items.
+
+    Returns:
+        Indices in the ordinal scheme /lists/toggle expects.
+    """
+    matches = [match for line in body.splitlines() if (match := _TASK_ITEM_RE.match(line))]
+    return [index for index, match in enumerate(matches) if match[1] == " "]
+
+
 def _habit_preview_source(body: str) -> str:
     """Preview source for a `type: habit` note: the body minus its completion log.
 
@@ -226,9 +236,11 @@ async def prepare_yak_info(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
         content = await yak_path.read_text(encoding="utf-8")
         meta, body = parse_frontmatter(content)
         body = body.strip()
+        open_ordinals: list[int] = []
         match meta.get("type"):
             case "list":
                 preview_source = _list_preview_source(body)
+                open_ordinals = _open_ordinals(body)
             case "habit":
                 preview_source = _habit_preview_source(body)
             case _:
@@ -243,6 +255,7 @@ async def prepare_yak_info(paths: list[Path], yak_dir: Path) -> list[YakInfo]:
             last_modified=last_modified,
             link_count=_count_links(body),
             name=yak_path.name,
+            open_ordinals=open_ordinals,
             path=rel_path,
             preview=preview,
             recency=_recency(modified, now),

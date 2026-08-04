@@ -45,6 +45,7 @@ class YakInfo:
     last_modified: str
     link_count: int
     name: str
+    open_ordinals: list[int]
     path: str
     preview: str
     recency: Recency
