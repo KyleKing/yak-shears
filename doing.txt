@@ -23,7 +23,7 @@ Consider identifying when a JSON file is out of date when it was loaded and a re
   3. `_emit_if` stamped `else:` with the same line number as its `if:`, so the later global line-sort stranded an if-branch whose real content spanned later template lines (this is what broke doctor/index.html.jinja, search.html.jinja, settings/index.html.jinja, yak/edit.html.jinja) (transpile.py)
   4. `{% include %}` was treated as foreign content and sidecar-extracted like `{% extends %}`, which breaks when the include sits inside local control flow needing a loop-scoped name the sidecar can't see (yak/lists.html.jinja + _list.html.jinja). Redesigned: a typed include (one with its own `{#def #}` header) now transpiles as a parameterized function, called at the include site with the includer's own names matched to the included header's params — an unbound name is now a real error at the include tag. Untyped includes keep the old raw-context-sharing fallback
   - all four confirmed against the real bug (regression tests fail without the fix, pass with it) and against all three checker backends (mypy, pyright, ty) via tests/test_backends.py and tests/test_v11_crossfile.py in ../types-for-jinja
-  - once Kyle publishes the release with these fixes, bump yak-shears' types-for-jinja pin and re-run `hk fix` on this step; until then the commit is `--no-verify`d past this one check
+- RESOLVED 2026-08-05: types-for-jinja 1.1.0 published with the fix. Bumped the pin, `types-for-jinja generate && types-for-jinja remap -- ty check --output-format gitlab _jinja_stubs` reports zero diagnostics. hk.pkl's types-for-jinja step is a real gate again
 
 
 Notes
