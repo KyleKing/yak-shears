@@ -190,10 +190,13 @@ yak_shears_search.db
 # so a fresh VPS clone works without node/tsc/terser)
 !yak_shears/static/js/*.min.js
 
-## Playwright
+# Playwright
 .playwright/auth*.json
 test-results/*
 tests/test_data/mock_djot_dir_0/*
 
-## Deployment (contains the filled-in SSH key)
+# Deployment (contains the filled-in SSH key)
 cloud-config.local.yaml
+
+# For types-for-jinja
+/_jinja_stubs
