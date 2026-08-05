@@ -235,3 +235,10 @@ def render_streams(
     )
 
 
+# The render_* signatures above quote these, and beartype resolves a quoted annotation
+# by importing the name from this module at call time, so a TYPE_CHECKING-only import
+# makes every one of those calls raise. Imported last because these modules import the
+# render helpers defined above.
+from yak_shears._yak.habits import HabitInfo  # noqa: E402
+from yak_shears._yak.lists import ListInfo  # noqa: E402
+from yak_shears._yak.streams import StreamInfo, TaskInfo, UndoInfo  # noqa: E402
