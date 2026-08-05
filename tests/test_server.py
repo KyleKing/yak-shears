@@ -254,6 +254,14 @@ def test_edit_yak_post(client: TestClient, mock_user_session, tmp_path) -> None:
         assert test_yak.read_text() == "Updated content"
 
 
+
+def _published_lease(html: str) -> str:
+    """The lease the edit page rendered, which a save has to send back."""
+    match = re.search(r'id="yak-lease" data-lease="([^"]+)"', html)
+    assert match, "the edit page published no lease"
+    return match[1]
+
+
 def test_edit_yak_post_refuses_a_stale_lease(client: TestClient, mock_user_session, tmp_path) -> None:
     """A write whose lease no longer matches the file is refused, not merged or forced."""
     test_yak = tmp_path / "test.dj"
@@ -261,7 +269,7 @@ def test_edit_yak_post_refuses_a_stale_lease(client: TestClient, mock_user_sessi
 
     with set_yak_shears_dir(tmp_path):
         opened = client.get("/edit?yak=test.dj")
-        lease = re.search(r'id="yak-lease" data-lease="([^"]+)"', opened.text)[1]
+        lease = _published_lease(opened.text)
 
         test_yak.write_text("Changed by another device")
 
@@ -294,7 +302,7 @@ def test_edit_yak_post_returns_a_lease_that_permits_the_next_save(
 
     with set_yak_shears_dir(tmp_path):
         opened = client.get("/edit?yak=test.dj")
-        lease = re.search(r'id="yak-lease" data-lease="([^"]+)"', opened.text)[1]
+        lease = _published_lease(opened.text)
 
         first = client.post("/edit", data={"yak": "test.dj", "content": "One", "lease": lease})
         assert first.status_code == HTTPStatus.OK

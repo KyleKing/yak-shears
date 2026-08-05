@@ -242,3 +242,33 @@ def render_streams(
 from yak_shears._yak.habits import HabitInfo  # noqa: E402
 from yak_shears._yak.lists import ListInfo  # noqa: E402
 from yak_shears._yak.streams import StreamInfo, TaskInfo, UndoInfo  # noqa: E402
+
+# Under mypy's strict no-implicit-reexport, a generated wrapper imported under a
+# different name is not re-exported by that import alone, so every caller of one
+# reads as an unknown attribute.
+__all__ = (
+    "ENV",
+    "HabitInfo",
+    "ListInfo",
+    "Recency",
+    "SearchResult",
+    "SortBy",
+    "StreamInfo",
+    "TaskInfo",
+    "UndoInfo",
+    "YakInfo",
+    "color_lookup",
+    "render_auth_login",
+    "render_benches",
+    "render_error",
+    "render_habits",
+    "render_list_fragment",
+    "render_lists",
+    "render_new",
+    "render_search",
+    "render_settings",
+    "render_streams",
+    "render_yak_edit",
+    "render_yaks",
+    "static_url",
+)
