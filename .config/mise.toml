@@ -4,7 +4,7 @@ MISE_ENV = "hk"
 _.python.venv = {path = ".venv"}
 
 [tasks.build]
-depends = ['download-assets']
+depends = ['download-assets', 'generate']
 description = 'Build generated code'
 
 [tasks."check-freshness"]
@@ -23,12 +23,17 @@ run = "./scripts/download-assets.sh"
 description = 'Run code formatting'
 run = ['uv run ruff check --fix {{vars.unsafe_fixes}}', "uv run ruff format", "biome format --write", "dprint fmt"]
 
+[tasks.generate]
+description = 'Generate the typed template render functions the app imports'
+run = "uv run types-for-jinja wrapper"
+
 [tasks.hooks]
 description = "Run git hooks"
 dir = "./../" # FYI: required because the default is otherwise `.config/` where these files are located
 run = ["hk fix --quiet"]
 
 [tasks.test]
+depends = ['generate']
 description = 'Run all tests'
 run = "uv run pytest --cov=yak_shears --cov-report=html:.cover --cov-report=term-missing --no-cov-on-fail --cov-fail-under=85"
 
@@ -45,6 +50,7 @@ description = 'Run only non-E2E Tests'
 run = "mise run test -m 'not playwright'"
 
 [tasks.typecheck]
+depends = ['generate']
 description = 'Run static type checks'
 run = ["uv run mypy"]
 

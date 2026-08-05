@@ -89,6 +89,30 @@ Two decisions recorded in 2026-07 after a round of iPhone bug reports:
 - [ADR 0008](./adr/0008-mobile-text-entry-affordances.md) covers text entry on iOS. An in-page accessory toolbar positioned above the software keyboard, rather than an iOS custom keyboard extension (which cannot be scoped to one site and cannot ship without its own App Store app). Revisit if offline editing forces a native shell
 - [ADR 0009](./adr/0009-ios-homescreen-app-and-offline.md) covers the homescreen web app. A manifest with `display: standalone` stops every navigation from bouncing into an in-app browser, and the server-rendered HTMX architecture (ADR 0006) stays. `hx-boost` is the cheap follow-up for app-like transitions. Offline stays open: a read-only service worker is the cheap first step, and offline *editing* is a conflict-resolution problem against Syncthing that ties back to the vault-direct sibling app in "Workout planner (deferred)" below
 
+### Three-way merge on a refused save (deferred)
+
+Saving now takes a lease (a digest of the content the page rendered from) and a
+mismatch returns 409 rather than overwriting. The editor shows a line diff of the
+saved note against the draft and offers keep-mine, take-theirs, or cancel. Nothing
+merges on its own.
+
+The remaining step is the merge. All three versions are in reach at the moment of
+the conflict, since the client holds the base it loaded and the draft, and the 409
+carries what is on disk, so a standard diff3 could combine non-overlapping edits
+and mark only the real conflicts. That is the nicest outcome when it works and the
+worst when it silently produces text neither side wrote, which is the failure the
+lease exists to prevent.
+
+Deferred until the diff view proves conflicts are frequent enough, and overlapping
+enough, to be worth automating. Two things would decide it: how often a conflict
+turns out to be non-overlapping (auto-merge would have been free), and whether the
+conflicts are within a paragraph or across sections, since a line diff3 handles the
+second well and the first badly. Adding a counter to the conflict panel is the
+cheap way to find out.
+
+This is also the machinery offline editing needs, so the two should be decided
+together rather than solved twice (see "Mobile and offline" above).
+
 ### Semantic Search (opportunistic infrastructure)
 
 Hybrid keyword + vector search as a **separate general-purpose CLI**, integrated through the SearchBackend seam (ADR 0002). Also the seam that later feeds embedding similarity into the related-notes panel and the network-health digest. Blueprint preserved in `archive/djot-search-sqlite-exploration.md`.
