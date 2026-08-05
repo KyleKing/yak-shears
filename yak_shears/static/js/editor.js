@@ -156,7 +156,7 @@ const VIDEO_EXT_RE = /\.(mp4|webm|mov|m4v)$/i;
 
 /**
  * Upgrade rendered media so previews stay cheap:
- * - /media video refs (Djot has no video syntax, so they arrive as <img>) become
+ * - /media video refs (Djot has no video syntax, so they arrive as `img`) become
  *   an HTML5 <video> with preload="none" and a poster frame (poster/full downloaded on play)
  * - images swap to their /thumb thumbnail, lazy-load, and link to the full-res file
  *
@@ -565,7 +565,7 @@ function initEditor() {
 			if (!editor.contains(e.relatedTarget)) setDragover(false);
 		});
 
-		// Always preventDefault: the browser default inserts a data-URL <img> node into the
+		// Always preventDefault: the browser default inserts a data-URL `img` node into the
 		// contenteditable, which leaves an unscrollable editor and never uploads the file.
 		editor.addEventListener("drop", (e) => {
 			e.preventDefault();

@@ -199,4 +199,4 @@ tests/test_data/mock_djot_dir_0/*
 cloud-config.local.yaml
 
 # For types-for-jinja
-/_jinja_stubs
+_jinja_stubs/
