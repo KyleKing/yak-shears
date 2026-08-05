@@ -110,6 +110,9 @@
            I
           </i>
          </button>
+         <button aria-label="Attach photo or video" class="cmd__key" data-action="media" type="button">
+          +▢
+         </button>
         </div>
         <div class="cmd__foot">
          <button aria-pressed="false" class="cmd__compose" id="cmd-compose" type="button">

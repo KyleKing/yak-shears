@@ -1215,6 +1215,14 @@ function _setupCommandPanel(editorEl, jarInstance) {
 			close();
 			return;
 		}
+		// Media opens a file picker rather than transforming text, so a count and
+		// compose have nothing to say about it. The panel's pointerdown handler has
+		// already kept focus on the editor, so the upload lands at the caret.
+		if (button.dataset.action === "media") {
+			close();
+			document.getElementById("media-input")?.click();
+			return;
+		}
 		if (!button.dataset.action) return;
 
 		// Composing lights a command instead of firing it, and a second tap puts it

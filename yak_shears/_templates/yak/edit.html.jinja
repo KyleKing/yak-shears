@@ -105,6 +105,9 @@ current_route: str
             <button class="cmd__key" type="button" data-action="checklist" aria-label="Toggle checklist">&#9744;</button>
             <button class="cmd__key" type="button" data-action="bold" aria-label="Bold"><b>B</b></button>
             <button class="cmd__key" type="button" data-action="italic" aria-label="Italic"><i>I</i></button>
+            {# The bottom bar's Media button sits under the keyboard, so reaching it
+               costs the caret. This one keeps both. #}
+            <button class="cmd__key" type="button" data-action="media" aria-label="Attach photo or video">&#43;&#9634;</button>
           </div>
 
           <div class="cmd__foot">

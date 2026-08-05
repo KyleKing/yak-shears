@@ -1085,3 +1085,29 @@ async def test_a_command_with_the_caret_elsewhere_edits_nothing(context: Browser
     )
 
     assert await page.evaluate("() => window.jar.toString()") == "- alpha\n- bravo"
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_command_panel_media_key_opens_the_picker(touch_page: Page, server_lifecycle):
+    """The bottom bar's Media button sits under the keyboard, so the panel carries one too."""
+    page = touch_page
+    await _open_editor(page.context, page)
+
+    await page.evaluate(
+        """() => {
+            window.pickerOpened = 0;
+            document.getElementById("media-input").addEventListener("click", (event) => {
+                event.preventDefault();
+                window.pickerOpened += 1;
+            });
+        }"""
+    )
+
+    await _set_code_and_select(page, "- item", 6, 6)
+    await _open_panel(page)
+    await page.click('#cmd-panel [data-action="media"]')
+
+    assert await page.evaluate("() => window.pickerOpened") == 1
+    await expect(page.locator("#cmd-panel")).to_be_hidden()
+    await _expect_editor_text(page, "- item")
