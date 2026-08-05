@@ -3,8 +3,6 @@ build-backend = "hatchling.build"
 requires = ["hatchling"]
 
 [dependency-groups]
-# FIXME: add "typed-jinja[lsp]" back here once it is published to PyPI. It is
-# checked via `uvx --from` in hk.pkl meanwhile, so the editor LSP does not see it
 dev = [
   "beautifulsoup4>=4.13.4",
   "freezegun>=1.5.5",
@@ -17,6 +15,8 @@ dev = [
   "pytest-watcher>=0.4.3",
   "ruff>=0.11.10",
   "syrupy>=4.9.1",
+  "ty>=0.0.1a19",
+  "types-for-jinja[lsp]>=1.0.0",
   "types-pyyaml>=6.0.12.20250915",
 ]
 
@@ -123,6 +123,7 @@ runner_args = ["--exitfirst", "--last-failed", "--new-first", "--no-cov", "-vv"]
 [tool.ruff]
 # Docs: https://github.com/charliermarsh/ruff
 # Tip: uv run ruff rule RUF100
+extend-exclude = ["yak_shears/_templates/_generated"]
 line-length = 120
 target-version = 'py312'
 
@@ -190,13 +191,20 @@ sort_inline_tables = true
 sort_table_keys = true
 trailing_comma_inline_array = true
 
-[tool.typed_jinja]
+[tool.types_for_jinja]
 imports = ["from collections.abc import Callable"]
 template_dirs = ["yak_shears/_templates"]
 
-[tool.typed_jinja.globals]
+[tool.types_for_jinja.globals]
 current_route = "str"
 static_url = "Callable[[str], str]"
+
+[tool.types_for_jinja.wrapper]
+env_import = "from yak_shears._templates import ENV as _env"
+out_dir = "yak_shears/_templates/_generated"
+return_import = "from starlette.responses import HTMLResponse"
+return_type = "HTMLResponse"
+validator = "beartype"
 
 [tool.uv]
 required-version = ">=0.8.22"

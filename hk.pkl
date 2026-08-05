@@ -56,13 +56,12 @@ local linters = new Mapping<String, Step> {
         fix = "toml-sort --in-place {{ files }}"
     }
 
-    // typed-jinja is unpublished and lives beside this repo, so it runs from that
-    // checkout instead of being a project dependency that CI cannot resolve
-    // FIXME: once typed-jinja is on PyPI, move it back into the dev group so the
-    // editor LSP picks it up again, and drop the path below
-    ["typed-jinja"] {
+    // types-for-jinja only writes stubs; ty checks them, and remap wraps ty so its exit
+    // code (not a pipe filter's) fails the hook, translating its output onto template
+    // files and lines
+    ["types-for-jinja"] {
         glob = "yak_shears/_templates/**/*.jinja"
-        check = "uvx --from ../typed-jinja typed-jinja check {{ files }}"
+        check = "uv run types-for-jinja generate && uv run types-for-jinja remap -- uv run ty check --output-format gitlab _jinja_stubs"
     }
 }
 

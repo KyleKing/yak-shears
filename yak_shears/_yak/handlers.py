@@ -16,6 +16,7 @@ from yak_shears._log_utils import StageTimer, log
 from yak_shears._templates import (
     SortBy,
     _render_template,
+    color_lookup,
     render_error,
     render_new,
     render_search,
@@ -130,7 +131,8 @@ async def yaks_handler(request: Request) -> Response:
         sort_by=query_params.sort_by,
         current_category=query_params.category,
         categories=categories,
-        category_colors=await resolve_colors(yak_dir, categories),
+        get_category_color=color_lookup(await resolve_colors(yak_dir, categories)),
+        current_route="yaks",
     )
 
 
@@ -139,7 +141,11 @@ async def new_yak_handler(request: Request) -> Response:
     yak_dir = await get_yak_dir()
     if request.method != "POST":
         categories = await get_categories(await list_yak_paths(yak_dir))
-        return render_new(categories=categories, category_colors=await resolve_colors(yak_dir, categories))
+        return render_new(
+            categories=categories,
+            get_category_color=color_lookup(await resolve_colors(yak_dir, categories)),
+            current_route="new",
+        )
 
     form_data = await request.form()
     category = str(form_data.get("new_category", "")).strip() or str(form_data.get("category", "")).strip()
@@ -176,7 +182,9 @@ async def settings_handler(request: Request) -> Response:
     owners: dict[str, list[str]] = {}
     for category, slot in sorted(slots.items()):
         owners.setdefault(slot, []).append(category)
-    return render_settings(assignments=sorted(slots.items()), owners=owners, saved=saved)
+    return render_settings(
+        assignments=sorted(slots.items()), palette=PALETTE, owners=owners, saved=saved, current_route="settings"
+    )
 
 
 async def edit_yak_handler(request: Request) -> Response:
@@ -200,12 +208,14 @@ async def edit_yak_handler(request: Request) -> Response:
         category_color = slot_css((await load_slots(yak_dir)).get(category, ""))
 
         return render_yak_edit(
-            yak_path_str,
-            content,
-            category,
-            category_color,
-            frontmatter=frontmatter,
-            backlinks=backlinks,
+            yak_name=SyncPath(yak_path_str).name,
+            yak_path=yak_path_str,
+            content=content,
+            category=(category or "root").title(),
+            category_color=category_color,
+            frontmatter=frontmatter or {},
+            backlinks=backlinks or [],
+            current_route="edit",
         )
     except (FileNotFoundError, YakPathError):
         return render_error(f"Yak not found: {yak_path_str}", status_code=HTTPStatus.NOT_FOUND)
@@ -220,7 +230,7 @@ async def search_handler(request: Request) -> Response:
     if not query:
         if is_htmx_request(request):
             return HTMLResponse('<div class="search-empty"><p>Start typing to search your yaks...</p></div>')
-        return render_search([], query)
+        return render_search(results=[], query=query, current_route="search")
 
     timer = StageTimer()
     with timer.stage("db_ready"):
@@ -243,7 +253,7 @@ async def search_handler(request: Request) -> Response:
     if is_htmx_request(request):
         return _render_template("search/search_results.html.jinja", results=results, query=query)
 
-    return render_search(results, query)
+    return render_search(results=results, query=query, current_route="search")
 
 
 async def delete_yak_handler(request: Request) -> Response:

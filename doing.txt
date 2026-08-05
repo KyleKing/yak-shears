@@ -15,11 +15,9 @@ Consider identifying when a JSON file is out of date when it was loaded and a re
 - consider adding ruff check and ruff format --check to CI, otherwise lint drift keeps accumulating unseen
 
 2026-07-28 - typed-jinja could generate the render_* helpers
-- the seven render_* functions in yak_shears/_templates/__init__.py (render_error, render_auth_login, render_yaks, render_new, render_yak_edit, render_settings, render_search) each restate the parameter list that their template's {#def ... #} header already declares, then call ENV.get_template(name).render(...). typed-jinja parses that same header and its generate_wrapper emits that same body, so the signatures are maintained twice and can drift from the headers with nothing catching it
-- all 11 templates under yak_shears/_templates/ already carry a {#def #} header, so no template work is needed to adopt this
-- what blocks a straight swap: generate_wrapper returns Markup while every helper here returns HTMLResponse, and render_error also sets an HTTPStatus. typed-jinja's env_import option already covers pointing generated code at yak_shears._templates.ENV
-- helpers that derive data before rendering (sort links, palette lookups, pagination) would keep a hand-written body that calls the generated function rather than being replaced by it
-- decide whether typed-jinja grows a wrap-the-render option or whether this repo keeps its helpers and generates only the inner typed render. The matching note is in typed-jinja's doing-2.txt
+- DONE 2026-08-04: migrated to the published types-for-jinja. render_auth_login, render_yaks, render_new, render_yak_edit, render_settings, and render_search are now imports from yak_shears/_templates/_generated/ (types-for-jinja wrapper, return_type = HTMLResponse, validator = beartype); render_error stays hand-written since it sets an HTTPStatus the generated function doesn't take. current_route moved from a pure typed-jinja global to a real header param on the five templates that vary it per page, since a generated wrapper only forwards its own template's header params, not config globals
+- hk.pkl's typed-jinja step called a `check` subcommand that no longer exists upstream (removed; replaced by generate + your own checker + remap). Rewired to `types-for-jinja generate && types-for-jinja remap -- ty check --output-format gitlab _jinja_stubs`
+- blocked: `ty check` on the generated stubs currently fails on templates using the "no line-aligned form" fallback (yak/streams.html.jinja, yaks/index.html.jinja, and base.html.jinja's nav block pulled in through others): the fallback stub references `_tj_f_default` without importing it, and emits `if (...):` followed by an unindented `pass`, both invalid. Confirmed pre-existing (reproduces with current_route reverted to a pure global), so it's a types-for-jinja bug, not a yak-shears regression. Needs a fix in the sibling types-for-jinja repo before the hk.pkl check step can pass
 
 
 Notes

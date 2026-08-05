@@ -2,6 +2,7 @@
 from collections.abc import Callable
 categories: set[str]
 get_category_color: Callable[[str], str]
+current_route: str
 -#}
 {% extends "base.html.jinja" %}
 

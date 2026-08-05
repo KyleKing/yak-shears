@@ -18,6 +18,14 @@ from .tokens import SESSION_TTL_SECONDS
 IN_TLS_CONTEXT = (getenv("IN_TLS_CONTEXT") or "").upper() == "TRUE"
 
 
+def _render_login(*, redirect: str | None, error: str = "") -> Response:
+    # The generated render function always returns 200, so a login error is marked here.
+    response = render_auth_login(redirect=redirect, error=error)
+    if error:
+        response.status_code = HTTPStatus.BAD_REQUEST
+    return response
+
+
 def _validate_redirect_path(redirect_path: str) -> str:
     """Validate redirect path to prevent open redirect vulnerabilities.
 
@@ -46,7 +54,7 @@ async def login_handler(request: Request) -> Response:
         if user := get_user_from_session(request):
             return RedirectResponse(url=DEFAULT_REDIRECT)
         redirect_path = request.query_params.get("redirect")
-        return render_auth_login(redirect=redirect_path)
+        return _render_login(redirect=redirect_path)
 
     if request.method == "POST":
         form_data = await request.form()
@@ -57,18 +65,18 @@ async def login_handler(request: Request) -> Response:
         client_ip = request.client.host if request.client else "unknown"
         limit_key = f"{client_ip}:{email}"
         if login_limiter.is_blocked(limit_key):
-            return render_auth_login(
+            return _render_login(
                 redirect=redirect_path,
                 error="Too many attempts. Try again in a few minutes.",
             )
         if not email or not password:
-            return render_auth_login(
+            return _render_login(
                 redirect=redirect_path,
                 error="Email and password are required",
             )
         if not (user := await storage.authenticate_user(email, password)):
             login_limiter.register_failure(limit_key)
-            return render_auth_login(
+            return _render_login(
                 redirect=redirect_path,
                 error="Invalid email or password",
             )

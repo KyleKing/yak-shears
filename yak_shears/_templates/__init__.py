@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 from jinja2 import Environment, FileSystemLoader
 from starlette.responses import HTMLResponse
 
-from yak_shears._yak.categories import PALETTE, UNASSIGNED_COLOR
+from yak_shears._yak.categories import UNASSIGNED_COLOR
 
 if TYPE_CHECKING:
     from yak_shears._yak.habits import HabitInfo
@@ -99,6 +99,26 @@ def static_url(path: str) -> str:
 
 ENV.globals["static_url"] = static_url
 
+# Generated wrappers import ENV from this module, so they must be imported below its
+# definition to avoid a circular import against this still-initializing module.
+from yak_shears._templates._generated.yak_shears._templates.auth.login_html_jinja import (  # noqa: E402
+    render_login as render_auth_login,
+)
+from yak_shears._templates._generated.yak_shears._templates.error_html_jinja import (  # noqa: E402
+    render_error as _render_error,
+)
+from yak_shears._templates._generated.yak_shears._templates.search.search_html_jinja import render_search  # noqa: E402
+from yak_shears._templates._generated.yak_shears._templates.settings.index_html_jinja import (  # noqa: E402
+    render_index as render_settings,
+)
+from yak_shears._templates._generated.yak_shears._templates.yak.edit_html_jinja import (  # noqa: E402
+    render_edit as render_yak_edit,
+)
+from yak_shears._templates._generated.yak_shears._templates.yak.new_html_jinja import render_new  # noqa: E402
+from yak_shears._templates._generated.yak_shears._templates.yaks.index_html_jinja import (  # noqa: E402
+    render_index as render_yaks,
+)
+
 
 def color_lookup(colors: Mapping[str, str]) -> Callable[[str], str]:
     """Build the template's category-to-color accessor over a resolved mapping.
@@ -129,151 +149,11 @@ def _render_template(template_name: str, *, status_code: HTTPStatus = HTTPStatus
     return HTMLResponse(content, status_code=status_code)
 
 
-def render_error(
-    message: str,
-    status_code: HTTPStatus = HTTPStatus.BAD_REQUEST,
-) -> HTMLResponse:
-    """Render an error page.
-
-    Args:
-        message: The error message to display
-        status_code: The HTTP status code to return
-
-    Returns:
-        HTMLResponse with the error template
-    """
-    return _render_template("error.html.jinja", status_code=status_code, message=message)
-
-
-def render_auth_login(redirect: str | None = None, error: str = "") -> HTMLResponse:
-    """Render an error page.
-
-    Args:
-        error: optional error to display
-        redirect: optional redirect path
-
-    Returns:
-        HTMLResponse with the error template
-    """
-    status_code = HTTPStatus.BAD_REQUEST if error else HTTPStatus.OK
-    return _render_template("auth/login.html.jinja", redirect=redirect, error=error, status_code=status_code)
-
-
-def render_yaks(
-    *,
-    yaks: list[YakInfo],
-    current_page: int,
-    total_pages: int,
-    total_yaks: int,
-    yak_dir_label: str,
-    sort_by: SortBy,
-    current_category: str | None,
-    categories: set[str],
-    category_colors: Mapping[str, str],
-) -> HTMLResponse:
-    """Render the yaks listing page.
-
-    Args:
-        yaks: List of yaks and metadata
-        current_page: Current page number
-        total_pages: Total number of pages
-        total_yaks: Total number of yaks
-        yak_dir_label: name of the `YAK_SHEARS_DIR`
-        sort_by: Criteria to sort yaks
-        current_category: active category filter currently applied
-        categories: set of available categories for filtering
-        category_colors: resolved category to CSS color mapping
-
-    Returns:
-        HTMLResponse with the yaks listing template
-    """
-    return _render_template(
-        "yaks/index.html.jinja",
-        yaks=yaks,
-        current_page=current_page,
-        total_pages=total_pages,
-        total_yaks=total_yaks,
-        yak_dir_label=yak_dir_label,
-        sort_by=sort_by,
-        current_category=current_category,
-        categories=categories,
-        get_category_color=color_lookup(category_colors),
-        current_route="yaks",
-    )
-
-
-def render_new(*, categories: set[str], category_colors: Mapping[str, str]) -> HTMLResponse:
-    """Render the new-yak page.
-
-    Args:
-        categories: set of categories a note can be filed under
-        category_colors: resolved category to CSS color mapping
-
-    Returns:
-        HTMLResponse with the new yak template
-    """
-    return _render_template(
-        "yak/new.html.jinja",
-        categories=categories,
-        get_category_color=color_lookup(category_colors),
-        current_route="new",
-    )
-
-
-def render_yak_edit(
-    yak_path: str,
-    content: str,
-    category: str,
-    category_color: str,
-    frontmatter: dict[str, Any] | None = None,
-    backlinks: list[tuple[str, str]] | None = None,
-) -> HTMLResponse:
-    """Render the yak editor page.
-
-    Args:
-        yak_path: Path of the yak being edited
-        content: Current content of the yak
-        category: Category name
-        category_color: CSS color assigned to the category
-        frontmatter: Frontmatter metadata dictionary
-        backlinks: List of (source_path, link_type) tuples
-
-    Returns:
-        HTMLResponse with the yak editor template
-    """
-    yak_name = SyncPath(yak_path).name
-    return _render_template(
-        "yak/edit.html.jinja",
-        yak_name=yak_name,
-        yak_path=yak_path,
-        content=content,
-        category=(category or "root").title(),
-        category_color=category_color,
-        frontmatter=frontmatter or {},
-        backlinks=backlinks or [],
-        current_route="edit",
-    )
-
-
-def render_settings(*, assignments: list[tuple[str, str]], owners: Mapping[str, list[str]], saved: bool) -> HTMLResponse:
-    """Render the category color settings page.
-
-    Args:
-        assignments: (category, slot name) pairs in display order
-        owners: slot name to the categories currently assigned to it
-        saved: whether the page follows a successful save
-
-    Returns:
-        HTMLResponse with the settings template
-    """
-    return _render_template(
-        "settings/index.html.jinja",
-        assignments=assignments,
-        palette=PALETTE,
-        owners=owners,
-        saved=saved,
-        current_route="settings",
-    )
+def render_error(message: str, status_code: HTTPStatus = HTTPStatus.BAD_REQUEST) -> HTMLResponse:
+    """Render an error page with the given HTTP status."""
+    response = _render_error(message=message)
+    response.status_code = status_code
+    return response
 
 
 def render_benches(
@@ -355,14 +235,3 @@ def render_streams(
     )
 
 
-def render_search(results: list[SearchResult], query: str) -> HTMLResponse:
-    """Render the search results page.
-
-    Args:
-        results: List of search results
-        query: The search query
-
-    Returns:
-        HTMLResponse with the search template
-    """
-    return _render_template("search/search.html.jinja", results=results, query=query, current_route="search")
