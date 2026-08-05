@@ -14,6 +14,7 @@ from anyio import Path
 
 from .models import HashedPassword, Password, SessionId, User
 from .password import create_password_hash, hash_password, verify_password
+from .tokens import DEFAULT_REVOCATION_PATH, DEFAULT_SECRET_PATH, TokenSigner
 
 DEFAULT_USER_DATA_PATH = SyncPath(__file__).parents[1] / ".yak-shears-users.json"
 
@@ -28,8 +29,12 @@ class UserStore:
         self._data_path = Path(data_path) if data_path else Path(DEFAULT_USER_DATA_PATH)
         self._users: dict[str, User] = {}
         self._email_to_user_id: dict[str, str] = {}
-        self._session_store: dict[str, str] = {}
         self._data_mtime: float = 0.0
+        directory = SyncPath(self._data_path).parent
+        self._signer = TokenSigner(
+            secret_path=directory / DEFAULT_SECRET_PATH.name,
+            revocation_path=directory / DEFAULT_REVOCATION_PATH.name,
+        )
 
     @classmethod
     def load_sync(cls, data_path: SyncPath | None = None) -> Self:
@@ -111,6 +116,7 @@ class UserStore:
         if not password.strip():
             raise ValueError("Password cannot be empty or whitespace-only")
 
+        await self._reload_if_changed()
         if email in self._email_to_user_id:
             msg = f"Email {email} is already taken"
             raise ValueError(msg)
@@ -186,6 +192,7 @@ class UserStore:
         Returns:
             True if user was deleted, False if user not found.
         """
+        await self._reload_if_changed()
         if email not in self._email_to_user_id:
             return False
 
@@ -194,11 +201,6 @@ class UserStore:
         del self._users[user_id]
         del self._email_to_user_id[email]
         await self._save()
-
-        sessions_to_remove = [sid for sid, uid in self._session_store.items() if uid == user_id]
-        for session_id in sessions_to_remove:
-            del self._session_store[session_id]
-
         return True
 
     # -------------------------------------------------------------------------
@@ -208,23 +210,22 @@ class UserStore:
         """Create a session for a user.
 
         Returns:
-            New session ID.
+            Signed session token carrying its own expiry.
         """
-        session_id = SessionId(secrets.token_hex(32))
-        self._session_store[session_id] = user_id
-        return session_id
+        return self._signer.issue(user_id)
 
     def delete_session(self, session_id: str) -> None:
-        """Delete a session."""
-        self._session_store.pop(session_id, None)
+        """Revoke a session token until its expiry passes."""
+        self._signer.revoke(session_id)
 
     def get_user_id_from_session(self, session_id: str) -> str | None:
-        """Get the user ID from a session.
+        """Get the user ID from a session token.
 
         Returns:
-            User ID if session exists, None otherwise.
+            User ID when the token verifies and still names an existing user.
         """
-        return self._session_store.get(session_id)
+        user_id = self._signer.verify(session_id)
+        return user_id if user_id in self._users else None
 
     # -------------------------------------------------------------------------
     # Testing helpers
@@ -233,7 +234,7 @@ class UserStore:
         """Clear all users and sessions (for testing)."""
         self._users.clear()
         self._email_to_user_id.clear()
-        self._session_store.clear()
+        self._signer.rotate()
 
 
 # -----------------------------------------------------------------------------

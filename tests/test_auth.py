@@ -177,7 +177,7 @@ def test_create_session(sample_user):
     session_id = create_session(user_id)
 
     assert session_id is not None
-    assert len(session_id) == SALT_LENGTH
+    assert get_user_id_from_session(session_id) == user_id
 
 
 def test_delete_session(sample_user):
@@ -257,9 +257,11 @@ class TestUserStore:
         store2 = UserStore.load_sync(path)
         assert store2.get_user_by_email("test@test.com") is not None
 
-    def test_session_management(self, store):
-        session_id = store.create_session("user123")
-        assert store.get_user_id_from_session(session_id) == "user123"
+    @pytest.mark.asyncio
+    async def test_session_management(self, store):
+        user = await store.create_user("test@test.com", "Test", Password("pass123"))
+        session_id = store.create_session(user["id"])
+        assert store.get_user_id_from_session(session_id) == user["id"]
 
         store.delete_session(session_id)
         assert store.get_user_id_from_session(session_id) is None

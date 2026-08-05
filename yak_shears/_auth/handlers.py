@@ -1,6 +1,5 @@
 """Authentication routes for the Yak Shears application."""
 
-from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from os import getenv
 from urllib.parse import urlparse
@@ -14,6 +13,7 @@ from yak_shears._templates import render_auth_login
 from . import storage
 from .models import Password, SessionId, User
 from .rate_limit import login_limiter
+from .tokens import SESSION_TTL_SECONDS
 
 IN_TLS_CONTEXT = (getenv("IN_TLS_CONTEXT") or "").upper() == "TRUE"
 
@@ -75,11 +75,10 @@ async def login_handler(request: Request) -> Response:
         login_limiter.reset(limit_key)
         response = RedirectResponse(url=redirect_path, status_code=HTTPStatus.SEE_OTHER)
         session_id = storage.create_session(SessionId(user["id"]))
-        expires = datetime.now(tz=UTC) + timedelta(weeks=1)
         response.set_cookie(
             "session_id",
             session_id,
-            expires=expires.strftime("%a, %d-%b-%Y %H:%M:%S Z"),
+            max_age=SESSION_TTL_SECONDS,
             httponly=True,
             secure=IN_TLS_CONTEXT,
             samesite="strict",

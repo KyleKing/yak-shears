@@ -181,6 +181,8 @@ poetry.toml
 # ----------------------------------------------------------------------------------------------------------------------
 # Custom Rules
 
+.yak-shears-revoked.json
+.yak-shears-secret
 .yak-shears-users.json
 yak_shears_search.db
 
