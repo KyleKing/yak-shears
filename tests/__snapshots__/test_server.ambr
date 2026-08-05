@@ -129,6 +129,28 @@
         </div>
        </div>
       </div>
+      <div aria-labelledby="conflict-title" aria-modal="true" class="conflict" hidden="" id="conflict" role="dialog">
+       <div class="conflict__pane">
+        <h2 class="conflict__title" id="conflict-title">
+         This note changed elsewhere
+        </h2>
+        <p class="conflict__note" id="conflict-note">
+        </p>
+        <div aria-label="Difference between the saved note and your draft" class="conflict__diff" id="conflict-diff" role="region" tabindex="0">
+        </div>
+        <div class="conflict__keys">
+         <button class="button button--primary" id="conflict-mine" type="button">
+          Keep mine
+         </button>
+         <button class="button" id="conflict-theirs" type="button">
+          Take theirs
+         </button>
+         <button class="button" id="conflict-cancel" type="button">
+          Cancel
+         </button>
+        </div>
+       </div>
+      </div>
       <div class="editor__actions">
        <div class="container">
         <button class="button button--primary" hx-post="/edit" hx-swap="none" hx-vals='{"yak": "test.dj"}' id="save-btn">

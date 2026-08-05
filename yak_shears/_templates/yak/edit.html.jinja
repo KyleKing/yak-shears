@@ -124,6 +124,21 @@ current_route: str
         </div>
       </div>
 
+      {# Conflict panel. Shown only when a save is refused, because the note changed
+         under the editor. Unhidden by editor.js:_showConflict(). #}
+      <div class="conflict" id="conflict" role="dialog" aria-modal="true" aria-labelledby="conflict-title" hidden>
+        <div class="conflict__pane">
+          <h2 class="conflict__title" id="conflict-title">This note changed elsewhere</h2>
+          <p class="conflict__note" id="conflict-note"></p>
+          <div class="conflict__diff" id="conflict-diff" tabindex="0" role="region" aria-label="Difference between the saved note and your draft"></div>
+          <div class="conflict__keys">
+            <button class="button button--primary" type="button" id="conflict-mine">Keep mine</button>
+            <button class="button" type="button" id="conflict-theirs">Take theirs</button>
+            <button class="button" type="button" id="conflict-cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+
       {# Fixed bottom action bar with save button and status #}
       <div class="editor__actions">
         <div class="container">

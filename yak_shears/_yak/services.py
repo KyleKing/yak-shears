@@ -133,7 +133,15 @@ class YakPathError(ValueError):
 
 
 class StaleYakError(Exception):
-    """Raised when a save would overwrite changes made since the yak was opened."""
+    """Raised when a save would overwrite changes made since the yak was opened.
+
+    Carries what is on disk so a caller can show the reader the difference rather
+    than only telling them there is one.
+    """
+
+    def __init__(self, message: str, current: str = "") -> None:
+        super().__init__(message)
+        self.current = current
 
 
 async def resolve_yak_path(yak_dir: Path, relative_path: str) -> Path:
@@ -348,7 +356,7 @@ async def read_leased(yak_path: Path, expected_lease: str | None) -> str:
     content = await yak_path.read_text()
     if expected_lease is not None and yak_lease(content) != expected_lease:
         msg = f"{yak_path.name} changed since this page was loaded"
-        raise StaleYakError(msg)
+        raise StaleYakError(msg, content)
     return content
 
 
@@ -372,10 +380,10 @@ async def save_yak(yak_dir: Path, relative_path: str, content: str, expected_lea
         raise FileNotFoundError(msg)
 
     if expected_lease is not None:
-        on_disk = yak_lease(await yak_path.read_text(encoding="utf-8"))
-        if on_disk != expected_lease:
+        current = await yak_path.read_text(encoding="utf-8")
+        if yak_lease(current) != expected_lease:
             msg = f"{relative_path} changed since it was opened"
-            raise StaleYakError(msg)
+            raise StaleYakError(msg, current)
 
     await yak_path.write_text(content, encoding="utf-8")
     index_yak_metadata(SyncPath(yak_path), SyncPath(yak_dir))

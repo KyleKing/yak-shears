@@ -26,6 +26,9 @@ const EDITOR_INIT_MAX_RETRIES = 50; // Wait up to 5 seconds for DOM
 const EDITOR_INIT_RETRY_INTERVAL = 100; // ms between retries
 const HTTP_CONFLICT = 409; // The yak changed since this page loaded
 
+// Assigned by initEditor, which is where the editor and its jar are in scope.
+let showConflict = () => {};
+
 /**
  * GLOBAL STATE
  * Note: These are module-level variables due to CodeJar's callback requirements.
@@ -56,38 +59,41 @@ let panelPinned = false; // Desktop-only: panel stays open alongside editor
  * @param {boolean|null} forceState - Explicit show (true) or hide (false), or toggle (null)
  */
 function toggleMetadataPanel(forceState = null) {
-	const panel = document.querySelector('.metadata-panel');
-	const menuBtn = document.getElementById('menu-btn');
-	const backdrop = document.querySelector('.metadata-backdrop');
-	const layout = document.querySelector('.editor-layout');
-	const pinBtn = document.querySelector('.panel-pin');
-	const editor = document.querySelector('.editor');
+	const panel = document.querySelector(".metadata-panel");
+	const menuBtn = document.getElementById("menu-btn");
+	const backdrop = document.querySelector(".metadata-backdrop");
+	const layout = document.querySelector(".editor-layout");
+	const pinBtn = document.querySelector(".panel-pin");
+	const editor = document.querySelector(".editor");
 
-	metadataPanelVisible = forceState !== null ? forceState : !metadataPanelVisible;
+	metadataPanelVisible =
+		forceState !== null ? forceState : !metadataPanelVisible;
 
 	// Clear pinned state when toggling via menu button
 	if (panelPinned && !metadataPanelVisible) {
 		panelPinned = false;
-		layout.classList.remove('panel-pinned');
-		if (pinBtn) pinBtn.setAttribute('aria-pressed', 'false');
-		localStorage.setItem('panelPinned', 'false');
+		layout.classList.remove("panel-pinned");
+		if (pinBtn) pinBtn.setAttribute("aria-pressed", "false");
+		localStorage.setItem("panelPinned", "false");
 	}
 
-	panel.classList.toggle('visible', metadataPanelVisible);
+	panel.classList.toggle("visible", metadataPanelVisible);
 	if (menuBtn) {
-		menuBtn.classList.toggle('active', metadataPanelVisible);
-		menuBtn.setAttribute('aria-expanded', metadataPanelVisible.toString());
+		menuBtn.classList.toggle("active", metadataPanelVisible);
+		menuBtn.setAttribute("aria-expanded", metadataPanelVisible.toString());
 	}
 
 	// Show backdrop when panel is open and not pinned
 	if (backdrop && !panelPinned) {
-		backdrop.classList.toggle('visible', metadataPanelVisible);
+		backdrop.classList.toggle("visible", metadataPanelVisible);
 	}
 
 	// Focus management
 	if (metadataPanelVisible) {
 		// Focus first interactive element in panel
-		const firstFocusable = panel.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+		const firstFocusable = panel.querySelector(
+			'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+		);
 		if (firstFocusable) {
 			requestAnimationFrame(() => firstFocusable.focus());
 		}
@@ -98,7 +104,7 @@ function toggleMetadataPanel(forceState = null) {
 		}
 	}
 
-	localStorage.setItem('metadataPanelVisible', metadataPanelVisible);
+	localStorage.setItem("metadataPanelVisible", metadataPanelVisible);
 }
 
 /**
@@ -113,27 +119,27 @@ function toggleMetadataPanel(forceState = null) {
  * @returns {void}
  */
 function togglePanelPin() {
-	const layout = document.querySelector('.editor-layout');
-	const panel = document.querySelector('.metadata-panel');
-	const pinBtn = document.querySelector('.panel-pin');
-	const backdrop = document.querySelector('.metadata-backdrop');
+	const layout = document.querySelector(".editor-layout");
+	const panel = document.querySelector(".metadata-panel");
+	const pinBtn = document.querySelector(".panel-pin");
+	const backdrop = document.querySelector(".metadata-backdrop");
 
 	// Only allow pinning on desktop (matches CSS layout capabilities)
 	if (window.innerWidth <= MOBILE_BREAKPOINT) return;
 
 	panelPinned = !panelPinned;
 
-	layout.classList.toggle('panel-pinned', panelPinned);
-	pinBtn.setAttribute('aria-pressed', panelPinned.toString());
+	layout.classList.toggle("panel-pinned", panelPinned);
+	pinBtn.setAttribute("aria-pressed", panelPinned.toString());
 
 	// When pinned, panel should be visible and backdrop hidden
 	if (panelPinned) {
-		panel.classList.add('visible');
+		panel.classList.add("visible");
 		metadataPanelVisible = true;
-		if (backdrop) backdrop.classList.remove('visible');
+		if (backdrop) backdrop.classList.remove("visible");
 	}
 
-	localStorage.setItem('panelPinned', panelPinned);
+	localStorage.setItem("panelPinned", panelPinned);
 }
 
 /**
@@ -165,7 +171,9 @@ const VIDEO_EXT_RE = /\.(mp4|webm|mov|m4v)$/i;
 function enhanceMedia(container) {
 	container.querySelectorAll('img[src^="/media/"]').forEach((img) => {
 		const full = img.getAttribute("src");
-		const thumb = full.replace("/media/", "/thumb/").replace(/\.[^./]+$/, ".jpg");
+		const thumb = full
+			.replace("/media/", "/thumb/")
+			.replace(/\.[^./]+$/, ".jpg");
 		if (VIDEO_EXT_RE.test(full)) {
 			const video = document.createElement("video");
 			video.controls = true;
@@ -199,7 +207,9 @@ function renderPreview(content) {
 	if (previewContent && window.djot) {
 		try {
 			// Parse Djot → AST → HTML, excluding YAML frontmatter
-			const html = window.djot.renderHTML(window.djot.parse(stripFrontmatter(content)));
+			const html = window.djot.renderHTML(
+				window.djot.parse(stripFrontmatter(content)),
+			);
 			previewContent.innerHTML = html;
 
 			enhanceMedia(previewContent);
@@ -250,9 +260,9 @@ function setViewMode(mode) {
 	// Update container classes - note: CSS class names differ from mode names
 	// This mapping exists for historical reasons (shorter CSS class names)
 	const modeClassMap = {
-		"editor": "editoronly",
+		editor: "editoronly",
 		"side-by-side": "sidebyside",
-		"preview": "previewonly"
+		preview: "previewonly",
 	};
 	// Use classList so unrelated state (e.g. the .wrap toggle) is preserved
 	container.classList.remove("editoronly", "sidebyside", "previewonly");
@@ -321,7 +331,13 @@ function initEditor() {
 				}
 
 				// Plain Enter for list continuation
-				if (e.key === "Enter" && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+				if (
+					e.key === "Enter" &&
+					!e.metaKey &&
+					!e.ctrlKey &&
+					!e.shiftKey &&
+					!e.altKey
+				) {
 					if (_handleListContinuation(editor, jar)) {
 						e.preventDefault();
 						return;
@@ -383,7 +399,8 @@ function initEditor() {
 		document.body.addEventListener("htmx:configRequest", function (evt) {
 			if (evt.target.id === "save-btn") {
 				evt.detail.parameters.content = getEditorContent();
-				evt.detail.parameters.lease = document.getElementById("yak-lease").dataset.lease;
+				evt.detail.parameters.lease =
+					document.getElementById("yak-lease").dataset.lease;
 			}
 		});
 
@@ -411,13 +428,61 @@ function initEditor() {
 					// Clear local storage on successful save
 					localStorage.removeItem(storageKey);
 				} else if (evt.detail.xhr.status === HTTP_CONFLICT) {
-					// The file moved under us. Keep the draft in localStorage and leave
-					// the lease stale, so a second press cannot force the write through.
-					updateSaveStatus("Changed elsewhere - copy your text, then reload");
+					// The file moved under us. The draft stays in localStorage and the
+					// lease stays stale until the reader picks a side, so no second press
+					// can force the write through.
+					updateSaveStatus("Changed elsewhere");
+					showConflict(
+						evt.detail.xhr.responseText,
+						evt.detail.xhr.getResponseHeader("X-Yak-Lease") || "",
+						evt.detail.xhr.getResponseHeader("X-Yak-Conflict") ||
+							"This note changed elsewhere",
+					);
 				} else {
 					document.getElementById("save-status").textContent = "Error saving!";
 				}
 			}
+		});
+
+		// The conflict panel. Opening it is the only thing a refused save does; every
+		// resolution is the reader's, because picking a side for them is how a note
+		// loses text quietly.
+		const conflict = document.getElementById("conflict");
+		const conflictDiff = document.getElementById("conflict-diff");
+
+		const closeConflict = () => {
+			conflict.hidden = true;
+			document.getElementById("save-btn").focus();
+		};
+
+		showConflict = (current, freshLease, message) => {
+			document.getElementById("conflict-note").textContent = message;
+			_paintDiff(conflictDiff, _lineDiff(current, getEditorContent()));
+			conflict.hidden = false;
+			conflictDiff.focus();
+
+			// Taking the fresh lease is what makes this an overwrite the reader asked
+			// for rather than the blind one the lease exists to stop.
+			document.getElementById("conflict-mine").onclick = () => {
+				document.getElementById("yak-lease").dataset.lease = freshLease;
+				closeConflict();
+				document.getElementById("save-btn").click();
+			};
+
+			document.getElementById("conflict-theirs").onclick = () => {
+				_applyEdit(editor, jar, current, current.length);
+				serverContent = current;
+				document.getElementById("yak-lease").dataset.lease = freshLease;
+				localStorage.removeItem(storageKey);
+				closeConflict();
+				updateSaveStatus("Synced");
+			};
+
+			document.getElementById("conflict-cancel").onclick = closeConflict;
+		};
+
+		conflict.addEventListener("keydown", (event) => {
+			if (event.key === "Escape") closeConflict();
 		});
 
 		// localStorage already survives a reload, but it cannot survive the phone
@@ -449,7 +514,11 @@ function initEditor() {
 			button.addEventListener("click", () => {
 				const view = button.getAttribute("data-view");
 				setViewMode(view);
-				if (window.innerWidth > MOBILE_BREAKPOINT && metadataPanelVisible && !panelPinned) {
+				if (
+					window.innerWidth > MOBILE_BREAKPOINT &&
+					metadataPanelVisible &&
+					!panelPinned
+				) {
 					toggleMetadataPanel(false);
 				}
 			});
@@ -482,7 +551,11 @@ function initEditor() {
 		};
 		if (wrapToggle) {
 			wrapToggle.addEventListener("click", () => {
-				applyWrap(!document.getElementById("editor-container").classList.contains("wrap"));
+				applyWrap(
+					!document
+						.getElementById("editor-container")
+						.classList.contains("wrap"),
+				);
 			});
 		}
 		applyWrap(localStorage.getItem("editorWrap") !== "false");
@@ -500,8 +573,16 @@ function initEditor() {
 			// to the end of a note the reader never asked to reorder.
 			const selection = _getSelectionRange(editor);
 			const code = jar.toString();
-			const { start, end } = selection || { start: code.length, end: code.length };
-			_applyEdit(editor, jar, code.substring(0, start) + text + code.substring(end), start + text.length);
+			const { start, end } = selection || {
+				start: code.length,
+				end: code.length,
+			};
+			_applyEdit(
+				editor,
+				jar,
+				code.substring(0, start) + text + code.substring(end),
+				start + text.length,
+			);
 		};
 
 		const uploadOne = async (file) => {
@@ -510,7 +591,10 @@ function initEditor() {
 			form.append("yak", yak_path);
 			updateSaveStatus(`Uploading ${file.name}...`);
 			try {
-				const res = await fetch("/media/upload", { method: "POST", body: form });
+				const res = await fetch("/media/upload", {
+					method: "POST",
+					body: form,
+				});
 				const data = await res.json();
 				if (!res.ok) throw new Error(data.error || "Upload failed");
 				uploadError = false;
@@ -548,7 +632,8 @@ function initEditor() {
 			requestAnimationFrame(() => _stripInjectedElements(editor, jar));
 		});
 
-		const setDragover = (active) => editor.classList.toggle("editor--dragover", active);
+		const setDragover = (active) =>
+			editor.classList.toggle("editor--dragover", active);
 
 		editor.addEventListener("dragenter", (e) => {
 			e.preventDefault();
@@ -583,22 +668,22 @@ function initEditor() {
 		_setupCommandPanel(editor, jar);
 
 		// Initialize menu button toggle
-		const menuBtn = document.getElementById('menu-btn');
-		const pinBtn = document.querySelector('.panel-pin');
-		const backdrop = document.querySelector('.metadata-backdrop');
+		const menuBtn = document.getElementById("menu-btn");
+		const pinBtn = document.querySelector(".panel-pin");
+		const backdrop = document.querySelector(".metadata-backdrop");
 
 		if (menuBtn) {
-			menuBtn.addEventListener('click', () => toggleMetadataPanel());
+			menuBtn.addEventListener("click", () => toggleMetadataPanel());
 		}
 
 		// Pin button click
 		if (pinBtn) {
-			pinBtn.addEventListener('click', () => togglePanelPin());
+			pinBtn.addEventListener("click", () => togglePanelPin());
 		}
 
 		// Backdrop click closes panel (when not pinned)
 		if (backdrop) {
-			backdrop.addEventListener('click', () => {
+			backdrop.addEventListener("click", () => {
 				if (!panelPinned) {
 					toggleMetadataPanel(false);
 				}
@@ -606,14 +691,14 @@ function initEditor() {
 		}
 
 		// Keyboard shortcuts for menu panel
-		document.addEventListener('keydown', (e) => {
+		document.addEventListener("keydown", (e) => {
 			// Cmd/Ctrl+M to toggle menu
-			if ((e.metaKey || e.ctrlKey) && e.key === 'm') {
+			if ((e.metaKey || e.ctrlKey) && e.key === "m") {
 				e.preventDefault();
 				toggleMetadataPanel();
 			}
 			// Escape to close menu (when open and not pinned)
-			if (e.key === 'Escape' && metadataPanelVisible && !panelPinned) {
+			if (e.key === "Escape" && metadataPanelVisible && !panelPinned) {
 				e.preventDefault();
 				toggleMetadataPanel(false);
 			}
@@ -622,8 +707,8 @@ function initEditor() {
 		// Restore panel state from localStorage. Only a pinned panel is restored:
 		// an unpinned panel is a transient overlay, so re-opening it on every load
 		// would keep covering the split preview when returning to the editor.
-		const savedPinned = localStorage.getItem('panelPinned');
-		if (window.innerWidth > MOBILE_BREAKPOINT && savedPinned === 'true') {
+		const savedPinned = localStorage.getItem("panelPinned");
+		if (window.innerWidth > MOBILE_BREAKPOINT && savedPinned === "true") {
 			togglePanelPin();
 		}
 
@@ -641,11 +726,11 @@ function initEditor() {
 
 			// Unpin panel when switching to mobile (pinning not supported on mobile)
 			if (!wasMobile && nowMobile && panelPinned) {
-				const layout = document.querySelector('.editor-layout');
-				layout.classList.remove('panel-pinned');
+				const layout = document.querySelector(".editor-layout");
+				layout.classList.remove("panel-pinned");
 				panelPinned = false;
-				const pinBtn = document.querySelector('.panel-pin');
-				if (pinBtn) pinBtn.setAttribute('aria-pressed', 'false');
+				const pinBtn = document.querySelector(".panel-pin");
+				if (pinBtn) pinBtn.setAttribute("aria-pressed", "false");
 			}
 		});
 	} else if (retries < EDITOR_INIT_MAX_RETRIES) {
@@ -737,7 +822,10 @@ function _handleListContinuation(editorEl, jarInstance) {
 
 			// Insert newline and continuation at cursor position
 			const newText =
-				text.substring(0, cursorPos) + "\n" + continuation + text.substring(cursorPos);
+				text.substring(0, cursorPos) +
+				"\n" +
+				continuation +
+				text.substring(cursorPos);
 			const newCursorPos = cursorPos + 1 + continuation.length;
 			_applyEdit(editorEl, jarInstance, newText, newCursorPos);
 			return true;
@@ -803,7 +891,11 @@ function _indentSelection(editorEl, jarInstance, outdent, start, end) {
 	// Only the block's first line can break the one-level-at-a-time rule, since
 	// the rest keep their offsets from it.
 	const parentIndent = _previousNonBlankIndent(text, first.lineStart);
-	if (!outdent && parentIndent !== null && _leadingSpaces(shifted[0]) > parentIndent + INDENT_SIZE) {
+	if (
+		!outdent &&
+		parentIndent !== null &&
+		_leadingSpaces(shifted[0]) > parentIndent + INDENT_SIZE
+	) {
 		return true;
 	}
 
@@ -812,20 +904,37 @@ function _indentSelection(editorEl, jarInstance, outdent, start, end) {
 	const prev = _getPreviousLine(text, first.lineStart);
 	let head = text.substring(0, first.lineStart);
 	let headDelta = 0;
-	if (!outdent && prev && prev.text.trim() !== "" && _leadingSpaces(prev.text) < _leadingSpaces(shifted[0])) {
+	if (
+		!outdent &&
+		prev &&
+		prev.text.trim() !== "" &&
+		_leadingSpaces(prev.text) < _leadingSpaces(shifted[0])
+	) {
 		head += "\n";
 		headDelta = 1;
 	} else if (outdent && prev && prev.text.trim() === "") {
 		const grand = _getPreviousLine(text, prev.start);
-		if (grand && grand.text.trim() !== "" && _leadingSpaces(grand.text) <= _leadingSpaces(shifted[0])) {
+		if (
+			grand &&
+			grand.text.trim() !== "" &&
+			_leadingSpaces(grand.text) <= _leadingSpaces(shifted[0])
+		) {
 			head = text.substring(0, prev.start);
 			headDelta = -1;
 		}
 	}
 
-	_applyEdit(editorEl, jarInstance, head + shifted.join("\n") + text.substring(last.lineEnd), start);
+	_applyEdit(
+		editorEl,
+		jarInstance,
+		head + shifted.join("\n") + text.substring(last.lineEnd),
+		start,
+	);
 	const firstDelta = shifted[0].length - lines[0].length;
-	const totalDelta = shifted.reduce((sum, line, idx) => sum + line.length - lines[idx].length, 0);
+	const totalDelta = shifted.reduce(
+		(sum, line, idx) => sum + line.length - lines[idx].length,
+		0,
+	);
 	const newFirstStart = first.lineStart + headDelta;
 	_setSelectionRange(
 		editorEl,
@@ -839,7 +948,13 @@ function _handleListIndentation(editorEl, jarInstance, outdent) {
 	const selection = _getSelectionRange(editorEl);
 	if (!selection) return false;
 	if (selection.start !== selection.end) {
-		return _indentSelection(editorEl, jarInstance, outdent, selection.start, selection.end);
+		return _indentSelection(
+			editorEl,
+			jarInstance,
+			outdent,
+			selection.start,
+			selection.end,
+		);
 	}
 
 	const text = jarInstance.toString();
@@ -867,13 +982,19 @@ function _handleListIndentation(editorEl, jarInstance, outdent) {
 		const prev = _getPreviousLine(text, lineStart);
 		if (prev && prev.text.trim() === "") {
 			const grand = _getPreviousLine(text, prev.start);
-			if (grand && grand.text.trim() !== "" && _leadingSpaces(grand.text) <= newIndent) {
-				const newText = text.substring(0, prev.start) + newLineText + text.substring(lineEnd);
+			if (
+				grand &&
+				grand.text.trim() !== "" &&
+				_leadingSpaces(grand.text) <= newIndent
+			) {
+				const newText =
+					text.substring(0, prev.start) + newLineText + text.substring(lineEnd);
 				return apply(newText, cursorPos - spacesToRemove - 1);
 			}
 		}
 
-		const newText = text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
+		const newText =
+			text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
 		return apply(newText, cursorPos - spacesToRemove);
 	}
 
@@ -891,12 +1012,21 @@ function _handleListIndentation(editorEl, jarInstance, outdent) {
 	// Djot only renders a nested list when a blank line precedes it, so insert one
 	// when this item becomes indented under a non-blank parent line.
 	const prev = _getPreviousLine(text, lineStart);
-	if (prev && prev.text.trim() !== "" && _leadingSpaces(prev.text) < newIndent) {
-		const newText = text.substring(0, lineStart) + "\n" + newLineText + text.substring(lineEnd);
+	if (
+		prev &&
+		prev.text.trim() !== "" &&
+		_leadingSpaces(prev.text) < newIndent
+	) {
+		const newText =
+			text.substring(0, lineStart) +
+			"\n" +
+			newLineText +
+			text.substring(lineEnd);
 		return apply(newText, cursorPos + indentSize + 1);
 	}
 
-	const newText = text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
+	const newText =
+		text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
 	return apply(newText, cursorPos + indentSize);
 }
 
@@ -931,7 +1061,8 @@ function _toggleChecklistState(editorEl, jarInstance) {
 		cursorDelta = 6;
 	}
 
-	const newText = text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
+	const newText =
+		text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
 	const newCursorPos = Math.max(lineStart, cursorPos + cursorDelta);
 	_applyEdit(editorEl, jarInstance, newText, newCursorPos);
 }
@@ -943,7 +1074,9 @@ function _isMediaType(type) {
 // DataTransfer exposes dropped files on .files and pasted ones on .items; a few
 // browsers populate only one of the two, so both are consulted.
 function _mediaFilesFrom(dataTransfer) {
-	const fromFiles = Array.from(dataTransfer?.files || []).filter((file) => _isMediaType(file.type));
+	const fromFiles = Array.from(dataTransfer?.files || []).filter((file) =>
+		_isMediaType(file.type),
+	);
 	if (fromFiles.length) return fromFiles;
 	return Array.from(dataTransfer?.items || [])
 		.filter((item) => item.kind === "file" && _isMediaType(item.type))
@@ -965,10 +1098,16 @@ function _getSelectionRange(editorEl) {
 	const sel = window.getSelection();
 	if (!sel.rangeCount) return null;
 	const range = sel.getRangeAt(0);
-	const anchor = getTextOffset(editorEl, range.startContainer, range.startOffset);
+	const anchor = getTextOffset(
+		editorEl,
+		range.startContainer,
+		range.startOffset,
+	);
 	const focus = getTextOffset(editorEl, range.endContainer, range.endOffset);
 	if (anchor === null || focus === null) return null;
-	return anchor <= focus ? { start: anchor, end: focus } : { start: focus, end: anchor };
+	return anchor <= focus
+		? { start: anchor, end: focus }
+		: { start: focus, end: anchor };
 }
 
 const BULLET_PREFIX_RE = /^(\s*)- (\[[ x]\] )?/;
@@ -991,8 +1130,14 @@ function _toggleBullet(editorEl, jarInstance) {
 		cursorDelta = 2;
 	}
 
-	const newText = text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
-	_applyEdit(editorEl, jarInstance, newText, Math.max(lineStart, cursorPos + cursorDelta));
+	const newText =
+		text.substring(0, lineStart) + newLineText + text.substring(lineEnd);
+	_applyEdit(
+		editorEl,
+		jarInstance,
+		newText,
+		Math.max(lineStart, cursorPos + cursorDelta),
+	);
 }
 
 function _toggleInlineMarker(editorEl, jarInstance, marker) {
@@ -1007,9 +1152,16 @@ function _toggleInlineMarker(editorEl, jarInstance, marker) {
 		_applyEdit(editorEl, jarInstance, newText, caret);
 	};
 
-	if (selected.length >= 2 * width && selected.startsWith(marker) && selected.endsWith(marker)) {
+	if (
+		selected.length >= 2 * width &&
+		selected.startsWith(marker) &&
+		selected.endsWith(marker)
+	) {
 		const unwrapped = selected.substring(width, selected.length - width);
-		apply(text.substring(0, start) + unwrapped + text.substring(end), start + unwrapped.length);
+		apply(
+			text.substring(0, start) + unwrapped + text.substring(end),
+			start + unwrapped.length,
+		);
 		return;
 	}
 	if (
@@ -1138,10 +1290,17 @@ function _setupCommandPanel(editorEl, jarInstance) {
 	const applyBtn = document.getElementById("cmd-apply");
 	const coarse = window.matchMedia("(pointer: coarse)");
 
-	const state = { open: false, count: 1, scope: "line", composing: false, lit: [] };
+	const state = {
+		open: false,
+		count: 1,
+		scope: "line",
+		composing: false,
+		lit: [],
+	};
 
 	const setPressed = (nodes, isOn) => {
-		for (const node of nodes) node.setAttribute("aria-pressed", String(isOn(node)));
+		for (const node of nodes)
+			node.setAttribute("aria-pressed", String(isOn(node)));
 	};
 
 	const render = () => {
@@ -1152,14 +1311,26 @@ function _setupCommandPanel(editorEl, jarInstance) {
 		trigger.setAttribute("aria-expanded", String(state.open));
 		composeBtn.setAttribute("aria-pressed", String(state.composing));
 		applyBtn.hidden = !state.composing;
-		setPressed(panel.querySelectorAll(".cmd__count"), (n) => Number(n.dataset.count) === state.count);
-		setPressed(panel.querySelectorAll(".cmd__scope"), (n) => n.dataset.scope === state.scope);
+		setPressed(
+			panel.querySelectorAll(".cmd__count"),
+			(n) => Number(n.dataset.count) === state.count,
+		);
+		setPressed(
+			panel.querySelectorAll(".cmd__scope"),
+			(n) => n.dataset.scope === state.scope,
+		);
 		for (const key of panel.querySelectorAll(".cmd__key")) {
-			key.classList.toggle("cmd__key--lit", state.lit.includes(key.dataset.action));
+			key.classList.toggle(
+				"cmd__key--lit",
+				state.lit.includes(key.dataset.action),
+			);
 		}
 		// A selection is its own scope, so the switch has no say while one exists.
 		const selection = _getSelectionRange(editorEl);
-		scopeRack.classList.toggle("cmd__rack--mute", Boolean(selection) && selection.start !== selection.end);
+		scopeRack.classList.toggle(
+			"cmd__rack--mute",
+			Boolean(selection) && selection.start !== selection.end,
+		);
 	};
 
 	const close = () => {
@@ -1285,8 +1456,12 @@ function _setupCommandPanel(editorEl, jarInstance) {
 	});
 
 	trigger.addEventListener("pointermove", (event) => {
-		if (pointerId !== event.pointerId || !trigger.hasPointerCapture(pointerId)) return;
-		const travel = Math.hypot(event.clientX - dragOrigin.x, event.clientY - dragOrigin.y);
+		if (pointerId !== event.pointerId || !trigger.hasPointerCapture(pointerId))
+			return;
+		const travel = Math.hypot(
+			event.clientX - dragOrigin.x,
+			event.clientY - dragOrigin.y,
+		);
 		if (!dragged && travel < DRAG_THRESHOLD) return;
 		dragged = true;
 
@@ -1295,7 +1470,8 @@ function _setupCommandPanel(editorEl, jarInstance) {
 			Math.max(event.clientY - bounds.top - trigger.offsetHeight / 2, 0),
 			Math.max(bounds.height - trigger.offsetHeight, 0),
 		);
-		root.dataset.side = event.clientX < bounds.left + bounds.width / 2 ? "left" : "right";
+		root.dataset.side =
+			event.clientX < bounds.left + bounds.width / 2 ? "left" : "right";
 		root.style.setProperty("--cmd-top", `${top}px`);
 	});
 
@@ -1342,6 +1518,76 @@ function _setupCommandPanel(editorEl, jarInstance) {
 
 	render();
 	refresh();
+}
+
+/**
+ * Line-level diff between the saved note and the draft.
+ *
+ * Longest common subsequence over lines, which is the same shape `diff` uses. The
+ * table is O(n*m); notes are short enough that this is cheaper than shipping a
+ * library, and the editor is already blocked on a failed save when it runs.
+ *
+ * @param {string} theirs - Text as it now sits on disk
+ * @param {string} mine - Text in the editor
+ * @returns {Array<{kind: "same"|"theirs"|"mine", text: string}>}
+ */
+function _lineDiff(theirs, mine) {
+	const left = theirs.split("\n");
+	const right = mine.split("\n");
+	const lcs = Array.from({ length: left.length + 1 }, () =>
+		new Array(right.length + 1).fill(0),
+	);
+	for (let i = left.length - 1; i >= 0; i--) {
+		for (let j = right.length - 1; j >= 0; j--) {
+			lcs[i][j] =
+				left[i] === right[j]
+					? lcs[i + 1][j + 1] + 1
+					: Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+		}
+	}
+	const rows = [];
+	let i = 0;
+	let j = 0;
+	while (i < left.length && j < right.length) {
+		if (left[i] === right[j]) {
+			rows.push({ kind: "same", text: left[i] });
+			i++;
+			j++;
+		} else if (lcs[i + 1][j] >= lcs[i][j + 1]) {
+			rows.push({ kind: "theirs", text: left[i++] });
+		} else {
+			rows.push({ kind: "mine", text: right[j++] });
+		}
+	}
+	while (i < left.length) rows.push({ kind: "theirs", text: left[i++] });
+	while (j < right.length) rows.push({ kind: "mine", text: right[j++] });
+	return rows;
+}
+
+const DIFF_MARKS = { same: " ", theirs: "−", mine: "+" };
+
+/**
+ * Paint a diff into the conflict panel. Built with the DOM rather than innerHTML,
+ * so note text can never be parsed as markup.
+ *
+ * @param {HTMLElement} target - Container to fill
+ * @param {Array<{kind: string, text: string}>} rows - Output of _lineDiff
+ */
+function _paintDiff(target, rows) {
+	target.replaceChildren();
+	for (const row of rows) {
+		const line = document.createElement("div");
+		line.className = `diffline diffline--${row.kind}`;
+		const mark = document.createElement("span");
+		mark.className = "diffline__mark";
+		mark.setAttribute("aria-hidden", "true");
+		mark.textContent = DIFF_MARKS[row.kind];
+		const text = document.createElement("span");
+		text.className = "diffline__text";
+		text.textContent = row.text;
+		line.append(mark, text);
+		target.append(line);
+	}
 }
 
 /**

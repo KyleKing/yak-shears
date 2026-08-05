@@ -1111,3 +1111,45 @@ async def test_command_panel_media_key_opens_the_picker(touch_page: Page, server
     assert await page.evaluate("() => window.pickerOpened") == 1
     await expect(page.locator("#cmd-panel")).to_be_hidden()
     await _expect_editor_text(page, "- item")
+
+
+@pytest.mark.allow_console_errors
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_a_refused_save_shows_the_difference(context: BrowserContext, page: Page, server_lifecycle):
+    """Being told the note changed is not enough to decide with, so the panel shows what changed."""
+    await _open_editor(context, page)
+    await _fill_editor(page=page, fill="mine only\nshared line")
+    # A stale lease is what the server sees when the file moved underneath, without
+    # this test writing to the committed fixture vault to arrange it.
+    await page.evaluate('() => { document.getElementById("yak-lease").dataset.lease = "0000000000000000"; }')
+
+    await page.click("#save-btn")
+
+    conflict = page.locator("#conflict")
+    await expect(conflict).to_be_visible()
+    await expect(page.locator("#conflict-diff .diffline--mine").filter(has_text="mine only")).to_be_visible()
+    await expect(page.locator("#conflict-diff .diffline--theirs").first).to_be_visible()
+
+
+@pytest.mark.allow_console_errors
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_taking_theirs_loads_the_saved_note_and_clears_the_conflict(
+    context: BrowserContext, page: Page, server_lifecycle
+):
+    """Taking theirs has to leave the editor synced, or the next save reopens the same conflict."""
+    await _open_editor(context, page)
+    await _fill_editor(page=page, fill="a draft that loses")
+    await page.evaluate('() => { document.getElementById("yak-lease").dataset.lease = "0000000000000000"; }')
+    await page.click("#save-btn")
+    await expect(page.locator("#conflict")).to_be_visible()
+
+    await page.click("#conflict-theirs")
+
+    await expect(page.locator("#conflict")).to_be_hidden()
+    await expect(page.locator("#save-status")).to_have_text("Synced")
+    # The saved note is whatever the vault holds, so this asserts the draft is gone
+    # rather than pinning the fixture's text.
+    assert await page.evaluate("() => window.jar.toString()") != "a draft that loses"
+    assert await page.evaluate("() => window.jar.toString() === window.serverContent")

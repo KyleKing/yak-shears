@@ -3552,3 +3552,93 @@ pre code {
 	opacity: 0.75;
 	margin: 0;
 }
+
+/* -----------------------------------------------------------------------------
+   Conflict panel: shown when a save is refused because the note changed under the
+   editor. The diff is the whole point, so it takes the height and the buttons
+   stay put below it. */
+.conflict {
+	position: fixed;
+	inset: 0;
+	z-index: 200;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+	padding-bottom: max(1rem, env(safe-area-inset-bottom));
+	background: rgba(0, 0, 0, 0.55);
+}
+
+.conflict[hidden] {
+	display: none;
+}
+
+.conflict__pane {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	width: min(60rem, 100%);
+	max-height: 100%;
+	padding: 1rem;
+	background: var(--panel-raised);
+	background-image: var(--anodize);
+	border-radius: var(--radius-sm);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.conflict__title {
+	margin: 0;
+	font-size: 1rem;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.conflict__note {
+	margin: 0;
+	font-size: 0.875rem;
+	color: var(--legend-dim);
+}
+
+.conflict__diff {
+	flex: 1;
+	min-height: 6rem;
+	overflow: auto;
+	padding: 0.5rem;
+	background: var(--engrave);
+	border-radius: var(--radius-sm);
+	font-family: var(--font-mono, monospace);
+	font-size: 0.8125rem;
+	line-height: 1.5;
+}
+
+.conflict__keys {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.diffline {
+	display: flex;
+	gap: 0.5rem;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
+.diffline__mark {
+	flex: none;
+	width: 1ch;
+	opacity: 0.7;
+}
+
+/* Colour is doubled by the leading mark, so the diff still reads without it. */
+.diffline--theirs {
+	background: rgba(255, 176, 46, 0.14);
+}
+
+.diffline--mine {
+	background: rgba(110, 220, 140, 0.14);
+}
+
+.diffline--same {
+	color: var(--legend-dim);
+}

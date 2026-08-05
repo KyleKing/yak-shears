@@ -10,7 +10,14 @@ from urllib.parse import quote
 from anyio import Path, to_thread
 from starlette.datastructures import UploadFile
 from starlette.requests import Request
-from starlette.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
+from starlette.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    PlainTextResponse,
+    RedirectResponse,
+    Response,
+)
 
 from yak_shears._log_utils import StageTimer, log
 from yak_shears._templates import (
@@ -201,7 +208,14 @@ async def _save_edited_yak(request: Request, yak_dir: Path, yak_path_str: str) -
     try:
         lease = await save_yak(yak_dir, yak_path_str, content, expected_lease)
     except StaleYakError as exc:
-        return HTMLResponse(str(exc), status_code=HTTPStatus.CONFLICT)
+        # The body is what is on disk, so the editor can diff it against the draft
+        # rather than only reporting that they differ. The lease is the one a
+        # deliberate overwrite has to present.
+        return PlainTextResponse(
+            exc.current,
+            status_code=HTTPStatus.CONFLICT,
+            headers={"X-Yak-Lease": yak_lease(exc.current), "X-Yak-Conflict": str(exc)},
+        )
     return HTMLResponse("", headers={"X-Yak-Lease": lease})
 
 

@@ -15,6 +15,7 @@ from starlette.testclient import TestClient
 from yak_shears import _templates
 from yak_shears._constants import DEFAULT_REDIRECT
 from yak_shears._yak.database import get_search_db_path
+from yak_shears._yak.services import yak_lease
 from yak_shears.server._handlers import not_found
 from yak_shears.server._routes import ROUTES, create_app, create_app_without_auth
 
@@ -271,6 +272,17 @@ def test_edit_yak_post_refuses_a_stale_lease(client: TestClient, mock_user_sessi
         )
         assert response.status_code == HTTPStatus.CONFLICT
         assert test_yak.read_text() == "Changed by another device"
+        # The editor diffs against this rather than only reporting that they differ,
+        # and the returned lease is the one a deliberate overwrite has to present.
+        assert response.text == "Changed by another device"
+        assert response.headers["X-Yak-Lease"] == yak_lease("Changed by another device")
+
+        forced = client.post(
+            "/edit",
+            data={"yak": "test.dj", "content": "Mine wins", "lease": response.headers["X-Yak-Lease"]},
+        )
+        assert forced.status_code == HTTPStatus.OK
+        assert test_yak.read_text() == "Mine wins"
 
 
 def test_edit_yak_post_returns_a_lease_that_permits_the_next_save(
