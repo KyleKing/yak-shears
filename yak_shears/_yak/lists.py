@@ -7,6 +7,7 @@ marker in place, so files round-trip verbatim otherwise.
 
 import re
 from dataclasses import dataclass, field
+from http import HTTPStatus
 
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
@@ -15,7 +16,15 @@ from yak_shears._templates import render_error, render_list_fragment, render_lis
 from yak_shears.frontmatter import parse_frontmatter
 
 from .request_utils import is_htmx_request
-from .services import YakPathError, get_yak_dir, list_yak_paths, resolve_yak_path
+from .services import (
+    StaleYakError,
+    YakPathError,
+    get_yak_dir,
+    list_yak_paths,
+    read_leased,
+    resolve_yak_path,
+    yak_lease,
+)
 
 _ITEM_RE = re.compile(r"^(\s*[-*+]\s+)\[( |x|X)\]\s+(.*)$")
 
@@ -43,6 +52,7 @@ class ListInfo:
 
     name: str
     path: str
+    lease: str
     sections: list[ListSection] = field(default_factory=list)
 
     @property
@@ -78,13 +88,14 @@ async def collect_lists() -> list[ListInfo]:
     yak_dir = await get_yak_dir()
     lists = []
     for yak_path in sorted(await list_yak_paths(yak_dir), key=str):
-        meta, body = parse_frontmatter(await yak_path.read_text())
+        content = await yak_path.read_text()
+        meta, body = parse_frontmatter(content)
         if meta.get("type") != "list":
             continue
         rel_path = yak_path.relative_to(yak_dir).as_posix()
         name = str(meta.get("name") or rel_path)
         sections = [section for section in _parse_sections(body) if section.items]
-        lists.append(ListInfo(name=name, path=rel_path, sections=sections))
+        lists.append(ListInfo(name=name, path=rel_path, lease=yak_lease(content), sections=sections))
     return sorted(lists, key=lambda info: info.name)
 
 
@@ -127,7 +138,7 @@ async def list_toggle_handler(request: Request) -> Response:
     try:
         ordinals = [int(str(raw)) for raw in form.getlist("ordinal")]
     except ValueError:
-        return render_error("Missing or invalid item ordinal")
+        ordinals = []
     if not ordinals:
         return render_error("Missing or invalid item ordinal")
 
@@ -136,7 +147,12 @@ async def list_toggle_handler(request: Request) -> Response:
         yak_path = await resolve_yak_path(yak_dir, rel_path)
     except YakPathError:
         return render_error("Invalid list path")
-    content = await yak_path.read_text()
+    try:
+        content = await read_leased(yak_path, str(form.get("lease", "")) or None)
+    except StaleYakError:
+        return render_error(
+            f"{rel_path} changed since this page loaded. Reload, then tick it again.", HTTPStatus.CONFLICT
+        )
     for ordinal in ordinals:
         toggled = _toggle_item(content, ordinal)
         if toggled is None:

@@ -11,6 +11,7 @@ earn from; that gap is a recorded open question.
 import re
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
+from http import HTTPStatus
 
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
@@ -18,7 +19,15 @@ from starlette.responses import RedirectResponse, Response
 from yak_shears._templates import render_error, render_habits
 from yak_shears.frontmatter import parse_frontmatter
 
-from .services import YakPathError, get_yak_dir, list_yak_paths, resolve_yak_path
+from .services import (
+    StaleYakError,
+    YakPathError,
+    get_yak_dir,
+    list_yak_paths,
+    read_leased,
+    resolve_yak_path,
+    yak_lease,
+)
 
 GRACE_CAP = 7
 HEAT_DAYS = 28
@@ -48,6 +57,7 @@ class HabitInfo:
     grace: int
     done_today: bool
     heat: list[HeatCell]
+    lease: str
 
 
 _SATURDAY = 5
@@ -149,7 +159,8 @@ async def collect_habits(today: date | None = None) -> list[HabitInfo]:
     yak_dir = await get_yak_dir()
     habits = []
     for yak_path in sorted(await list_yak_paths(yak_dir), key=str):
-        meta, body = parse_frontmatter(await yak_path.read_text())
+        content = await yak_path.read_text()
+        meta, body = parse_frontmatter(content)
         if meta.get("type") != "habit":
             continue
         rel_path = yak_path.relative_to(yak_dir).as_posix()
@@ -168,6 +179,7 @@ async def collect_habits(today: date | None = None) -> list[HabitInfo]:
                 grace=grace,
                 done_today=today in completions,
                 heat=_heat(schedule, completions, today),
+                lease=yak_lease(content),
             )
         )
     return sorted(habits, key=lambda info: info.name)
@@ -206,5 +218,11 @@ async def habit_toggle_handler(request: Request) -> Response:
     except YakPathError:
         return render_error("Invalid habit path")
     today = datetime.now(tz=UTC).date()
-    await yak_path.write_text(_toggle_today(await yak_path.read_text(), today))
+    try:
+        content = await read_leased(yak_path, str(form.get("lease", "")) or None)
+    except StaleYakError:
+        return render_error(
+            f"{rel_path} changed since this page loaded. Reload, then mark it again.", HTTPStatus.CONFLICT
+        )
+    await yak_path.write_text(_toggle_today(content, today))
     return RedirectResponse("/habits", status_code=303)

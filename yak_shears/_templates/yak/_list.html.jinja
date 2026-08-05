@@ -17,6 +17,7 @@ info: ListInfo
         <form class="refitem{% if item.checked %} refitem--done{% endif %}" method="post" action="/lists/toggle"
               hx-post="/lists/toggle" hx-target="closest .listcard" hx-swap="outerHTML">
           <input type="hidden" name="path" value="{{ info.path }}">
+          <input type="hidden" name="lease" value="{{ info.lease }}">
           <input type="hidden" name="ordinal" value="{{ item.ordinal }}">
           <button type="submit" class="refitem__press" aria-pressed="{{ 'true' if item.checked else 'false' }}">
             <span class="refitem__box" aria-hidden="true"></span>

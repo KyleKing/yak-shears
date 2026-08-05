@@ -299,6 +299,7 @@ undo: UndoInfo | None
       {% if undo %}
         <form class="toast" method="post" action="/streams/act" role="status" aria-live="polite">
           <input type="hidden" name="path" value="{{ undo.path }}">
+          <input type="hidden" name="lease:{{ undo.path }}" value="{{ undo.lease }}">
           <input type="hidden" name="action" value="{{ undo.action }}">
           {% if undo.reason %}<input type="hidden" name="reason" value="{{ undo.reason }}">{% endif %}
           <input type="hidden" name="focus" value="{{ focused.key if focused else '' }}">
@@ -337,6 +338,7 @@ undo: UndoInfo | None
               <div class="canal__strip{% if task.waiting %} canal__strip--waiting{% endif %}">
                 <label class="canal__latchcell">
                   <input class="latch" type="radio" name="path" value="{{ task.path }}" aria-label="Latch {{ task.title }}">
+                  <input type="hidden" name="lease:{{ task.path }}" value="{{ task.lease }}">
                 </label>
                 <span class="mark" aria-hidden="true">
                   <span class="mark__cat" style="background: {{ category_colors.get(focused.category, 'var(--color-border)') }}"></span>
@@ -372,6 +374,7 @@ undo: UndoInfo | None
             <div class="canal__strip">
               <label class="canal__latchcell">
                 <input class="latch" type="radio" name="path" value="{{ task.path }}" aria-label="Latch {{ task.title }}">
+                  <input type="hidden" name="lease:{{ task.path }}" value="{{ task.lease }}">
               </label>
               <span class="mark" aria-hidden="true">
                 <span class="mark__cat" style="background: var(--lamp-off)"></span>

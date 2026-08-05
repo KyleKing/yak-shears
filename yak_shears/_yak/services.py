@@ -332,6 +332,26 @@ def yak_lease(content: str) -> str:
     return sha256(content.encode("utf-8")).hexdigest()[:16]
 
 
+async def read_leased(yak_path: Path, expected_lease: str | None) -> str:
+    """Read a yak, refusing when it no longer matches the lease the page carried.
+
+    An action composed against a stale page (toggle the third item, advance this
+    task) can still apply cleanly to changed content while meaning something the
+    reader never intended.
+
+    Returns:
+        Current file content.
+
+    Raises:
+        StaleYakError: If expected_lease does not match what is on disk
+    """
+    content = await yak_path.read_text()
+    if expected_lease is not None and yak_lease(content) != expected_lease:
+        msg = f"{yak_path.name} changed since this page was loaded"
+        raise StaleYakError(msg)
+    return content
+
+
 async def save_yak(yak_dir: Path, relative_path: str, content: str, expected_lease: str | None = None) -> str:
     """Save yak content and update metadata index.
 

@@ -70,6 +70,7 @@ habits: list[HabitInfo]
         </span>
         <form class="habit__done" method="post" action="/habits/toggle">
           <input type="hidden" name="path" value="{{ habit.path }}">
+          <input type="hidden" name="lease" value="{{ habit.lease }}">
           <button type="submit" class="habit__key{% if habit.done_today %} habit__key--done{% endif %}"
                   aria-pressed="{{ 'true' if habit.done_today else 'false' }}">
             <span class="habit__lamp{% if habit.done_today %} habit__lamp--live{% endif %}" aria-hidden="true"></span>

@@ -5,6 +5,7 @@ Phase 4 query engine, and writes nothing.
 """
 
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any
@@ -16,7 +17,7 @@ from yak_shears._templates import Recency, render_streams
 from yak_shears.frontmatter import parse_frontmatter
 
 from .categories import resolve_colors, slot_css
-from .services import get_yak_dir, list_yak_paths
+from .services import get_yak_dir, list_yak_paths, yak_lease
 
 CANAL_STATES = ("in-progress", "queue", "backlog")
 DRAIN_STATES = ("complete", "not-planned")
@@ -43,6 +44,7 @@ class TaskInfo:
     waiting: str
     relations: int
     recency: Recency
+    lease: str
 
 
 @dataclass(frozen=True)
@@ -53,6 +55,7 @@ class UndoInfo:
     action: str
     reason: str
     label: str
+    lease: str
 
 
 @dataclass
@@ -105,7 +108,7 @@ def _list_len(value: Any) -> int:
     return 1 if value else 0
 
 
-def _task_info(meta: dict[str, Any], body: str, path: str, today: date, modified: datetime) -> TaskInfo:
+def _task_info(meta: dict[str, Any], body: str, path: str, today: date, modified: datetime, *, lease: str) -> TaskInfo:
     title = next((line.lstrip("# ").strip() for line in body.splitlines() if line.strip()), path)
     due = _as_date(meta.get("due"))
     flex = int(meta.get("flex") or 0)
@@ -120,6 +123,7 @@ def _task_info(meta: dict[str, Any], body: str, path: str, today: date, modified
         waiting=str(meta.get("waiting") or ""),
         relations=_list_len(meta.get("blocked-by")) + _list_len(meta.get("relates")),
         recency=next((state for limit, state in _RECENCY_DAYS if age < limit), Recency.COLD),
+        lease=lease,
     )
 
 
@@ -137,7 +141,8 @@ async def collect_streams(today: date | None = None) -> tuple[list[StreamInfo], 
     categories: set[str] = set()
 
     for yak_path in sorted(await list_yak_paths(yak_dir), key=str):
-        meta, body = parse_frontmatter(await yak_path.read_text())
+        content = await yak_path.read_text()
+        meta, body = parse_frontmatter(content)
         rel_path = yak_path.relative_to(yak_dir).as_posix()
         category = yak_path.parent.name if yak_path.parent != yak_dir else ""
         categories.add(category)
@@ -152,7 +157,12 @@ async def collect_streams(today: date | None = None) -> tuple[list[StreamInfo], 
             )
         elif meta.get("type") == "task" or str(meta.get("state", "")) in TASK_STATES:
             modified = datetime.fromtimestamp((await yak_path.stat()).st_mtime, tz=UTC)
-            tasks.append((str(meta.get("stream") or ""), _task_info(meta, body, rel_path, today, modified)))
+            tasks.append(
+                (
+                    str(meta.get("stream") or ""),
+                    _task_info(meta, body, rel_path, today, modified, lease=yak_lease(content)),
+                )
+            )
 
     triage: list[TaskInfo] = []
     for stream_key, task in tasks:
@@ -174,6 +184,13 @@ async def collect_streams(today: date | None = None) -> tuple[list[StreamInfo], 
     return ordered, triage
 
 
+def _all_tasks(streams: list[StreamInfo], triage: list[TaskInfo]) -> Iterator[TaskInfo]:
+    yield from triage
+    for stream in streams:
+        for reach in stream.reaches.values():
+            yield from reach
+
+
 async def streams_handler(request: Request) -> Response:
     """Handle requests to /streams.
 
@@ -192,11 +209,15 @@ async def streams_handler(request: Request) -> Response:
     undo_path = request.query_params.get("u_path", "")
     undo_action = request.query_params.get("u_action", "")
     if undo_path and ".." not in undo_path and _UNDO_ACTION_RE.fullmatch(undo_action):
+        # The action that produced this toast just rewrote the file, so the lease has
+        # to come from the read this render already did rather than from the redirect.
+        undo_lease = next((task.lease for task in _all_tasks(streams, triage) if task.path == undo_path), "")
         undo = UndoInfo(
             path=undo_path,
             action=undo_action,
             reason=request.query_params.get("u_reason", ""),
             label=request.query_params.get("u_label", "undo"),
+            lease=undo_lease,
         )
     return render_streams(
         streams=streams,

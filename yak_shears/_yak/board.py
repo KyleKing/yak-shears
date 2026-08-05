@@ -7,6 +7,7 @@ own inverse, so the response can carry a one-press undo (STREAMS-DESIGN.md).
 import re
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
+from http import HTTPStatus
 from typing import Any
 from urllib.parse import quote, urlencode
 
@@ -16,7 +17,7 @@ from starlette.responses import RedirectResponse, Response
 from yak_shears._templates import render_error
 from yak_shears.frontmatter import parse_frontmatter, rewrite_frontmatter_field
 
-from .services import YakPathError, get_yak_dir, resolve_yak_path
+from .services import StaleYakError, YakPathError, get_yak_dir, read_leased, resolve_yak_path
 from .streams import CANAL_STATES, TASK_STATES, collect_streams
 
 _RAISE = {"backlog": "queue", "queue": "in-progress", "in-progress": "complete"}
@@ -196,7 +197,14 @@ async def board_act_handler(request: Request) -> Response:
         if action.removeprefix("stream:") not in {stream.key for stream in streams}:
             return render_error("Unknown stream")
 
-    content = await yak_path.read_text()
+    # One form holds every strip on the canal, so the lease is keyed by path and the
+    # latched radio picks which one applies.
+    try:
+        content = await read_leased(yak_path, str(form.get(f"lease:{rel_path}", "")) or None)
+    except StaleYakError:
+        return render_error(
+            f"{rel_path} changed since this page loaded. Reload, then latch it again.", HTTPStatus.CONFLICT
+        )
     try:
         result = apply_action(content, action, reason=reason, today=datetime.now(tz=UTC).date())
     except BoardActionError as err:
