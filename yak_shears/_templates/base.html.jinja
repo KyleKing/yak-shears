@@ -36,7 +36,10 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Yak Shears">
+    {# iOS ignores the manifest's shortcuts, so the only way to reach a page in one
+       tap is a second homescreen icon pointed at it. This names that icon, and the
+       manifest's scope keeps it launching standalone rather than in Safari. #}
+    <meta name="apple-mobile-web-app-title" content="{% block homescreen_title %}Yak Shears{% endblock %}">
     <link rel="icon" href="{{ static_url('icons/icon.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ static_url('icons/apple-touch-icon.png') }}">
     <title>{% block title %}Yak Shears{% endblock %}</title>
