@@ -8,6 +8,7 @@ import os
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from hashlib import sha256
 from operator import itemgetter
 from pathlib import Path as SyncPath
 
@@ -129,6 +130,10 @@ async def get_yak_dir() -> Path:
 
 class YakPathError(ValueError):
     """Raised when a user-supplied yak path is unsafe or malformed."""
+
+
+class StaleYakError(Exception):
+    """Raised when a save would overwrite changes made since the yak was opened."""
 
 
 async def resolve_yak_path(yak_dir: Path, relative_path: str) -> Path:
@@ -322,19 +327,39 @@ async def read_yak(yak_dir: Path, relative_path: str) -> tuple[str, str]:
     return content, category
 
 
-async def save_yak(yak_dir: Path, relative_path: str, content: str) -> None:
+def yak_lease(content: str) -> str:
+    """Fingerprint content so a save can prove which version it started from."""
+    return sha256(content.encode("utf-8")).hexdigest()[:16]
+
+
+async def save_yak(yak_dir: Path, relative_path: str, content: str, expected_lease: str | None = None) -> str:
     """Save yak content and update metadata index.
+
+    Passing expected_lease makes the write conditional, the way
+    `git push --force-with-lease` is: the save is refused when the file changed
+    underneath the editor (Syncthing, another device, a second tab).
+
+    Returns:
+        Lease for the content just written.
 
     Raises:
         FileNotFoundError: If yak doesn't exist
+        StaleYakError: If expected_lease does not match what is on disk
     """
     yak_path = await resolve_yak_path(yak_dir, relative_path)
     if not await yak_path.is_file():
         msg = f"Yak not found: {yak_path}"
         raise FileNotFoundError(msg)
 
+    if expected_lease is not None:
+        on_disk = yak_lease(await yak_path.read_text(encoding="utf-8"))
+        if on_disk != expected_lease:
+            msg = f"{relative_path} changed since it was opened"
+            raise StaleYakError(msg)
+
     await yak_path.write_text(content, encoding="utf-8")
     index_yak_metadata(SyncPath(yak_path), SyncPath(yak_dir))
+    return yak_lease(content)
 
 
 async def delete_yak(yak_dir: Path, relative_path: str) -> None:

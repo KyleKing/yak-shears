@@ -24,6 +24,7 @@ const MOBILE_BREAKPOINT = 768; // px - matches CSS media query
 const SAVE_STATUS_RESET_DELAY = 2000; // ms - "Saved" → "Synced" transition
 const EDITOR_INIT_MAX_RETRIES = 50; // Wait up to 5 seconds for DOM
 const EDITOR_INIT_RETRY_INTERVAL = 100; // ms between retries
+const HTTP_CONFLICT = 409; // The yak changed since this page loaded
 
 /**
  * GLOBAL STATE
@@ -349,7 +350,7 @@ function initEditor() {
 		const yak_path = new URLSearchParams(window.location.search).get("yak");
 		if (yak_path === null) throw new Error("URL does not have file parameter.");
 		const storageKey = `editor_${yak_path}`;
-		const serverContent = window.serverContent; // Injected in template: <script>window.serverContent = {{ content | tojson }};</script>
+		let serverContent = window.serverContent; // Injected in template: <script>window.serverContent = {{ content | tojson }};</script>
 		editor.textContent = serverContent;
 		highlight(editor); // Apply initial syntax highlighting
 
@@ -382,6 +383,7 @@ function initEditor() {
 		document.body.addEventListener("htmx:configRequest", function (evt) {
 			if (evt.target.id === "save-btn") {
 				evt.detail.parameters.content = getEditorContent();
+				evt.detail.parameters.lease = document.getElementById("yak-lease").dataset.lease;
 			}
 		});
 
@@ -398,6 +400,9 @@ function initEditor() {
 				document.getElementById("save-btn").disabled = false;
 				if (evt.detail.successful) {
 					uploadError = false;
+					serverContent = getEditorContent();
+					document.getElementById("yak-lease").dataset.lease =
+						evt.detail.xhr.getResponseHeader("X-Yak-Lease") || "";
 					updateSaveStatus("Saved");
 					// Auto-transition "Saved" → "Synced" after 2 seconds
 					setTimeout(() => {
@@ -405,10 +410,20 @@ function initEditor() {
 					}, SAVE_STATUS_RESET_DELAY);
 					// Clear local storage on successful save
 					localStorage.removeItem(storageKey);
+				} else if (evt.detail.xhr.status === HTTP_CONFLICT) {
+					// The file moved under us. Keep the draft in localStorage and leave
+					// the lease stale, so a second press cannot force the write through.
+					updateSaveStatus("Changed elsewhere - copy your text, then reload");
 				} else {
 					document.getElementById("save-status").textContent = "Error saving!";
 				}
 			}
+		});
+
+		// localStorage already survives a reload, but it cannot survive the phone
+		// evicting the tab, and a draft recovered later is worse than one never lost.
+		window.addEventListener("beforeunload", (evt) => {
+			if (getEditorContent() !== serverContent) evt.preventDefault();
 		});
 
 		// Track content changes for localStorage sync and preview updates

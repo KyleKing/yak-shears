@@ -5,6 +5,8 @@
    <div class="container">
     <div class="metadata-backdrop" id="metadata-backdrop">
     </div>
+    <div data-lease="55977a0f81ae314d" hidden="" id="yak-lease">
+    </div>
     <div class="editor-layout">
      <div class="editor-main">
       <div class="draft-toggle" hidden="" id="draft-toggle">

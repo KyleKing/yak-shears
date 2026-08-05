@@ -7,7 +7,7 @@ from pathlib import Path as SyncPath
 from typing import Self
 from urllib.parse import quote
 
-from anyio import to_thread
+from anyio import Path, to_thread
 from starlette.datastructures import UploadFile
 from starlette.requests import Request
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -48,6 +48,7 @@ from yak_shears._yak.media import (
 )
 from yak_shears._yak.request_utils import extract_yak_path, is_htmx_request
 from yak_shears._yak.services import (
+    StaleYakError,
     YakPathError,
     create_yak,
     delete_yak,
@@ -64,6 +65,7 @@ from yak_shears._yak.services import (
     read_yak_body,
     resolve_yak_path,
     save_yak,
+    yak_lease,
 )
 from yak_shears.frontmatter import parse_frontmatter
 
@@ -187,6 +189,22 @@ async def settings_handler(request: Request) -> Response:
     )
 
 
+async def _save_edited_yak(request: Request, yak_dir: Path, yak_path_str: str) -> Response:
+    """Write the posted content, honouring the lease the editor started from.
+
+    Returns:
+        Empty 200 carrying the new lease, or 409 when the file moved underneath.
+    """
+    form_data = await request.form()
+    content = str(form_data.get("content", ""))
+    expected_lease = str(form_data.get("lease", "")) or None
+    try:
+        lease = await save_yak(yak_dir, yak_path_str, content, expected_lease)
+    except StaleYakError as exc:
+        return HTMLResponse(str(exc), status_code=HTTPStatus.CONFLICT)
+    return HTMLResponse("", headers={"X-Yak-Lease": lease})
+
+
 async def edit_yak_handler(request: Request) -> Response:
     """Handle requests to /edit."""
     yak_dir = await get_yak_dir()
@@ -197,10 +215,7 @@ async def edit_yak_handler(request: Request) -> Response:
 
     try:
         if request.method == "POST":
-            form_data = await request.form()
-            content = str(form_data.get("content", ""))
-            await save_yak(yak_dir, yak_path_str, content)
-            return HTMLResponse("")
+            return await _save_edited_yak(request, yak_dir, yak_path_str)
 
         content, category = await read_yak(yak_dir, yak_path_str)
         frontmatter, _ = parse_frontmatter(content)
@@ -215,6 +230,7 @@ async def edit_yak_handler(request: Request) -> Response:
             category_color=category_color,
             frontmatter=frontmatter or {},
             backlinks=backlinks or [],
+            lease=yak_lease(content),
             current_route="edit",
         )
     except (FileNotFoundError, YakPathError):

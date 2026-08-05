@@ -253,6 +253,48 @@ def test_edit_yak_post(client: TestClient, mock_user_session, tmp_path) -> None:
         assert test_yak.read_text() == "Updated content"
 
 
+def test_edit_yak_post_refuses_a_stale_lease(client: TestClient, mock_user_session, tmp_path) -> None:
+    """A write whose lease no longer matches the file is refused, not merged or forced."""
+    test_yak = tmp_path / "test.dj"
+    test_yak.write_text("Original content")
+
+    with set_yak_shears_dir(tmp_path):
+        opened = client.get("/edit?yak=test.dj")
+        lease = re.search(r'id="yak-lease" data-lease="([^"]+)"', opened.text)[1]
+
+        test_yak.write_text("Changed by another device")
+
+        response = client.post(
+            "/edit",
+            data={"yak": "test.dj", "content": "Updated content", "lease": lease},
+            headers={"HX-Request": "true"},
+        )
+        assert response.status_code == HTTPStatus.CONFLICT
+        assert test_yak.read_text() == "Changed by another device"
+
+
+def test_edit_yak_post_returns_a_lease_that_permits_the_next_save(
+    client: TestClient, mock_user_session, tmp_path
+) -> None:
+    """Saving twice without reloading works, because each response carries the new lease."""
+    test_yak = tmp_path / "test.dj"
+    test_yak.write_text("Original content")
+
+    with set_yak_shears_dir(tmp_path):
+        opened = client.get("/edit?yak=test.dj")
+        lease = re.search(r'id="yak-lease" data-lease="([^"]+)"', opened.text)[1]
+
+        first = client.post("/edit", data={"yak": "test.dj", "content": "One", "lease": lease})
+        assert first.status_code == HTTPStatus.OK
+
+        second = client.post(
+            "/edit",
+            data={"yak": "test.dj", "content": "Two", "lease": first.headers["X-Yak-Lease"]},
+        )
+        assert second.status_code == HTTPStatus.OK
+        assert test_yak.read_text() == "Two"
+
+
 @pytest.mark.parametrize(
     ("endpoint", "method", "query_or_data", "use_tmp_path", "expected_status", "expected_text"),
     [

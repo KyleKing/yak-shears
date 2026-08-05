@@ -8,6 +8,6 @@ from beartype import beartype
 
 
 @beartype
-def render_edit(*, yak_name: str, yak_path: str, content: str, category: str, category_color: str, frontmatter: dict[str, object], backlinks: list[tuple[str, str]], current_route: str) -> HTMLResponse:
+def render_edit(*, yak_name: str, yak_path: str, content: str, category: str, category_color: str, frontmatter: dict[str, object], backlinks: list[tuple[str, str]], lease: str, current_route: str) -> HTMLResponse:
     """Render yak/edit.html.jinja with a checked context."""
-    return HTMLResponse(_env.get_template('yak/edit.html.jinja').render(yak_name=yak_name, yak_path=yak_path, content=content, category=category, category_color=category_color, frontmatter=frontmatter, backlinks=backlinks, current_route=current_route))
+    return HTMLResponse(_env.get_template('yak/edit.html.jinja').render(yak_name=yak_name, yak_path=yak_path, content=content, category=category, category_color=category_color, frontmatter=frontmatter, backlinks=backlinks, lease=lease, current_route=current_route))

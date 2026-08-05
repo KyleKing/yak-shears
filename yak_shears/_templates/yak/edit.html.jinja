@@ -6,6 +6,7 @@ category: str
 category_color: str
 frontmatter: dict[str, object]
 backlinks: list[tuple[str, str]]
+lease: str
 current_route: str
 -#}
 {% extends "base.html.jinja" %}
@@ -28,6 +29,11 @@ current_route: str
 {% block content %}
   {# Backdrop overlay - shown when metadata panel is open on mobile or unpinned desktop #}
   <div class="metadata-backdrop" id="metadata-backdrop"></div>
+
+  {# Fingerprint of the content this page was rendered from. The save sends it
+     back so the server can refuse a write that would drop a change made since,
+     the way `git push --force-with-lease` does. editor.js keeps it current. #}
+  <div id="yak-lease" data-lease="{{ lease }}" hidden></div>
 
   <div class="editor-layout">
     <div class="editor-main">
