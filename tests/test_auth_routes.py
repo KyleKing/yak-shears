@@ -113,10 +113,10 @@ def test_login_get_when_already_logged_in(auth_client, sample_user):
     assert response.headers["location"] == DEFAULT_REDIRECT
 
 
-def test_login_unsupported_method(auth_client):
-    """Test that unsupported HTTP methods return 405 Method Not Allowed."""
-    response = auth_client.request("PATCH", "/auth/login")
-    assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
+def test_login_method_handling(auth_client):
+    """An undeclared method is refused, and HEAD is answered like GET."""
+    assert auth_client.request("PATCH", "/auth/login").status_code == HTTPStatus.METHOD_NOT_ALLOWED
+    assert auth_client.head("/auth/login").status_code == HTTPStatus.OK
 
 
 def test_login_handles_newlines_in_input(auth_client, sample_user):

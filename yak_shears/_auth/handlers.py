@@ -50,7 +50,8 @@ async def login_handler(request: Request) -> Response:
     Returns:
         Response: HTML page for login or a redirect
     """
-    if request.method == "GET":
+    # Starlette routes HEAD to the GET endpoint rather than answering it itself
+    if request.method in {"GET", "HEAD"}:
         if user := get_user_from_session(request):
             return RedirectResponse(url=DEFAULT_REDIRECT)
         redirect_path = request.query_params.get("redirect")
