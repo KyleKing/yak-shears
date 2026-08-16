@@ -2862,14 +2862,14 @@ wheels = [
 
 [[package]]
 name = "types-for-jinja"
-version = "1.1.0"
+version = "1.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja2" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/15/08/4ec0f2bea80fe16c94f4ebaaefd8ab8597955ffc8f25feced8140b3958fb/types_for_jinja-1.1.0.tar.gz", hash = "sha256:93ba5974a23319330131742a1cdae096d167e09374d1b2b09d00dad8d5df8d71", size = 65970, upload-time = "2026-08-05T17:23:23.208Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/35/c3/e1f7246b80f20c8d91c580108c979e2f79a39df3066d1ef27484d84a3ffe/types_for_jinja-1.1.3.tar.gz", hash = "sha256:790754a3ebfe3a951ba06f74487197cbaca6db8efd0ac920b6e8f5aea6941523", size = 68446, upload-time = "2026-08-16T09:10:42.325Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ee/fb/2a8feae0bb4256eba79a8646dc68d9a4c7e99a195b381d9dc7228b2a616b/types_for_jinja-1.1.0-py3-none-any.whl", hash = "sha256:17a4e0990eac952bec9d778a2d1dfbcd3f99db0be04c570724084e298ba3f6cb", size = 69003, upload-time = "2026-08-05T17:23:21.859Z" },
+    { url = "https://files.pythonhosted.org/packages/52/76/8aa9bdd3af88d91c222e3a8457eb8f58168d92dda1e1a08a101de94e53af/types_for_jinja-1.1.3-py3-none-any.whl", hash = "sha256:06c5e3944c8ff749008bad8e3fbbd2363dcb4d1665655b8eebdf1143857032f0", size = 70900, upload-time = "2026-08-16T09:10:40.969Z" },
 ]
 
 [package.optional-dependencies]
@@ -3108,6 +3108,7 @@ dependencies = [
     { name = "python-multipart" },
     { name = "pyyaml" },
     { name = "starlette" },
+    { name = "types-for-jinja", extra = ["lsp"] },
     { name = "uvicorn" },
 ]
 
@@ -3141,6 +3142,7 @@ requires-dist = [
     { name = "python-multipart", specifier = ">=0.0.20" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "starlette", specifier = ">=0.47.0" },
+    { name = "types-for-jinja", extras = ["lsp"], specifier = ">=1.1.3" },
     { name = "uvicorn", specifier = ">=0.34.2" },
 ]
 
@@ -3158,6 +3160,6 @@ dev = [
     { name = "ruff", specifier = ">=0.11.10" },
     { name = "syrupy", specifier = ">=4.9.1" },
     { name = "ty", specifier = ">=0.0.1a19" },
-    { name = "types-for-jinja", extras = ["lsp"], specifier = ">=1.1.0" },
+    { name = "types-for-jinja", extras = ["lsp"], specifier = ">=1.1.1" },
     { name = "types-pyyaml", specifier = ">=6.0.12.20250915" },
 ]

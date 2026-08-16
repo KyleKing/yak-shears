@@ -13,7 +13,7 @@ from typing import Any
 from starlette.requests import Request
 from starlette.responses import Response
 
-from yak_shears._templates import Recency, render_streams
+from yak_shears._templates import Recency
 from yak_shears.frontmatter import parse_frontmatter
 
 from .categories import resolve_colors, slot_css
@@ -182,47 +182,3 @@ async def collect_streams(today: date | None = None) -> tuple[list[StreamInfo], 
 
     ordered = sorted(streams.values(), key=lambda stream: (stream.category, stream.name))
     return ordered, triage
-
-
-def _all_tasks(streams: list[StreamInfo], triage: list[TaskInfo]) -> Iterator[TaskInfo]:
-    yield from triage
-    for stream in streams:
-        for reach in stream.reaches.values():
-            yield from reach
-
-
-async def streams_handler(request: Request) -> Response:
-    """Handle requests to /streams.
-
-    Returns:
-        The rendered canal view for the focused stream.
-    """
-    streams, triage = await collect_streams()
-    yak_dir = await get_yak_dir()
-    category_colors = await resolve_colors(yak_dir, {stream.category for stream in streams})
-    focused_key = request.query_params.get("stream", "")
-    focused = next(
-        (stream for stream in streams if stream.key == focused_key),
-        max(streams, key=lambda stream: stream.wip, default=None),
-    )
-    undo = None
-    undo_path = request.query_params.get("u_path", "")
-    undo_action = request.query_params.get("u_action", "")
-    if undo_path and ".." not in undo_path and _UNDO_ACTION_RE.fullmatch(undo_action):
-        # The action that produced this toast just rewrote the file, so the lease has
-        # to come from the read this render already did rather than from the redirect.
-        undo_lease = next((task.lease for task in _all_tasks(streams, triage) if task.path == undo_path), "")
-        undo = UndoInfo(
-            path=undo_path,
-            action=undo_action,
-            reason=request.query_params.get("u_reason", ""),
-            label=request.query_params.get("u_label", "undo"),
-            lease=undo_lease,
-        )
-    return render_streams(
-        streams=streams,
-        focused=focused,
-        triage=triage,
-        category_colors=category_colors,
-        undo=undo,
-    )

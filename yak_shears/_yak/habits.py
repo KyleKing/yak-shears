@@ -16,7 +16,6 @@ from http import HTTPStatus
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 
-from yak_shears._templates import render_error, render_habits
 from yak_shears.frontmatter import parse_frontmatter
 
 from .services import (
@@ -185,7 +184,7 @@ async def collect_habits(today: date | None = None) -> list[HabitInfo]:
     return sorted(habits, key=lambda info: info.name)
 
 
-def _toggle_today(content: str, today: date) -> str:
+def toggle_today(content: str, today: date) -> str:
     line = f"- [x] {today.isoformat()}"
     lines = content.splitlines()
     without = [existing for existing in lines if existing.strip() != line]
@@ -193,36 +192,3 @@ def _toggle_today(content: str, today: date) -> str:
         return "\n".join(without) + ("\n" if content.endswith("\n") else "")
     ending = "" if content.endswith("\n") or not content else "\n"
     return f"{content}{ending}{line}\n"
-
-
-async def habits_handler(_request: Request) -> Response:
-    """Handle requests to /habits.
-
-    Returns:
-        The rendered habit bench.
-    """
-    return render_habits(habits=await collect_habits())
-
-
-async def habit_toggle_handler(request: Request) -> Response:
-    """Record or retract today's completion for one habit.
-
-    Returns:
-        A redirect back to /habits, or an error page for a bad reference.
-    """
-    form = await request.form()
-    rel_path = str(form.get("path", ""))
-    yak_dir = await get_yak_dir()
-    try:
-        yak_path = await resolve_yak_path(yak_dir, rel_path)
-    except YakPathError:
-        return render_error("Invalid habit path")
-    today = datetime.now(tz=UTC).date()
-    try:
-        content = await read_leased(yak_path, str(form.get("lease", "")) or None)
-    except StaleYakError:
-        return render_error(
-            f"{rel_path} changed since this page loaded. Reload, then mark it again.", HTTPStatus.CONFLICT
-        )
-    await yak_path.write_text(_toggle_today(content, today))
-    return RedirectResponse("/habits", status_code=303)

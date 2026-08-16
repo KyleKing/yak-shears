@@ -22,11 +22,12 @@ from starlette.responses import (
 from yak_shears._log_utils import StageTimer, log
 from yak_shears._templates import (
     SortBy,
-    _render_template,
     color_lookup,
+    render_doctor,
     render_error,
     render_new,
     render_search,
+    render_search_results,
     render_settings,
     render_yak_edit,
     render_yaks,
@@ -281,7 +282,7 @@ async def search_handler(request: Request) -> Response:
     log(timer.format_line("SEARCH", query_len=len(query), results=len(results)))
 
     if is_htmx_request(request):
-        return _render_template("search/search_results.html.jinja", results=results, query=query)
+        return render_search_results(results=results, query=query)
 
     return render_search(results=results, query=query, current_route="search")
 
@@ -397,8 +398,7 @@ async def doctor_handler(request: Request) -> Response:  # noqa: ARG001
     report = await build_doctor_report(yak_dir)
     filenames = plan_renames(SyncPath(yak_dir))
     stray = stray_vault_index()
-    return _render_template(
-        "doctor/index.html.jinja",
+    return render_doctor(
         missing=report.missing,
         orphans=report.orphans,
         referenced_count=report.referenced_count,
@@ -408,7 +408,6 @@ async def doctor_handler(request: Request) -> Response:  # noqa: ARG001
         index_path=str(get_search_db_path()),
         index_in_vault=index_is_inside_vault(),
         stray_index=str(stray) if stray else None,
-        current_route="doctor",
     )
 
 

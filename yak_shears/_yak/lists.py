@@ -12,7 +12,6 @@ from http import HTTPStatus
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 
-from yak_shears._templates import render_error, render_list_fragment, render_lists
 from yak_shears.frontmatter import parse_frontmatter
 
 from .request_utils import is_htmx_request
@@ -99,7 +98,7 @@ async def collect_lists() -> list[ListInfo]:
     return sorted(lists, key=lambda info: info.name)
 
 
-def _toggle_item(content: str, ordinal: int) -> str | None:
+def toggle_item(content: str, ordinal: int) -> str | None:
     lines = content.splitlines(keepends=True)
     seen = 0
     for index, line in enumerate(lines):
@@ -113,55 +112,3 @@ def _toggle_item(content: str, ordinal: int) -> str | None:
             return "".join(lines)
         seen += 1
     return None
-
-
-async def lists_handler(_request: Request) -> Response:
-    """Handle requests to /lists.
-
-    Returns:
-        The rendered reference lists page.
-    """
-    return render_lists(lists=await collect_lists())
-
-
-async def list_toggle_handler(request: Request) -> Response:
-    """Toggle task items in a list note, identified by item ordinal.
-
-    Accepts one or more ``ordinal`` fields so the rack's arm-and-apply key
-    can commit a batch in a single write.
-
-    Returns:
-        A redirect back to /lists, or an error page for a bad reference.
-    """
-    form = await request.form()
-    rel_path = str(form.get("path", ""))
-    try:
-        ordinals = [int(str(raw)) for raw in form.getlist("ordinal")]
-    except ValueError:
-        ordinals = []
-    if not ordinals:
-        return render_error("Missing or invalid item ordinal")
-
-    yak_dir = await get_yak_dir()
-    try:
-        yak_path = await resolve_yak_path(yak_dir, rel_path)
-    except YakPathError:
-        return render_error("Invalid list path")
-    try:
-        content = await read_leased(yak_path, str(form.get("lease", "")) or None)
-    except StaleYakError:
-        return render_error(
-            f"{rel_path} changed since this page loaded. Reload, then tick it again.", HTTPStatus.CONFLICT
-        )
-    for ordinal in ordinals:
-        toggled = _toggle_item(content, ordinal)
-        if toggled is None:
-            return render_error("Item not found; the note may have changed")
-        content = toggled
-    await yak_path.write_text(content)
-
-    if is_htmx_request(request):
-        refreshed = next((info for info in await collect_lists() if info.path == rel_path), None)
-        if refreshed is not None:
-            return render_list_fragment(info=refreshed)
-    return RedirectResponse("/lists", status_code=303)

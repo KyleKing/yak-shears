@@ -5,7 +5,8 @@ streams: list[StreamInfo]
 focused: StreamInfo | None
 triage: list[TaskInfo]
 category_colors: Mapping[str, str]
-undo: UndoInfo | None
+undo: UndoInfo | None = None
+current_route: str = "streams"
 -#}
 {% extends "base.html.jinja" %}
 

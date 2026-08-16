@@ -2,7 +2,7 @@
 
 from datetime import date, timedelta
 
-from yak_shears._yak.habits import _toggle_today, derive_streak
+from yak_shears._yak.habits import derive_streak, toggle_today
 
 TODAY = date(2026, 8, 3)
 
@@ -61,6 +61,6 @@ def test_weekly_quota_and_surplus() -> None:
 
 def test_toggle_today_appends_then_retracts() -> None:
     content = "---\ntype: habit\n---\n\n# Stretch\n"
-    marked = _toggle_today(content, TODAY)
+    marked = toggle_today(content, TODAY)
     assert marked.endswith("- [x] 2026-08-03\n")
-    assert _toggle_today(marked, TODAY) == content
+    assert toggle_today(marked, TODAY) == content

@@ -6,17 +6,11 @@ from dataclasses import dataclass
 from enum import StrEnum
 from http import HTTPStatus
 from pathlib import Path as SyncPath
-from typing import TYPE_CHECKING, Any
 
 from jinja2 import Environment, FileSystemLoader
 from starlette.responses import HTMLResponse
 
 from yak_shears._yak.categories import UNASSIGNED_COLOR
-
-if TYPE_CHECKING:
-    from yak_shears._yak.habits import HabitInfo
-    from yak_shears._yak.lists import ListInfo
-    from yak_shears._yak.streams import StreamInfo, TaskInfo, UndoInfo
 
 
 class SortBy(StrEnum):
@@ -104,17 +98,30 @@ ENV.globals["static_url"] = static_url
 from yak_shears._templates._generated.yak_shears._templates.auth.login_html_jinja import (  # noqa: E402
     render_login as render_auth_login,
 )
+from yak_shears._templates._generated.yak_shears._templates.doctor.index_html_jinja import (  # noqa: E402
+    render_index as render_doctor,
+)
 from yak_shears._templates._generated.yak_shears._templates.error_html_jinja import (  # noqa: E402
     render_error as _render_error,
 )
 from yak_shears._templates._generated.yak_shears._templates.search.search_html_jinja import render_search  # noqa: E402
+from yak_shears._templates._generated.yak_shears._templates.search.search_results_html_jinja import (  # noqa: E402
+    render_search_results,
+)
 from yak_shears._templates._generated.yak_shears._templates.settings.index_html_jinja import (  # noqa: E402
     render_index as render_settings,
 )
+from yak_shears._templates._generated.yak_shears._templates.yak._list_html_jinja import (  # noqa: E402
+    render_list as render_list_fragment,
+)
+from yak_shears._templates._generated.yak_shears._templates.yak.benches_html_jinja import render_benches  # noqa: E402
 from yak_shears._templates._generated.yak_shears._templates.yak.edit_html_jinja import (  # noqa: E402
     render_edit as render_yak_edit,
 )
+from yak_shears._templates._generated.yak_shears._templates.yak.habits_html_jinja import render_habits  # noqa: E402
+from yak_shears._templates._generated.yak_shears._templates.yak.lists_html_jinja import render_lists  # noqa: E402
 from yak_shears._templates._generated.yak_shears._templates.yak.new_html_jinja import render_new  # noqa: E402
+from yak_shears._templates._generated.yak_shears._templates.yak.streams_html_jinja import render_streams  # noqa: E402
 from yak_shears._templates._generated.yak_shears._templates.yaks.index_html_jinja import (  # noqa: E402
     render_index as render_yaks,
 )
@@ -133,22 +140,6 @@ def color_lookup(colors: Mapping[str, str]) -> Callable[[str], str]:
     return lookup
 
 
-def _render_template(template_name: str, *, status_code: HTTPStatus = HTTPStatus.OK, **context: Any) -> HTMLResponse:
-    """Private render template by name.
-
-    Args:
-        template_name: The name of the template to render
-        status_code: The HTTP status code to return
-        **context: The context variables to pass to the template
-
-    Returns:
-        HTMLResponse with the rendered template
-    """
-    template = ENV.get_template(template_name)
-    content = template.render(**context)
-    return HTMLResponse(content, status_code=status_code)
-
-
 def render_error(message: str, status_code: HTTPStatus = HTTPStatus.BAD_REQUEST) -> HTMLResponse:
     """Render an error page with the given HTTP status."""
     response = _render_error(message=message)
@@ -156,116 +147,26 @@ def render_error(message: str, status_code: HTTPStatus = HTTPStatus.BAD_REQUEST)
     return response
 
 
-def render_benches(
-    *,
-    done_today: int,
-    habits_count: int,
-    in_progress_count: int,
-    lists_count: int,
-    open_items: int,
-    streams_count: int,
-    triage_count: int,
-) -> HTMLResponse:
-    """Render the benches hub.
-
-    Returns:
-        HTMLResponse with the benches template
-    """
-    return _render_template(
-        "yak/benches.html.jinja",
-        done_today=done_today,
-        habits_count=habits_count,
-        in_progress_count=in_progress_count,
-        lists_count=lists_count,
-        open_items=open_items,
-        streams_count=streams_count,
-        triage_count=triage_count,
-        current_route="benches",
-    )
-
-
-def render_habits(*, habits: list["HabitInfo"]) -> HTMLResponse:
-    """Render the habit bench.
-
-    Returns:
-        HTMLResponse with the habits template
-    """
-    return _render_template("yak/habits.html.jinja", habits=habits, current_route="habits")
-
-
-def render_list_fragment(*, info: "ListInfo") -> HTMLResponse:
-    """Render one list card for an HTMX swap.
-
-    Returns:
-        HTMLResponse with the list fragment template
-    """
-    return _render_template("yak/_list.html.jinja", info=info)
-
-
-def render_lists(*, lists: list["ListInfo"]) -> HTMLResponse:
-    """Render the reference lists page.
-
-    Returns:
-        HTMLResponse with the lists template
-    """
-    return _render_template("yak/lists.html.jinja", lists=lists, current_route="lists")
-
-
-def render_streams(
-    *,
-    streams: list["StreamInfo"],
-    focused: "StreamInfo | None",
-    triage: list["TaskInfo"],
-    category_colors: Mapping[str, str],
-    undo: "UndoInfo | None" = None,
-) -> HTMLResponse:
-    """Render the streams canal prototype.
-
-    Returns:
-        HTMLResponse with the streams template
-    """
-    return _render_template(
-        "yak/streams.html.jinja",
-        streams=streams,
-        focused=focused,
-        triage=triage,
-        category_colors=category_colors,
-        undo=undo,
-        current_route="streams",
-    )
-
-
-# The render_* signatures above quote these, and beartype resolves a quoted annotation
-# by importing the name from this module at call time, so a TYPE_CHECKING-only import
-# makes every one of those calls raise. Imported last because these modules import the
-# render helpers defined above.
-from yak_shears._yak.habits import HabitInfo  # noqa: E402
-from yak_shears._yak.lists import ListInfo  # noqa: E402
-from yak_shears._yak.streams import StreamInfo, TaskInfo, UndoInfo  # noqa: E402
-
 # Under mypy's strict no-implicit-reexport, a generated wrapper imported under a
 # different name is not re-exported by that import alone, so every caller of one
 # reads as an unknown attribute.
 __all__ = (
     "ENV",
-    "HabitInfo",
-    "ListInfo",
     "Recency",
     "SearchResult",
     "SortBy",
-    "StreamInfo",
-    "TaskInfo",
-    "UndoInfo",
     "YakInfo",
     "color_lookup",
     "render_auth_login",
     "render_benches",
+    "render_doctor",
     "render_error",
     "render_habits",
     "render_list_fragment",
     "render_lists",
     "render_new",
     "render_search",
+    "render_search_results",
     "render_settings",
     "render_streams",
     "render_yak_edit",

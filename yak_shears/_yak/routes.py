@@ -2,6 +2,15 @@
 
 from starlette.routing import Route
 
+from .bench_handlers import (
+    habit_toggle_handler,
+    habits_handler,
+    list_toggle_handler,
+    lists_handler,
+    streams_handler,
+)
+from .benches import benches_handler
+from .board import board_act_handler
 from .handlers import (
     delete_yak_handler,
     doctor_fix_filenames_handler,
@@ -16,11 +25,6 @@ from .handlers import (
     yak_preview_handler,
     yaks_handler,
 )
-from .benches import benches_handler
-from .board import board_act_handler
-from .habits import habit_toggle_handler, habits_handler
-from .lists import list_toggle_handler, lists_handler
-from .streams import streams_handler
 
 ROUTES = [
     Route("/yaks", endpoint=yaks_handler),
