@@ -8,7 +8,7 @@ import time
 from contextlib import suppress
 from pathlib import Path as SyncPath
 
-import httpx
+import httpx2
 import pytest
 import pytest_asyncio
 from playwright.async_api import ConsoleMessage, Page
@@ -104,10 +104,10 @@ def base_url():
 
 async def check_connection(*, timeout_s: float, url: str) -> None:
     start = time.monotonic()
-    async with httpx.AsyncClient() as client:
+    async with httpx2.AsyncClient() as client:
 
         async def _is_reachable() -> bool:
-            with suppress(httpx.ConnectError):
+            with suppress(httpx2.ConnectError):
                 await client.get(url)
                 return True
             return False
