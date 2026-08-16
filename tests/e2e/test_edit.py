@@ -24,6 +24,20 @@ async def _fill_editor(page: Page, fill: str) -> None:
     await editor.type(fill)
 
 
+async def _expect_editor_text(page: Page, expected: str) -> None:
+    """Wait for the editor to hold exactly `expected`.
+
+    A bare `text_content()` read races the keypress or click that drives the
+    change, so the first read can land before CodeJar has rewritten the DOM.
+    Playwright's `to_have_text` is not usable here because it normalises
+    whitespace and these assertions are about indentation.
+    """
+    await page.wait_for_function(
+        "expected => document.querySelector('.editor').textContent === expected",
+        arg=expected,
+    )
+
+
 async def _validate_highlight(page: Page, fill: str, editor_locator: str, expected: str = "") -> None:
     """Enter specified text into the editor and verify expected highlighting."""
     await _fill_editor(page=page, fill=fill)
@@ -245,8 +259,7 @@ async def test_enter_continues_a_list(context: BrowserContext, page: Page, serve
     await _fill_editor(page, typed)
     await page.keyboard.press("Enter")
 
-    content = await editor.text_content()
-    assert content == expected, f"Expected {expected!r} but got {content!r}"
+    await _expect_editor_text(page, expected)
 
 
 @pytest.mark.playwright
@@ -261,8 +274,7 @@ async def test_list_continuation_exit_on_empty(context: BrowserContext, page: Pa
     # Now we have "- item\n- ", pressing Enter should remove the empty marker
     await page.keyboard.press("Enter")
 
-    content = await editor.text_content()
-    assert content == "- item\n", f"Expected '- item\\n' but got {content!r}"
+    await _expect_editor_text(page, "- item\n")
 
 
 # ============================================================================
@@ -291,8 +303,7 @@ async def test_ctrl_l_cycles_the_checklist_marker(
     await _fill_editor(page, typed)
     await page.keyboard.press("Control+l")
 
-    content = await editor.text_content()
-    assert content == expected, f"Expected {expected!r} but got {content!r}"
+    await _expect_editor_text(page, expected)
 
 
 # ============================================================================
@@ -318,8 +329,7 @@ async def test_tab_shifts_one_list_item(context: BrowserContext, page: Page, ser
     await _fill_editor(page, typed)
     await page.keyboard.press(key)
 
-    content = await editor.text_content()
-    assert content == expected, f"Expected {expected!r} but got {content!r}"
+    await _expect_editor_text(page, expected)
 
 
 @pytest.mark.playwright
@@ -345,8 +355,7 @@ async def test_list_indent_inserts_blank_before_nested(context: BrowserContext, 
     )
     await page.keyboard.press("Tab")
 
-    content = await editor.text_content()
-    assert content == "- parent\n\n    - child", f"Expected nested list with blank line but got {content!r}"
+    await _expect_editor_text(page, "- parent\n\n    - child")
 
 
 @pytest.mark.playwright
@@ -372,8 +381,7 @@ async def test_list_outdent_removes_nested_blank(context: BrowserContext, page: 
     )
     await page.keyboard.press("Shift+Tab")
 
-    content = await editor.text_content()
-    assert content == "- parent\n- child", f"Expected flat list without blank line but got {content!r}"
+    await _expect_editor_text(page, "- parent\n- child")
 
 
 @pytest.mark.playwright
@@ -399,8 +407,7 @@ async def test_list_indent_stops_beyond_one_level(context: BrowserContext, page:
     )
     await page.keyboard.press("Tab")
 
-    content = await editor.text_content()
-    assert content == "- parent\n\n    - child", f"Expected indent to be capped but got {content!r}"
+    await _expect_editor_text(page, "- parent\n\n    - child")
 
 
 @pytest.mark.playwright
@@ -550,20 +557,6 @@ async def _open_panel(page: Page) -> None:
     """Open the command panel, which closes itself after every applied change."""
     await page.click("#cmd-trigger")
     await expect(page.locator("#cmd-panel")).to_be_visible()
-
-
-async def _expect_editor_text(page: Page, expected: str) -> None:
-    """Wait for the editor to hold exactly `expected`.
-
-    A bare `text_content()` read races the click that drives the toolbar action,
-    so the first read can land before CodeJar has rewritten the DOM. Playwright's
-    `to_have_text` is not usable here because it normalises whitespace and these
-    assertions are about indentation.
-    """
-    await page.wait_for_function(
-        "expected => document.querySelector('.editor').textContent === expected",
-        arg=expected,
-    )
 
 
 @pytest.mark.playwright
