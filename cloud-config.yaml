@@ -100,6 +100,11 @@ write_files:
         echo "Installing dependencies..."
         /home/yakshears/.local/bin/uv sync --no-dev --frozen || exit 1
 
+        # The wrappers the app imports are generated code and are gitignored, so
+        # a pull never delivers them and the service fails to import without this.
+        echo "Generating template wrappers..."
+        .venv/bin/types-for-jinja wrapper || exit 1
+
         echo "Restarting service..."
         sudo systemctl restart yak-shears || exit 1
 
@@ -219,7 +224,7 @@ runcmd:
   # Clone repository and install dependencies
   # NOTE: For private repos, add SSH deploy key to GitHub and update URL to git@github.com:...
   - sudo -u yakshears git clone https://github.com/KyleKing/yak-shears.git /home/yakshears/yak-shears || exit 1
-  - sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/uv sync --no-dev --frozen' || exit 1
+  - sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/uv sync --no-dev --frozen && .venv/bin/types-for-jinja wrapper' || exit 1
 
   # Enable and start Syncthing
   - systemctl enable syncthing@yakshears.service || exit 1

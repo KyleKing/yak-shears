@@ -356,7 +356,7 @@ sudo DEBIAN_FRONTEND=noninteractive dpkg --configure -a --force-confdef --force-
 sudo mkdir -p /home/yakshears/Sync/yak-shears
 sudo chown -R yakshears:yakshears /home/yakshears/Sync
 sudo -u yakshears git clone https://github.com/KyleKing/yak-shears.git /home/yakshears/yak-shears
-sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/uv sync --no-dev --frozen'
+sudo -u yakshears sh -c 'cd /home/yakshears/yak-shears && /home/yakshears/.local/bin/uv sync --no-dev --frozen && .venv/bin/types-for-jinja wrapper'
 sudo systemctl enable --now syncthing@yakshears.service caddy yak-shears
 sudo systemctl daemon-reload
 sudo systemctl enable --now gitops-update.timer
@@ -499,8 +499,11 @@ sudo apt update && sudo apt upgrade -y
 
 # Update Python dependencies. Lock from a dev machine and commit uv.lock;
 # the server installs runtime deps only and refuses a stale lockfile.
+# The typed template wrappers are gitignored generated code that the app
+# imports, so they have to be rebuilt after every pull.
 cd /home/yakshears/yak-shears
 uv sync --no-dev --frozen
+.venv/bin/types-for-jinja wrapper
 
 # Restart services after manual updates
 sudo systemctl restart yak-shears
