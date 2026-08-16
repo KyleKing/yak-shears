@@ -145,6 +145,9 @@
          <button class="button" id="conflict-theirs" type="button">
           Take theirs
          </button>
+         <button class="button" id="conflict-merge" type="button">
+          Resolve by hand
+         </button>
          <button class="button" id="conflict-cancel" type="button">
           Cancel
          </button>

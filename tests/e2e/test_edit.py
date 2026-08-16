@@ -1135,6 +1135,48 @@ async def test_a_refused_save_shows_the_difference(context: BrowserContext, page
 @pytest.mark.allow_console_errors
 @pytest.mark.playwright
 @pytest.mark.asyncio
+async def test_resolving_by_hand_marks_the_buffer_and_guards_the_save(
+    context: BrowserContext, page: Page, server_lifecycle
+):
+    """Markers are ordinary text to the server, so the guard is the only thing keeping them out of a note."""
+    await _open_editor(context, page)
+    await _fill_editor(page=page, fill="mine only\nshared line")
+    await page.evaluate('() => { document.getElementById("yak-lease").dataset.lease = "0000000000000000"; }')
+    await page.click("#save-btn")
+    await expect(page.locator("#conflict")).to_be_visible()
+
+    # Every save from here would write markers into the committed fixture vault.
+    saves: list[str] = []
+
+    async def record(route):
+        saves.append(route.request.post_data or "")
+        await route.fulfill(status=200, body="")
+
+    await page.route("**/edit", record)
+
+    await page.click("#conflict-merge")
+
+    await expect(page.locator("#conflict")).to_be_hidden()
+    merged = await page.evaluate("() => window.jar.toString()")
+    assert "<<<<<<< on disk" in merged
+    assert ">>>>>>> my draft" in merged
+    assert "mine only" in merged
+
+    await page.click("#save-btn")
+
+    await expect(page.locator("#save-status")).to_have_text("Conflict markers left. Save again to keep them.")
+    assert saves == []
+
+    # The override is deliberate: a second press inside the window keeps the markers.
+    await page.click("#save-btn")
+
+    await expect(page.locator("#save-status")).not_to_have_text("Conflict markers left. Save again to keep them.")
+    assert len(saves) == 1
+
+
+@pytest.mark.allow_console_errors
+@pytest.mark.playwright
+@pytest.mark.asyncio
 async def test_taking_theirs_loads_the_saved_note_and_clears_the_conflict(
     context: BrowserContext, page: Page, server_lifecycle
 ):

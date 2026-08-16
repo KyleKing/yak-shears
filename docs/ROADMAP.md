@@ -93,8 +93,10 @@ Two decisions recorded in 2026-07 after a round of iPhone bug reports:
 
 Saving now takes a lease (a digest of the content the page rendered from) and a
 mismatch returns 409 rather than overwriting. The editor shows a line diff of the
-saved note against the draft and offers keep-mine, take-theirs, or cancel. Nothing
-merges on its own.
+saved note against the draft and offers keep-mine, take-theirs, resolve-by-hand, or
+cancel. Resolve-by-hand loads both versions into the editor with git-style markers
+around each run the two disagree on, and a guard refuses a save while any marker
+remains. Nothing merges on its own.
 
 The remaining step is the merge. All three versions are in reach at the moment of
 the conflict, since the client holds the base it loaded and the draft, and the 409
@@ -103,12 +105,13 @@ and mark only the real conflicts. That is the nicest outcome when it works and t
 worst when it silently produces text neither side wrote, which is the failure the
 lease exists to prevent.
 
-Deferred until the diff view proves conflicts are frequent enough, and overlapping
+Deferred until hand resolution proves conflicts are frequent enough, and overlapping
 enough, to be worth automating. Two things would decide it: how often a conflict
 turns out to be non-overlapping (auto-merge would have been free), and whether the
 conflicts are within a paragraph or across sections, since a line diff3 handles the
-second well and the first badly. Adding a counter to the conflict panel is the
-cheap way to find out.
+second well and the first badly. Marker runs that resolve to one side untouched
+answer the first question directly, and counting them in the panel is the cheap way
+to find out.
 
 This is also the machinery offline editing needs, so the two should be decided
 together rather than solved twice (see "Mobile and offline" above).

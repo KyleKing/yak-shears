@@ -407,6 +407,10 @@ function initEditor() {
 		// HTMX event listeners for save feedback (button clicks trigger HTMX POST)
 		document.body.addEventListener("htmx:beforeRequest", function (evt) {
 			if (evt.target.id === "save-btn") {
+				if (_markersBlockSave()) {
+					evt.preventDefault();
+					return;
+				}
 				document.getElementById("save-btn").disabled = true;
 				document.getElementById("save-status").textContent = "Saving...";
 			}
@@ -457,9 +461,21 @@ function initEditor() {
 
 		showConflict = (current, freshLease, message) => {
 			document.getElementById("conflict-note").textContent = message;
-			_paintDiff(conflictDiff, _lineDiff(current, getEditorContent()));
+			const rows = _lineDiff(current, getEditorContent());
+			_paintDiff(conflictDiff, rows);
 			conflict.hidden = false;
 			conflictDiff.focus();
+
+			// Resolving by hand needs the fresh lease for the same reason keeping mine
+			// does: the save that follows is an overwrite the reader composed. What stops
+			// it landing half-done is the marker guard on the way out, not the lease.
+			document.getElementById("conflict-merge").onclick = () => {
+				const merged = _conflictMarkup(rows);
+				_applyEdit(editor, jar, merged, merged.length);
+				document.getElementById("yak-lease").dataset.lease = freshLease;
+				closeConflict();
+				updateSaveStatus("Resolve the marked lines, then save");
+			};
 
 			// Taking the fresh lease is what makes this an overwrite the reader asked
 			// for rather than the blind one the lease exists to stop.
@@ -1565,6 +1581,74 @@ function _lineDiff(theirs, mine) {
 }
 
 const DIFF_MARKS = { same: " ", theirs: "−", mine: "+" };
+
+const CONFLICT_OPEN = "<<<<<<< on disk";
+const CONFLICT_SPLIT = "=======";
+const CONFLICT_CLOSE = ">>>>>>> my draft";
+
+/**
+ * Any line that would read as a conflict marker to `_conflictMarkup`'s reader.
+ *
+ * Deliberately loose about what follows the seven characters: a note that saved
+ * with a bare `=======` under a heading is still caught, and a false stop costs one
+ * extra press while a false pass costs the text the lease exists to protect.
+ */
+const CONFLICT_MARKER_RE = /^(?:<{7}|={7}|>{7})/m;
+
+/**
+ * Weave the two versions into one buffer, marking every run the sides disagree on.
+ *
+ * A run of consecutive non-`same` rows is exactly one conflict hunk, so the diff
+ * already computed for the panel is all this needs. Agreed lines pass through bare,
+ * which keeps the markers down to the parts actually in dispute.
+ *
+ * Both sides are emitted even when one is empty, because an unmarked deletion is
+ * indistinguishable from text that was never there.
+ *
+ * @param {Array<{kind: string, text: string}>} rows - Output of _lineDiff
+ * @returns {string} Buffer text carrying git-style conflict markers
+ */
+function _conflictMarkup(rows) {
+	const out = [];
+	for (let i = 0; i < rows.length; ) {
+		if (rows[i].kind === "same") {
+			out.push(rows[i].text);
+			i++;
+			continue;
+		}
+		const theirs = [];
+		const mine = [];
+		while (i < rows.length && rows[i].kind !== "same") {
+			(rows[i].kind === "theirs" ? theirs : mine).push(rows[i].text);
+			i++;
+		}
+		out.push(CONFLICT_OPEN, ...theirs, CONFLICT_SPLIT, ...mine, CONFLICT_CLOSE);
+	}
+	return out.join("\n");
+}
+
+const MARKER_OVERRIDE_MS = 8000;
+let markerOverrideUntil = 0;
+
+/**
+ * Whether the save should be refused because conflict markers are still in the buffer.
+ *
+ * Half-resolved text saved as a note is the loss the lease exists to prevent, so the
+ * first press always stops. A second press inside the window goes through, for the
+ * note that genuinely wants those characters in it.
+ *
+ * @returns {boolean} True when the caller must abandon the save
+ */
+function _markersBlockSave() {
+	if (!CONFLICT_MARKER_RE.test(getEditorContent())) return false;
+	if (Date.now() < markerOverrideUntil) {
+		markerOverrideUntil = 0;
+		return false;
+	}
+	markerOverrideUntil = Date.now() + MARKER_OVERRIDE_MS;
+	updateSaveStatus("Conflict markers left. Save again to keep them.");
+	return true;
+}
 
 /**
  * Paint a diff into the conflict panel. Built with the DOM rather than innerHTML,
