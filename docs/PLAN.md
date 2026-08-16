@@ -28,7 +28,8 @@ Known hosting TODOs, now resolved or re-scoped:
 
 - ufw rules resetting on boot: verified fixed — a full reboot on the live VPS kept ufw active with all rules intact.
 - A script that snapshots manually-managed VPS files (Caddyfile, sshd_config, ufw state, systemd units) for version control: still not built: everything currently manageable lives in `cloud-config.yaml` (single source of truth re-applied only at provision time, not continuously reconciled), so drift between the file and the live box is possible after ad hoc SSH fixes like the ones above. Worth a `cloud-config.yaml` diff check next time the VPS is touched by hand.
-- Logging/alerting strategy: previously undecided, now has a menu of options with a recommendation in [adr/0007-observability-strategy.md](./adr/0007-observability-strategy.md) — implementation not yet started.
+- Logging/alerting strategy: decided and built (2026-08-16). [adr/0007-observability-strategy.md](./adr/0007-observability-strategy.md) records Option E: a daily journald export as JSONL into a send-only Syncthing folder, ntfy on deploy outcomes, and `yak-shears.kyleking.me` added to the existing external uptime monitor. Push-on-error is knowingly absent; the ADR says what would close it.
+- Deploy safety: the GitOps timer checks CI before pulling, health-checks the restart, and rolls back a commit that does not answer. The scripts installed on the box were extracted from `cloud-config.yaml` rather than hand-edited in place, so the two match as of 2026-08-16.
 
 ## Phase 2: Data integrity, auth, and runtime correctness
 

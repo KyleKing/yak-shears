@@ -2,11 +2,11 @@
 
 ## Status
 
-Proposed (2026-07-22). Unlike the other ADRs in this repo, this one lays out options rather than recording a single choice — the deployment owner asked for a menu with tradeoffs, including at least one TUI/SSH option and one or more cloud options, to pick from directly. A recommendation is given below; update Status to Accepted once a choice is made and note it in PLAN.md/STATUS.md.
+Accepted (2026-08-16), for Option E below, which was assembled after the menu was written and takes the local-first half of Option A without the hand-rolled error grep, and none of Option C's SaaS telemetry. The options survive as the tradeoff record.
 
 ## Context
 
-The app (ADR 0005) runs single-user on a Hetzner CPX11 (2 vCPU/2GB) behind Caddy and Cloudflare. Today the only log sink is journald: persistent across reboots (`/var/log/journal` exists, 11.9MB used as of the first deploy) but not backed up off the box and with no push notification of any kind. Hetzner's console already gives free CPU/network/disk graphs with no setup. `fail2ban` and `ufw` already handle the security-log side; this ADR is about the app's own errors and uptime.
+The app (ADR 0005) runs single-user on a Hetzner CPX11 (2 vCPU/2GB) behind Caddy and Cloudflare. When this was written the only log sink was journald: persistent across reboots (`/var/log/journal` exists, 11.9MB used as of the first deploy) but not backed up off the box and with no push notification of any kind. Hetzner's console already gives free CPU/network/disk graphs with no setup. `fail2ban` and `ufw` already handle the security-log side; this ADR is about the app's own errors and uptime.
 
 Hard requirement: get notified when the app logs an error, or when it's unexpectedly down. Nice to have, roughly in this order of usefulness: CPU/memory visibility, searchable logs, backed-up logs, metrics, a cloud dashboard.
 
@@ -53,6 +53,16 @@ Combine the sharpest piece of Option A with the sharpest piece of Option C, and 
 
 This satisfies the hard requirement twice over through two independent, externally-hosted notification paths, and picks up part of "cloud app" and "metrics" for free through Sentry's issue dashboard and the uptime tool's status page, without committing to Option B's heavier stack before there's evidence it's needed. Low effort: SDK plus a DSN env var, an uptime account, and one `curl` in a timer, roughly 30-60 minutes of setup.
 
+### Option E: journald over Syncthing, ntfy on deploys, uptime where it already lives (chosen)
+
+Three pieces, none of them a new service to operate:
+
+- A daily `export-logs.timer` reshapes `journalctl -o json` for `yak-shears`, `caddy`, and `gitops-update` into one file per finished day, written to `~/logs` on the VPS. That directory is a send-only Syncthing folder replicated to the laptop as receive-only with 90-day staggered versioning, so the VPS's 30-day prune frees disk there without erasing local history. Reading is `tail-jsonl` and `jq` against a local directory, no server round trip, and the records carry `timestamp`, `level`, `message`, and `unit` rather than journald's twenty metadata fields
+- The deploy script pushes its outcome to an ntfy topic, so a failed start or a rollback reaches the phone. This is the alert that matters most in practice, because a bad deploy is the most likely way this app goes down
+- Uptime rides the external monitor that already watches `kyleking.me`, with `yak-shears.kyleking.me` added as its own check. Off-box, so it survives a total outage, and it introduces no account that did not already exist
+
+What it gives up against the recommended Option D is Sentry's exception grouping: a repeated 500 appears as N tracebacks in a day file rather than one issue with a count, and nothing pushes on the first occurrence. What it buys is that no note title, stack trace, or request path leaves the VPS for a third party, and there is no free-tier quota or vendor account in the loop. Logs land on a machine that is already trusted with the notes themselves.
+
 ## Comparison
 
 | | Meets hard requirement | CPU/memory | Searchable logs | Backed-up logs | Metrics | Cloud dashboard | New services on the VPS | Cost |
@@ -61,16 +71,21 @@ This satisfies the hard requirement twice over through two independent, external
 | A: TUI+SSH+Termius+DIY push | Yes, hand-rolled | ad hoc (`htop`/`btop`) | journald/`lnav` | No | No | No | 2 (uptime ping + error-grep timers) | $0 |
 | B: self-hosted stack | Yes, if uptime runs off-box | Yes (Prometheus) | Yes (Loki) | Depends on shipping logs elsewhere | Yes | Yes (self-hosted Grafana) | 4-5 (Loki, Promtail, Prometheus, Grafana, Kuma) | $0 (VPS resources only) |
 | C: cloud SaaS composition | Yes | Only with an add-on | Only with an add-on | Yes | Only with an add-on | Yes | 0 | $0 (free tiers) |
-| D: hybrid (recommended) | Yes, twice over | ad hoc (`htop`/Termius) | journald + Sentry issues | Sentry only (errors) | Sentry issue trends only | Yes (Sentry + uptime tool) | ~1 (uptime ping timer) | $0 |
+| D: hybrid (originally recommended) | Yes, twice over | ad hoc (`htop`/Termius) | journald + Sentry issues | Sentry only (errors) | Sentry issue trends only | Yes (Sentry + uptime tool) | ~1 (uptime ping timer) | $0 |
+| E: journald over Syncthing (chosen) | Deploys yes, errors no | ad hoc (`htop`/Termius) | `tail-jsonl`/`jq` on the laptop | Yes, on every paired device | No | No | 1 (daily export timer) | $0 |
 
-## Recommendation
+## Decision
 
-Option D. It's the only option that meets the hard requirement without either hand-rolling the alerting logic end to end (Option A alone) or taking on a multi-service stack on a 2GB box before there's a demonstrated need for it (Option B). The nice-to-haves it skips (full metrics history, backed-up application logs, a unified dashboard) are exactly the ones this app hasn't needed yet; picking them up later is an incremental add (e.g. layering Grafana Cloud's free tier on top) rather than a re-architecture.
+Option E. Option D's advantage over it is Sentry, and Sentry is the one piece that sends note-adjacent data off the box for a benefit (error grouping) that a single-user app with roughly one exception a week does not yet need. Everything Option D gets from Sentry's dashboard, a day file and `jq` also get, a few hours later.
 
-## Consequences (if Option D is adopted)
+The deliberate gap is push-on-error. Deploy failures push, downtime pushes, and a 500 does not. Close it when a 500 goes unnoticed long enough to matter, either with Sentry as Option D describes or with the Option A error-grep timer against the same journal the export already reads.
 
-- Add `sentry-sdk` as a dependency; the DSN must stay out of git, following the same pattern as the users-file secret (env var via `cloud-config.yaml`'s `write_files`, not committed).
-- A new systemd timer (parallel to `gitops-update.timer`) pings the chosen uptime service on an interval; document it in `cloud-config.yaml` and `DEPLOYMENT.md` once added.
-- `fail2ban`/`journalctl` remain the tool for security-incident forensics; nothing here replaces them.
-- Revisit Option B if the free-tier error quota is outgrown, if there's a real want for historical CPU/memory graphs, or if self-hosting becomes a stated preference over SaaS telemetry.
-- Still open, to decide at implementation time: Healthchecks.io vs UptimeRobot for uptime, and whether to add Grafana Cloud/Better Stack/Axiom now or wait.
+## Consequences
+
+- `export-logs.timer` runs daily at 00:20 and writes `~/logs/YYYY-MM-DD.jsonl` on the VPS, pruning past 30 days. `journal-to-jsonl.py` owns the record shape, including the fact that everything the app prints arrives at syslog severity 6, so its `ERROR:`/`WARNING:` prefixes are what actually set the level
+- The log folder sits at `~/logs`, outside `~/Sync`, because Syncthing refuses to nest one folder inside another and `~/Sync` is already shared whole
+- The laptop copy is receive-only with 90-day staggered versioning, so the VPS prune reclaims disk on the server while the local archive keeps its own retention
+- Logs replicate to the laptop only. The iPhone shares `~/Sync` but is deliberately not on the log folder
+- The ntfy topic lives in `/etc/yak-shears/deploy.env`, out of git, the same way the SSH key is
+- `fail2ban` and `journalctl` remain the tool for security-incident forensics, and nothing here replaces them
+- Revisit Option B if historical CPU and memory graphs are wanted, or Option D's Sentry half if unnoticed 500s become the problem

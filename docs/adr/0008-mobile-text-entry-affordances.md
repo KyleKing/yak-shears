@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-07-22). The in-page accessory toolbar is landing in the same round as this record.
+Superseded by [ADR 0011](./0011-editor-command-panel.md) (2026-08-16). The in-page accessory toolbar it chose landed and then lost to Safari's form assistant, which is the finding ADR 0011 acts on. This record stays because the constraint it documents, that a web page cannot supply a real keyboard accessory view, still governs anything aimed at that strip of screen.
 
 ## Context
 

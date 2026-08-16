@@ -210,6 +210,99 @@ write_files:
       [Install]
       WantedBy=timers.target
 
+  # Reshape journald's JSON into the four fields worth reading later
+  - path: /usr/local/bin/journal-to-jsonl.py
+    permissions: '0755'
+    content: |
+      #!/usr/bin/env python3
+      """Read `journalctl -o json` on stdin, write compact log records on stdout."""
+
+      import json
+      import sys
+      from datetime import UTC, datetime
+
+      # syslog severities, which journald reports numerically
+      LEVELS = ["emerg", "alert", "crit", "error", "warning", "notice", "info", "debug"]
+      # Anything the app prints lands at severity 6 regardless of what it says, so
+      # its own prefix is the only signal that a line is a warning or an error.
+      PREFIXES = {"ERROR:": "error", "WARNING:": "warning", "CRITICAL:": "crit"}
+
+
+      def level_of(record: dict, message: str) -> str:
+          for prefix, level in PREFIXES.items():
+              if message.startswith(prefix):
+                  return level
+          try:
+              return LEVELS[int(record.get("PRIORITY", 6))]
+          except (ValueError, IndexError):
+              return "info"
+
+
+      for line in sys.stdin:
+          try:
+              record = json.loads(line)
+          except json.JSONDecodeError:
+              continue
+          message = record.get("MESSAGE") or ""
+          if isinstance(message, list):  # journald renders non-UTF-8 as a byte array
+              message = bytes(message).decode("utf-8", "replace")
+          stamp = int(record.get("__REALTIME_TIMESTAMP", 0)) / 1_000_000
+          print(
+              json.dumps(
+                  {
+                      "timestamp": datetime.fromtimestamp(stamp, UTC).isoformat(),
+                      "level": level_of(record, message),
+                      "message": message,
+                      "unit": record.get("_SYSTEMD_UNIT", ""),
+                  }
+              ),
+              flush=False,
+          )
+
+  # Daily log export into the Syncthing folder
+  - path: /usr/local/bin/export-logs.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      LOG_DIR=/home/yakshears/logs
+      RETAIN_DAYS=30
+      DAY=$(date -d yesterday +%F)
+
+      mkdir -p "$LOG_DIR"
+      # A finished day is written once and never touched again, so Syncthing
+      # transfers each file a single time.
+      journalctl -u yak-shears -u caddy -u gitops-update -o json \
+        --since "$DAY" --until "$(date +%F)" |
+        /usr/local/bin/journal-to-jsonl.py > "$LOG_DIR/$DAY.jsonl"
+
+      chown -R yakshears:yakshears "$LOG_DIR"
+      find "$LOG_DIR" -name '*.jsonl' -mtime "+$RETAIN_DAYS" -delete
+
+  - path: /etc/systemd/system/export-logs.service
+    content: |
+      [Unit]
+      Description=Export yesterday's journal into the Syncthing log folder
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/bin/export-logs.sh
+      StandardOutput=journal
+      StandardError=journal
+
+  - path: /etc/systemd/system/export-logs.timer
+    content: |
+      [Unit]
+      Description=Export the journal once a day
+
+      [Timer]
+      OnCalendar=*-*-* 00:20:00
+      Persistent=true
+
+      [Install]
+      WantedBy=timers.target
+
   # Caddy reverse proxy configuration
   - path: /etc/caddy/Caddyfile
     content: |
@@ -290,6 +383,10 @@ runcmd:
   # Setup Yak Shears directories
   - mkdir -p /home/yakshears/Sync/yak-shears || exit 1
   - chown -R yakshears:yakshears /home/yakshears/Sync || exit 1
+  # Logs get their own Syncthing folder, which has to sit outside ~/Sync because
+  # Syncthing refuses to nest one folder inside another
+  - mkdir -p /home/yakshears/logs || exit 1
+  - chown yakshears:yakshears /home/yakshears/logs || exit 1
 
   # Clone repository and install dependencies
   # NOTE: For private repos, add SSH deploy key to GitHub and update URL to git@github.com:...
@@ -308,10 +405,12 @@ runcmd:
   - systemctl enable yak-shears || exit 1
   - systemctl start yak-shears || exit 1
 
-  # Setup GitOps timer
+  # Setup GitOps and log-export timers
   - systemctl daemon-reload || exit 1
   - systemctl enable gitops-update.timer || exit 1
   - systemctl start gitops-update.timer || exit 1
+  - systemctl enable export-logs.timer || exit 1
+  - systemctl start export-logs.timer || exit 1
 
   # Apply hardened SSH config. Ubuntu 22.10+ socket-activates sshd (ssh.socket
   # owns the listen port and ignores `Port 2222` in sshd_config), so disable the

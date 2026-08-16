@@ -1,10 +1,12 @@
 # Project Status
 
-Quick overview of what's implemented and what's next. Last updated: 2026-07-22.
+Quick overview of what's implemented and what's next. Last updated: 2026-08-16.
 
 ## Current Focus
 
-**Deployed to Hetzner** (PLAN.md Phase 1, done 2026-07-22; see [DEPLOY_LOG.md](./DEPLOY_LOG.md) for the run and [adr/0007-observability-strategy.md](./adr/0007-observability-strategy.md) for logging/alerting options). Live at `https://yak-shears.kyleking.me`.
+**Deployed to Hetzner** (PLAN.md Phase 1, done 2026-07-22; see [DEPLOY_LOG.md](./DEPLOY_LOG.md) for the run). Live at `https://yak-shears.kyleking.me`.
+
+**Deploys and observability (2026-08-16).** The GitOps timer now deploys only a commit whose CI is green, health-checks the restart, and rolls back to the previous commit if the new one does not answer, notifying ntfy either way. A daily timer exports the journal as JSONL into a send-only Syncthing folder read on the laptop with `tail-jsonl`, which settles [ADR 0007](./adr/0007-observability-strategy.md) as Option E. Push-on-error is the deliberate gap: deploy failures and downtime notify, a 500 does not.
 
 **Visual redesign (2026-07-26), in progress on `redesign-console`.** The Scandinavian-minimal look was replaced with a console-panel world recorded in [DESIGN.md](./DESIGN.md). Landed: the token layer, the `/yaks` rack, the editor head plate and recessed source bay, the search result list and patch field, and doctor severity lamps. Not yet landed: the patchbay (links as visible routing), `/new`, login, and error pages, and verification on a phone and in dark mode. See [NEXT_STEPS.md](./NEXT_STEPS.md).
 

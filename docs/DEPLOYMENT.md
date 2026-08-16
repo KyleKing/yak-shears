@@ -235,6 +235,28 @@ echo "Subscribe to https://ntfy.sh/$TOPIC in the ntfy app"
 
 With `NTFY_TOPIC` unset the deploy still runs and just skips the notification.
 
+## Log Export and Syncthing
+
+`export-logs.timer` runs at 00:20 daily, reshapes the previous day's journal for `yak-shears`, `caddy`, and `gitops-update` into `~/logs/YYYY-MM-DD.jsonl` on the VPS, and deletes files older than 30 days. Each record carries `timestamp`, `level`, `message`, and `unit`. See [ADR 0007](./adr/0007-observability-strategy.md) for why this shape and not a hosted service.
+
+`~/logs` is a Syncthing folder in its own right (`yak-shears-logs`), send-only from the VPS, sitting outside `~/Sync` because Syncthing refuses to nest one folder inside another. Pair the laptop as **Receive Only** with staggered file versioning, so the server-side prune reclaims disk without erasing the local archive.
+
+```sh
+# Run the export by hand (writes yesterday's file)
+sudo systemctl start export-logs.service
+
+# Read a day locally, pretty-printed
+uvx tail-jsonl < ~/logs/yak-shears/2026-08-15.jsonl
+
+# Errors and warnings only, across every day held locally
+jq -c 'select(.level == "error" or .level == "warning")' ~/logs/yak-shears/*.jsonl | uvx tail-jsonl
+
+# Drop systemd's own "Starting ..." chatter, which is a third of the volume
+jq -c 'select(.unit != "init.scope")' ~/logs/yak-shears/*.jsonl | uvx tail-jsonl
+```
+
+A day of normal traffic is roughly 650KB, so 30 days is about 20MB on the server.
+
 ## Monitoring & Logs
 
 ```sh

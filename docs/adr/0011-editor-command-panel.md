@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-07-27). Supersedes the fixed accessory bar chosen in ADR 0008, which stays the record of why a web page cannot supply a real keyboard accessory view.
+Accepted (2026-08-16); built and covered by e2e tests. Supersedes the fixed accessory bar chosen in ADR 0008, which stays the record of why a web page cannot supply a real keyboard accessory view.
 
 ## Context
 
