@@ -159,6 +159,7 @@ Host yak-shears
 Before deploying, update `cloud-config.yaml`:
 
 - [ ] Replace `<public_ssh_key>` with your actual SSH public key
+- [ ] Replace `<ntfy_topic>` with a random ntfy.sh topic name (see Deploy notifications)
 - [ ] Update Caddy email: `dev.act.kyle+caddy@gmail.com` → your email
 - [ ] Update domain: `yak-shears.kyleking.me` → your domain
 - [ ] Update git clone URL if using private fork
@@ -205,10 +206,11 @@ Syncthing advertises both IPv4 and IPv6 addresses for a device. If your network 
 
 ## GitOps Auto-Updates
 
-The server polls `origin/yak-shears-py` every 5 minutes and automatically:
-- Pulls new commits
-- Runs `uv sync --no-dev --frozen`
-- Restarts `yak-shears` service
+The server polls `origin/yak-shears-py` every 5 minutes. When the remote is ahead it checks GitHub's check runs for that commit and deploys only a green one, so a commit that broke CI (or is still building) leaves the box on the last commit that worked. A deploy pulls, runs `uv sync --no-dev --frozen`, regenerates the typed template wrappers, and restarts `yak-shears`.
+
+It then polls `http://localhost:8084/auth/status` for 30 seconds. If the new commit never answers, the script resets to the previous commit, redeploys that, and records the bad SHA in `~/.local/state/yak-shears/failed-sha` so the next tick doesn't redeploy it. Delete that file to retry a commit after fixing whatever the server was missing.
+
+Every outcome that isn't a clean deploy sends an ntfy notification (see below).
 
 ```sh
 # Monitor GitOps activity
@@ -217,6 +219,21 @@ journalctl -u gitops-update -f
 # Manually trigger update
 sudo systemctl start gitops-update.service
 ```
+
+### Deploy notifications
+
+`/etc/yak-shears/deploy.env` holds `NTFY_TOPIC`. Any ntfy.sh topic is readable and writable by anyone who knows its name, so generate a random one rather than picking something guessable, and keep the filled-in value out of git the same way the SSH key is kept out:
+
+```sh
+# On the server, pick a topic and install it
+TOPIC="yak-shears-$(openssl rand -hex 12)"
+printf 'NTFY_TOPIC=%s\n' "$TOPIC" | sudo tee /etc/yak-shears/deploy.env >/dev/null
+sudo chown root:yakshears /etc/yak-shears/deploy.env
+sudo chmod 640 /etc/yak-shears/deploy.env
+echo "Subscribe to https://ntfy.sh/$TOPIC in the ntfy app"
+```
+
+With `NTFY_TOPIC` unset the deploy still runs and just skips the notification.
 
 ## Monitoring & Logs
 

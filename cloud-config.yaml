@@ -8,6 +8,7 @@
 #
 # CHECKLIST:
 # [ ] <public_ssh_key> - Full SSH public key from ~/.ssh/id_ed25519.pub
+# [ ] <ntfy_topic> - Random ntfy.sh topic name for deploy notifications
 # [ ] yak-shears.kyleking.me - Your domain (in Caddyfile section)
 # [ ] dev.act.kyle+caddy@gmail.com - Your email for Let's Encrypt
 # [ ] Review passwordless sudo (see DEPLOYMENT.md Security Notes)
@@ -74,6 +75,15 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 
+  # Deploy notification topic. Anyone who knows an ntfy.sh topic name can read
+  # and post to it, so treat this like a secret: keep the filled-in copy out of
+  # git and use a random name.
+  - path: /etc/yak-shears/deploy.env
+    owner: root:yakshears
+    permissions: '0640'
+    content: |
+      NTFY_TOPIC=<ntfy_topic>
+
   # GitOps update script
   - path: /usr/local/bin/gitops-update.sh
     permissions: '0755'
@@ -81,37 +91,97 @@ write_files:
       #!/bin/bash
       set -euo pipefail
 
-      cd /home/yakshears/yak-shears || exit 1
+      REPO=KyleKing/yak-shears
+      BRANCH=yak-shears-py
+      REPO_DIR=/home/yakshears/yak-shears
+      HEALTH_URL=http://localhost:8084/auth/status
+      # A rolled-back commit still sits at origin/HEAD, so without remembering it
+      # the timer redeploys the same broken commit every five minutes.
+      FAILED_SHA=/home/yakshears/.local/state/yak-shears/failed-sha
 
-      # Fetch latest changes
-      git fetch origin yak-shears-py || exit 1
+      if [ -f /etc/yak-shears/deploy.env ]; then
+        . /etc/yak-shears/deploy.env
+      fi
 
-      LOCAL=$(git rev-parse HEAD)
-      REMOTE=$(git rev-parse origin/yak-shears-py)
+      notify() {
+        [ -n "${NTFY_TOPIC:-}" ] || return 0
+        curl -fsS -m 10 -o /dev/null \
+          -H "Title: yak-shears deploy" -H "Priority: $2" \
+          -d "$1" "https://ntfy.sh/$NTFY_TOPIC" || true
+      }
 
-      if [ "$LOCAL" != "$REMOTE" ]; then
-        echo "Updates detected. Pulling changes..."
-        git pull origin yak-shears-py || exit 1
-
+      install_and_restart() {
         # --no-dev: the server runs the app, never the test or lint tooling.
         # --frozen: install exactly what uv.lock pins and fail loudly if it is
         # stale, rather than re-resolving. Re-resolving also drags in the dev
         # group's local editable sources, which do not exist on the server.
-        echo "Installing dependencies..."
-        /home/yakshears/.local/bin/uv sync --no-dev --frozen || exit 1
-
+        /home/yakshears/.local/bin/uv sync --no-dev --frozen
         # The wrappers the app imports are generated code and are gitignored, so
         # a pull never delivers them and the service fails to import without this.
-        echo "Generating template wrappers..."
-        .venv/bin/types-for-jinja wrapper || exit 1
+        .venv/bin/types-for-jinja wrapper
+        sudo systemctl restart yak-shears
+      }
 
-        echo "Restarting service..."
-        sudo systemctl restart yak-shears || exit 1
+      healthy() {
+        for _ in $(seq 30); do
+          if curl -fs -m 5 -o /dev/null "$HEALTH_URL"; then
+            return 0
+          fi
+          sleep 1
+        done
+        return 1
+      }
 
-        echo "Update completed successfully"
-      else
+      cd "$REPO_DIR"
+      git fetch origin "$BRANCH"
+
+      LOCAL=$(git rev-parse HEAD)
+      REMOTE=$(git rev-parse "origin/$BRANCH")
+
+      if [ "$LOCAL" = "$REMOTE" ]; then
         echo "No updates available"
+        exit 0
       fi
+
+      if [ "$(cat "$FAILED_SHA" 2>/dev/null || true)" = "$REMOTE" ]; then
+        echo "Skipping ${REMOTE:0:8}: it already failed to deploy"
+        exit 0
+      fi
+
+      # Deploy only what CI proved. GitHub Actions report as check runs rather
+      # than as commit statuses, so the /status endpoint reads "pending" here
+      # forever. The repo is public, so this needs no token.
+      if ! CI_STATE=$(curl -fsS -m 15 "https://api.github.com/repos/$REPO/commits/$REMOTE/check-runs?per_page=100" |
+        python3 -c 'import json,sys; runs=json.load(sys.stdin)["check_runs"]; ok={"success","skipped","neutral"}; print("pending" if not runs or any(r["status"]!="completed" for r in runs) else "success" if all(r["conclusion"] in ok for r in runs) else "failure")'); then
+        echo "Could not read CI status for ${REMOTE:0:8}"
+        exit 1
+      fi
+      if [ "$CI_STATE" != "success" ]; then
+        echo "Skipping ${REMOTE:0:8}: CI state is $CI_STATE"
+        exit 0
+      fi
+
+      echo "Deploying ${REMOTE:0:8}..."
+      git pull --ff-only origin "$BRANCH"
+
+      if install_and_restart && healthy; then
+        rm -f "$FAILED_SHA"
+        echo "Update completed successfully"
+        notify "deployed ${REMOTE:0:8}" default
+        exit 0
+      fi
+
+      echo "${REMOTE:0:8} did not come up; rolling back to ${LOCAL:0:8}"
+      mkdir -p "$(dirname "$FAILED_SHA")"
+      echo "$REMOTE" > "$FAILED_SHA"
+      git reset --hard "$LOCAL"
+
+      if install_and_restart && healthy; then
+        notify "rolled back to ${LOCAL:0:8}: ${REMOTE:0:8} failed to start" high
+      else
+        notify "DOWN: ${REMOTE:0:8} failed and the rollback to ${LOCAL:0:8} did not come up either" urgent
+      fi
+      exit 1
 
   # GitOps systemd service
   - path: /etc/systemd/system/gitops-update.service
