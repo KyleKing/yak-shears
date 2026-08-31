@@ -217,6 +217,14 @@
         No backlinks
        </p>
       </section>
+      <section class="metadata-section">
+       <div class="metadata-section__label">
+        related 0
+       </div>
+       <p class="metadata-empty">
+        Nothing related yet
+       </p>
+      </section>
       <section class="metadata-section metadata-section--danger">
        <button class="button button--sm button--danger-ghost button--full" hx-confirm="Delete this yak? This cannot be undone." hx-post="/delete" hx-vals='{"yak": "test.dj"}'>
         rm test.dj

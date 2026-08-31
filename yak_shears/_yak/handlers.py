@@ -41,6 +41,8 @@ from yak_shears._yak.categories import (
     slot_css,
 )
 from yak_shears._yak.database import (
+    all_links,
+    all_titles,
     get_backlinks,
     get_search_db_path,
     index_is_inside_vault,
@@ -55,6 +57,7 @@ from yak_shears._yak.media import (
     process_upload,
     resolve_attachment,
 )
+from yak_shears._yak.related import rank_related
 from yak_shears._yak.request_utils import extract_yak_path, is_htmx_request
 from yak_shears._yak.services import (
     StaleYakError,
@@ -221,6 +224,13 @@ async def _save_edited_yak(request: Request, yak_dir: Path, yak_path_str: str) -
     return HTMLResponse("", headers={"X-Yak-Lease": lease})
 
 
+def _related_rows(yak_path: str) -> list[tuple[str, str, str]]:
+    return [
+        (relation.path, relation.title, ", ".join(relation.reasons))
+        for relation in rank_related(yak_path, all_links(), all_titles())
+    ]
+
+
 async def edit_yak_handler(request: Request) -> Response:
     """Handle requests to /edit."""
     yak_dir = await get_yak_dir()
@@ -236,6 +246,7 @@ async def edit_yak_handler(request: Request) -> Response:
         content, category = await read_yak(yak_dir, yak_path_str)
         frontmatter, _ = parse_frontmatter(content)
         backlinks = get_backlinks(yak_path_str)
+        related = await to_thread.run_sync(_related_rows, yak_path_str)
         category_color = slot_css((await load_slots(yak_dir)).get(category, ""))
 
         return render_yak_edit(
@@ -246,6 +257,7 @@ async def edit_yak_handler(request: Request) -> Response:
             category_color=category_color,
             frontmatter=frontmatter or {},
             backlinks=backlinks or [],
+            related=related,
             lease=yak_lease(content),
             current_route="edit",
         )

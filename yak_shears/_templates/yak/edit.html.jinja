@@ -6,6 +6,7 @@ category: str
 category_color: str
 frontmatter: dict[str, object]
 backlinks: list[tuple[str, str]]
+related: list[tuple[str, str, str]]
 lease: str
 current_route: str
 -#}
@@ -234,6 +235,22 @@ current_route: str
           </ul>
         {% else %}
           <p class="metadata-empty">No backlinks</p>
+        {% endif %}
+      </section>
+
+      <section class="metadata-section">
+        <div class="metadata-section__label">related {{ related | length }}</div>
+        {% if related %}
+          <ul class="backlinks-list">
+            {% for path, title, why in related %}
+              <li class="backlink-item">
+                <a href="/edit?yak={{ path }}" class="backlink-link">{{ title }}</a>
+                <span class="backlink-type">{{ why }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="metadata-empty">Nothing related yet</p>
         {% endif %}
       </section>
 

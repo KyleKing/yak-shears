@@ -486,6 +486,27 @@ def search_link_candidates(prefix: str, limit: int = 8, exclude: str | None = No
     ]
 
 
+def all_links() -> list[tuple[str, str, str]]:
+    """Every indexed edge as (source path, target, link type)."""
+    try:
+        with get_search_db() as con:
+            return con.execute("SELECT source_path, target_path, link_type FROM yak_links").fetchall()
+    except Exception as exc:
+        log(f"ERROR: Link scan failed: {exc}")
+        return []
+
+
+def all_titles() -> dict[str, str]:
+    """Indexed title per path, falling back to the path itself."""
+    try:
+        with get_search_db() as con:
+            rows = con.execute("SELECT path, COALESCE(title, path) FROM files").fetchall()
+    except Exception as exc:
+        log(f"ERROR: Title scan failed: {exc}")
+        return {}
+    return dict(rows)
+
+
 def get_backlinks(yak_path: str) -> list[tuple[str, str]]:
     """Get backlinks for a yak file.
 
