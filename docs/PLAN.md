@@ -35,7 +35,7 @@ Known hosting TODOs, now resolved or re-scoped:
 
 Verified defects and hardening, safe to do in parallel with Phase 1. The link-dedupe fix is the foundation for every link, related-notes, and grouping feature in Phases 3-6.
 
-- Duplicate links wipe a note's index (still unfixed). `extract_all_links` (`links.py:104-125`) emits one tuple per occurrence, violating the `yak_links` primary key in `replace_links` (`_yak/database.py:235-248`); the failure is swallowed, leaving no backlinks. De-duplicate preserving first-seen order, or `INSERT OR IGNORE`. Done when a note with a repeated `[[wikilink]]` and repeated `#tag` indexes correctly, with a test.
+- Duplicate links wipe a note's index: fixed (2026-08-30). `extract_all_links` emits one tuple per occurrence, which violated the `yak_links` primary key in `replace_links`, and the swallowed failure left the note with no backlinks until the next full vault scan. `replace_links` now inserts with `INSERT OR IGNORE`, matching `update_index_batch` on the scan path, covered by `TestLinks::test_repeated_links_survive_the_primary_key`.
 - Session persistence and expiry. `create_session`/`delete_session` (`_auth/storage.py:186-198`) never call `_save()`: restarts log everyone out and a deleted token can resurrect. Also store per-session expiry server-side (the 1-week lifetime lives only in the cookie). Previously judged "not worth it" for single-user; deployment changes that calculus.
 - Make `/auth/logout` POST-only (`_auth/routes.py`) so a cross-origin `<img src>` cannot force logout.
 - Login rate limiting on `login_handler` (`_auth/handlers.py`), or document fail2ban on the login route as the chosen control.

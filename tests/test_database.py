@@ -37,6 +37,7 @@ from yak_shears._yak.database import (
     upsert_file,
     upsert_frontmatter,
 )
+from yak_shears.links import extract_all_links
 
 
 @pytest.fixture
@@ -196,6 +197,12 @@ class TestLinks:
         replace_links("source.dj", [("target", "wikilink")])
         backlinks = get_backlinks("target.dj")
         assert ("source.dj", "wikilink") in backlinks
+
+    def test_repeated_links_survive_the_primary_key(self, temp_db):
+        content = "See [[target]] then [[target]] again. #topic and more #topic"
+        replace_links("source.dj", extract_all_links(content))
+        assert ("source.dj", "wikilink") in get_backlinks("target.dj")
+        assert ("source.dj", "tag") in get_backlinks("topic")
 
     def test_replace_links_clears_old(self, temp_db):
         replace_links("source.dj", [("old.dj", "wikilink")])

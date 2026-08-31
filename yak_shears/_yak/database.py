@@ -433,7 +433,7 @@ def replace_links(source_path: str, links: list[tuple[str, str]]) -> None:
         if links:
             links_data = [(source_path, target, link_type) for target, link_type in links]
             con.executemany(
-                "INSERT INTO yak_links (source_path, target_path, link_type) VALUES (?, ?, ?)",
+                "INSERT OR IGNORE INTO yak_links (source_path, target_path, link_type) VALUES (?, ?, ?)",
                 links_data,
             )
 
