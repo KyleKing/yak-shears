@@ -433,6 +433,25 @@ async def test_wrap_toggle_rewraps_editor(context: BrowserContext, page: Page, s
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
+async def test_parked_metadata_panel_is_out_of_reach(context: BrowserContext, page: Page, server_lifecycle):
+    """The closed panel sits offscreen, so its controls must leave the tab order rather than
+    sit at x=1282 in a 1280px viewport waiting to be tabbed into."""
+    await _open_editor(context, page)
+    wrap_toggle = page.locator("#wrap-toggle")
+    await expect(wrap_toggle).to_be_hidden()
+
+    await page.locator(".editor").click()
+    for _ in range(12):
+        await page.keyboard.press("Tab")
+        focused = await page.evaluate("() => document.activeElement?.id || ''")
+        assert focused != "wrap-toggle"
+
+    await open_menu(page)
+    await expect(wrap_toggle).to_be_visible()
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
 async def test_wrap_default_on_with_no_stored_preference(context: BrowserContext, page: Page, server_lifecycle):
     """With no localStorage entry at all, the editor loads wrapped."""
     await login(context, page)

@@ -3020,7 +3020,10 @@ pre code {
 	padding: var(--space-4);
 	overflow-y: auto;
 	max-height: calc(100vh - var(--header-height, 60px));
-	transition: transform 0.3s ease-in-out;
+	/* visibility is transitioned so the slide-out still renders, then drops the
+	   parked panel out of the tab order and the accessibility tree. */
+	transition: transform 0.3s ease-in-out, visibility 0.3s;
+	visibility: hidden;
 	position: fixed; /* Floats over content by default */
 	top: var(--header-height, 60px);
 	right: 0;
@@ -3033,11 +3036,13 @@ pre code {
 /* Visible state - slides in from right */
 .metadata-panel.visible {
 	transform: translateX(0);
+	visibility: visible;
 }
 
 /* Pinned state - stays fixed on the right, persistent (no slide, no backdrop) */
 .editor-layout.panel-pinned .metadata-panel {
 	transform: none;
+	visibility: visible;
 }
 
 /* Terminal-style title bar - full-bleed strip with a category-colored accent */
@@ -3409,12 +3414,14 @@ pre code {
 
 	.metadata-panel.visible {
 		transform: translateY(0);
+		visibility: visible;
 	}
 
 	/* No pinning on mobile */
 	.editor-layout.panel-pinned .metadata-panel {
 		position: fixed;
 		transform: translateY(0);
+		visibility: visible;
 	}
 
 	/* Hide pin button on mobile */
