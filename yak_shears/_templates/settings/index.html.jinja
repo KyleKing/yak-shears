@@ -45,8 +45,14 @@ current_route: str
       display: inline-flex; align-items: center; justify-content: center;
       font-size: 0.625rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
       color: rgba(0, 0, 0, 0.75);
-      transition: transform var(--throw), box-shadow var(--throw);
+      transition: transform var(--throw), box-shadow var(--throw), opacity var(--throw);
     }
+    /* Twelve lit chips per row read as a paint box. Only the seated slot and the
+       ones already spoken for carry information, so the rest sit back. */
+    .swatchbank__slot input:not(:checked) + .swatchbank__chip { opacity: 0.45; }
+    .swatchbank__slot input:not(:checked) + .swatchbank__chip--taken { opacity: 0.8; }
+    .swatchbank__slot input:hover + .swatchbank__chip,
+    .swatchbank__slot input:focus-visible + .swatchbank__chip { opacity: 1; }
     .swatchbank__slot input:hover + .swatchbank__chip { transform: translateY(1px); }
     /* The seated slot drops into a well and takes a ring. An inset underline is
        invisible against a saturated chip, so the ring sits outside the color
@@ -110,7 +116,7 @@ current_route: str
                          value="{{ option.name }}"
                          {% if option.name == slot %}checked{% endif %}
                          aria-label="{{ option.name }}{% if other %}, used by {{ other | join(', ') }}{% endif %}">
-                  <span class="swatchbank__chip" style="--chip-color: {{ option.css }}"
+                  <span class="swatchbank__chip{% if other %} swatchbank__chip--taken{% endif %}" style="--chip-color: {{ option.css }}"
                         title="{{ option.name }}{% if other %} &middot; used by {{ other | join(', ') }}{% endif %}">
                     {{- other | map("first") | join("") | upper -}}
                   </span>
