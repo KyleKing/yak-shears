@@ -607,6 +607,17 @@ p {
 	font-weight: 600;
 }
 
+/* iOS raises its Select/Copy callout on a long press over any selectable text,
+   and the native menu paints above every layer a page can define, so controls
+   opt out of selection entirely rather than fight it with z-index. */
+button,
+.button,
+.cmd,
+.editor__actions {
+	-webkit-touch-callout: none;
+	user-select: none;
+}
+
 /* Every button on the panel is a key: a capped face standing slightly proud of
    the panel, with a catch-light on its top edge and a shadow under its lower
    lip. Pressing it takes the light off the top and drops it 1px. */
