@@ -112,6 +112,9 @@
            I
           </i>
          </button>
+         <button aria-label="Link a note" class="cmd__key" data-action="link" type="button">
+          [[
+         </button>
          <button aria-label="Attach photo or video" class="cmd__key" data-action="media" type="button">
           +▢
          </button>

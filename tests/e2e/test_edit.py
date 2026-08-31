@@ -946,6 +946,14 @@ async def test_typing_a_wikilink_offers_other_notes(context: BrowserContext, pag
     text = await page.evaluate("() => window.jar.toString()")
     assert text.startswith("see [[yak3]]"), text
 
+    # Ctrl+K is the second trigger on the same resolver, and a selection becomes the query.
+    await _fill_editor(page=page, fill="yak2")
+    await page.keyboard.press("ControlOrMeta+a")
+    await page.keyboard.press("ControlOrMeta+k")
+    await expect(rows).to_have_count(1)
+    await page.keyboard.press("Enter")
+    assert await page.evaluate("() => window.jar.toString()") == "[[yak2]]"
+
 
 @pytest.mark.playwright
 @pytest.mark.asyncio

@@ -363,6 +363,14 @@ function initEditor() {
 					}
 				}
 
+				// Cmd/Ctrl+K opens a link at the caret, the pointer-free way into
+				// the same completion the cmd panel's link key reaches.
+				if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+					e.preventDefault();
+					_openWikilink(editor, jar);
+					return;
+				}
+
 				// Ctrl+L to toggle checklist state
 				if (e.ctrlKey && e.key === "l") {
 					e.preventDefault();
@@ -1229,6 +1237,22 @@ function _toggleInlineMarker(editorEl, jarInstance, marker) {
 	apply(text.substring(0, start) + wrapped + text.substring(end), caret);
 }
 
+// Opens a wikilink at the caret so the completion takes over. A selection
+// becomes the query, which is how "link the phrase I just wrote" works.
+function _openWikilink(editorEl, jarInstance) {
+	const text = jarInstance.toString();
+	const selection = _getSelectionRange(editorEl);
+	if (!selection) return;
+	const query = text.slice(selection.start, selection.end);
+	_applyEdit(
+		editorEl,
+		jarInstance,
+		`${text.slice(0, selection.start)}[[${query}${text.slice(selection.end)}`,
+		selection.start + 2 + query.length,
+	);
+}
+
+
 function _runToolbarAction(action, editorEl, jarInstance) {
 	switch (action) {
 		case "outdent":
@@ -1248,6 +1272,9 @@ function _runToolbarAction(action, editorEl, jarInstance) {
 			break;
 		case "italic":
 			_toggleInlineMarker(editorEl, jarInstance, "_");
+			break;
+		case "link":
+			_openWikilink(editorEl, jarInstance);
 			break;
 	}
 }
