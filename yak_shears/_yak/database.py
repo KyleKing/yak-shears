@@ -23,6 +23,7 @@ import duckdb
 
 from yak_shears._log_utils import log
 from yak_shears.frontmatter import parse_frontmatter
+from yak_shears.links import extract_all_links
 
 MAX_WORD_LENGTH = 1000
 INDEX_UPDATE_INTERVAL_SECONDS = 60
@@ -511,6 +512,7 @@ def update_index_batch(
     words_data: list[tuple[str, int, str]],
     file_mtimes: dict[str, float],
     file_titles: dict[str, str] | None = None,
+    file_links: dict[str, list[tuple[str, str]]] | None = None,
 ) -> None:
     """Perform a batch update of the search index within a transaction.
 
@@ -520,8 +522,10 @@ def update_index_batch(
         words_data: New word data to insert
         file_mtimes: Updated file modification times
         file_titles: Derived titles for re-indexed paths; missing entries keep the stored title
+        file_links: Outbound links for re-indexed paths, replacing whatever was stored
     """
     titles = file_titles or {}
+    links = file_links or {}
     with get_search_db() as con:
         con.execute("BEGIN")
         try:
@@ -535,8 +539,18 @@ def update_index_batch(
             if changed_paths:
                 placeholders = ",".join("?" for _ in changed_paths)
                 con.execute(f"DELETE FROM words WHERE path IN ({placeholders})", changed_paths)  # noqa: S608
+                con.execute(
+                    f"DELETE FROM yak_links WHERE source_path IN ({placeholders})",  # noqa: S608
+                    changed_paths,
+                )
 
             _insert_words(con, words_data)
+            link_rows = [(path, target, link_type) for path, edges in links.items() for target, link_type in edges]
+            if link_rows:
+                con.executemany(
+                    "INSERT OR IGNORE INTO yak_links (source_path, target_path, link_type) VALUES (?, ?, ?)",
+                    link_rows,
+                )
 
             for path, mtime in file_mtimes.items():
                 _upsert_file_row(con, path, mtime, titles.get(path))
@@ -571,6 +585,7 @@ class FileIndex:
 
     words: list[tuple[str, int, str]]
     title: str
+    links: list[tuple[str, str]]
 
 
 @dataclass(frozen=True)
@@ -602,14 +617,15 @@ def _process_file(dj_file: SyncPath, rel_path: str) -> FileIndex:
         content = dj_file.read_text(encoding="utf-8")
     except Exception as exc:
         log(f"WARNING: Skipping unreadable file {dj_file}: {exc}")
-        return FileIndex(words=[], title=SyncPath(rel_path).name)
+        return FileIndex(words=[], title=SyncPath(rel_path).name, links=[])
 
     words_data = [
         (rel_path, line_num, word)
         for line_num, line in enumerate(content.splitlines(), 1)
         for word in _extract_line_words(line)
     ]
-    return FileIndex(words=words_data, title=derive_title(content, rel_path))
+    _frontmatter, body = parse_frontmatter(content)
+    return FileIndex(words=words_data, title=derive_title(content, rel_path), links=extract_all_links(body))
 
 
 def scan_vault(yak_dir: SyncPath) -> VaultScan:
@@ -631,12 +647,16 @@ def apply_vault_scan(yak_dir: SyncPath, scan: VaultScan) -> None:
     """Write the results of a vault scan into the search index."""
     words_data: list[tuple[str, int, str]] = []
     file_titles: dict[str, str] = {}
+    file_links: dict[str, list[tuple[str, str]]] = {}
     for path in scan.changed_paths:
         file_index = _process_file(yak_dir / path, path)
         words_data.extend(file_index.words)
         file_titles[path] = file_index.title
+        file_links[path] = file_index.links
 
-    update_index_batch(scan.deleted_paths, scan.changed_paths, words_data, scan.file_mtimes, file_titles)
+    update_index_batch(
+        scan.deleted_paths, scan.changed_paths, words_data, scan.file_mtimes, file_titles, file_links
+    )
 
 
 def update_search_index(yak_dir: SyncPath) -> None:

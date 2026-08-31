@@ -256,6 +256,21 @@ class TestSearchIndex:
             assert "file2.dj" in stored
             assert "subdir/file3.dj" in stored
 
+    def test_scanning_the_vault_indexes_links_not_only_words(self, temp_db, temp_yak_dir):
+        """A note arriving over Syncthing is never saved through the app, so the scan is
+        the only chance to record what it links to."""
+        (temp_yak_dir / "file1.dj").write_text("hello [[file2]] world #tagged")
+        with patch.dict("os.environ", {"YAK_SHEARS_DIR": str(temp_yak_dir)}):
+            update_search_index(temp_yak_dir)
+
+        assert ("file1.dj", "wikilink") in get_backlinks("file2.dj")
+
+        (temp_yak_dir / "file1.dj").write_text("hello world")
+        with patch.dict("os.environ", {"YAK_SHEARS_DIR": str(temp_yak_dir)}):
+            update_search_index(temp_yak_dir)
+
+        assert get_backlinks("file2.dj") == []
+
     def test_should_update_index_initially(self, temp_db, temp_yak_dir):
         with patch.dict("os.environ", {"YAK_SHEARS_DIR": str(temp_yak_dir)}):
             assert should_update_index(temp_yak_dir)
