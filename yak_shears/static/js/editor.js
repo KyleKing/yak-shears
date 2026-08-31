@@ -533,7 +533,10 @@ function initEditor() {
 		// localStorage already survives a reload, but it cannot survive the phone
 		// evicting the tab, and a draft recovered later is worse than one never lost.
 		window.addEventListener("beforeunload", (evt) => {
-			if (getEditorContent() !== serverContent) evt.preventDefault();
+			if (getEditorContent() === serverContent) return;
+			evt.preventDefault();
+			// Safari still reads returnValue rather than the prevented default.
+			evt.returnValue = "";
 		});
 
 		// Track content changes for localStorage sync and preview updates
