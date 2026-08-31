@@ -21,9 +21,23 @@ class Tool {
 
 local downloadAssets = "scripts/download-assets.sh"
 local editTemplate = "yak_shears/_templates/yak/edit.html.jinja"
+local ciYaml = ".github/workflows/ci.yaml"
 local uvOutdated = #"(?P<name>[\w.\-]+) v(?P<current>[\w.\-]+) \(latest: v?(?P<latest>[\w.\-]+)\)"#
 
+/// A `uses: owner/repo@<sha> # <tag>` GitHub Action pin, one capture group
+/// spanning the sha and the tag together, since github-action patches both
+/// as a single resolved value.
+local function actionPin(action: String): Site = new {
+  file = ciYaml
+  pattern = #"\#(action)@([0-9a-f]{40} # v[\w.]+)"#
+}
+
 tools: Mapping<String, Tool> = new {
+  ["checkout"] = new {
+    resolver = "github-action"
+    resolverName = "actions/checkout"
+    sites = new { actionPin("actions/checkout") }
+  }
   ["click"] = new {
     command = "uv tree --outdated"
     commandPattern = uvOutdated
@@ -47,9 +61,24 @@ tools: Mapping<String, Tool> = new {
     command = "uv tree --outdated"
     commandPattern = uvOutdated
   }
+  ["mise-action"] = new {
+    resolver = "github-action"
+    resolverName = "jdx/mise-action"
+    sites = new { actionPin("jdx/mise-action") }
+  }
   ["prismjs"] = new {
     resolver = "npm"
     sites = new { new Site { file = editTemplate; pattern = #"cdn\.jsdelivr\.net/npm/prismjs@([\d.]+)"#; expect = 3 } }
+  }
+  ["setup-uv"] = new {
+    resolver = "github-action"
+    resolverName = "astral-sh/setup-uv"
+    sites = new { actionPin("astral-sh/setup-uv") }
+  }
+  ["upload-artifact"] = new {
+    resolver = "github-action"
+    resolverName = "actions/upload-artifact"
+    sites = new { actionPin("actions/upload-artifact") }
   }
   ["uvicorn"] = new {
     command = "uv tree --outdated"
