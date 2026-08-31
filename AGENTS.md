@@ -201,5 +201,7 @@ A read-mostly integrity report at `/doctor`, covering attachments, filenames, an
 ## Related Documentation
 
 - **[STATUS.md](docs/STATUS.md)** - Current implementation status
+- **[PLAN.md](docs/PLAN.md)** - Phased plan, the single source for what is next
 - **[ROADMAP.md](docs/ROADMAP.md)** - Vision and planned features
+- **[DESIGN.md](docs/DESIGN.md)** - The console design system and its glossary
 - **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Production deployment guide

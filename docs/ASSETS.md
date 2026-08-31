@@ -32,9 +32,9 @@ trip. As a cap on *all* assets it never meant anything.
 
 ## The enforced number
 
-`tests/test_assets.py` fails when `main.css` exceeds **22KB gzipped**. It is 20.1KB
-today, so there is a little headroom and no license to spend it. Raise the constant
-deliberately, in its own commit, with a reason.
+`tests/test_assets.py` fails when `main.css` exceeds **22KB gzipped**. It is 21.3KB
+today, roughly 700 bytes under the ceiling, so the next stylesheet of any size breaks
+the build. Raise the constant deliberately, in its own commit, with a reason.
 
 ## Over the wire
 

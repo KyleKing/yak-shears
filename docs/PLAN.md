@@ -83,6 +83,7 @@ The first product surface, and the foundation of the grouping story (Phase 6). U
 - Cross-linking modal: a search-to-select dialog that inserts a `[[link]]`, sharing the autocomplete resolver. The inline-typing and modal paths are two triggers on one resolver.
 - Fuzzy link resolution and broken-link detection (the media doctor view is the pattern to follow: report first, actions later).
 - Editor completion help for frontmatter keys (same UI mechanics as `[[` autocomplete). This mechanic also drives the `color`/`stream`/`state` field completion in Phase 5.
+- The patchbay: render links and backlinks as visible routing rather than as a count, on the editor first and then the rack. Described in [DESIGN.md](./DESIGN.md) under "Still open from the redesign".
 - Inline related-notes panel on every note: a ranked, **explainable** list ("related because 3 shared links, 2 shared tags, cited together by 4 notes"), not a picture. Rank from structural signals already free in the index: shared outbound links, shared tags, co-citation. Cap at ~8. Embedding similarity is deferred to the semantic CLI (opportunistic infra). Performance target already set (<100ms).
 
 ## Phase 4: Frontmatter query engine and store split (keystone)
@@ -96,6 +97,10 @@ The single primitive under Phases 5-6: query and aggregate notes by frontmatter,
 ## Phase 5: Product views (prune queue, streams, backlog)
 
 Thin views on the Phase 4 engine. Nothing here introduces state that cannot be rebuilt from the vault.
+
+**Shipped ahead of Phase 4**, reading frontmatter directly rather than through the query engine: the streams canal at `/streams` (three reaches, the latch and command deck, every write through `rewrite_frontmatter_field` with an inverse for undo), the habits bench at `/habits` (schedules, streaks, grace, makeup, heat rows), the lists rack at `/lists`, and the `/benches` hub. Each of those readers is what Phase 4 replaces, so the engine lands under working views instead of under a blank page. Design in [STREAMS-DESIGN.md](./STREAMS-DESIGN.md), vocabulary in [DESIGN.md](./DESIGN.md).
+
+**Still open** in this phase: the prune queue below, and the palette and completion work under Work Streams.
 
 ### Daily prune / review queue
 
@@ -175,4 +180,4 @@ Decision pending; not a knowledge-management feature (streaks, earned breaks, a 
 
 ## Sequencing
 
-Phase 1 first (user priority). Phase 2 in parallel where it does not touch deployment files; its link-dedupe fix is the foundation for Phases 3-6. Then product-first: Phase 3 (link intelligence, unblocked by the dedupe fix), Phase 4 (the query-engine keystone plus the coupled store split), Phase 5 (the prune queue then streams/backlog), Phase 6 (grouping and the anti-graph navigation), Phase 7 (read-only external references). Opportunistic infrastructure slots between product phases; the semantic CLI unlocks the embedding-similarity enhancements in Phases 3 and 6. The workout planner stays deferred until its scope decision is made.
+Phase 1 first (user priority). Phase 2 in parallel where it does not touch deployment files; its link-dedupe fix is the foundation for Phases 3-6. Then product-first: Phase 3 (link intelligence, unblocked by the dedupe fix), Phase 4 (the query-engine keystone plus the coupled store split), Phase 5 (the prune queue, and moving the shipped stream, habit, and list views onto the engine), Phase 6 (grouping and the anti-graph navigation), Phase 7 (read-only external references). Opportunistic infrastructure slots between product phases; the semantic CLI unlocks the embedding-similarity enhancements in Phases 3 and 6. The workout planner stays deferred until its scope decision is made.

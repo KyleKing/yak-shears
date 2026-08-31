@@ -32,25 +32,15 @@ Priority order (2026-07-06): deploy first, then auth/data hardening, then produc
 
 ### The keystone: query over notes-with-frontmatter
 
-Most of the product roadmap reduces to one primitive: query and aggregate notes by frontmatter, sorted, filtered, and grouped, then render the result as a view. A backlog is a query, a stream board is that query grouped by state, a triage bucket is the query for notes missing state, the prune queue is a query over review dates. Build the query engine once (PLAN.md Phase 4) and each product feature is a thin view. Nothing becomes app-owned state that cannot be rebuilt from the vault; a "stream member" is a query result, not a stored list.
+Most of the product roadmap reduces to one primitive: query and aggregate notes by frontmatter, sorted, filtered, and grouped, then render the result as a view. A backlog is a query, a stream board is that query grouped by state, a triage bucket is the query for notes missing state, the prune queue is a query over review dates. Build the query engine once ([PLAN.md](./PLAN.md) Phase 4) and each product feature is a thin view. Nothing becomes app-owned state that cannot be rebuilt from the vault; a "stream member" is a query result, not a stored list.
 
-### Link Intelligence and related notes (PLAN.md Phase 3)
-
-- `[[` autocomplete in editor (prefix, recent, frequent) and a search-to-select cross-linking modal on the same resolver
-- Fuzzy link resolution and broken-link detection (doctor-style report first)
-- Link preview on hover
-- Frontmatter key completion in the editor (also drives `color`/`stream`/`state` completion for streams)
-- Inline, explainable related-notes panel per note (ranked by shared links, shared tags, co-citation; embeddings later)
-
-### Work Streams, Backlog, and the prune queue (PLAN.md Phase 5)
-
-Personal organization as views over task-notes, not a separate task store. A stream is a note (`type: stream`) with a short id, display name, palette color, and optional WIP limit; a task is a note with `state` and an optional `stream`. The board groups tasks by state within a stream, the backlog is the same data as a table, and the triage bucket catches task-notes missing a stream or state. A curated named palette (fjord, teal, moss, ...) is the schema artifact that drives in-editor color completion, swatches, and Doctor validity checks. That palette has to reconcile with the console's category color, which is generated rather than curated: `get_category_color()` hashes the name into a hue inside a fixed saturation and lightness band so a rack of strips stays legible. Either streams draw from the same band or the two color systems will disagree on the same screen. WIP limits are a forcing function on attention, so they live in the view, not the data. A daily prune/review queue resurfaces stale notes on a spaced interval to fight note rot.
+What each phase contains is in [PLAN.md](./PLAN.md), which sequences the work. This file stops at the reasoning behind it.
 
 ## Longer Term
 
-### Grouping and network navigation, the anti-graph (PLAN.md Phase 6)
+### Grouping and network navigation, the anti-graph ([PLAN.md](./PLAN.md) Phase 6)
 
-The Obsidian-style global force-directed graph is a hairball with no stable spatial memory and flat edges; the competitive research is clear that it is a diagnostic at best, never a navigation tool. The stance here is compute and surface, do not draw. Navigation runs on an explainable related-notes panel and a bounded local graph (1-2 hops, with type/state/recency encoded). Grouping runs on living hub notes (`type: hub`) whose membership is a derived query rather than a hand-maintained list, auto-drafted from detected clusters for the user to curate (this is the "central node note" idea done so it cannot go stale). Understanding the network runs on a scheduled network-health digest: emergent themes (Leiden community detection diffed over time), bridge notes (betweenness), hub leaderboard (PageRank), and orphans with suggested connections. Computed signals live only in the rebuildable index; only user-accepted actions ever write to files.
+The Obsidian-style global force-directed graph is a hairball with no stable spatial memory and flat edges; the competitive research is clear that it is a diagnostic at best, never a navigation tool. The stance here is compute and surface, do not draw. Computed signals live only in the rebuildable index, and only a user-accepted action ever writes to a file.
 
 ### Search index health (opportunistic infrastructure)
 
@@ -129,7 +119,77 @@ The query engine, table view, and board view moved into the near-term product ph
 
 ### Workout planner (deferred)
 
-Decision pending (see PLAN.md). Likely modeled as dated notes with structured frontmatter so streaks and a calendar become views, with a possible sibling iOS app reading and writing the Syncthing vault directly rather than through a token API.
+Decision pending (see [PLAN.md](./PLAN.md)). Modeled as dated notes with structured frontmatter so streaks and a calendar become views, with a possible sibling iOS app reading and writing the Syncthing vault directly rather than through a token API. The outline below came out of the 2026-08-03 streams session and is scoped but unscheduled; it exists so the decision has a concrete shape to accept or cut.
+
+#### The three note shapes
+
+Each workout is its own yak; a routine orders them; a session logs into a separate completion yak. All three are plain notes and every derived number is a query.
+
+##### Workout (`type: workout`)
+
+One unique movement or exercise. The body carries form notes, links, and media (the vault already handles attachments).
+
+```yaml
+type: workout
+name: Goblet squat
+equipment: kettlebell
+```
+
+##### Routine (`type: routine`)
+
+An ordered program over workouts, with reps and rest. Order is the list order; bi-directionality (which routines use a workout) comes from the index, like streams.
+
+```yaml
+type: routine
+name: Tuesday strength
+schedule: 2/week
+sequence:
+  - workout: "[[2026-07-01T10_00_00Z]]"
+    sets: 3
+    reps: 8
+    rest: 90
+  - workout: "[[2026-07-01T10_02_00Z]]"
+    sets: 3
+    reps: 12
+    rest: 60
+```
+
+`schedule` reuses the habits vocabulary verbatim, so a routine gets streaks, earned grace, and the heat row for free from the habits machinery. A routine is a habit whose completion happens to produce a log.
+
+##### Session log (`type: workout-log`)
+
+Created by finishing a timer run. One note per session, filename is the session instant as usual, so history is chronological by construction.
+
+```yaml
+type: workout-log
+routine: "[[2026-06-30T09_00_00Z]]"
+completed:
+  - workout: "[[2026-07-01T10_00_00Z]]"
+    sets: 3
+    reps: [8, 8, 6]
+    weight: 24
+```
+
+Actuals diverge from the plan freely (`reps` as a list, optional `weight`); the plan stays in the routine note and never mutates.
+
+#### The timer
+
+The routine page runs the session: current workout large, set counter, a rest countdown that starts when a set is marked done, next workout on deck. One press per set, matching the one-press habit key. Finishing writes the log yak and marks the routine's habit completion in the same action.
+
+Timer state lives in the page (JS), never in files; abandoning a session writes nothing. This is the one surface where client-side state is genuinely required, and it still ends in a single file write.
+
+#### Views
+
+- Routine bench: routines with their habit-derived streaks and next-scheduled state, one press to start
+- History: logs grouped by routine, actuals against plan (did reps trend up)
+- A workout's page shows which routines use it and its recent actuals (backlinks plus a filtered log query)
+
+#### Open questions
+
+- Weights and progression: store per-set weight in logs only (above), or also a current working weight in the routine's sequence entries
+- Rest semantics: per-entry `rest` (above) versus a routine-level default with overrides
+- The iOS question from ROADMAP stands: a phone at the gym with flaky connectivity wants the vault-direct sibling app or offline support; the timer page is the first surface that genuinely suffers without it
+- Whether `equipment` and similar workout fields deserve completion/validation (the Phase 3 frontmatter-key mechanic) or stay free text
 
 ### CLI Ideas (from 2026-07 planning notes)
 

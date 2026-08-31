@@ -57,7 +57,7 @@ wip-limit: 3
 
 - `id` is a slug, unique within its category. Tasks reference `category/id`
 - `category` scopes the stream. Work and Personal will carry several streams; most categories carry one
-- `color` names one of the twelve anodize slots (`clay` through `olive`). It defaults to the category's slot from `categories.json`. The separate fjord/teal/moss palette from the earlier draft is dropped: one palette, no amber possible, the NEXT_STEPS collision resolved
+- `color` names one of the twelve anodize slots (`clay` through `olive`). It defaults to the category's slot from `categories.json`. The separate fjord/teal/moss palette from the earlier draft is dropped: one palette, no amber possible, so stream color and category color cannot read as two systems on one screen
 - `wip-limit` is optional and only ever drives the lamp
 
 The body of a stream note is free prose (the stream's charter, links, whatever). The note is a normal note.
@@ -178,7 +178,7 @@ Lessons from the 2026-07 search perf work carry over: one process-wide connectio
 
 ## Habits (draft, needs a spec session)
 
-Raised in NEXT_STEPS ("a habit is a meter with real ballistics") and adjacent to the deferred workout planner. Working proposal to react to, not a decision:
+Raised during the redesign ("a habit is a meter with real ballistics") and adjacent to the deferred workout planner. Working proposal to react to, not a decision:
 
 ```yaml
 type: habit

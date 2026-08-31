@@ -432,3 +432,161 @@ The panel it opens is one instruction: a count rack, a scope switch, a bank of c
 - **Don't** animate `width` or `height` for a fill or a reveal. Clip it.
 - **Don't** make the light scheme white. Both schemes are the same instrument under different room light.
 - **Don't** ship a rule no page exercises. There is no build step to tree-shake, so an unused rule ships forever. `main.css` is render-blocking on every route and is held under 22KB gzipped by `tests/test_assets.py`; see [ASSETS.md](./ASSETS.md) for how that number is measured and what it would take to move it.
+
+## Still open from the redesign
+
+The console world is recorded above; these are the parts of it that are not built yet.
+
+### The patchbay
+
+Links and backlinks render as a number in a readout and a plain list in the metadata panel. On a console they are routing: colored patch connections on the editor and in the rack, showing where a note connects rather than how many connections it has. The editor is the natural starting point, because `render_yak_edit` already receives `backlinks: list[tuple[str, str]]`, and the rack's `.card__stat--links` readout follows. This is the visual half of PLAN.md Phase 3.
+
+### Surfaces still on the old world
+
+These inherit the tokens, so they are not broken, but they keep the shape of the discarded design and have not been rebuilt from the three materials:
+
+- `/new` (`yak/new.html.jinja`), which still uses the generic `.form` block
+- Login (`auth/login.html.jinja`), still a centered card with `--shadow-md`
+- The error page
+- The metadata panel, which is still styled as a terminal/TUI pane from an earlier direction and now speaks a different vocabulary than the editor it sits beside
+- The search preview modal and the empty states
+
+Hardcoded literals remain on these surfaces where a token already names the value. They should reach zero as each surface is rebuilt, and none should be waived to get there.
+
+### Motion
+
+One orchestrated moment is missing. What exists is per-control: the 70ms switch throw and the 260ms meter settle. Nothing coordinates on page entry beyond a leftover staggered `fadeIn` on the first six cards, which is from the old design and should either become part of the world or go.
+
+### Unverified
+
+- The phone at 390x844. Chrome will not resize below ~400px, so use `scripts/capture_screenshots.py`, which can
+- Dark mode. The dark block was rewritten as material overrides and never looked at
+- The save-status lamps and `.alert--warn`, covered by test rather than by eye
+
+### Finish handoffs
+
+- Run the `impeccable-finish-reviewer` subagent against the direction contract with screenshots, once the phone and dark-mode passes exist to hand it
+- Regenerate the four README screenshots after the surfaces above are rebuilt, not before
+
+## Glossary: the metaphors and where they appear on screen
+
+Yak-shears runs on two metaphors. The whole app is **a hardware console**, the anodized panel described above. The streams page adds a second metaphor on top: **a canal**, where work flows upward through gates. This section maps every term to the pixels it names, so a screen can be reviewed with the right words. It stays here for reference and is never rendered as a page in the app.
+
+### The console (every page)
+
+The interface is an instrument panel, not a page of documents. Three materials build everything:
+
+- **Panel** — the painted charcoal face things are mounted on. The page background.
+- **Well** — a recess milled into the panel where content sits down: the editor's text area, the search field, any latched (selected) control. Drawn with an inset shadow so it reads as sunk.
+- **Engrave** — a groove cut into the panel: a dark line over a light line, used wherever another app would draw a border.
+
+Mounted on the materials:
+
+- **Legend** — screen-printed label text (small, tracked, uppercase), like the "GAIN" printed under a knob.
+- **Lamp** — a small glowing dot that only ever reports state (green live, amber warn, red fault). If nothing is being reported, no lamp is lit.
+- **Cap / anodize** — the colored part carrying category color, from a fixed 12-slot palette.
+- **Armed amber** — the one lit accent color. It always means "this will fire" or "attention": the Save key, the active nav underline, warn lamps.
+
+#### Rack (the /yaks list)
+
+"Rack" as in a 19-inch equipment rack: a frame holding identical-height units. Each note is one **rack unit** (also called a **channel strip**, from mixing desks): a fixed-height row with its parts in the same place on every row, so your eye reads down a column instead of hunting.
+
+```
+┌─ rack ────────────────────────────────────────────────┐
+│▌ Title of the note                        ┌─ readout ┐│ ← one rack unit
+│▌ four lines of preview text…              │ CATEGORY ││   (channel strip)
+│▌ …                                        │ 2026-08-01││
+│▌ …                                        │  ●  3    ││ ← recency lamp
+│└─ cap (6px category color bar)            └──────────┘│
+├───────────────────────────────────────────────────────┤ ← engrave hairline
+│▌ Next note …                                          │
+└───────────────────────────────────────────────────────┘
+```
+
+- **Readout** — the fixed column at the right end of each unit: category, date, lamp, count. Same position every row.
+- **Recency lamp** — the one lamp that varies in size as well as color: 9px bright (touched this week) down to 4px unlit (over a year).
+- **Bench** — a rack variant for things you operate rather than read: the habits page (and, planned, the workout routines page). Same rows, but each carries a key you press.
+- **Key** — a pressable button drawn as a physical key cap (catch-light on top, shadow under). "Mark" / "Done" on habits, checkboxes on lists.
+
+### The canal (the /streams page)
+
+Task management is not a kanban board here. It is a canal with locks: work enters at the bottom and is raised, gate by gate, until it exits at the top. The vertical page layout IS the metaphor: scroll position equals progress.
+
+```
+      ═════ tray (pull-down) ═════   ← all streams at a glance; click to open,
+              ▼ TLR-MIGRATION          pick a stream to focus the canal on
+┌─ canal ───────────────────────┐
+│ IN PROGRESS          ● WIP 2/3│ ← top reach; WIP lamp goes amber over limit
+│  ▌▍ Ship the importer   due +2│
+│  ▌▍ Fix auth redirect        ●│
+╞═══════════════ sill ══════════╡ ← crossing a sill = state change
+│ QUEUE                         │
+│  ▌▍ Write the migration doc   │
+│  ▌▍ ⏸ Waiting: vendor reply   │ ← waiting = closed gate; dimmed, stays put
+╞═══════════════ sill ══════════╡
+│ BACKLOG                       │ ← bottom reach; work enters here
+│  ▌▍ Investigate flaky test    │
+└───────────────────────────────┘
+   drained ▸ complete / not planned  (below, out of the canal)
+```
+
+- **Stream** — a durable thread of related work (a note with `type: stream`), scoped under a category: `work/tlr-migration`. Not a sprint, not a project with an end date.
+- **Canal** — the focused stream's column of tasks, flowing bottom to top.
+- **Reach** — one stretch of canal between gates; holds every task in one state. Three reaches: backlog, queue, in progress.
+- **Sill** — the raised bar a lock gate rests on; here, the boundary between reaches. Moving a task across a sill is a state change.
+- **Waiting** — a closed gate. The task holds in its reach, dimmed, with the reason printed (`waiting: vendor reply`). It is a flag, not a fourth state, so nothing has to move backward when the wait ends.
+- **WIP lamp** — reports tasks in progress against the stream's `wip-limit`. Amber over the limit. It never blocks anything; it only reports.
+- **Drained** — tasks that left the canal: complete or not planned. Water out of the system.
+- **Tray** — the pull-down panel at the top (a `<details>` bar) holding every stream's meter, grouped by category. It replaces both a sidebar dock and a stream switcher: closed, it is one line naming the focused stream; open, it is the overview.
+- **Mark** — the two touching vertical stripes at each task's left edge: 8px category color, then 5px stream color, both from the same 12-slot palette. Category outranks stream, so its stripe is thicker.
+- **Due +n** — the KISS deadline model: one `due` date plus `flex` days of acceptable slip. Amber inside the flex window, red past it. No priorities, no estimates.
+- **Triage** — task notes with no stream, or naming a stream that does not exist. Surfaced so nothing silently vanishes.
+- **Latch** — the recessed socket at a strip's head. Latching a strip arms it (amber) as the target the deck's keys fire on.
+- **Deck** — the command deck that surfaces once a strip is latched: Raise/Lower across sills, due shifts (`today`, `+1d`, `+7d`, `-1d`, clear), the waiting toggle with its reason, and Move to another stream. Every key prints its keyboard binding; J/K walk the latch, Esc releases, `.` repeats the last action.
+- **Toast** — after any write, the bar naming what was applied with an Undo key holding the exact inverse action.
+
+### Habits (the /habits bench)
+
+- **Heat row** — 28 day-cells per habit: filled when done, hollow when scheduled-but-missed, faint when unscheduled.
+- **Streak** — consecutive scheduled successes, in days (`4d`) for daily/weekdays schedules or weeks (`2w`) for `n/week` quotas.
+- **Grace** — banked forgiveness, shown as `+n`. It is earned, never granted: completing on an unscheduled day banks one (cap 7), and a missed scheduled day spends one before the streak breaks.
+- **Makeup** — an off-schedule completion right after a miss retroactively covers it (the Friday you did on Saturday).
+
+```
+Morning stretch   WEEKDAYS   ▪▪▪▫▪▪·▪▪▪▪▫▪·  4d +1   [ MARK ]
+                              └ heat row ┘   │  │      └ key
+                                        streak  grace
+```
+
+### Kinds of notes
+
+Every note is a plain `.dj` file; a note that participates in a bench declares its kind with one frontmatter key, `type:`, always a singular kebab-case noun:
+
+| `type:` | What it is | Bench |
+|---|---|---|
+| (none) | An ordinary note | the rack |
+| `task` | One unit of work with `state`, `stream`, `due`/`flex` | /streams |
+| `stream` | A durable thread of work that tasks name | /streams (tray) |
+| `list` | A long-lived reference checklist | /lists |
+| `habit` | A practice with a `schedule`, completions as dated items | /habits |
+| `workout` | One movement or exercise (planned) | — |
+| `routine` | An ordered program of workouts with a habit `schedule` (planned) | — |
+| `workout-log` | One session's actuals (planned) | — |
+
+A note with `state:` but no `type:` still reads as a task everywhere; Doctor lists it so the kind can be made explicit.
+
+- **Bench (hub)** — /benches lists every kind-specific surface with live counts, so the nav carries one entry instead of one per kind.
+- **Kind legend** — typed notes show their kind as a printed legend on their rack unit.
+
+### One-line map, term to page
+
+| You see it on | The words for it |
+|---|---|
+| /yaks | rack, rack unit / channel strip, cap, readout, recency lamp, kind legend |
+| /benches | hub of kind-specific surfaces with live counts |
+| /streams | canal, reach, sill, tray, mark, WIP lamp, waiting, drained, triage, due +n, latch, deck, toast |
+| /habits | bench, heat row, streak, grace, makeup, key |
+| /lists | rack of list cards; first unchecked item as the preview |
+| /yaks list cards | arm + apply: tapping an item arms it in amber, the Apply key writes the batch |
+| /settings | swatch bank (the 12-slot color picker; taken slots carry the owner's initial) |
+| everywhere | panel, well, engrave, legend, lamp, armed amber |
