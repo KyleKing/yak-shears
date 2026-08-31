@@ -77,14 +77,16 @@ function _setupDraftToggle(saved, serverContent) {
 
 ## Phase 3: Link intelligence and related notes
 
-The first product surface, and the foundation of the grouping story (Phase 6). Unblocked once the backlinks store is stable (Phase 2 dedupe fix). Formerly the standalone "link intelligence" phase, now carrying the related-notes panel.
+The first product surface, and the foundation of the grouping story (Phase 6). Formerly the standalone "link intelligence" phase, now carrying the related-notes panel.
 
-- `[[` autocomplete in the editor (prefix match, then recent, then frequent).
-- Cross-linking modal: a search-to-select dialog that inserts a `[[link]]`, sharing the autocomplete resolver. The inline-typing and modal paths are two triggers on one resolver.
+**Shipped**: the `[[` completion (`/api/links` ranks prefix matches first, then inbound links, then recency, and an empty query lists the most recent notes), its second trigger on the same resolver (Ctrl+K, and a `[[` key on the command panel, either one turning a selection into the query), and the related-notes panel in the editor's metadata pane. The vault scan now records outbound links, which it never did before, so a note that arrived over Syncthing rather than through the editor counts toward backlinks, ranking, and relatedness.
+
+**Still open** in this phase:
+
 - Fuzzy link resolution and broken-link detection (the media doctor view is the pattern to follow: report first, actions later).
 - Editor completion help for frontmatter keys (same UI mechanics as `[[` autocomplete). This mechanic also drives the `color`/`stream`/`state` field completion in Phase 5.
 - The patchbay: render links and backlinks as visible routing rather than as a count, on the editor first and then the rack. Described in [DESIGN.md](./DESIGN.md) under "Still open from the redesign".
-- Inline related-notes panel on every note: a ranked, **explainable** list ("related because 3 shared links, 2 shared tags, cited together by 4 notes"), not a picture. Rank from structural signals already free in the index: shared outbound links, shared tags, co-citation. Cap at ~8. Embedding similarity is deferred to the semantic CLI (opportunistic infra). Performance target already set (<100ms).
+- Widen the related-notes panel past the editor, and fold in embedding similarity once the semantic CLI lands (opportunistic infra). Ranking today is structural only (shared outbound links, shared tags, co-citation), capped at 8, computed in `_yak/related.py` over the whole edge list.
 
 ## Phase 4: Frontmatter query engine and store split (keystone)
 

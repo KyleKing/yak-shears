@@ -23,7 +23,9 @@ What exists today. Sequenced work lives in [PLAN.md](./PLAN.md) and the vision i
 | Editor | ✅ | CodeJar with live preview, wrap toggle, list indent rules, mobile keyboard toolbar (ADR 0008) |
 | Search | ✅ | DuckDB word table with fuzzy matching (backend swap planned); reused connection, prefix prefilter, stage timing logs |
 | Frontmatter parsing | ✅ | YAML fences and Apple Notes export format; read-only panel (ADR 0003) |
-| Link extraction | ✅ | `[[wikilinks]]` and `#tags` indexed (duplicate-link bug open) |
+| Link extraction | ✅ | `[[wikilinks]]` and `#tags` indexed on save and on the vault scan (duplicate-link bug open) |
+| Link completion | ✅ | `[[` in the editor, Ctrl+K, and a command-panel key, all on `/api/links` |
+| Related notes | ✅ | Ranked by shared links, shared tags, and co-citation, each row naming its reason |
 | Backlinks storage | ✅ | Stored in DuckDB |
 | Doctor | ✅ | Attachment integrity, filename migration, search index location (ADR 0010) |
 | Media upload | ✅ | Paste/toolbar/drag-drop upload, HEIC/video transcoding, thumbnails, doctor view (ADR 0004) |
