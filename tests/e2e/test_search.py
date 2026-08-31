@@ -44,7 +44,7 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
     # the only relevance signal and the path tiebreak decides. This used to read
     # "yak1.dj", which passed on insertion order rather than on any rule.
     first_result = results.first
-    await expect(first_result).to_contain_text("subdirectory-2/yak2.dj")
+    await expect(first_result).to_have_attribute("data-path", "subdirectory-2/yak2.dj")
 
     raw_paths = [await item.get_attribute("data-path") for item in await results.all()]
     assert all(path is not None for path in raw_paths)

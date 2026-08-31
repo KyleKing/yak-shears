@@ -2418,16 +2418,13 @@ pre code {
 	white-space: nowrap;
 }
 
-/* The path is literal, so it is signal. Truncated from the left: the stem is
-   what identifies a yak, and the directory prefix repeats across results. */
-.search-result__path {
-	direction: rtl;
-	text-align: left;
+/* The line the query matched, kept to one row: a result is scanned, and a
+   wrapped preview turns the rack into paragraphs. */
+.search-result__preview {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	font-family: var(--font-signal);
-	font-size: 0.75rem;
+	font-size: 0.875rem;
 	color: var(--legend-dim);
 }
 
