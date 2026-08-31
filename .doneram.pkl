@@ -1,0 +1,58 @@
+// Pins doneram tracks in place of scripts/check_freshness.py. Not yet wired into a
+// scheduled workflow or patched from CI; see the doner M3 validation notes for why.
+
+class Site {
+  /// Repo-relative path to the file holding the literal.
+  file: String
+  /// Regex with exactly one capture group around the version.
+  pattern: String
+  expect: Int(this > 0) = 1
+}
+
+class Tool {
+  resolver: String?
+  /// Name to query when it differs from the map key, e.g. "owner/repo".
+  resolverName: String?
+  sites: Listing<Site> = new {}
+  /// Command resolvers (uv tree --outdated) have no file to locate a pin in.
+  command: String?
+  commandPattern: String?
+}
+
+local downloadAssets = "scripts/download-assets.sh"
+local editTemplate = "yak_shears/_templates/yak/edit.html.jinja"
+local uvOutdated = #"(?P<name>[\w.\-]+) v(?P<current>[\w.\-]+) \(latest: v?(?P<latest>[\w.\-]+)\)"#
+
+tools: Mapping<String, Tool> = new {
+  ["click"] = new {
+    command = "uv tree --outdated"
+    commandPattern = uvOutdated
+  }
+  ["codejar"] = new {
+    resolver = "github-branch"
+    resolverName = "antonmedv/codejar@master"
+    sites = new { new Site { file = downloadAssets; pattern = #"CODEJAR_VERSION:-([0-9a-f]{40})"# } }
+  }
+  ["djot"] = new {
+    resolver = "npm"
+    resolverName = "@djot/djot"
+    sites = new { new Site { file = editTemplate; pattern = #"unpkg\.com/@djot/djot@([\d.]+)"# } }
+  }
+  ["htmx"] = new {
+    resolver = "github-release"
+    resolverName = "bigskysoftware/htmx"
+    sites = new { new Site { file = downloadAssets; pattern = #"HTMX_VERSION:-v([\d.]+)"# } }
+  }
+  ["idna"] = new {
+    command = "uv tree --outdated"
+    commandPattern = uvOutdated
+  }
+  ["prismjs"] = new {
+    resolver = "npm"
+    sites = new { new Site { file = editTemplate; pattern = #"cdn\.jsdelivr\.net/npm/prismjs@([\d.]+)"#; expect = 3 } }
+  }
+  ["uvicorn"] = new {
+    command = "uv tree --outdated"
+    commandPattern = uvOutdated
+  }
+}
