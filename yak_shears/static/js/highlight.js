@@ -155,41 +155,19 @@ function highlight(editor) {
 // Text offset of a DOM position within `root`, or null when the position is not
 // inside `root`. An element container's offset is a child index rather than a
 // character count, which is how the browser reports a caret in a node whose
-// children have just been replaced.
+// children have just been replaced; a range measures the text ahead of either
+// kind of position, including a boundary child that holds no text of its own.
 function getTextOffset(root, node, offset) {
 	if (!node || !root.contains(node)) return null;
 
-	let totalOffset = 0;
-	const walker = document.createTreeWalker(
-		root,
-		NodeFilter.SHOW_TEXT,
-		null,
-		false,
-	);
-	let currentNode = walker.nextNode();
-
-	if (node.nodeType === Node.TEXT_NODE) {
-		while (currentNode) {
-			if (currentNode === node) {
-				return totalOffset + offset;
-			}
-			totalOffset += currentNode.textContent.length;
-			currentNode = walker.nextNode();
-		}
+	const range = document.createRange();
+	range.selectNodeContents(root);
+	try {
+		range.setEnd(node, offset);
+	} catch {
 		return null;
 	}
-
-	// The position sits ahead of the child at `offset`, so it is the text length
-	// of everything before that child. No such child means the element's end.
-	const boundary = node.childNodes[offset] || null;
-	while (currentNode) {
-		if (boundary && (currentNode === boundary || boundary.contains(currentNode))) {
-			return totalOffset;
-		}
-		totalOffset += currentNode.textContent.length;
-		currentNode = walker.nextNode();
-	}
-	return totalOffset;
+	return range.toString().length;
 }
 
 // Helper function to get node and offset at a given text offset

@@ -867,6 +867,31 @@ async def test_caret_offset_of_an_element_container(context: BrowserContext, pag
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
+async def test_caret_offset_of_a_boundary_child_without_text(
+    context: BrowserContext, page: Page, server_lifecycle
+):
+    """A caret can sit ahead of a child that holds no text, such as a `br` the
+    browser leaves on a line the reader emptied. Counting only the text ahead of
+    it must still give that position, not the end of the document."""
+    await _open_editor(context, page)
+
+    offsets = await page.evaluate(
+        """() => {
+            const ed = document.querySelector(".editor");
+            ed.innerHTML = "abc<br>def";
+            return {
+                before_br: getTextOffset(ed, ed, 1),
+                total: ed.textContent.length,
+            };
+        }"""
+    )
+
+    assert offsets["before_br"] == 3, f"Caret ahead of the br read as {offsets['before_br']}"
+    assert offsets["before_br"] != offsets["total"]
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
 async def test_caret_outside_the_editor_has_no_offset(context: BrowserContext, page: Page, server_lifecycle):
     """A caret elsewhere on the page has no position in the editor, so it reports none."""
     await _open_editor(context, page)
