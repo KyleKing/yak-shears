@@ -44,45 +44,32 @@ class UserStore:
             Initialized UserStore instance with data loaded from disk if available.
         """
         store = cls(data_path)
-        sync_path = SyncPath(store._data_path)
-        if sync_path.exists():
-            try:
-                data = json.loads(sync_path.read_text(encoding="utf-8"))
-                store._users = data.get("users", {})
-                store._email_to_user_id = data.get("email_to_user_id", {})
-                store._data_mtime = sync_path.stat().st_mtime
-            except (OSError, json.JSONDecodeError):
-                pass
+        store._reload_if_changed()
         return store
 
-    async def load(self) -> None:
-        """Load users from disk."""
-        if not await self._data_path.exists():
-            return
-
-        try:
-            data = json.loads(await self._data_path.read_text())
-            self._users = data.get("users", {})
-            self._email_to_user_id = data.get("email_to_user_id", {})
-            self._data_mtime = (await self._data_path.stat()).st_mtime
-        except (OSError, json.JSONDecodeError):
-            self._users = {}
-            self._email_to_user_id = {}
-
-    async def _reload_if_changed(self) -> None:
+    def _reload_if_changed(self) -> None:
         """Reload from disk if the file's mtime moved since the last load.
 
         The `yak-shears-users` CLI runs as a separate process from the server and
         writes this file directly, so the server's in-memory copy goes stale after
         every CLI create/delete until this catches up (previously required a
-        service restart).
+        service restart). Every session check runs through here, so a user the CLI
+        deleted stops authorizing on the next request rather than at the next login.
         """
+        sync_path = SyncPath(self._data_path)
         try:
-            mtime = (await self._data_path.stat()).st_mtime
+            mtime = sync_path.stat().st_mtime
         except OSError:
             return
-        if mtime != self._data_mtime:
-            await self.load()
+        if mtime == self._data_mtime:
+            return
+        try:
+            data = json.loads(sync_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return
+        self._users = data.get("users", {})
+        self._email_to_user_id = data.get("email_to_user_id", {})
+        self._data_mtime = mtime
 
     async def _save(self) -> None:
         """Save users to disk."""
@@ -116,7 +103,7 @@ class UserStore:
         if not password.strip():
             raise ValueError("Password cannot be empty or whitespace-only")
 
-        await self._reload_if_changed()
+        self._reload_if_changed()
         if email in self._email_to_user_id:
             msg = f"Email {email} is already taken"
             raise ValueError(msg)
@@ -146,7 +133,7 @@ class UserStore:
         Returns:
             User dict if authentication successful, None otherwise.
         """
-        await self._reload_if_changed()
+        self._reload_if_changed()
         user = self.get_user_by_email(email)
         if not user:
             verify_password(password, _DUMMY_SALT, _DUMMY_HASH)
@@ -192,7 +179,7 @@ class UserStore:
         Returns:
             True if user was deleted, False if user not found.
         """
-        await self._reload_if_changed()
+        self._reload_if_changed()
         if email not in self._email_to_user_id:
             return False
 
@@ -225,6 +212,7 @@ class UserStore:
             User ID when the token verifies and still names an existing user.
         """
         user_id = self._signer.verify(session_id)
+        self._reload_if_changed()
         return user_id if user_id in self._users else None
 
     # -------------------------------------------------------------------------

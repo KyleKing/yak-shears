@@ -1,6 +1,5 @@
-
-
 import operator
+import os
 
 import pytest
 
@@ -266,6 +265,33 @@ class TestUserStore:
         store.delete_session(session_id)
         assert store.get_user_id_from_session(session_id) is None
 
+    @pytest.mark.asyncio
+    async def test_session_drops_a_user_the_cli_deleted(self, tmp_path):
+        path = tmp_path / "users.json"
+        store = UserStore(path)
+        user = await store.create_user("test@test.com", "Test", Password("pass123"))
+        session_id = store.create_session(user["id"])
+
+        other = UserStore.load_sync(path)
+        assert await other.delete_user("test@test.com")
+        stat = path.stat()
+        os.utime(path, (stat.st_atime, stat.st_mtime + 1))
+
+        assert store.get_user_id_from_session(session_id) is None
+
+    @pytest.mark.asyncio
+    async def test_half_written_file_keeps_the_loaded_users(self, tmp_path):
+        path = tmp_path / "users.json"
+        store = UserStore(path)
+        user = await store.create_user("test@test.com", "Test", Password("pass123"))
+        session_id = store.create_session(user["id"])
+
+        path.write_text('{"users": {"tru')
+        stat = path.stat()
+        os.utime(path, (stat.st_atime, stat.st_mtime + 1))
+
+        assert store.get_user_id_from_session(session_id) == user["id"]
+
     def test_clear(self, store):
         store.create_session("user123")
         store.clear()
@@ -290,17 +316,6 @@ class TestUserStore:
         assert store.list_all_users() == []
 
     @pytest.mark.asyncio
-    async def test_load_corrupted_json(self, tmp_path):
-        """Test that async load handles corrupted JSON gracefully."""
-        path = tmp_path / "corrupted.json"
-        path.write_text("{invalid json")
-
-        store = UserStore(path)
-        await store.load()
-        # Should have empty store after failed load
-        assert store.list_all_users() == []
-
-    @pytest.mark.asyncio
     async def test_delete_user_with_active_sessions(self, tmp_path):
         """Test that deleting a user also deletes their active sessions."""
         path = tmp_path / "users.json"
@@ -320,26 +335,3 @@ class TestUserStore:
 
         # Verify session is also deleted
         assert store.get_user_id_from_session(session_id) is None
-
-    @pytest.mark.asyncio
-    async def test_load_nonexistent_file(self, tmp_path):
-        """Test that async load handles nonexistent file gracefully."""
-        path = tmp_path / "nonexistent.json"
-        store = UserStore(path)
-        await store.load()
-        assert store.list_all_users() == []
-
-    @pytest.mark.asyncio
-    async def test_load_handles_read_error(self, tmp_path):
-        """Test that async load handles file read errors gracefully."""
-        from unittest.mock import AsyncMock, patch
-
-        path = tmp_path / "unreadable.json"
-        path.write_text('{"users": {}}')
-
-        store = UserStore(path)
-
-        with patch("anyio.Path.read_text", new_callable=AsyncMock, side_effect=OSError("Read error")):
-            await store.load()
-
-        assert store.list_all_users() == []
