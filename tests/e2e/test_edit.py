@@ -865,6 +865,12 @@ async def test_caret_offset_of_an_element_container(context: BrowserContext, pag
     assert offsets["end"] == offsets["total"]
 
 
+_READ_CARET = """() => {
+    const range = getSelection().getRangeAt(0);
+    return getTextOffset(document.querySelector(".editor"), range.startContainer, range.startOffset);
+}"""
+
+
 @pytest.mark.playwright
 @pytest.mark.asyncio
 async def test_caret_offset_of_a_boundary_child_without_text(
@@ -888,6 +894,36 @@ async def test_caret_offset_of_a_boundary_child_without_text(
 
     assert offsets["before_br"] == 3, f"Caret ahead of the br read as {offsets['before_br']}"
     assert offsets["before_br"] != offsets["total"]
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_reopening_a_note_restores_the_caret(context: BrowserContext, page: Page, server_lifecycle):
+    """A note reopens where it was left, and one never edited opens at the top."""
+    editor = await _open_editor(context, page)
+    await expect(editor).to_be_editable()
+
+    opened_at = await page.evaluate(_READ_CARET)
+    assert opened_at == 0, f"An unvisited note opened at {opened_at}"
+
+    await page.evaluate(
+        """() => {
+            const ed = document.querySelector(".editor");
+            ed.focus();
+            const at = getNodeAtOffset(ed, 5);
+            const range = document.createRange();
+            range.setStart(at.node, at.offset);
+            range.collapse(true);
+            const sel = getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }"""
+    )
+    await page.reload()
+    await expect(page.locator(".editor")).to_be_editable()
+
+    reopened_at = await page.evaluate(_READ_CARET)
+    assert reopened_at == 5, f"The note reopened at {reopened_at}"
 
 
 @pytest.mark.playwright

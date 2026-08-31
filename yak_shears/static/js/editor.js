@@ -366,21 +366,29 @@ function initEditor() {
 		const yak_path = new URLSearchParams(window.location.search).get("yak");
 		if (yak_path === null) throw new Error("URL does not have file parameter.");
 		const storageKey = `editor_${yak_path}`;
+		const caretKey = `editor_caret_${yak_path}`;
 		let serverContent = window.serverContent; // Injected in template: <script>window.serverContent = {{ content | tojson }};</script>
 		editor.textContent = serverContent;
 		highlight(editor); // Apply initial syntax highlighting
 
-		// Auto-focus editor and place cursor at end
+		// Reopen where the last session left the caret. A note opened for the first
+		// time starts at the top, because the end is only ever right for appending.
 		requestAnimationFrame(() => {
 			editor.focus();
-			const range = document.createRange();
-			const sel = window.getSelection();
-			if (editor.lastChild) {
-				range.selectNodeContents(editor);
-				range.collapse(false); // Collapse to end
-				sel.removeAllRanges();
-				sel.addRange(range);
-			}
+			const stored = Number.parseInt(localStorage.getItem(caretKey), 10);
+			const offset = Number.isNaN(stored)
+				? 0
+				: Math.min(Math.max(stored, 0), jar.toString().length);
+			_setCursorPosition(editor, offset);
+			_scrollCaretIntoView();
+		});
+
+		// The caret is worth remembering only while it is in the editor; anywhere
+		// else on the page it says nothing about where this note was being read.
+		document.addEventListener("selectionchange", () => {
+			if (document.activeElement !== editor) return;
+			const offset = _getCursorPosition(editor);
+			if (offset !== null) localStorage.setItem(caretKey, String(offset));
 		});
 
 		// Check for unsaved local changes from previous session
@@ -778,6 +786,17 @@ function _applyEdit(editorEl, jarInstance, newText, caretPos) {
 	jarInstance.updateCode(newText);
 	_setCursorPosition(editorEl, Math.max(0, caretPos));
 	jarInstance.recordHistory();
+}
+
+// A collapsed range still reports its place on the page; an all-zero rect means
+// it has no box yet, so there is nothing to scroll to.
+function _scrollCaretIntoView() {
+	const sel = window.getSelection();
+	if (!sel.rangeCount) return;
+	const rect = sel.getRangeAt(0).getBoundingClientRect();
+	if (!rect.height && !rect.top) return;
+	if (rect.top >= 0 && rect.bottom <= window.innerHeight) return;
+	window.scrollBy({ top: rect.top - window.innerHeight / 2 });
 }
 
 function _setCursorPosition(editorEl, offset) {
