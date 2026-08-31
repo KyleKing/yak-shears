@@ -95,14 +95,18 @@ function highlightTextNodes(root, query) {
 		.filter(Boolean);
 	if (!terms.length) return;
 
-	const re = new RegExp(`(${terms.map(escapeRegExp).join("|")})`, "gi");
+	const pattern = `(${terms.map(escapeRegExp).join("|")})`;
+	const re = new RegExp(pattern, "gi");
+	// A global regex carries lastIndex between calls, so the walker tests with its
+	// own stateless copy and only the replace below scans from the start.
+	const probe = new RegExp(pattern, "i");
 	const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
 		acceptNode(node) {
 			const parent = node.parentElement;
 			if (!parent || parent.closest("code, pre, .search-highlight")) {
 				return NodeFilter.FILTER_REJECT;
 			}
-			return re.test(node.nodeValue)
+			return probe.test(node.nodeValue)
 				? NodeFilter.FILTER_ACCEPT
 				: NodeFilter.FILTER_REJECT;
 		},

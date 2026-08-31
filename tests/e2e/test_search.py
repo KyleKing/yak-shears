@@ -110,6 +110,29 @@ async def test_search_with_query(context: BrowserContext, page: Page, server_lif
     assert len(final_preview_text.strip()) > 0, "Preview should still contain content after second navigation"
 
 
+_HIGHLIGHT_EVERY_PARAGRAPH_JS = """
+() => {
+  const root = document.createElement('div');
+  root.innerHTML = '<p>alpha yak</p><p>beta yak</p><p>gamma yak</p><p>delta yak</p>';
+  document.body.appendChild(root);
+  highlightTextNodes(root, 'yak');
+  return root.querySelectorAll('.search-highlight').length;
+}
+"""
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_preview_highlights_every_match(context: BrowserContext, page: Page, server_lifecycle):
+    """Each paragraph is a separate text node, and a stateful regex used to skip every
+    other one, so a preview could come back with half its matches unmarked."""
+    await login(context, page)
+    await page.goto("/search")
+    await page.wait_for_selector(".search-input")
+
+    assert await page.evaluate(_HIGHLIGHT_EVERY_PARAGRAPH_JS) == 4
+
+
 @pytest.mark.playwright
 @pytest.mark.asyncio
 async def test_search_modal_on_small_screen(context: BrowserContext, page: Page, server_lifecycle, console_messages):
