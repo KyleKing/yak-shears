@@ -27,6 +27,7 @@ from yak_shears._yak.database import (
     refresh_search_index,
     replace_links,
     scan_vault,
+    search_link_candidates,
     search_words,
     set_last_update_time,
     should_update_index,
@@ -201,6 +202,31 @@ class TestLinks:
         replace_links("source.dj", [("new.dj", "wikilink")])
         assert get_backlinks("old.dj") == []
         assert ("source.dj", "wikilink") in get_backlinks("new.dj")
+
+
+class TestLinkCandidates:
+    @staticmethod
+    def _seed():
+        upsert_file("notes/kettlebell-swing.dj", 100.0, "Kettlebell swing")
+        upsert_file("notes/kettle-corn.dj", 300.0, "Kettle corn")
+        upsert_file("notes/unrelated.dj", 400.0, "Something about kettles")
+        replace_links("notes/a.dj", [("notes/kettlebell-swing.dj", "wikilink")])
+        replace_links("notes/b.dj", [("notes/kettlebell-swing.dj", "wikilink")])
+
+    def test_prefix_beats_recency_and_inbound_breaks_the_tie(self, temp_db):
+        self._seed()
+        ranked = [c.target for c in search_link_candidates("kettle")]
+        assert ranked[:2] == ["kettlebell-swing", "kettle-corn"], ranked
+        assert "unrelated" in ranked
+
+    def test_empty_query_lists_the_most_recent_first(self, temp_db):
+        self._seed()
+        assert [c.target for c in search_link_candidates("")][0] == "unrelated"
+
+    def test_the_note_being_edited_is_never_offered(self, temp_db):
+        self._seed()
+        targets = [c.target for c in search_link_candidates("kettle", exclude="notes/kettle-corn.dj")]
+        assert "kettle-corn" not in targets
 
 
 class TestBatchUpdate:

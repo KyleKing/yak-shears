@@ -45,6 +45,7 @@ from yak_shears._yak.database import (
     get_search_db_path,
     index_is_inside_vault,
     refresh_search_index,
+    search_link_candidates,
     stray_vault_index,
 )
 from yak_shears._yak.filenames import apply_renames, plan_renames
@@ -329,6 +330,31 @@ async def yak_preview_handler(request: Request) -> Response:
 
     edit_url = f"/edit?yak={quote(path)}&query={quote(query)}"
     return JSONResponse({"source": body, "query": query, "edit_url": edit_url})
+
+
+_LINK_CANDIDATE_LIMIT = 8
+
+
+async def link_candidates_handler(request: Request) -> Response:
+    """Handle GET /api/links: rank notes as targets for a wikilink."""
+    query = request.query_params.get("q", "")
+    exclude = request.query_params.get("exclude") or None
+
+    await ensure_search_db_ready()
+    yak_dir = await get_yak_dir()
+    await to_thread.run_sync(ensure_search_index_updated, SyncPath(yak_dir))
+
+    candidates = await to_thread.run_sync(
+        partial(search_link_candidates, limit=_LINK_CANDIDATE_LIMIT, exclude=exclude), query
+    )
+    return JSONResponse(
+        {
+            "query": query,
+            "candidates": [
+                {"path": c.path, "target": c.target, "title": c.title, "inbound": c.inbound} for c in candidates
+            ],
+        }
+    )
 
 
 _MEDIA_MAX_UPLOAD_BYTES = 300 * 1024 * 1024

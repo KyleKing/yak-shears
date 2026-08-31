@@ -928,6 +928,27 @@ async def test_reopening_a_note_restores_the_caret(context: BrowserContext, page
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
+async def test_typing_a_wikilink_offers_other_notes(context: BrowserContext, page: Page, server_lifecycle):
+    """`[[` opens the completion over every note but the one being edited, and picking one closes the link."""
+    await _open_editor(context, page)
+    await _fill_editor(page=page, fill="see [[yak")
+
+    popup = page.locator("#linkbar")
+    await expect(popup).to_be_visible()
+    rows = popup.locator(".linkbar__row")
+    await expect(rows).to_have_count(2)
+    assert "yak1" not in " ".join(await rows.all_text_contents())
+
+    await page.keyboard.press("ArrowDown")
+    await page.keyboard.press("Enter")
+
+    await expect(popup).to_be_hidden()
+    text = await page.evaluate("() => window.jar.toString()")
+    assert text.startswith("see [[yak3]]"), text
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
 async def test_caret_outside_the_editor_has_no_offset(context: BrowserContext, page: Page, server_lifecycle):
     """A caret elsewhere on the page has no position in the editor, so it reports none."""
     await _open_editor(context, page)

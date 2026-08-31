@@ -437,6 +437,54 @@ def replace_links(source_path: str, links: list[tuple[str, str]]) -> None:
             )
 
 
+@dataclass(frozen=True)
+class LinkCandidate:
+    """A note offered as the target of a wikilink."""
+
+    path: str
+    target: str
+    title: str
+    inbound: int
+
+
+def search_link_candidates(prefix: str, limit: int = 8, exclude: str | None = None) -> list[LinkCandidate]:
+    """Rank notes as wikilink targets: prefix matches first, then substring, each by inbound links then recency."""
+    needle = prefix.strip().lower()
+    like = f"%{needle}%"
+    try:
+        with get_search_db() as con:
+            rows = con.execute(
+                r"""
+                WITH inbound AS (
+                    SELECT target_path, COUNT(*) AS n FROM yak_links GROUP BY target_path
+                )
+                SELECT f.path,
+                       COALESCE(f.title, f.path) AS title,
+                       COALESCE(i.n, 0) AS inbound,
+                       CASE
+                           WHEN ? = '' THEN 1
+                           WHEN LOWER(regexp_extract(f.path, '([^/]+)\.dj$', 1)) LIKE ? THEN 0
+                           WHEN LOWER(COALESCE(f.title, '')) LIKE ? THEN 0
+                           ELSE 1
+                       END AS rank
+                FROM files f
+                LEFT JOIN inbound i ON i.target_path = f.path
+                WHERE f.path <> COALESCE(?, '')
+                  AND (? = '' OR LOWER(f.path) LIKE ? OR LOWER(COALESCE(f.title, '')) LIKE ?)
+                ORDER BY rank, CASE WHEN ? = '' THEN 0 ELSE inbound END DESC, f.mtime DESC
+                LIMIT ?
+                """,
+                (needle, f"{needle}%", f"{needle}%", exclude, needle, like, like, needle, limit),
+            ).fetchall()
+    except Exception as exc:
+        log(f"ERROR: Link candidate query failed: {exc}")
+        return []
+    return [
+        LinkCandidate(path=path, target=SyncPath(path).stem, title=title, inbound=inbound)
+        for path, title, inbound, _rank in rows
+    ]
+
+
 def get_backlinks(yak_path: str) -> list[tuple[str, str]]:
     """Get backlinks for a yak file.
 

@@ -171,6 +171,8 @@
        </div>
       </div>
      </div>
+     <div aria-label="Link a note" class="linkbar" hidden="" id="linkbar" role="listbox">
+     </div>
      <aside class="metadata-panel" id="metadata-panel" style="--panel-accent: var(--color-border)">
       <div class="panel-titlebar">
        <span class="panel-titlebar__tab">

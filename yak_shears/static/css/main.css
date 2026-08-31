@@ -3642,3 +3642,42 @@ pre code {
 .diffline--same {
 	color: var(--legend-dim);
 }
+
+/* Wikilink completion, placed at the caret by editor.js. */
+.linkbar:not([hidden]) {
+	position: fixed;
+	z-index: 40;
+	display: grid;
+	width: 18rem;
+	max-width: calc(100vw - 2rem);
+	padding: var(--space-1);
+	background: var(--anodize), var(--panel-raised);
+	border: 1px solid var(--engrave);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-lg);
+}
+
+.linkbar__row {
+	display: flex;
+	gap: var(--space-2);
+	justify-content: space-between;
+	padding: var(--space-1) var(--space-2);
+	overflow: hidden;
+	font: inherit;
+	color: var(--legend);
+	text-align: left;
+	white-space: nowrap;
+	background: none;
+	border: 0;
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+}
+
+.linkbar__row[aria-selected="true"] {
+	color: var(--signal);
+	background: var(--well);
+}
+
+.linkbar__meta {
+	color: var(--legend-dim);
+}

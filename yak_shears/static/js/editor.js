@@ -319,10 +319,21 @@ function initEditor() {
 		// save status until the next successful upload or save.
 		let uploadError = false;
 
+		// Set by the link completion once the note path is known; until then no
+		// popup exists to steer.
+		let linkComplete = { keydown: () => false, refresh: () => {} };
+
 		// Cmd/Ctrl+Enter saves the document
 		editor.addEventListener(
 			"keydown",
 			function (e) {
+				// The completion popup owns the arrow, Enter, Tab, and Escape keys
+				// while it is open, so it is asked before any editor command.
+				if (linkComplete.keydown(e)) {
+					e.preventDefault();
+					return;
+				}
+
 				// Cmd/Meta + Enter to save
 				if (e.metaKey && e.key === "Enter") {
 					e.preventDefault();
@@ -366,6 +377,7 @@ function initEditor() {
 		const yak_path = new URLSearchParams(window.location.search).get("yak");
 		if (yak_path === null) throw new Error("URL does not have file parameter.");
 		const storageKey = `editor_${yak_path}`;
+		linkComplete = _setupLinkComplete(editor, jar, yak_path);
 		const caretKey = `editor_caret_${yak_path}`;
 		let serverContent = window.serverContent; // Injected in template: <script>window.serverContent = {{ content | tojson }};</script>
 		editor.textContent = serverContent;
@@ -389,6 +401,7 @@ function initEditor() {
 			if (document.activeElement !== editor) return;
 			const offset = _getCursorPosition(editor);
 			if (offset !== null) localStorage.setItem(caretKey, String(offset));
+			linkComplete.refresh();
 		});
 
 		// Check for unsaved local changes from previous session
@@ -1729,3 +1742,130 @@ window.togglePanelPin = togglePanelPin;
 
 // Initialize editor on page load
 initEditor();
+
+// A wikilink being typed: the text between the opening `[[` and the caret, with
+// nothing that would already have closed or aliased it.
+const LINK_OPEN_RE = /\[\[([^[\]\n|]*)$/;
+const LINK_QUERY_DEBOUNCE = 120;
+
+function _setupLinkComplete(editorEl, jarInstance, yakPath) {
+	const popup = document.getElementById("linkbar");
+	if (!popup) return { keydown: () => false, refresh: () => {} };
+
+	let candidates = [];
+	let active = 0;
+	let openAt = null;
+	let latest = 0;
+	let timer = 0;
+
+	const close = () => {
+		openAt = null;
+		candidates = [];
+		popup.hidden = true;
+		popup.innerHTML = "";
+	};
+
+	const place = () => {
+		const sel = window.getSelection();
+		if (!sel.rangeCount) return;
+		const caret = sel.getRangeAt(0).getBoundingClientRect();
+		popup.style.left = `${Math.min(caret.left, window.innerWidth - popup.offsetWidth - 8)}px`;
+		const below = caret.bottom + popup.offsetHeight < window.innerHeight;
+		popup.style.top = below
+			? `${caret.bottom + 4}px`
+			: `${caret.top - popup.offsetHeight - 4}px`;
+	};
+
+	const render = () => {
+		popup.replaceChildren();
+		for (const [index, candidate] of candidates.entries()) {
+			const row = document.createElement("button");
+			row.type = "button";
+			row.className = "linkbar__row";
+			row.setAttribute("role", "option");
+			row.setAttribute("aria-selected", String(index === active));
+			row.dataset.target = candidate.target;
+			row.textContent = candidate.title;
+			if (candidate.inbound) {
+				const meta = document.createElement("span");
+				meta.className = "linkbar__meta";
+				meta.textContent = `${candidate.inbound}←`;
+				row.append(meta);
+			}
+			popup.append(row);
+		}
+		popup.hidden = candidates.length === 0;
+		if (!popup.hidden) place();
+	};
+
+	const accept = (target) => {
+		if (openAt === null) return false;
+		const caret = _getCursorPosition(editorEl);
+		if (caret === null) return false;
+		const text = jarInstance.toString();
+		const inserted = `[[${target}]]`;
+		const start = openAt;
+		close();
+		_applyEdit(
+			editorEl,
+			jarInstance,
+			text.slice(0, start) + inserted + text.slice(caret),
+			start + inserted.length,
+		);
+		return true;
+	};
+
+	const query = (prefix) => {
+		const mine = ++latest;
+		const params = new URLSearchParams({ q: prefix, exclude: yakPath });
+		fetch(`/api/links?${params}`, { headers: { Accept: "application/json" } })
+			.then((response) => (response.ok ? response.json() : null))
+			.then((data) => {
+				if (!data || mine !== latest || openAt === null) return;
+				candidates = data.candidates;
+				active = 0;
+				render();
+			})
+			.catch(() => close());
+	};
+
+	// The popup follows the caret rather than the last keystroke, so moving away
+	// from a half-typed link closes it without needing a blur or a click.
+	const refresh = () => {
+		const caret = _getCursorPosition(editorEl);
+		if (caret === null) return close();
+		const match = jarInstance.toString().slice(0, caret).match(LINK_OPEN_RE);
+		if (!match) return close();
+		openAt = caret - match[0].length;
+		clearTimeout(timer);
+		timer = setTimeout(() => query(match[1]), LINK_QUERY_DEBOUNCE);
+	};
+
+	popup.addEventListener("mousedown", (event) => {
+		const row = event.target.closest(".linkbar__row");
+		if (!row) return;
+		event.preventDefault();
+		accept(row.dataset.target);
+	});
+
+	const keydown = (event) => {
+		if (popup.hidden) return false;
+		if (event.key === "Escape") {
+			close();
+			return true;
+		}
+		if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+			active =
+				(active + (event.key === "ArrowDown" ? 1 : candidates.length - 1)) %
+				candidates.length;
+			render();
+			return true;
+		}
+		if (event.key === "Enter" || event.key === "Tab") {
+			return accept(candidates[active].target);
+		}
+		return false;
+	};
+
+	return { keydown, refresh };
+}
