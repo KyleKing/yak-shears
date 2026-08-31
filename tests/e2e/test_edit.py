@@ -209,6 +209,49 @@ async def test_text_stability_during_editing(context: BrowserContext, page: Page
     assert actual_content == expected_content
 
 
+_CARET_OFFSET_JS = """
+() => {
+  const editor = document.querySelector('.editor');
+  const sel = window.getSelection();
+  if (!sel.rangeCount || !editor.contains(sel.getRangeAt(0).startContainer)) return null;
+  const range = sel.getRangeAt(0);
+  const measured = document.createRange();
+  measured.selectNodeContents(editor);
+  measured.setEnd(range.startContainer, range.startOffset);
+  return measured.toString().length;
+}
+"""
+
+_DROP_AN_IMAGE_JS = """
+() => {
+  const editor = document.querySelector('.editor');
+  const img = document.createElement('img');
+  img.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
+  editor.appendChild(img);
+  editor.dispatchEvent(new DragEvent('drop', {
+    bubbles: true, cancelable: true, dataTransfer: new DataTransfer(),
+  }));
+}
+"""
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_stripping_an_injected_node_keeps_the_caret(context: BrowserContext, page: Page, server_lifecycle):
+    """Rebuilding the editor after a drop or paste injects a node must not throw the
+    caret to the end of the note the reader was editing in the middle of."""
+    editor = await _open_editor(context, page)
+    await _fill_editor(page=page, fill="alpha\nbravo\ncharlie\n")
+    for _ in range(12):
+        await page.keyboard.press("ArrowLeft")
+    before = await page.evaluate(_CARET_OFFSET_JS)
+
+    await page.evaluate(_DROP_AN_IMAGE_JS)
+    await expect(editor.locator("img")).to_have_count(0)
+
+    assert await page.evaluate(_CARET_OFFSET_JS) == before
+
+
 @pytest.mark.playwright
 @pytest.mark.asyncio
 async def test_view_mode_toggles(context: BrowserContext, page: Page, server_lifecycle):

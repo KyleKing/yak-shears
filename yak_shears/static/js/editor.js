@@ -1148,7 +1148,11 @@ function _mediaFilesFrom(dataTransfer) {
 // then, so rebuild from the text immediately.
 function _stripInjectedElements(editorEl, jarInstance) {
 	if (!editorEl.querySelector("img, video, iframe, object, embed, svg")) return;
+	// The injected nodes hold no text, so the offset measured before the rebuild
+	// still names the same character after it.
+	const caret = _getCursorPosition(editorEl);
 	jarInstance.updateCode(jarInstance.toString());
+	if (caret !== null) _setCursorPosition(editorEl, caret);
 }
 
 // Null when either end of the selection is outside the editor, for the same
