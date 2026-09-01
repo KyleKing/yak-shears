@@ -8,7 +8,6 @@ import os
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from hashlib import sha256
 from operator import itemgetter
 from pathlib import Path as SyncPath
 
@@ -33,6 +32,7 @@ from yak_shears._yak.database import (
 )
 from yak_shears._yak.filenames import canonical_stem
 from yak_shears.frontmatter import parse_frontmatter
+from yak_shears.leases import yak_lease
 from yak_shears.links import extract_all_links, extract_tags, extract_wikilinks
 
 PREVIEW_LENGTH = 200
@@ -334,11 +334,6 @@ async def read_yak(yak_dir: Path, relative_path: str) -> tuple[str, str]:
     content = await yak_path.read_text(encoding="utf-8")
     category = yak_path.parent.name if yak_path.parent != yak_dir else ""
     return content, category
-
-
-def yak_lease(content: str) -> str:
-    """Fingerprint content so a save can prove which version it started from."""
-    return sha256(content.encode("utf-8")).hexdigest()[:16]
 
 
 async def read_leased(yak_path: Path, expected_lease: str | None) -> str:

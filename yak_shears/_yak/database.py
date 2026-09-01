@@ -23,6 +23,7 @@ import duckdb
 
 from yak_shears._log_utils import log
 from yak_shears.frontmatter import parse_frontmatter
+from yak_shears.leases import yak_lease
 from yak_shears.links import extract_all_links
 
 MAX_WORD_LENGTH = 1000
@@ -126,6 +127,8 @@ def _migrate_schema(con: duckdb.DuckDBPyConnection) -> None:
         con.execute("ALTER TABLE files ADD COLUMN title TEXT")
     if columns.get("mtime") == "FLOAT":
         con.execute("ALTER TABLE files ALTER mtime TYPE DOUBLE")
+    if "lease" not in columns:
+        con.execute("ALTER TABLE files ADD COLUMN lease TEXT")
 
 
 def init_search_db() -> None:
@@ -141,7 +144,8 @@ def init_search_db() -> None:
             CREATE TABLE IF NOT EXISTS files (
                 path TEXT PRIMARY KEY,
                 mtime DOUBLE,
-                title TEXT
+                title TEXT,
+                lease TEXT
             )
         """)
         con.execute("""
@@ -222,10 +226,10 @@ def delete_files(paths: list[str]) -> None:
         con.execute(f"DELETE FROM yak_links WHERE source_path IN ({placeholders})", paths)  # noqa: S608
 
 
-def upsert_file(path: str, mtime: float, title: str | None = None) -> None:
-    """Insert or update a file's modification time, keeping any stored title."""
+def upsert_file(path: str, mtime: float, title: str | None = None, lease: str | None = None) -> None:
+    """Insert or update a file's modification time, keeping any stored title and lease."""
     with get_search_db() as con:
-        _upsert_file_row(con, path, mtime, title)
+        _upsert_file_row(con, path, mtime, title, lease)
 
 
 def get_file_titles(paths: list[str]) -> dict[str, str]:
@@ -244,14 +248,18 @@ def get_file_titles(paths: list[str]) -> dict[str, str]:
     return {row[0]: row[1] for row in rows if row[1]}
 
 
-def _upsert_file_row(con: duckdb.DuckDBPyConnection, path: str, mtime: float, title: str | None) -> None:
+def _upsert_file_row(
+    con: duckdb.DuckDBPyConnection, path: str, mtime: float, title: str | None, lease: str | None
+) -> None:
     con.execute(
         """
-        INSERT INTO files (path, mtime, title) VALUES (?, ?, ?)
+        INSERT INTO files (path, mtime, title, lease) VALUES (?, ?, ?, ?)
         ON CONFLICT (path) DO UPDATE
-        SET mtime = excluded.mtime, title = COALESCE(excluded.title, files.title)
+        SET mtime = excluded.mtime,
+            title = COALESCE(excluded.title, files.title),
+            lease = COALESCE(excluded.lease, files.lease)
         """,
-        (path, mtime, title),
+        (path, mtime, title, lease),
     )
 
 
@@ -555,6 +563,7 @@ def update_index_batch(
     file_titles: dict[str, str] | None = None,
     file_links: dict[str, list[tuple[str, str]]] | None = None,
     file_frontmatter: dict[str, dict[str, object]] | None = None,
+    file_leases: dict[str, str] | None = None,
 ) -> None:
     """Perform a batch update of the search index within a transaction.
 
@@ -566,10 +575,12 @@ def update_index_batch(
         file_titles: Derived titles for re-indexed paths; missing entries keep the stored title
         file_links: Outbound links for re-indexed paths, replacing whatever was stored
         file_frontmatter: Parsed frontmatter for re-indexed paths, replacing whatever was stored
+        file_leases: Content fingerprint for re-indexed paths, so a view can render one without the file
     """
     titles = file_titles or {}
     links = file_links or {}
     frontmatter = file_frontmatter or {}
+    leases = file_leases or {}
     with get_search_db() as con:
         con.execute("BEGIN")
         try:
@@ -610,7 +621,7 @@ def update_index_batch(
                 )
 
             for path, mtime in file_mtimes.items():
-                _upsert_file_row(con, path, mtime, titles.get(path))
+                _upsert_file_row(con, path, mtime, titles.get(path), leases.get(path))
 
             con.execute("COMMIT")
         except Exception:
@@ -644,6 +655,7 @@ class FileIndex:
     title: str
     links: list[tuple[str, str]]
     frontmatter: dict[str, object]
+    lease: str
 
 
 @dataclass(frozen=True)
@@ -675,7 +687,7 @@ def _process_file(dj_file: SyncPath, rel_path: str) -> FileIndex:
         content = dj_file.read_text(encoding="utf-8")
     except Exception as exc:
         log(f"WARNING: Skipping unreadable file {dj_file}: {exc}")
-        return FileIndex(words=[], title=SyncPath(rel_path).name, links=[], frontmatter={})
+        return FileIndex(words=[], title=SyncPath(rel_path).name, links=[], frontmatter={}, lease="")
 
     words_data = [
         (rel_path, line_num, word)
@@ -688,6 +700,7 @@ def _process_file(dj_file: SyncPath, rel_path: str) -> FileIndex:
         title=derive_title(content, rel_path),
         links=extract_all_links(body),
         frontmatter=frontmatter,
+        lease=yak_lease(content),
     )
 
 
@@ -712,12 +725,14 @@ def apply_vault_scan(yak_dir: SyncPath, scan: VaultScan) -> None:
     file_titles: dict[str, str] = {}
     file_links: dict[str, list[tuple[str, str]]] = {}
     file_frontmatter: dict[str, dict[str, object]] = {}
+    file_leases: dict[str, str] = {}
     for path in scan.changed_paths:
         file_index = _process_file(yak_dir / path, path)
         words_data.extend(file_index.words)
         file_titles[path] = file_index.title
         file_links[path] = file_index.links
         file_frontmatter[path] = file_index.frontmatter
+        file_leases[path] = file_index.lease
 
     update_index_batch(
         scan.deleted_paths,
@@ -727,6 +742,7 @@ def apply_vault_scan(yak_dir: SyncPath, scan: VaultScan) -> None:
         file_titles,
         file_links,
         file_frontmatter,
+        file_leases,
     )
 
 

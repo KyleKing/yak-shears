@@ -17,6 +17,7 @@ from yak_shears._yak.query import (
     select,
     sort_notes,
 )
+from yak_shears.leases import yak_lease
 
 VAULT = {
     "work/ship-it.dj": "---\ntype: task\nstate: queue\nstream: work/launch\ndue: 2026-09-04\n---\n\n# Ship it\n",
@@ -74,6 +75,7 @@ def test_a_view_renders_from_the_store_alone(indexed_vault):
 
     assert [note.title for note in notes] == ["Ship it", "Draft", "Loose end"]
     assert [note.category for note in notes] == ["work", "work", "home"]
+    assert [note.lease for note in notes] == [yak_lease(VAULT[note.path]) for note in notes]
 
 
 def test_group_counts_feed_the_dock_meters(indexed_vault):

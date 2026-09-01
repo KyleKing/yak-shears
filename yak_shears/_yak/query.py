@@ -26,6 +26,7 @@ class Note:
     title: str
     modified: datetime
     meta: dict[str, Any]
+    lease: str = ""
 
     @property
     def category(self) -> str:
@@ -116,7 +117,8 @@ def select(*filters: Filter) -> list[Note]:
     with get_search_db() as con:
         rows = con.execute(
             f"""
-            SELECT f.path, COALESCE(files.title, f.path), COALESCE(files.mtime, 0), f.frontmatter_json
+            SELECT f.path, COALESCE(files.title, f.path), COALESCE(files.mtime, 0), f.frontmatter_json,
+                   COALESCE(files.lease, '')
             FROM yak_frontmatter f
             LEFT JOIN files ON files.path = f.path
             WHERE {predicate}
@@ -125,8 +127,14 @@ def select(*filters: Filter) -> list[Note]:
             params,
         ).fetchall()
     return [
-        Note(path=path, title=title, modified=datetime.fromtimestamp(mtime, tz=UTC), meta=json.loads(meta_json))
-        for path, title, mtime, meta_json in rows
+        Note(
+            path=path,
+            title=title,
+            modified=datetime.fromtimestamp(mtime, tz=UTC),
+            meta=json.loads(meta_json),
+            lease=lease,
+        )
+        for path, title, mtime, meta_json, lease in rows
     ]
 
 
