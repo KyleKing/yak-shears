@@ -1,6 +1,6 @@
 # Work Streams: design brief and data model
 
-Drafted 2026-08-02 from the shape interview. This is the design source for PLAN.md Phase 5 (streams, backlog, triage) and the parts of Phase 4 the views demand. Mockups live in `mockups/streams.html`; a throwaway read-only prototype is at `/streams`.
+Drafted 2026-08-02 from the shape interview. This is the design source for PLAN.md Phase 5 (streams, backlog, triage) and the parts of Phase 4 the views demand. Mockups live in `mockups/streams.html`. `/streams` is read-only and renders from the Phase 4 store.
 
 ## Job
 
@@ -170,7 +170,7 @@ The views above impose the engine's minimum surface:
 
 ## Performance as the vault scales
 
-The prototype scans the vault per request, which is fine today: frontmatter parsing measures 0.318ms per file (validated in ROADMAP.md targets), so even a few thousand notes stay under a second and a few hundred under 100ms.
+The board reads the store, not the vault. Its one file-system cost per request is the mtime walk that keeps the index current, because each strip publishes a content lease and a lease older than the file gets its write refused as stale.
 
 The scaling answer is the Phase 4 store, not a parallel aggregate file. The frontmatter table lives in the existing DuckDB index (outside the vault per ADR 0010), and invalidation reuses the search index's proven mechanics: compare file mtimes, then delete and re-insert rows for only the changed files. A TOML or JSON aggregation cache is rejected on three grounds: it is a second derived store that can drift from the first, it answers no query the store cannot, and ADR 0010 already established that derived data is rebuilt, not maintained. `views.toml` stays configuration, never cache.
 
