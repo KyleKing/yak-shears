@@ -383,6 +383,7 @@ class TestServiceEdgeCases:
 
     def test_process_search_results_deduplication(self, tmp_path):
         """Test that search results are deduplicated by path."""
+        from yak_shears._yak.database import WordMatch
         from yak_shears._yak.services import _process_search_results
 
         test_file = tmp_path / "test.dj"
@@ -390,9 +391,9 @@ class TestServiceEdgeCases:
 
         # Multiple results for same file (should only return first)
         raw_results = [
-            ("test.dj", 1, "hello"),
-            ("test.dj", 1, "world"),  # Duplicate path, should be skipped
-            ("test.dj", 1, "test"),  # Duplicate path, should be skipped
+            WordMatch("test.dj", 1, "hello"),
+            WordMatch("test.dj", 1, "world"),
+            WordMatch("test.dj", 1, "test"),
         ]
 
         results = _process_search_results(raw_results, tmp_path)

@@ -341,7 +341,16 @@ def _fuzzy_matches(con: duckdb.DuckDBPyConnection, word: str, limit: int) -> lis
     return con.execute(sql, (word, threshold, limit)).fetchall()
 
 
-def search_words(query: str) -> list[tuple[str, int, str]]:
+@dataclass(frozen=True)
+class WordMatch:
+    """One indexed word hit; the text backend's only outward shape."""
+
+    path: str
+    line_num: int
+    word: str
+
+
+def search_words(query: str) -> list[WordMatch]:
     """Search for words, preferring exact and prefix matches over fuzzy matching.
 
     The Levenshtein scan reads every indexed word, so it only runs when prefix
@@ -353,7 +362,7 @@ def search_words(query: str) -> list[tuple[str, int, str]]:
         query: The search query
 
     Returns:
-        List of (path, line_num, word) tuples ordered by relevance.
+        Matches ordered by relevance.
     """
     word = query.lower()
     with get_search_db() as con:
@@ -364,7 +373,7 @@ def search_words(query: str) -> list[tuple[str, int, str]]:
             scored.extend(row for row in _fuzzy_matches(con, word, remaining) if row not in seen)
 
     scored.sort()
-    return [(path, line_num, matched) for _, path, line_num, matched in scored[:SEARCH_RESULT_LIMIT]]
+    return [WordMatch(path, line_num, matched) for _, path, line_num, matched in scored[:SEARCH_RESULT_LIMIT]]
 
 
 def get_word_count() -> int:

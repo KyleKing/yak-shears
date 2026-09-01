@@ -155,9 +155,9 @@ class TestWordIndexing:
         ])
         results = search_words("hello")
         assert len(results) == 2
-        assert all(word == "hello" for _, _, word in results)
+        assert all(match.word == "hello" for match in results)
         # Verify both files are in results
-        file_paths = {file_path for file_path, _, _ in results}
+        file_paths = {match.path for match in results}
         assert file_paths == {"file1.dj", "file2.dj"}
 
     def test_get_word_count(self, temp_db):
@@ -447,7 +447,7 @@ class TestSearchTiers:
     )
     def test_search_words_tiers(self, indexed_words, query, expected_words):
         results = search_words(query)
-        assert {word for _, _, word in results} == expected_words
+        assert {match.word for match in results} == expected_words
 
     def test_search_words_skips_fuzzy_when_prefix_is_enough(self, temp_db):
         insert_words([("file.dj", line, f"prefix{line}") for line in range(1, CHEAP_SEARCH_TARGET_ROWS + 5)])
@@ -475,7 +475,7 @@ class TestSchemaMigration:
 
             assert get_stored_files() == {"old.dj": 1.0}
             assert get_file_titles(["old.dj"]) == {}
-            assert [word for _, _, word in search_words("legacy")] == ["legacy"]
+            assert [match.word for match in search_words("legacy")] == ["legacy"]
 
             upsert_file("old.dj", 2.0, "Legacy Title")
             assert get_file_titles(["old.dj"]) == {"old.dj": "Legacy Title"}

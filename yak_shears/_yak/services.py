@@ -17,6 +17,7 @@ from anyio import Path
 from yak_shears._log_utils import StageTimer, log
 from yak_shears._templates import Recency, SearchResult, SortBy, YakInfo
 from yak_shears._yak.database import (
+    WordMatch,
     check_tables_exist,
     close_search_db,
     derive_title,
@@ -455,23 +456,24 @@ def perform_search(query: str, sync_yak_dir: SyncPath, timer: StageTimer | None 
 
 
 def _process_search_results(
-    search_results: list[tuple[str, int, str]],
+    search_results: list[WordMatch],
     sync_yak_dir: SyncPath,
 ) -> list[SearchResult]:
-    """Process raw search results into SearchResult objects, grouped by file."""
-    results = []
+    """Process raw search results into SearchResult objects, keeping the best hit per file.
+
+    Returns:
+        One result per matched file, in relevance order.
+    """
     seen_paths: set[str] = set()
-    matched: list[tuple[str, int, str]] = []
+    matched = [match for match in search_results if not (match.path in seen_paths or seen_paths.add(match.path))]
 
-    for path, line_num, word in search_results:
-        if path in seen_paths:
-            continue
-        seen_paths.add(path)
-        matched.append((path, line_num, word))
-
-    titles = get_file_titles([path for path, _, _ in matched])
-    for path, line_num, word in matched:
-        if result := _create_search_result(sync_yak_dir / path, path, line_num, word, titles.get(path)):
+    titles = get_file_titles([match.path for match in matched])
+    results = []
+    for match in matched:
+        result = _create_search_result(
+            sync_yak_dir / match.path, match.path, match.line_num, match.word, titles.get(match.path)
+        )
+        if result:
             results.append(result)
 
     return results
