@@ -7,10 +7,6 @@ _.python.venv = {path = ".venv"}
 depends = ['download-assets', 'generate']
 description = 'Build generated code'
 
-[tasks."check-freshness"]
-description = "Check for outdated vendored JS, CDN pins, and Python deps"
-run = "uv run python scripts/check_freshness.py"
-
 [tasks.dev]
 description = 'Run development server without authentication'
 run = 'uv run serve --reload --no-auth'
@@ -22,6 +18,10 @@ run = "./scripts/download-assets.sh"
 [tasks.format]
 description = 'Run code formatting'
 run = ['uv run ruff check --fix {{vars.unsafe_fixes}}', "uv run ruff format", "biome format --write", "dprint fmt"]
+
+[tasks.freshness]
+description = "Check every pinned version for drift (doneram update patches them)"
+run = "doneram check"
 
 [tasks.generate]
 description = 'Generate the typed template render functions the app imports'
@@ -55,11 +55,12 @@ description = 'Run static type checks'
 run = ["uv run mypy"]
 
 [tools]
-"npm:@biomejs/biome" = "latest"
-"npm:dprint" = "latest"
-"npm:terser" = "latest"
-"npm:typescript" = "latest"
-python = "latest"
+"npm:@biomejs/biome" = "2.2.4"
+"npm:dprint" = "0.50.2"
+"npm:terser" = "5.44.0"
+"npm:typescript" = "5.9.2"
+pkl = "0.32.1"
+python = "3.13.7"
 
 [vars]
 unsafe_fixes = '' # PLANNED: This doesn't actually work. Previously: `{{option(name="unsafe_fixes")}}`

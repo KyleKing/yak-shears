@@ -1,5 +1,8 @@
-// Pins doneram tracks in place of scripts/check_freshness.py. Not yet wired into a
-// scheduled workflow or patched from CI; see the doner M3 validation notes for why.
+// Pins doneram tracks in place of scripts/check_freshness.py. The weekly
+// Freshness workflow patches these and opens a draft PR.
+
+/// uv owns the lock; doneram only raises the declared constraint.
+afterPatch = "uv lock"
 
 class Site {
   /// Repo-relative path to the file holding the literal.
@@ -14,7 +17,11 @@ class Tool {
   /// Name to query when it differs from the map key, e.g. "owner/repo".
   resolverName: String?
   sites: Listing<Site> = new {}
-  /// Command resolvers (uv tree --outdated) have no file to locate a pin in.
+  /// Overrides the default `#.#.#` constraint, for a pin held to a major.
+  pattern: String?
+  /// Resolves through a command's output instead of a registry. Without
+  /// sites the report is all it can do; with them the command says what the
+  /// newest version is and the sites say where to write it.
   command: String?
   commandPattern: String?
 }
@@ -22,21 +29,39 @@ class Tool {
 local downloadAssets = "scripts/download-assets.sh"
 local editTemplate = "yak_shears/_templates/yak/edit.html.jinja"
 local ciYaml = ".github/workflows/ci.yaml"
-local uvOutdated = #"(?P<name>[\w.\-]+) v(?P<current>[\w.\-]+) \(latest: v?(?P<latest>[\w.\-]+)\)"#
+local freshnessYml = ".github/workflows/freshness.yml"
+local miseToml = ".config/mise.toml"
+local pyproject = "pyproject.toml"
+local uvOutdated = #"(?P<name>[\w.\-]+) v(?P<current>[\w.\-]+)( \(latest: v?(?P<latest>[\w.\-]+)\))?"#
+
+/// A mise tool pin, which yak-shears writes as `latest` until doneram
+/// resolves it to the version that was current when it last ran.
+local function misePin(key: String): Site = new {
+  file = miseToml
+  pattern = #"\#(key) = "(latest|[\d.]+)""#
+}
 
 /// A `uses: owner/repo@<sha> # <tag>` GitHub Action pin, one capture group
 /// spanning the sha and the tag together, since github-action patches both
 /// as a single resolved value.
-local function actionPin(action: String): Site = new {
-  file = ciYaml
+local function actionPin(action: String, sourceFile: String): Site = new {
+  file = sourceFile
   pattern = #"\#(action)@([0-9a-f]{40} # v[\w.]+)"#
 }
 
 tools: Mapping<String, Tool> = new {
+  ["biome"] = new {
+    resolver = "mise"
+    resolverName = "npm:@biomejs/biome"
+    sites = new { misePin(#""npm:@biomejs/biome""#) }
+  }
   ["checkout"] = new {
     resolver = "github-action"
     resolverName = "actions/checkout"
-    sites = new { actionPin("actions/checkout") }
+    sites = new {
+      actionPin("actions/checkout", ciYaml)
+      actionPin("actions/checkout", freshnessYml)
+    }
   }
   ["click"] = new {
     command = "uv tree --outdated"
@@ -47,14 +72,37 @@ tools: Mapping<String, Tool> = new {
     resolverName = "antonmedv/codejar@master"
     sites = new { new Site { file = downloadAssets; pattern = #"CODEJAR_VERSION:-([0-9a-f]{40})"# } }
   }
+  ["create-pull-request"] = new {
+    resolver = "github-action"
+    resolverName = "peter-evans/create-pull-request"
+    sites = new { actionPin("peter-evans/create-pull-request", freshnessYml) }
+  }
   ["djot"] = new {
     resolver = "npm"
     resolverName = "@djot/djot"
     sites = new { new Site { file = editTemplate; pattern = #"unpkg\.com/@djot/djot@([\d.]+)"# } }
   }
+  ["dprint"] = new {
+    resolver = "mise"
+    resolverName = "npm:dprint"
+    sites = new { misePin(#""npm:dprint""#) }
+  }
+  ["doneram"] = new {
+    resolver = "github-action"
+    resolverName = "kyleking/doneram"
+    sites = new { actionPin("kyleking/doneram", freshnessYml) }
+  }
+  ["doneram-version"] = new {
+    resolver = "github-release"
+    resolverName = "kyleking/doneram"
+    sites = new { new Site { file = freshnessYml; pattern = #"version: v([\d.]+)"# } }
+  }
   ["htmx"] = new {
     resolver = "github-release"
     resolverName = "bigskysoftware/htmx"
+    // TODO: drop this once the app is ported to htmx 4, which moved the
+    // extension and swap APIs the templates use.
+    pattern = "2.#.#"
     sites = new { new Site { file = downloadAssets; pattern = #"HTMX_VERSION:-v([\d.]+)"# } }
   }
   ["idna"] = new {
@@ -64,24 +112,49 @@ tools: Mapping<String, Tool> = new {
   ["mise-action"] = new {
     resolver = "github-action"
     resolverName = "jdx/mise-action"
-    sites = new { actionPin("jdx/mise-action") }
+    sites = new {
+      actionPin("jdx/mise-action", ciYaml)
+      actionPin("jdx/mise-action", freshnessYml)
+    }
+  }
+  ["pkl"] = new {
+    resolver = "mise"
+    sites = new { misePin("pkl") }
   }
   ["prismjs"] = new {
     resolver = "npm"
     sites = new { new Site { file = editTemplate; pattern = #"cdn\.jsdelivr\.net/npm/prismjs@([\d.]+)"#; expect = 3 } }
   }
+  ["python"] = new {
+    resolver = "mise"
+    sites = new { misePin("python") }
+  }
   ["setup-uv"] = new {
     resolver = "github-action"
     resolverName = "astral-sh/setup-uv"
-    sites = new { actionPin("astral-sh/setup-uv") }
+    sites = new {
+      actionPin("astral-sh/setup-uv", ciYaml)
+      actionPin("astral-sh/setup-uv", freshnessYml)
+    }
+  }
+  ["terser"] = new {
+    resolver = "mise"
+    resolverName = "npm:terser"
+    sites = new { misePin(#""npm:terser""#) }
+  }
+  ["typescript"] = new {
+    resolver = "mise"
+    resolverName = "npm:typescript"
+    sites = new { misePin(#""npm:typescript""#) }
   }
   ["upload-artifact"] = new {
     resolver = "github-action"
     resolverName = "actions/upload-artifact"
-    sites = new { actionPin("actions/upload-artifact") }
+    sites = new { actionPin("actions/upload-artifact", ciYaml) }
   }
   ["uvicorn"] = new {
     command = "uv tree --outdated"
     commandPattern = uvOutdated
+    sites = new { new Site { file = pyproject; pattern = #""uvicorn>=([\d.]+)""# } }
   }
 }

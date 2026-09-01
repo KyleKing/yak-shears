@@ -1,0 +1,45 @@
+---
+name: Freshness
+
+"on":
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # afterPatch hands the lock back to uv.
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+
+      # pkl evaluates .doneram.pkl and mise answers the tool resolvers.
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+
+      - uses: kyleking/doneram@77f1515c153fb5bc0530c4bc0ef7fb0884657f05 # v0.3.0
+        with:
+          version: v0.3.0
+
+      - id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: doneram update --output /tmp/doneram.json
+
+      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        if: fromJSON(steps.check.outputs.has_upgrades)
+        with:
+          branch: chore/doneram-updates
+          draft: true
+          delete-branch: true
+          title: ${{ steps.check.outputs.title }}
+          body: ${{ steps.check.outputs.body }}
