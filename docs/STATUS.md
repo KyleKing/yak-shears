@@ -44,7 +44,7 @@ What exists today. Sequenced work lives in [PLAN.md](./PLAN.md) and the vision i
 ```
 yak_shears/
 ├── _auth/              # Authentication (storage, handlers, middleware)
-├── _yak/               # Yak management (database, services, media, handlers, routes)
+├── _yak/               # Yak management (database, query, services, media, handlers, routes)
 │                       # plus the benches: board, streams, habits, lists, benches
 ├── _templates/         # Jinja2 templates
 ├── frontmatter.py      # Frontmatter parsing (YAML + Apple Notes export format)
