@@ -1,23 +1,25 @@
-"""Read-only /streams prototype over vault frontmatter (STREAMS-DESIGN.md).
+"""Read-only /streams canal view over the frontmatter index (STREAMS-DESIGN.md).
 
-Throwaway proof of the canal view: scans the vault directly instead of the
-Phase 4 query engine, and writes nothing.
+Reads nothing but the store, so a task's stream is whatever the vault currently
+says. The index is refreshed first because each strip publishes a lease, and a
+lease older than the file would have its write refused as stale.
 """
 
 import re
-from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
+from functools import partial
+from pathlib import Path as SyncPath
 from typing import Any
 
-from starlette.requests import Request
-from starlette.responses import Response
+from anyio import to_thread
 
 from yak_shears._templates import Recency
-from yak_shears.frontmatter import parse_frontmatter
 
 from .categories import resolve_colors, slot_css
-from .services import get_yak_dir, list_yak_paths, yak_lease
+from .database import refresh_search_index
+from .query import Note, Present, select
+from .services import ensure_search_db_ready, get_yak_dir
 
 CANAL_STATES = ("in-progress", "queue", "backlog")
 DRAIN_STATES = ("complete", "not-planned")
@@ -108,14 +110,14 @@ def _list_len(value: Any) -> int:
     return 1 if value else 0
 
 
-def _task_info(meta: dict[str, Any], body: str, path: str, today: date, modified: datetime, *, lease: str) -> TaskInfo:
-    title = next((line.lstrip("# ").strip() for line in body.splitlines() if line.strip()), path)
+def _task_info(note: Note, today: date) -> TaskInfo:
+    meta = note.meta
     due = _as_date(meta.get("due"))
     flex = int(meta.get("flex") or 0)
-    age = (datetime.now(tz=UTC) - modified).days
+    age = (datetime.now(tz=UTC) - note.modified).days
     return TaskInfo(
-        title=title,
-        path=path,
+        title=note.title,
+        path=note.path,
         state=str(meta.get("state") or "backlog"),
         due=due.isoformat() if due else "",
         flex=flex,
@@ -123,12 +125,26 @@ def _task_info(meta: dict[str, Any], body: str, path: str, today: date, modified
         waiting=str(meta.get("waiting") or ""),
         relations=_list_len(meta.get("blocked-by")) + _list_len(meta.get("relates")),
         recency=next((state for limit, state in _RECENCY_DAYS if age < limit), Recency.COLD),
-        lease=lease,
+        lease=note.lease,
     )
 
 
+def _board_notes() -> list[Note]:
+    """Every note that can appear on the board, by path.
+
+    A task is typed as one or carries a board state, so both queries run and
+    merge rather than pushing an OR the filter grammar does not have.
+
+    Returns:
+        Stream and task notes, ordered by path.
+    """
+    notes = {note.path: note for note in select(Present("type"))}
+    notes.update({note.path: note for note in select(Present("state"))})
+    return [notes[path] for path in sorted(notes)]
+
+
 async def collect_streams(today: date | None = None) -> tuple[list[StreamInfo], list[TaskInfo]]:
-    """Scan the vault once for stream and task notes.
+    """Read the index once for stream and task notes.
 
     Returns:
         Streams ordered by category then name, and the triage list of tasks
@@ -136,33 +152,27 @@ async def collect_streams(today: date | None = None) -> tuple[list[StreamInfo], 
     """
     today = today or datetime.now(tz=UTC).date()
     yak_dir = await get_yak_dir()
+    await ensure_search_db_ready()
+    await to_thread.run_sync(partial(refresh_search_index, SyncPath(yak_dir), force=True))
+
     streams: dict[str, StreamInfo] = {}
     tasks: list[tuple[str, TaskInfo]] = []
     categories: set[str] = set()
 
-    for yak_path in sorted(await list_yak_paths(yak_dir), key=str):
-        content = await yak_path.read_text()
-        meta, body = parse_frontmatter(content)
-        rel_path = yak_path.relative_to(yak_dir).as_posix()
-        category = yak_path.parent.name if yak_path.parent != yak_dir else ""
-        categories.add(category)
+    for note in await to_thread.run_sync(_board_notes):
+        meta = note.meta
+        categories.add(note.category)
         if meta.get("type") == "stream" and meta.get("id"):
-            key = f"{category}/{meta['id']}"
+            key = f"{note.category}/{meta['id']}"
             streams[key] = StreamInfo(
                 key=key,
                 name=str(meta.get("name") or meta["id"]),
-                category=category,
+                category=note.category,
                 color=str(meta.get("color") or ""),
                 wip_limit=int(meta.get("wip-limit") or 0),
             )
         elif meta.get("type") == "task" or str(meta.get("state", "")) in TASK_STATES:
-            modified = datetime.fromtimestamp((await yak_path.stat()).st_mtime, tz=UTC)
-            tasks.append(
-                (
-                    str(meta.get("stream") or ""),
-                    _task_info(meta, body, rel_path, today, modified, lease=yak_lease(content)),
-                )
-            )
+            tasks.append((str(meta.get("stream") or ""), _task_info(note, today)))
 
     triage: list[TaskInfo] = []
     for stream_key, task in tasks:

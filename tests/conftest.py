@@ -17,6 +17,7 @@ from bs4 import BeautifulSoup
 from yak_shears._auth import handlers
 from yak_shears._auth.models import HashedPassword, Password, User
 from yak_shears._auth.storage import UserStore, _set_default_store, create_user
+from yak_shears._yak.database import close_search_db
 
 MOCK_YAK_DIR = SyncPath(__file__).parent / "test_data/mock_djot_dir_0"
 
@@ -57,9 +58,20 @@ def worker_num(worker_id: str) -> int:
 
 @contextmanager
 def set_yak_shears_dir(dir_path: SyncPath) -> Generator[None, None, None]:
-    """Context manager to temporarily set the `YAK_SHEARS_DIR` environment variable."""
-    with patch.dict(os.environ, {"YAK_SHEARS_DIR": dir_path.as_posix()}, clear=True):
-        yield
+    """Point the app at a vault, with a throwaway search index beside it.
+
+    The index has to be redirected too: pages read it, and the default is the
+    developer's own state directory, which a test would otherwise write into and
+    lock against every other worker.
+    """
+    with (
+        tempfile.TemporaryDirectory(prefix="yak-index-") as index_dir,
+        patch.dict(os.environ, {"YAK_SHEARS_DIR": dir_path.as_posix(), "SEARCH_DB_DIR": index_dir}, clear=True),
+    ):
+        try:
+            yield
+        finally:
+            close_search_db()
 
 
 @pytest_asyncio.fixture
