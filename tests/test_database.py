@@ -278,6 +278,21 @@ class TestSearchIndex:
 
         assert get_backlinks("file2.dj") == []
 
+    def test_scanning_the_vault_indexes_frontmatter(self, temp_db, temp_yak_dir):
+        """Same reason as the links scan: a Syncthing arrival never passes through save,
+        so the store only sees its frontmatter here."""
+        (temp_yak_dir / "file1.dj").write_text("---\ntype: task\nstate: queue\n---\n\nhello")
+        with patch.dict("os.environ", {"YAK_SHEARS_DIR": str(temp_yak_dir)}):
+            update_search_index(temp_yak_dir)
+
+        assert get_frontmatter("file1.dj") == {"type": "task", "state": "queue"}
+
+        (temp_yak_dir / "file1.dj").write_text("hello, no frontmatter")
+        with patch.dict("os.environ", {"YAK_SHEARS_DIR": str(temp_yak_dir)}):
+            update_search_index(temp_yak_dir)
+
+        assert get_frontmatter("file1.dj") == {}
+
     def test_should_update_index_initially(self, temp_db, temp_yak_dir):
         with patch.dict("os.environ", {"YAK_SHEARS_DIR": str(temp_yak_dir)}):
             assert should_update_index(temp_yak_dir)

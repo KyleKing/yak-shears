@@ -534,6 +534,7 @@ def update_index_batch(
     file_mtimes: dict[str, float],
     file_titles: dict[str, str] | None = None,
     file_links: dict[str, list[tuple[str, str]]] | None = None,
+    file_frontmatter: dict[str, dict[str, object]] | None = None,
 ) -> None:
     """Perform a batch update of the search index within a transaction.
 
@@ -544,9 +545,11 @@ def update_index_batch(
         file_mtimes: Updated file modification times
         file_titles: Derived titles for re-indexed paths; missing entries keep the stored title
         file_links: Outbound links for re-indexed paths, replacing whatever was stored
+        file_frontmatter: Parsed frontmatter for re-indexed paths, replacing whatever was stored
     """
     titles = file_titles or {}
     links = file_links or {}
+    frontmatter = file_frontmatter or {}
     with get_search_db() as con:
         con.execute("BEGIN")
         try:
@@ -564,6 +567,10 @@ def update_index_batch(
                     f"DELETE FROM yak_links WHERE source_path IN ({placeholders})",  # noqa: S608
                     changed_paths,
                 )
+                con.execute(
+                    f"DELETE FROM yak_frontmatter WHERE path IN ({placeholders})",  # noqa: S608
+                    changed_paths,
+                )
 
             _insert_words(con, words_data)
             link_rows = [(path, target, link_type) for path, edges in links.items() for target, link_type in edges]
@@ -571,6 +578,15 @@ def update_index_batch(
                 con.executemany(
                     "INSERT OR IGNORE INTO yak_links (source_path, target_path, link_type) VALUES (?, ?, ?)",
                     link_rows,
+                )
+
+            frontmatter_rows = [
+                (path, json.dumps(meta), datetime.now(UTC)) for path, meta in frontmatter.items() if meta
+            ]
+            if frontmatter_rows:
+                con.executemany(
+                    "INSERT OR REPLACE INTO yak_frontmatter (path, frontmatter_json, updated_at) VALUES (?, ?, ?)",
+                    frontmatter_rows,
                 )
 
             for path, mtime in file_mtimes.items():
@@ -607,6 +623,7 @@ class FileIndex:
     words: list[tuple[str, int, str]]
     title: str
     links: list[tuple[str, str]]
+    frontmatter: dict[str, object]
 
 
 @dataclass(frozen=True)
@@ -638,15 +655,20 @@ def _process_file(dj_file: SyncPath, rel_path: str) -> FileIndex:
         content = dj_file.read_text(encoding="utf-8")
     except Exception as exc:
         log(f"WARNING: Skipping unreadable file {dj_file}: {exc}")
-        return FileIndex(words=[], title=SyncPath(rel_path).name, links=[])
+        return FileIndex(words=[], title=SyncPath(rel_path).name, links=[], frontmatter={})
 
     words_data = [
         (rel_path, line_num, word)
         for line_num, line in enumerate(content.splitlines(), 1)
         for word in _extract_line_words(line)
     ]
-    _frontmatter, body = parse_frontmatter(content)
-    return FileIndex(words=words_data, title=derive_title(content, rel_path), links=extract_all_links(body))
+    frontmatter, body = parse_frontmatter(content)
+    return FileIndex(
+        words=words_data,
+        title=derive_title(content, rel_path),
+        links=extract_all_links(body),
+        frontmatter=frontmatter,
+    )
 
 
 def scan_vault(yak_dir: SyncPath) -> VaultScan:
@@ -669,14 +691,22 @@ def apply_vault_scan(yak_dir: SyncPath, scan: VaultScan) -> None:
     words_data: list[tuple[str, int, str]] = []
     file_titles: dict[str, str] = {}
     file_links: dict[str, list[tuple[str, str]]] = {}
+    file_frontmatter: dict[str, dict[str, object]] = {}
     for path in scan.changed_paths:
         file_index = _process_file(yak_dir / path, path)
         words_data.extend(file_index.words)
         file_titles[path] = file_index.title
         file_links[path] = file_index.links
+        file_frontmatter[path] = file_index.frontmatter
 
     update_index_batch(
-        scan.deleted_paths, scan.changed_paths, words_data, scan.file_mtimes, file_titles, file_links
+        scan.deleted_paths,
+        scan.changed_paths,
+        words_data,
+        scan.file_mtimes,
+        file_titles,
+        file_links,
+        file_frontmatter,
     )
 
 
