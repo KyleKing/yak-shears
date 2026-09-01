@@ -390,13 +390,24 @@ def check_tables_exist() -> bool:
 # Frontmatter operations
 
 
+def _frontmatter_json(frontmatter: dict[str, object]) -> str:
+    """Serialize frontmatter, rendering the dates YAML parsed back as ISO text.
+
+    Returns:
+        A JSON string; values JSON cannot hold fall back to their `str`.
+    """
+    return json.dumps(
+        frontmatter, default=lambda value: value.isoformat() if hasattr(value, "isoformat") else str(value)
+    )
+
+
 def upsert_frontmatter(rel_path: str, frontmatter: dict[str, object]) -> None:
     """Insert or update frontmatter for a yak file."""
     with get_search_db() as con:
         if frontmatter:
             con.execute(
                 "INSERT OR REPLACE INTO yak_frontmatter (path, frontmatter_json, updated_at) VALUES (?, ?, ?)",
-                (rel_path, json.dumps(frontmatter), datetime.now(UTC)),
+                (rel_path, _frontmatter_json(frontmatter), datetime.now(UTC)),
             )
         else:
             con.execute("DELETE FROM yak_frontmatter WHERE path = ?", (rel_path,))
@@ -581,7 +592,7 @@ def update_index_batch(
                 )
 
             frontmatter_rows = [
-                (path, json.dumps(meta), datetime.now(UTC)) for path, meta in frontmatter.items() if meta
+                (path, _frontmatter_json(meta), datetime.now(UTC)) for path, meta in frontmatter.items() if meta
             ]
             if frontmatter_rows:
                 con.executemany(
