@@ -35,9 +35,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: doneram update --output /tmp/doneram.json
 
+      # GITHUB_TOKEN cannot push a branch that edits .github/workflows/**, so
+      # the pull request is opened with a scoped app installation token.
+      - id: app-token
+        if: steps.check.outputs.has_upgrades == 'true'
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.DONERAM_APP_ID }}
+          private-key: ${{ secrets.DONERAM_APP_PRIVATE_KEY }}
+
       - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         if: steps.check.outputs.has_upgrades == 'true'
         with:
+          token: ${{ steps.app-token.outputs.token }}
           branch: chore/doneram-updates
           draft: true
           delete-branch: true

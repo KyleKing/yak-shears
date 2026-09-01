@@ -72,6 +72,11 @@ tools: Mapping<String, Tool> = new {
     resolverName = "antonmedv/codejar@master"
     sites = new { new Site { file = downloadAssets; pattern = #"CODEJAR_VERSION:-([0-9a-f]{40})"# } }
   }
+  ["create-github-app-token"] = new {
+    resolver = "github-action"
+    resolverName = "actions/create-github-app-token"
+    sites = new { actionPin("actions/create-github-app-token", freshnessYml) }
+  }
   ["create-pull-request"] = new {
     resolver = "github-action"
     resolverName = "peter-evans/create-pull-request"
