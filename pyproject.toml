@@ -35,6 +35,7 @@ dependencies = [
   "jinja2>=3.1.6",
   "pillow>=12.3.0",
   "pillow-heif>=1.5.0",
+  "pygls>=2.1.1",
   "python-multipart>=0.0.32",
   "pyyaml>=6.0.3",
   "starlette>=1.6.0",
@@ -51,6 +52,7 @@ version = "0.0.0"
 
 [project.scripts] # Docs: https://setuptools.pypa.io/en/latest/userguide/entry_point.html#console-scripts
 serve = "yak_shears.server:cli"
+shears = "yak_shears.shears:main"
 yak-shears-users = "yak_shears.cli:main_sync"
 
 [tool.coverage.html]
