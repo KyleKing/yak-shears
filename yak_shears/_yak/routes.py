@@ -3,6 +3,7 @@
 from starlette.routing import Route
 
 from .bench_handlers import (
+    board_act_handler,
     habit_toggle_handler,
     habits_handler,
     list_toggle_handler,
@@ -10,7 +11,6 @@ from .bench_handlers import (
     streams_handler,
 )
 from .benches import benches_handler
-from .board import board_act_handler
 from .handlers import (
     delete_yak_handler,
     doctor_fix_filenames_handler,

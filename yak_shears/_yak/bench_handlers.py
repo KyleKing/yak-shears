@@ -9,6 +9,7 @@ import re
 from collections.abc import Iterator
 from datetime import UTC, datetime
 from http import HTTPStatus
+from urllib.parse import quote, urlencode
 
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
@@ -21,6 +22,7 @@ from yak_shears._templates import (
     render_streams,
 )
 
+from .board import BoardActionError, apply_action
 from .categories import resolve_colors
 from .habits import collect_habits, toggle_today
 from .lists import collect_lists, toggle_item
@@ -159,3 +161,50 @@ async def streams_handler(request: Request) -> Response:
         category_colors=category_colors,
         undo=undo,
     )
+
+
+async def board_act_handler(request: Request) -> Response:
+    """Apply one command-deck action to a task note and redirect with undo.
+
+    Returns:
+        A 303 back to the focused canal carrying the inverse action, or an
+        error page for a bad reference or inapplicable action.
+    """
+    form = await request.form()
+    rel_path = str(form.get("path", ""))
+    action = str(form.get("action", ""))
+    reason = str(form.get("reason", "")).strip()
+    focus = str(form.get("focus", ""))
+    if action == "stream":
+        action = f"stream:{form.get('to', '')}"
+
+    yak_dir = await get_yak_dir()
+    try:
+        yak_path = await resolve_yak_path(yak_dir, rel_path)
+    except YakPathError:
+        return render_error("Invalid task path")
+
+    if action.startswith("stream:") and action != "stream:clear":
+        streams, _ = await collect_streams()
+        if action.removeprefix("stream:") not in {stream.key for stream in streams}:
+            return render_error("Unknown stream")
+
+    # One form holds every strip on the canal, so the lease is keyed by path and the
+    # latched radio picks which one applies.
+    try:
+        content = await read_leased(yak_path, str(form.get(f"lease:{rel_path}", "")) or None)
+    except StaleYakError:
+        return render_error(
+            f"{rel_path} changed since this page loaded. Reload, then latch it again.", HTTPStatus.CONFLICT
+        )
+    try:
+        result = apply_action(content, action, reason=reason, today=datetime.now(tz=UTC).date())
+    except BoardActionError as err:
+        return render_error(str(err))
+    await yak_path.write_text(result.content)
+
+    params = {"u_path": rel_path, "u_action": result.inverse, "u_label": result.label}
+    if result.inverse_reason:
+        params["u_reason"] = result.inverse_reason
+    prefix = f"stream={quote(focus)}&" if focus else ""
+    return RedirectResponse(f"/streams?{prefix}{urlencode(params)}", status_code=303)

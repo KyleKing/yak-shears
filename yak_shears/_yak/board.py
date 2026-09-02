@@ -6,19 +6,13 @@ own inverse, so the response can carry a one-press undo (STREAMS-DESIGN.md).
 
 import re
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
-from http import HTTPStatus
+from datetime import date, timedelta
 from typing import Any
-from urllib.parse import quote, urlencode
 
-from starlette.requests import Request
-from starlette.responses import RedirectResponse, Response
-
-from yak_shears._templates import render_error
 from yak_shears.frontmatter import parse_frontmatter, rewrite_frontmatter_field
 
-from .services import StaleYakError, YakPathError, get_yak_dir, read_leased, resolve_yak_path
-from .streams import CANAL_STATES, TASK_STATES, collect_streams
+from .streams import CANAL_STATES, TASK_STATES
+
 
 _RAISE = {"backlog": "queue", "queue": "in-progress", "in-progress": "complete"}
 _LOWER = {new: old for old, new in _RAISE.items()}
@@ -169,50 +163,3 @@ def apply_action(content: str, action: str, *, reason: str = "", today: date) ->
         return _apply_stream(content, meta, action.removeprefix("stream:"))
     msg = f"Unknown action: {action}"
     raise BoardActionError(msg)
-
-
-async def board_act_handler(request: Request) -> Response:
-    """Apply one command-deck action to a task note and redirect with undo.
-
-    Returns:
-        A 303 back to the focused canal carrying the inverse action, or an
-        error page for a bad reference or inapplicable action.
-    """
-    form = await request.form()
-    rel_path = str(form.get("path", ""))
-    action = str(form.get("action", ""))
-    reason = str(form.get("reason", "")).strip()
-    focus = str(form.get("focus", ""))
-    if action == "stream":
-        action = f"stream:{form.get('to', '')}"
-
-    yak_dir = await get_yak_dir()
-    try:
-        yak_path = await resolve_yak_path(yak_dir, rel_path)
-    except YakPathError:
-        return render_error("Invalid task path")
-
-    if action.startswith("stream:") and action != "stream:clear":
-        streams, _ = await collect_streams()
-        if action.removeprefix("stream:") not in {stream.key for stream in streams}:
-            return render_error("Unknown stream")
-
-    # One form holds every strip on the canal, so the lease is keyed by path and the
-    # latched radio picks which one applies.
-    try:
-        content = await read_leased(yak_path, str(form.get(f"lease:{rel_path}", "")) or None)
-    except StaleYakError:
-        return render_error(
-            f"{rel_path} changed since this page loaded. Reload, then latch it again.", HTTPStatus.CONFLICT
-        )
-    try:
-        result = apply_action(content, action, reason=reason, today=datetime.now(tz=UTC).date())
-    except BoardActionError as err:
-        return render_error(str(err))
-    await yak_path.write_text(result.content)
-
-    params = {"u_path": rel_path, "u_action": result.inverse, "u_label": result.label}
-    if result.inverse_reason:
-        params["u_reason"] = result.inverse_reason
-    prefix = f"stream={quote(focus)}&" if focus else ""
-    return RedirectResponse(f"/streams?{prefix}{urlencode(params)}", status_code=303)
