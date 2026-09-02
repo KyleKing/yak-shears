@@ -296,16 +296,17 @@ async def bench(_ls: LanguageServer, kind: str) -> dict[str, Any]:
 
 
 @server.command("shears.new")
-async def new_note(_ls: LanguageServer, category: str) -> dict[str, str]:
+async def new_note(_ls: LanguageServer, category: str) -> dict[str, Any]:
     """Create a new note in `category`.
 
     Returns:
-        `{"path": <absolute path>}`, or `{}` on failure.
+        `{"ok": True, "path"}` on success, or an `{"ok": False, "code", "error"}`
+        shape on failure.
     """
     try:
         yak_dir = await get_yak_dir()
         path = await create_yak(yak_dir, category)
-        return {"path": str(path)}
     except Exception:
         logger.exception("shears.new failed")
-        return {}
+        return {"ok": False, "code": "failed", "error": "shears.new failed"}
+    return {"ok": True, "path": str(path)}

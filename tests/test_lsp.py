@@ -117,6 +117,7 @@ async def test_references_returns_backlinks_for_current_document(indexed_vault):
 async def test_shears_new_creates_a_canonically_named_note(indexed_vault):
     result = await new_note(server, "inbox")
 
+    assert result["ok"] is True
     path = SyncPath(result["path"])
     assert path.parent.name == "inbox"
     assert path.parent.parent == indexed_vault
