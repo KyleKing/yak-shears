@@ -14,7 +14,7 @@ from pathlib import Path as SyncPath
 from anyio import Path
 
 from yak_shears._log_utils import StageTimer, log
-from yak_shears._templates import Recency, SearchResult, SortBy, YakInfo
+from yak_shears._view_types import Recency, SearchResult, SortBy, YakInfo
 from yak_shears._yak.database import (
     WordMatch,
     check_tables_exist,

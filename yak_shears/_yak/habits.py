@@ -11,20 +11,13 @@ earn from; that gap is a recorded open question.
 import re
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
-from http import HTTPStatus
 
-from starlette.requests import Request
-from starlette.responses import RedirectResponse, Response
 
 from yak_shears.frontmatter import parse_frontmatter
 
 from .services import (
-    StaleYakError,
-    YakPathError,
     get_yak_dir,
     list_yak_paths,
-    read_leased,
-    resolve_yak_path,
     yak_lease,
 )
 

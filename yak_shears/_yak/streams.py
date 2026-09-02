@@ -14,7 +14,7 @@ from typing import Any
 
 from anyio import to_thread
 
-from yak_shears._templates import Recency
+from yak_shears._view_types import Recency
 
 from .categories import resolve_colors, slot_css
 from .database import refresh_search_index

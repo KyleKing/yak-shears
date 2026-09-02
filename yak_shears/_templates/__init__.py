@@ -2,61 +2,14 @@
 
 import hashlib
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
-from enum import StrEnum
 from http import HTTPStatus
 from pathlib import Path as SyncPath
 
 from jinja2 import Environment, FileSystemLoader
 from starlette.responses import HTMLResponse
 
+from yak_shears._view_types import Recency, SearchResult, SortBy, YakInfo
 from yak_shears._yak.categories import UNASSIGNED_COLOR
-
-
-class SortBy(StrEnum):
-    """Enum for yak sorting options."""
-
-    CREATED_AT = "created_at"
-    MODIFIED_DATE = "modified_date"
-
-
-class Recency(StrEnum):
-    """How recently a yak was edited, as a lamp state rather than a duration."""
-
-    LIVE = "live"
-    RECENT = "recent"
-    IDLE = "idle"
-    COLD = "cold"
-
-
-@dataclass(frozen=True)
-class YakInfo:
-    """Yak information for template rendering."""
-
-    backlink_count: int
-    category: str
-    kind: str
-    last_modified: str
-    link_count: int
-    name: str
-    open_ordinals: list[int]
-    path: str
-    preview: str
-    recency: Recency
-    tags: list[str]
-    truncated: bool
-
-
-@dataclass(frozen=True)
-class SearchResult:
-    """Search result for template rendering."""
-
-    path: str
-    line_num: int
-    preview: str
-    word: str
-    first_line: str
-
 
 TEMPLATE_DIR = SyncPath(__file__).parent
 STATIC_DIR = TEMPLATE_DIR.parent / "static"
