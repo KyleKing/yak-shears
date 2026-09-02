@@ -119,14 +119,23 @@ async def definition(ls: LanguageServer, params: types.TextDocumentPositionParam
         return None
 
 
+def _all_backlinks(rel_path: str) -> list[str]:
+    # The indexer stores a wikilink target as the bare stem and a path link as the vault-relative
+    # path, so a note only finds all of its backlinks by asking under both spellings.
+    stem = SyncPath(rel_path).stem
+    sources = {source for source, _ in get_backlinks(rel_path)}
+    sources |= {source for source, _ in get_backlinks(stem)}
+    return sorted(sources)
+
+
 async def _backlink_locations(ls: LanguageServer, params: types.ReferenceParams) -> list[types.Location]:
     document = ls.workspace.get_text_document(params.text_document.uri)
     yak_dir = await get_yak_dir()
     rel_path = _relative_path(document.uri, yak_dir)
-    backlinks = await to_thread.run_sync(get_backlinks, rel_path)
+    sources = await to_thread.run_sync(_all_backlinks, rel_path)
     return [
-        types.Location(uri=from_fs_path(str(SyncPath(str(yak_dir)) / source_path)), range=_ZERO_RANGE)
-        for source_path, _link_type in backlinks
+        types.Location(uri=from_fs_path(str(SyncPath(str(yak_dir)) / source)), range=_ZERO_RANGE)
+        for source in sources
     ]
 
 
@@ -147,7 +156,7 @@ async def references(ls: LanguageServer, params: types.ReferenceParams) -> list[
 
 
 @server.command("shears.new")
-async def new_note(_ls: LanguageServer, category: str, _template: str | None = None) -> dict[str, str]:
+async def new_note(_ls: LanguageServer, category: str) -> dict[str, str]:
     """Create a new note in `category`.
 
     Returns:

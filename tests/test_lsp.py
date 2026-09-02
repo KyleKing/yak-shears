@@ -1,5 +1,6 @@
 """Tests for the `shears lsp` language server."""
 
+import inspect
 from pathlib import Path as SyncPath
 
 import pytest
@@ -12,9 +13,11 @@ from yak_shears._yak.database import _CACHE, close_search_db, init_search_db, up
 from yak_shears._yak.filenames import is_canonical
 from yak_shears.lsp.server import completion, definition, new_note, references, server
 
+# Notes live under a category directory, so a vault-relative path never equals a wikilink
+# target: the indexer stores the target as a bare stem.
 VAULT = {
-    "alpha.dj": "---\ntype: note\n---\n\n# Alpha\n",
-    "beta.dj": "---\ntype: note\n---\n\nSee [[alpha]] and [[missing]] for context.\n",
+    "tasks/alpha.dj": "---\ntype: note\n---\n\n# Alpha\n",
+    "notes/beta.dj": "---\ntype: note\n---\n\nSee [[alpha]] and [[missing]] for context.\n",
 }
 
 
@@ -48,7 +51,7 @@ def _open_document(yak_dir: SyncPath, relative_path: str, text: str) -> str:
     ids=["mid-word-replaces-open-span", "no-bracket-returns-nothing"],
 )
 async def test_completion_text_edit_replaces_open_span(indexed_vault, line, character, expected_line):
-    uri = _open_document(indexed_vault, "beta.dj", line)
+    uri = _open_document(indexed_vault, "notes/beta.dj", line)
     params = types.CompletionParams(
         text_document=types.TextDocumentIdentifier(uri=uri),
         position=types.Position(line=0, character=character),
@@ -69,8 +72,8 @@ async def test_completion_text_edit_replaces_open_span(indexed_vault, line, char
 
 @pytest.mark.asyncio
 async def test_definition_resolves_wikilink_and_none_when_unresolved(indexed_vault):
-    text = VAULT["beta.dj"]
-    uri = _open_document(indexed_vault, "beta.dj", text)
+    text = VAULT["notes/beta.dj"]
+    uri = _open_document(indexed_vault, "notes/beta.dj", text)
     link_line = next(index for index, line in enumerate(text.splitlines()) if "[[alpha]]" in line)
     line_text = text.splitlines()[link_line]
     alpha_character = line_text.index("[[alpha]]") + 3
@@ -91,13 +94,13 @@ async def test_definition_resolves_wikilink_and_none_when_unresolved(indexed_vau
     )
 
     assert resolved is not None
-    assert resolved.uri == (indexed_vault / "alpha.dj").as_uri()
+    assert resolved.uri == (indexed_vault / "tasks/alpha.dj").as_uri()
     assert unresolved is None
 
 
 @pytest.mark.asyncio
 async def test_references_returns_backlinks_for_current_document(indexed_vault):
-    uri = _open_document(indexed_vault, "alpha.dj", VAULT["alpha.dj"])
+    uri = _open_document(indexed_vault, "tasks/alpha.dj", VAULT["tasks/alpha.dj"])
     params = types.ReferenceParams(
         text_document=types.TextDocumentIdentifier(uri=uri),
         position=types.Position(0, 0),
@@ -106,7 +109,7 @@ async def test_references_returns_backlinks_for_current_document(indexed_vault):
 
     locations = await references(server, params)
 
-    assert [location.uri for location in locations] == [(indexed_vault / "beta.dj").as_uri()]
+    assert [location.uri for location in locations] == [(indexed_vault / "notes/beta.dj").as_uri()]
 
 
 @pytest.mark.asyncio
@@ -120,9 +123,16 @@ async def test_shears_new_creates_a_canonically_named_note(indexed_vault):
     assert await AsyncPath(path).is_file()
 
 
+def test_shears_new_takes_exactly_the_arguments_the_client_sends():
+    """The pygls dispatcher passes command arguments positionally and rejects a mismatched count."""
+    parameters = list(inspect.signature(new_note).parameters)
+
+    assert parameters == ["_ls", "category"]
+
+
 @pytest.mark.asyncio
 async def test_search_db_connection_is_released_after_a_request(indexed_vault):
-    uri = _open_document(indexed_vault, "beta.dj", "[[al")
+    uri = _open_document(indexed_vault, "notes/beta.dj", "[[al")
     params = types.CompletionParams(text_document=types.TextDocumentIdentifier(uri=uri), position=types.Position(0, 4))
 
     await completion(server, params)
