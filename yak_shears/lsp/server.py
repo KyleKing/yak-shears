@@ -1,9 +1,11 @@
-"""The `shears lsp` language server: wikilink completion, navigation, and note creation."""
+"""The `shears lsp` language server: wikilink completion, navigation, note creation, and the streams board."""
 
 import logging
 import re
+from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path as SyncPath
+from typing import Any
 
 from anyio import Path as AsyncPath
 from anyio import to_thread
@@ -12,8 +14,20 @@ from pygls.lsp.server import LanguageServer
 from pygls.uris import from_fs_path, to_fs_path
 from pygls.workspace import TextDocument
 
+from yak_shears._yak.board import BoardActionError, apply_action
 from yak_shears._yak.database import close_search_db, get_backlinks, search_link_candidates
-from yak_shears._yak.services import create_yak, ensure_search_db_ready, ensure_search_index_updated, get_yak_dir
+from yak_shears._yak.services import (
+    StaleYakError,
+    YakPathError,
+    create_yak,
+    ensure_search_db_ready,
+    ensure_search_index_updated,
+    get_yak_dir,
+    read_leased,
+    resolve_yak_path,
+)
+from yak_shears._yak.streams import StreamInfo, TaskInfo, collect_streams
+from yak_shears.leases import yak_lease
 from yak_shears.links import WIKILINK_RE, resolve_link
 
 logger = logging.getLogger(__name__)
@@ -151,6 +165,132 @@ async def references(ls: LanguageServer, params: types.ReferenceParams) -> list[
     except Exception:
         logger.exception("textDocument/references failed")
         return []
+    finally:
+        close_search_db()
+
+
+def _task_payload(task: TaskInfo) -> dict[str, Any]:
+    return {
+        "title": task.title,
+        "path": task.path,
+        "state": task.state,
+        "due": task.due,
+        "flex": task.flex,
+        "urgency": task.urgency,
+        "waiting": task.waiting,
+        "relations": task.relations,
+        "recency": task.recency.value,
+        "lease": task.lease,
+    }
+
+
+def _stream_payload(stream: StreamInfo) -> dict[str, Any]:
+    return {
+        "key": stream.key,
+        "name": stream.name,
+        "category": stream.category,
+        "color": stream.color,
+        "wip_limit": stream.wip_limit,
+        "wip": stream.wip,
+        "over_wip": stream.over_wip,
+        "drained": stream.drained,
+        "reaches": {state: [_task_payload(task) for task in reach] for state, reach in stream.reaches.items()},
+    }
+
+
+async def _load_leased_note(
+    yak_dir: AsyncPath, path: str, action: str, lease: str
+) -> tuple[AsyncPath, str] | dict[str, Any]:
+    try:
+        yak_path = await resolve_yak_path(yak_dir, path)
+    except YakPathError as err:
+        return {"ok": False, "code": "invalid", "error": str(err)}
+
+    if action.startswith("stream:") and action != "stream:clear":
+        streams, _ = await collect_streams()
+        if action.removeprefix("stream:") not in {stream.key for stream in streams}:
+            return {"ok": False, "code": "invalid", "error": "Unknown stream"}
+
+    try:
+        content = await read_leased(yak_path, lease)
+    except StaleYakError as err:
+        return {"ok": False, "code": "stale", "error": str(err)}
+    except FileNotFoundError as err:
+        return {"ok": False, "code": "not_found", "error": str(err)}
+
+    return yak_path, content
+
+
+async def _act(params: dict[str, Any]) -> dict[str, Any]:
+    path = str(params.get("path", ""))
+    action = str(params.get("action", ""))
+    reason = str(params.get("reason", ""))
+    lease = str(params.get("lease", ""))
+    if not lease:
+        return {"ok": False, "code": "invalid", "error": "Missing lease"}
+
+    yak_dir = await get_yak_dir()
+    loaded = await _load_leased_note(yak_dir, path, action, lease)
+    if isinstance(loaded, dict):
+        return loaded
+    yak_path, content = loaded
+
+    try:
+        result = apply_action(content, action, reason=reason, today=datetime.now(tz=UTC).date())
+    except BoardActionError as err:
+        return {"ok": False, "code": "invalid", "error": str(err)}
+
+    await yak_path.write_text(result.content)
+    return {
+        "ok": True,
+        "label": result.label,
+        "lease": yak_lease(result.content),
+        "inverse": {"path": path, "action": result.inverse, "reason": result.inverse_reason},
+    }
+
+
+@server.command("shears.act")
+async def act(_ls: LanguageServer, params: dict[str, Any]) -> dict[str, Any]:
+    """Apply one board action to a task note and return its inverse for undo.
+
+    Returns:
+        `{"ok": True, "label", "lease", "inverse"}` on success, or an
+        `{"ok": False, "code", "error"}` shape on failure.
+    """
+    try:
+        return await _act(params)
+    except Exception:
+        logger.exception("shears.act failed")
+        return {"ok": False, "code": "failed", "error": "shears.act failed"}
+    finally:
+        close_search_db()
+
+
+async def _bench(kind: str) -> dict[str, Any]:
+    if kind != "streams":
+        return {"ok": False, "code": "invalid", "error": f"Unsupported bench kind: {kind!r}"}
+    streams, orphans = await collect_streams()
+    return {
+        "ok": True,
+        "kind": "streams",
+        "streams": [_stream_payload(stream) for stream in streams],
+        "orphans": [_task_payload(task) for task in orphans],
+    }
+
+
+@server.command("shears.bench")
+async def bench(_ls: LanguageServer, kind: str) -> dict[str, Any]:
+    """Fetch bench data for the nvim streams buffer.
+
+    Returns:
+        The bench payload for `kind`, or an `{"ok": False, "code", "error"}`
+        shape on failure.
+    """
+    try:
+        return await _bench(kind)
+    except Exception:
+        logger.exception("shears.bench failed")
+        return {"ok": False, "code": "failed", "error": "shears.bench failed"}
     finally:
         close_search_db()
 
