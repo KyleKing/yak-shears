@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-HTMX_VERSION=${HTMX_VERSION:-v2.0.9}
+HTMX_VERSION=${HTMX_VERSION:-v2.0.10}
 CODEJAR_VERSION=${CODEJAR_VERSION:-32f7a803cccb191ff10f550dc58403c6b2eb311e}  # Default to master, set env var for specific version
 
 # Download HTMX

@@ -17,7 +17,7 @@ Measured 2026-07-27, gzipped:
 | asset | size |
 | --- | --- |
 | `css/main.css` | 20.1KB |
-| `js/htmx.min.js` | 16.3KB (vendored) |
+| `js/htmx.min.js` | 16.2KB (vendored) |
 | `js/editor.js` | 10.8KB |
 | `js/search.js` | 2.7KB |
 | `js/codejar.min.js` | 2.6KB (vendored) |
