@@ -106,6 +106,39 @@ to find out.
 This is also the machinery offline editing needs, so the two should be decided
 together rather than solved twice (see "Mobile and offline" above).
 
+### Agent access to the vault (opportunistic infrastructure)
+
+The `shears lsp` language server (see [PLAN.md](./PLAN.md)) gives nvim wikilink completion, go-to-definition, backlinks, and the streams bench over `workspace/executeCommand`. The obvious next question is whether a coding agent should search the vault through that same server. It should not, and the reasoning below is what settles it.
+
+LSP is built around a buffer. Its methods take a document URI and a cursor position, and they assume a `didOpen` sync and an `initialize` handshake before any of that means anything. An agent has no buffer and no cursor, so every agent-facing call collapses onto `workspace/executeCommand`, which is LSP used as a bare RPC transport. The handshake, the document sync, and the position machinery all still cost something, and none of them do any work for a caller with no document. It also needs a client. An agent can call a CLI through its shell today, whereas talking to the server means writing or embedding an LSP client first.
+
+The costs point the same way. Measured on the 150-note vault in 2026-09:
+
+| Path | Cost |
+| --- | --- |
+| Import the service layer alone | 192 ms, of which duckdb is 147 ms |
+| Import `yak_shears.lsp.server` | 703 ms, of which `lsprotocol.types` alone is 444 ms |
+| Language server cold start, median | 832 ms |
+| Language server warm round trip, p95 | 5.4 ms constant, 73 ms search |
+| Cold `python -c` search, real time | 190-210 ms warm-cache, 97 hits |
+
+The daemon exists to amortize a cost the editor pays hundreds of times per session on keystrokes. An agent runs a handful of searches per task, so 200 ms per invocation is invisible and 500 ms of protocol imports buys nothing. More than half the server's startup is a protocol the agent would not use.
+
+This matches the position [PLAN.md](./PLAN.md) already took for the language server: no second transport, and a shell CLI wraps the same service functions rather than talking to the server.
+
+#### The constraint that shapes it
+
+DuckDB allows one writer or many readers, never both, and every read path here forces an index refresh, which takes the write lock. Two measurements, both reproducible:
+
+- Four concurrent searches all succeed and serialize: one returns in 173 ms, the other three in roughly 930 ms. Contention degrades rather than fails
+- A search running while any other process holds the index open deletes the entire index and rebuilds it. `check_tables_exist` returns False on any exception including a lock conflict, `ensure_search_db_ready` reads that as corruption, unlinks the file, and pays 600 ms to re-scan 150 notes. Nothing is lost, because the index is rebuildable and the vault is the source of truth, but with an editor holding the server open this fires on every single CLI search
+
+The second one is a defect independent of any agent work, and it is why the swallowed-exception item in [PLAN.md](./PLAN.md) Phase 2 has to land before a concurrent CLI is worth having. Fixing it is the difference between agent search being free and agent search costing a full reindex each time.
+
+#### If it should be a Tool rather than a shell call
+
+Wrap the CLI in a thin MCP server exposing one read-only search tool. That keeps a single implementation behind both surfaces and keeps writes out of the agent's reach by construction, since search touches nothing the vault owns.
+
 ### Semantic Search (opportunistic infrastructure)
 
 Hybrid keyword + vector search as a **separate general-purpose CLI**, integrated through the SearchBackend seam (ADR 0002). Also the seam that later feeds embedding similarity into the related-notes panel and the network-health digest. Blueprint preserved in `archive/djot-search-sqlite-exploration.md`.

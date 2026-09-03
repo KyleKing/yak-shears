@@ -41,7 +41,7 @@ Verified defects and hardening, safe to do in parallel with Phase 1. The link-de
 - Login rate limiting on `login_handler` (`_auth/handlers.py`), or document fail2ban on the login route as the chosen control.
 - Flip `start()`'s `no_auth` default to `False` (`server/_routes.py:130`); the fail-closed guard already exists, so this is now a small change. Make `debug` configurable and default off in `create_app`.
 - Offload blocking work: wrap synchronous DuckDB and `rglob` calls in `search_handler` and metadata handlers with `anyio.to_thread`.
-- Narrow swallowed exceptions in `get_frontmatter`, `get_backlinks`, `check_tables_exist`, `ensure_search_index_updated`, `_create_search_result` so corruption is distinguishable from empty results.
+- Narrow swallowed exceptions in `get_frontmatter`, `get_backlinks`, `check_tables_exist`, `ensure_search_index_updated`, `_create_search_result` so corruption is distinguishable from empty results. `check_tables_exist` returning False on a DuckDB lock conflict is the sharp edge: `ensure_search_db_ready` reads it as corruption and unlinks the index, so any second process running while another holds the index open pays a full rebuild (reproduced 2026-09-02, 600 ms over 150 notes). This blocks the agent-facing search CLI below.
 - Lower priority: raise PBKDF2 iterations toward ~600k or move to argon2id; dummy-hash unknown emails in `authenticate_user` to close timing-based user enumeration.
 
 ### Editor draft recovery (UI wiring pending)
@@ -165,6 +165,21 @@ Direction per 2026-07-04 discussion: build or adopt this **outside** yak-shears 
 - First, evaluate existing tools before building (the space moves fast; check current options for local hybrid search CLIs).
 - If building: the SQLite FTS5 + sqlite-vec + small-embedding-model design in `archive/djot-search-sqlite-exploration.md` is the blueprint. SQLite is the right call for a standalone CLI (single file, no server, easiest install); its phases 1-3 (BM25, vectors with all-MiniLM-L6-v2, incremental ingestion) fit the 4GB CX22. Stop before its phases 4-5 (chunking, query expansion) at a few-hundred-doc corpus.
 - Do not stand up a hosted vector DB or FaaS at this scale; embeddings run on-box or via a hosted embedding API at index time only.
+
+### Agent-facing search CLI
+
+Reasoning and the measurements behind it are in [ROADMAP.md](./ROADMAP.md) ("Agent access to the vault"). The short version: a coding agent should read the vault through a short-lived CLI rather than the `shears lsp` language server, because LSP's abstractions are buffer-centric, an agent has no buffer, and the daemon's 832 ms cold start amortizes a keystroke cost an agent never pays.
+
+Ordered, because the first item is a prerequisite rather than a preference:
+
+- **Prerequisite.** Fix the lock-conflict-reads-as-corruption path (Phase 2's swallowed-exception item). Until then, every CLI search run while an editor holds the server open deletes and rebuilds the index. Done when a search running against a held index returns results without the `Search database appears corrupted` warning, covered by a test that opens a second connection and asserts the index file's inode survives.
+- Add `shears search <query>` to the `shears` dispatcher in `yak_shears/shears.py`, next to the existing `lsp` subcommand. It calls `ensure_search_db_ready`, `ensure_search_index_updated`, and `perform_search` directly, then `close_search_db` before exit. No import of `yak_shears.lsp` and no import of the web layer, so the 192 ms service-layer floor is what a search costs.
+- Give it `--json` emitting one object per hit (path, title, score, the matched excerpt) so an agent parses rather than scrapes, with the human-readable form as the default. Cap results with `--limit`, defaulting low enough that a wide query does not flood an agent's context.
+- Add `shears backlinks <path>` over `get_backlinks`, asking under both the vault-relative path and the bare stem the way `_all_backlinks` in `yak_shears/lsp/server.py` already does. This is the same one-line trap the language server hit, so share the helper rather than writing it twice.
+- Keep the whole surface read-only. Writes stay behind `rewrite_frontmatter_field` and the leased save path, and an agent that needs to edit a note edits the file, which the vault already treats as the source of truth.
+- Document the commands in `AGENTS.md` so an agent working in this repo finds them without being told.
+
+Deferred until the CLI exists and is used: wrapping it in an MCP server so the search shows up as a tool rather than a shell call. It adds a process and a dependency, and a shell call is already reachable from every agent harness, so it only pays once shell invocation proves to be the friction.
 
 ### Lint debt and code pruning (formerly Phase 7)
 
