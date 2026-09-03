@@ -113,7 +113,7 @@ async def check_connection(*, timeout_s: float, url: str) -> None:
             return False
 
         while not await _is_reachable():
-            if (start - time.monotonic()) >= timeout_s:
+            if (time.monotonic() - start) >= timeout_s:
                 msg = f"Failed to connect to {url} within the {timeout_s}s timeout"
                 raise RuntimeError(msg)
             await asyncio.sleep(0.5)
