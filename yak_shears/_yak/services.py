@@ -32,7 +32,7 @@ from yak_shears._yak.database import (
 )
 from yak_shears._yak.filenames import canonical_stem
 from yak_shears.frontmatter import parse_frontmatter
-from yak_shears.leases import yak_lease
+from yak_shears.leases import yak_lease as yak_lease
 from yak_shears.links import extract_all_links, extract_tags, extract_wikilinks
 
 PREVIEW_LENGTH = 200
@@ -460,7 +460,12 @@ def _process_search_results(
         One result per matched file, in relevance order.
     """
     seen_paths: set[str] = set()
-    matched = [match for match in search_results if not (match.path in seen_paths or seen_paths.add(match.path))]
+    matched = []
+    for match in search_results:
+        if match.path in seen_paths:
+            continue
+        seen_paths.add(match.path)
+        matched.append(match)
 
     titles = get_file_titles([match.path for match in matched])
     results = []
