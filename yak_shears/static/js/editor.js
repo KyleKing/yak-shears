@@ -25,6 +25,8 @@ const SAVE_STATUS_RESET_DELAY = 2000; // ms - "Saved" → "Synced" transition
 const EDITOR_INIT_MAX_RETRIES = 50; // Wait up to 5 seconds for DOM
 const EDITOR_INIT_RETRY_INTERVAL = 100; // ms between retries
 const HTTP_CONFLICT = 409; // The yak changed since this page loaded
+// Never a real lease, so a draft of unknown origin cannot save without a choice
+const UNKNOWN_LEASE = "unknown";
 
 // Assigned by initEditor, which is where the editor and its jar are in scope.
 let showConflict = () => {};
@@ -385,10 +387,30 @@ function initEditor() {
 		const yak_path = new URLSearchParams(window.location.search).get("yak");
 		if (yak_path === null) throw new Error("URL does not have file parameter.");
 		const storageKey = `editor_${yak_path}`;
+		// The lease the stored draft was written against, which is what tells a
+		// draft that only needs restoring from one the note has moved past.
+		const draftLeaseKey = `editor_lease_${yak_path}`;
+		const leaseEl = document.getElementById("yak-lease");
+		// Lease of `serverContent`, the last version this page knows is on disk.
+		// The element's lease is what a save presents and can be deliberately stale.
+		let knownLease = leaseEl.dataset.lease;
 		linkComplete = _setupLinkComplete(editor, jar, yak_path);
 		const caretKey = `editor_caret_${yak_path}`;
 		let serverContent = window.serverContent; // Injected in template: <script>window.serverContent = {{ content | tojson }};</script>
-		editor.textContent = serverContent;
+
+		// An unsaved draft reopens in place, which is how a note survives the
+		// session ending mid-edit. One written against an older version opens
+		// the conflict panel instead, and keeps its stale lease so no save can
+		// land until the reader picks a side.
+		const draft = localStorage.getItem(storageKey);
+		const hasDraft = draft !== null && draft !== serverContent;
+		const draftIsStale =
+			hasDraft && localStorage.getItem(draftLeaseKey) !== knownLease;
+		if (draftIsStale) {
+			leaseEl.dataset.lease =
+				localStorage.getItem(draftLeaseKey) || UNKNOWN_LEASE;
+		}
+		editor.textContent = hasDraft ? draft : serverContent;
 		highlight(editor); // Apply initial syntax highlighting
 
 		// Reopen where the last session left the caret. A note opened for the first
@@ -412,24 +434,14 @@ function initEditor() {
 			linkComplete.refresh();
 		});
 
-		// Check for unsaved local changes from previous session
-		const saved = localStorage.getItem(storageKey);
-		if (saved && saved !== serverContent) {
-			// TODO: Show UI for switching between server/local versions
-			// Currently we silently prefer server content but notify in console
-			console.log("Unsaved local changes detected for this file");
-		}
-
-		// Set initial status based on whether we have local changes
-		updateSaveStatus(saved && saved !== serverContent ? "Modified" : "Synced");
+		updateSaveStatus(hasDraft ? "Modified" : "Synced");
 
 		// Inject current editor content into the save request. Avoids hx-vals="js:...",
 		// which requires 'unsafe-eval' and is blocked by the page's Content-Security-Policy.
 		document.body.addEventListener("htmx:configRequest", function (evt) {
 			if (evt.target.id === "save-btn") {
 				evt.detail.parameters.content = getEditorContent();
-				evt.detail.parameters.lease =
-					document.getElementById("yak-lease").dataset.lease;
+				evt.detail.parameters.lease = leaseEl.dataset.lease;
 			}
 		});
 
@@ -451,15 +463,15 @@ function initEditor() {
 				if (evt.detail.successful) {
 					uploadError = false;
 					serverContent = getEditorContent();
-					document.getElementById("yak-lease").dataset.lease =
+					knownLease =
 						evt.detail.xhr.getResponseHeader("X-Yak-Lease") || "";
+					leaseEl.dataset.lease = knownLease;
 					updateSaveStatus("Saved");
 					// Auto-transition "Saved" → "Synced" after 2 seconds
 					setTimeout(() => {
 						updateSaveStatus("Synced");
 					}, SAVE_STATUS_RESET_DELAY);
-					// Clear local storage on successful save
-					localStorage.removeItem(storageKey);
+					clearDraft();
 				} else if (evt.detail.xhr.status === HTTP_CONFLICT) {
 					// The file moved under us. The draft stays in localStorage and the
 					// lease stays stale until the reader picks a side, so no second press
@@ -489,6 +501,8 @@ function initEditor() {
 		};
 
 		showConflict = (current, freshLease, message) => {
+			// Known now, so returning to the tab does not raise the same conflict again
+			knownLease = freshLease;
 			document.getElementById("conflict-note").textContent = message;
 			const rows = _lineDiff(current, getEditorContent());
 			_paintDiff(conflictDiff, rows);
@@ -500,8 +514,8 @@ function initEditor() {
 			// it landing half-done is the marker guard on the way out, not the lease.
 			document.getElementById("conflict-merge").onclick = () => {
 				const merged = _conflictMarkup(rows);
+				leaseEl.dataset.lease = freshLease;
 				_applyEdit(editor, jar, merged, merged.length);
-				document.getElementById("yak-lease").dataset.lease = freshLease;
 				closeConflict();
 				updateSaveStatus("Resolve the marked lines, then save");
 			};
@@ -509,16 +523,16 @@ function initEditor() {
 			// Taking the fresh lease is what makes this an overwrite the reader asked
 			// for rather than the blind one the lease exists to stop.
 			document.getElementById("conflict-mine").onclick = () => {
-				document.getElementById("yak-lease").dataset.lease = freshLease;
+				leaseEl.dataset.lease = freshLease;
 				closeConflict();
 				document.getElementById("save-btn").click();
 			};
 
 			document.getElementById("conflict-theirs").onclick = () => {
-				_applyEdit(editor, jar, current, current.length);
 				serverContent = current;
-				document.getElementById("yak-lease").dataset.lease = freshLease;
-				localStorage.removeItem(storageKey);
+				leaseEl.dataset.lease = freshLease;
+				_applyEdit(editor, jar, current, current.length);
+				clearDraft();
 				closeConflict();
 				updateSaveStatus("Synced");
 			};
@@ -534,6 +548,8 @@ function initEditor() {
 		// evicting the tab, and a draft recovered later is worse than one never lost.
 		window.addEventListener("beforeunload", (evt) => {
 			if (getEditorContent() === serverContent) return;
+			// nav.js is sending the reader to log in; the draft reopens after
+			if (document.documentElement.dataset.authExpired !== undefined) return;
 			evt.preventDefault();
 			// Safari still reads returnValue rather than the prevented default.
 			evt.returnValue = "";
@@ -543,10 +559,11 @@ function initEditor() {
 		jar.onUpdate((code) => {
 			// Update save status based on whether content matches server
 			if (code === serverContent) {
-				localStorage.removeItem(storageKey); // No need to persist when synced
+				clearDraft(); // No need to persist when synced
 				if (!uploadError) updateSaveStatus("Synced");
 			} else {
 				localStorage.setItem(storageKey, code); // Persist unsaved changes
+				localStorage.setItem(draftLeaseKey, leaseEl.dataset.lease);
 				if (!uploadError) updateSaveStatus("Modified");
 			}
 			// Update preview if it's visible in current view mode
@@ -554,7 +571,65 @@ function initEditor() {
 				renderPreview(code);
 			}
 			// TODO: Consider localStorage pruning strategy for old/unused entries
-			// PLANNED: Separate page to review local vs server differences
+		});
+
+		function clearDraft() {
+			localStorage.removeItem(storageKey);
+			localStorage.removeItem(draftLeaseKey);
+		}
+
+		if (draftIsStale) {
+			updateSaveStatus("Changed elsewhere");
+			showConflict(
+				serverContent,
+				knownLease,
+				"Your unsaved draft started from an older version of this note",
+			);
+		}
+
+		// Look for a change on disk (Syncthing, another device) as soon as the note
+		// opens and whenever it comes back into view, rather than at the next save.
+		// A clean editor just takes the new version; a draft opens the conflict panel.
+		const checkDisk = async () => {
+			if (!conflict.hidden) return;
+			let response;
+			try {
+				response = await fetch(
+					`/api/yak-version?yak=${encodeURIComponent(yak_path)}`,
+					{ cache: "no-store" },
+				);
+			} catch {
+				return; // Offline: the save will find out
+			}
+			const lease = response.ok && response.headers.get("X-Yak-Lease");
+			if (!lease || lease === knownLease || !conflict.hidden) return;
+			const current = await response.text();
+			if (getEditorContent() === serverContent) {
+				const caret = _getCursorPosition(editor);
+				serverContent = current;
+				knownLease = lease;
+				leaseEl.dataset.lease = lease;
+				// onUpdate sees it synced and refreshes the preview
+				jar.updateCode(current);
+				if (caret !== null) {
+					_setCursorPosition(editor, Math.min(caret, current.length));
+				}
+				updateSaveStatus("Synced");
+				return;
+			}
+			updateSaveStatus("Changed elsewhere");
+			showConflict(
+				current,
+				lease,
+				"This note changed elsewhere since you opened it",
+			);
+		};
+		checkDisk();
+		document.addEventListener("visibilitychange", () => {
+			if (document.visibilityState === "visible") checkDisk();
+		});
+		window.addEventListener("pageshow", (event) => {
+			if (event.persisted) checkDisk();
 		});
 
 		// Initialize view toggle buttons

@@ -397,6 +397,26 @@ def test_new_yak_post_no_category(client: TestClient, mock_user_session, tmp_pat
         assert "Category is required" in response.text
 
 
+@pytest.mark.parametrize(
+    ("query", "expected_status"),
+    [("yak=test.dj", HTTPStatus.OK), ("yak=missing.dj", HTTPStatus.NOT_FOUND), ("", HTTPStatus.NOT_FOUND)],
+    ids=["found", "missing", "no_yak"],
+)
+def test_yak_version_reports_the_disk_lease(
+    client: TestClient, mock_user_session, tmp_path, query, expected_status
+) -> None:
+    """An open editor learns what is on disk now, with the lease a save would need."""
+    (tmp_path / "test.dj").write_text("Changed elsewhere")
+
+    with set_yak_shears_dir(tmp_path):
+        response = client.get(f"/api/yak-version?{query}")
+
+    assert response.status_code == expected_status
+    if expected_status == HTTPStatus.OK:
+        assert response.text == "Changed elsewhere"
+        assert response.headers["X-Yak-Lease"] == yak_lease("Changed elsewhere")
+
+
 def test_yak_preview(client: TestClient, mock_user_session) -> None:
     """Test the yak preview endpoint."""
     with set_yak_shears_dir(MOCK_YAK_DIR):

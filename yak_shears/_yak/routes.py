@@ -24,6 +24,7 @@ from .handlers import (
     settings_handler,
     thumb_file_handler,
     yak_preview_handler,
+    yak_version_handler,
     yaks_handler,
 )
 
@@ -45,6 +46,7 @@ ROUTES = [
     Route("/doctor/fix-filenames", endpoint=doctor_fix_filenames_handler, methods=["POST"]),
     Route("/api/links", endpoint=link_candidates_handler),
     Route("/api/yak-preview", endpoint=yak_preview_handler),
+    Route("/api/yak-version", endpoint=yak_version_handler),
     Route("/media/upload", endpoint=media_upload_handler, methods=["POST"]),
     Route("/media/{category}/{filename}", endpoint=media_file_handler),
     Route("/thumb/{category}/{filename}", endpoint=thumb_file_handler),

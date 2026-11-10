@@ -556,36 +556,106 @@ async def test_wrap_toggle_rewraps_editor_code_block(context: BrowserContext, pa
 # ============================================================================
 
 
-@pytest.mark.skip(reason="Pending editor.js/main.css wiring for #draft-toggle; see PLAN.md draft recovery item")
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_draft_toggle_recovers_local_changes(context: BrowserContext, page: Page, server_lifecycle):
-    """Draft bar appears for unsaved localStorage changes and swaps versions losslessly."""
+@pytest.mark.parametrize(
+    ("same_version", "conflict_shown"),
+    [(True, False), (False, True)],
+    ids=["current-version-restores", "older-version-conflicts"],
+)
+async def test_reopening_with_a_draft(
+    context: BrowserContext, page: Page, server_lifecycle, *, same_version, conflict_shown
+):
+    """A draft survives a lost session; one from an older version is a conflict, raised on open."""
     editor = await _open_editor(context, page)
-    toggle = page.locator("#draft-toggle")
-    await expect(toggle).to_be_hidden()
-
-    server_content = await editor.text_content()
-    assert server_content is not None
-    draft = server_content + "\nlocal draft line"
-    await page.evaluate("(draft) => localStorage.setItem('editor_yak1.dj', draft)", draft)
+    lease = await page.evaluate('() => document.getElementById("yak-lease").dataset.lease')
+    await page.evaluate(
+        "([lease]) => { localStorage.setItem('editor_yak1.dj', 'local draft line');"
+        " localStorage.setItem('editor_lease_yak1.dj', lease); }",
+        [lease if same_version else "0000000000000000"],
+    )
 
     await page.reload()
-    await expect(editor).to_be_editable()
-    await expect(toggle).to_be_visible()
-    await expect(editor).not_to_contain_text("local draft line")
 
-    await page.locator("#draft-local-btn").click()
     await expect(editor).to_contain_text("local draft line")
-    await expect(page.locator("#save-status")).to_contain_text("Modified")
+    if conflict_shown:
+        await expect(page.locator("#conflict")).to_be_visible()
+    else:
+        await expect(page.locator("#save-status")).to_have_text("Modified")
+    await page.evaluate("() => localStorage.clear()")
 
-    await page.locator("#draft-server-btn").click()
-    await expect(editor).not_to_contain_text("local draft line")
 
-    # Previewing the server version must not delete the stored draft
-    stored = await page.evaluate("() => localStorage.getItem('editor_yak1.dj')")
-    assert stored == draft
-    await page.evaluate("() => localStorage.removeItem('editor_yak1.dj')")
+@pytest.mark.allow_console_errors
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_a_save_after_the_session_ends_returns_to_the_note(context: BrowserContext, page: Page, server_lifecycle):
+    """Logging back in reopens the same note with the unsaved draft, rather than losing the path."""
+    editor = await _open_editor(context, page)
+    await _fill_editor(page=page, fill="written while logged out")
+    await context.clear_cookies()
+
+    await page.click("#save-btn")
+
+    await page.wait_for_url("**/auth/login?redirect=**")
+    await page.fill("input[name='email']", "test@example.com")
+    await page.fill("input[name='password']", "secure123")
+    await page.click("button[type='submit']")
+    await page.wait_for_url("**/edit?yak=yak1.dj")
+    await expect(editor).to_contain_text("written while logged out")
+    await page.evaluate("() => localStorage.clear()")
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_a_resumed_page_with_an_ended_session_goes_to_login(
+    context: BrowserContext, page: Page, server_lifecycle
+):
+    """A homescreen app resumes without reloading, so the session is checked on the way back."""
+    await _open_editor(context, page)
+    await context.clear_cookies()
+
+    await page.evaluate("() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))")
+
+    await page.wait_for_url("**/auth/login?redirect=%2Fedit%3Fyak%3Dyak1.dj")
+
+
+@pytest.mark.allow_console_errors
+@pytest.mark.playwright
+@pytest.mark.asyncio
+@pytest.mark.parametrize("edited", [False, True], ids=["clean-takes-it", "draft-conflicts"])
+async def test_a_change_on_disk_is_noticed_before_saving(
+    context: BrowserContext, page: Page, server_lifecycle, *, edited
+):
+    """The disk version is checked when the page returns, without writing to the fixture vault."""
+    editor = await _open_editor(context, page)
+    if edited:
+        await _fill_editor(page=page, fill="my edit")
+
+    async def changed(route):
+        await route.fulfill(status=200, body="from another device", headers={"X-Yak-Lease": "ffffffffffffffff"})
+
+    await page.route("**/api/yak-version*", changed)
+    await page.evaluate("() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))")
+
+    if edited:
+        await expect(page.locator("#conflict")).to_be_visible()
+    else:
+        await expect(editor).to_have_text("from another device")
+        await expect(page.locator("#save-status")).to_have_text("Synced")
+
+
+@pytest.mark.playwright
+@pytest.mark.asyncio
+async def test_merge_markers_are_highlighted(context: BrowserContext, page: Page, server_lifecycle):
+    """Markers left by resolving by hand stand out in red until removed."""
+    await _open_editor(context, page)
+
+    await page.evaluate("() => window.jar.updateCode('a\\n<<<<<<< on disk\\nx\\n=======\\ny\\n>>>>>>> my draft')")
+
+    markers = page.locator(".editor .conflict-marker")
+    await expect(markers).to_have_count(3)
+    await expect(markers.first).to_have_css("color", "rgb(255, 92, 71)")
+    await page.evaluate("() => localStorage.clear()")
 
 
 # ============================================================================
@@ -935,12 +1005,11 @@ _READ_CARET = """() => {
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_caret_offset_of_a_boundary_child_without_text(
-    context: BrowserContext, page: Page, server_lifecycle
-):
+async def test_caret_offset_of_a_boundary_child_without_text(context: BrowserContext, page: Page, server_lifecycle):
     """A caret can sit ahead of a child that holds no text, such as a `br` the
     browser leaves on a line the reader emptied. Counting only the text ahead of
-    it must still give that position, not the end of the document."""
+    it must still give that position, not the end of the document.
+    """
     await _open_editor(context, page)
 
     offsets = await page.evaluate(

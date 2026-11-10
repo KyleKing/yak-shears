@@ -267,6 +267,21 @@ async def edit_yak_handler(request: Request) -> Response:
         return render_error(f"An error occurred: {exc!s}", status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
+async def yak_version_handler(request: Request) -> Response:
+    """Report what is on disk for a yak, so an open editor can spot a change before saving.
+
+    Returns:
+        The yak's content with its lease in `X-Yak-Lease`, or 404.
+    """
+    yak_dir = await get_yak_dir()
+    yak_path_str = await extract_yak_path(request)
+    try:
+        content, _ = await read_yak(yak_dir, yak_path_str or "")
+    except (FileNotFoundError, YakPathError):
+        return PlainTextResponse("Yak not found", status_code=HTTPStatus.NOT_FOUND)
+    return PlainTextResponse(content, headers={"X-Yak-Lease": yak_lease(content)})
+
+
 async def search_handler(request: Request) -> Response:
     """Handle requests to /search."""
     query = request.query_params.get("query", "").strip()
