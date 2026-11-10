@@ -71,3 +71,65 @@ if (navMenu) {
 		}
 	});
 }
+
+// A homescreen app resumes where it was left instead of reloading, so the server
+// never gets to say the session ended. The page is covered as soon as it hides,
+// and uncovered on return only once the session checks out, so a stale session
+// never shows notes. A short absence uncovers at once and checks behind it.
+const AUTH_COVER_AFTER_MS = 60 * 1000;
+const root = document.documentElement;
+let hiddenAt = null;
+
+function goToLogin() {
+	const here = window.location.pathname + window.location.search;
+	// Read by editor.js, whose leave-page prompt would otherwise block the redirect.
+	// The draft is already in localStorage and reopens after login.
+	root.dataset.authExpired = "";
+	window.location.replace(`/auth/login?redirect=${encodeURIComponent(here)}`);
+}
+
+async function checkSession() {
+	try {
+		const response = await fetch("/api/session", {
+			cache: "no-store",
+			redirect: "manual",
+		});
+		if (response.type === "opaqueredirect" || response.status === 401) {
+			goToLogin();
+			return;
+		}
+	} catch {
+		// Offline. The page is already here, and locking the reader out of a draft
+		// they cannot save anyway helps no one.
+	}
+	root.classList.remove("is-auth-pending");
+}
+
+if (!window.location.pathname.startsWith("/auth/")) {
+	document.addEventListener("visibilitychange", () => {
+		if (document.visibilityState === "hidden") {
+			hiddenAt = Date.now();
+			root.classList.add("is-auth-pending");
+			return;
+		}
+		if (hiddenAt !== null && Date.now() - hiddenAt < AUTH_COVER_AFTER_MS) {
+			root.classList.remove("is-auth-pending");
+		}
+		hiddenAt = null;
+		checkSession();
+	});
+
+	// Restored from the back-forward cache, which no-store should prevent but
+	// is not guaranteed to on every browser.
+	window.addEventListener("pageshow", (event) => {
+		if (!event.persisted) return;
+		root.classList.add("is-auth-pending");
+		checkSession();
+	});
+
+	// A save or search made after the session ended gets a 401 with HX-Redirect,
+	// which htmx follows. Flag it first so nothing prompts on the way out.
+	document.body.addEventListener("htmx:beforeOnLoad", (event) => {
+		if (event.detail.xhr.status === 401) root.dataset.authExpired = "";
+	});
+}

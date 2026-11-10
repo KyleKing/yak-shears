@@ -44,36 +44,9 @@ Verified defects and hardening, safe to do in parallel with Phase 1. The link-de
 - Narrow swallowed exceptions in `get_frontmatter`, `get_backlinks`, `check_tables_exist`, `ensure_search_index_updated`, `_create_search_result` so corruption is distinguishable from empty results. `check_tables_exist` returning False on a DuckDB lock conflict is the sharp edge: `ensure_search_db_ready` reads it as corruption and unlinks the index, so any second process running while another holds the index open pays a full rebuild (reproduced 2026-09-02, 600 ms over 150 notes). This blocks the agent-facing search CLI below.
 - Lower priority: raise PBKDF2 iterations toward ~600k or move to argon2id; dummy-hash unknown emails in `authenticate_user` to close timing-based user enumeration.
 
-### Editor draft recovery (UI wiring pending)
+### Editor draft recovery (shipped)
 
-Migrated from the stale `yak-shears-py` checkout (its commit `4b06c6a`). The edit page currently discards unsaved localStorage drafts silently (the old `TODO: Show UI for switching between server/local versions` in `editor.js:initEditor`). The template bar (`#draft-toggle` in `edit.html.jinja`, rendered `hidden`) and a skipped e2e test (`test_draft_toggle_recovers_local_changes`) are already committed; the JS/CSS could not land because `static/` was being reworked at migration time. To finish:
-
-- In `initEditor`, replace the `console.log` in the `saved && saved !== serverContent` branch with `_setupDraftToggle(saved, serverContent)`, and hide the bar again on successful save (next to `localStorage.removeItem(storageKey)`)
-- Add the helper (switching uses `jar.updateCode()`, which does not fire `jar.onUpdate()`, so previewing the server version never deletes the stored draft):
-
-```js
-function _setupDraftToggle(saved, serverContent) {
-	const serverBtn = document.getElementById("draft-server-btn");
-	const localBtn = document.getElementById("draft-local-btn");
-	document.getElementById("draft-toggle").hidden = false;
-
-	const applyVersion = (content, activeBtn, otherBtn) => {
-		jar.updateCode(content);
-		activeBtn.classList.add("active");
-		otherBtn.classList.remove("active");
-		updateSaveStatus(content === serverContent ? "Synced" : "Modified");
-		if (currentView === "side-by-side" || currentView === "preview") {
-			renderPreview(content);
-		}
-	};
-
-	serverBtn.addEventListener("click", () => applyVersion(serverContent, serverBtn, localBtn));
-	localBtn.addEventListener("click", () => applyVersion(saved, localBtn, serverBtn));
-}
-```
-
-- CSS: style `.draft-toggle` like the `.view-toggle` group (surface-alt buttons, accent `.active`), constrained to the editor's 1200px column; include a `.draft-toggle[hidden] { display: none; }` rule since any `display: flex` on the class would defeat the `hidden` attribute
-- Unskip `test_draft_toggle_recovers_local_changes`; done when it passes
+Superseded the planned server/local toggle bar. A localStorage draft records the lease it was written against (`editor_lease_<path>`). On open, a draft from the current version reopens in place; one from an older version opens the conflict panel with its stale lease kept, so no save lands until the reader picks a side. The editor also asks `/api/yak-version` on open and whenever the page returns to view, so a change on disk shows up before the next save. A session that ends mid-edit returns the reader to the same note (the login redirect keeps the query string, and htmx saves get a 401 with `HX-Redirect`), and `nav.js` covers a resumed page until `/api/session` confirms the session is live.
 
 ## Phase 3: Link intelligence and related notes
 

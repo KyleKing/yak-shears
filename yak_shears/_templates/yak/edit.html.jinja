@@ -38,14 +38,6 @@ current_route: str
 
   <div class="editor-layout">
     <div class="editor-main">
-      {# Draft recovery bar - unhidden by editor.js:_setupDraftToggle() when
-         localStorage holds unsaved changes that differ from the server version #}
-      <div class="draft-toggle" id="draft-toggle" hidden>
-        <span class="draft-toggle__label">unsaved local changes</span>
-        <button class="button button--sm active" type="button" id="draft-server-btn">server</button>
-        <button class="button button--sm" type="button" id="draft-local-btn">local</button>
-      </div>
-
       {# The note's identity used to live only inside the metadata panel, which
          ships closed, so the editor gave no sign of which yak was open. This
          plate is always visible. #}
@@ -126,8 +118,9 @@ current_route: str
         </div>
       </div>
 
-      {# Conflict panel. Shown only when a save is refused, because the note changed
-         under the editor. Unhidden by editor.js:_showConflict(). #}
+      {# Conflict panel. Shown when the note changed under the editor: on a refused
+         save, on opening with a draft written against an older version, or when
+         editor.js sees the disk version move. Unhidden by editor.js:showConflict(). #}
       <div class="conflict" id="conflict" role="dialog" aria-modal="true" aria-labelledby="conflict-title" hidden>
         <div class="conflict__pane">
           <h2 class="conflict__title" id="conflict-title">This note changed elsewhere</h2>

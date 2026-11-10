@@ -113,6 +113,12 @@ function highlight(editor) {
 				break;
 		}
 	}
+	// Merge markers left by "Resolve by hand" in editor.js. Added after the djot
+	// events so a `>>>>>>>` line, which djot reads as a block quote, nests inside it.
+	for (const marker of src.matchAll(/^(?:<{7}|={7}|>{7}).*$/gm)) {
+		add(opens, marker.index, '<span class="conflict-marker">');
+		add(closes, marker.index + marker[0].length - 1, "</span>");
+	}
 	for (const k in closes) closes[k].reverse();
 
 	let out = "";

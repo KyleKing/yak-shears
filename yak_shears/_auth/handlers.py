@@ -52,9 +52,9 @@ async def login_handler(request: Request) -> Response:
     """
     # Starlette routes HEAD to the GET endpoint rather than answering it itself
     if request.method in {"GET", "HEAD"}:
-        if user := get_user_from_session(request):
-            return RedirectResponse(url=DEFAULT_REDIRECT)
         redirect_path = request.query_params.get("redirect")
+        if get_user_from_session(request):
+            return RedirectResponse(url=_validate_redirect_path(redirect_path or DEFAULT_REDIRECT))
         return _render_login(redirect=redirect_path)
 
     if request.method == "POST":
@@ -133,6 +133,19 @@ async def status_handler(request: Request) -> JSONResponse:  # noqa: RUF029
     if user := get_user_from_session(request):
         return JSONResponse({"authenticated": True, "email": user["email"], "displayName": user["display_name"]})
     return JSONResponse({"authenticated": False})
+
+
+async def session_check_handler(request: Request) -> Response:  # noqa: RUF029
+    """Answer 204 for a live session.
+
+    It sits behind the auth middleware rather than reading the cookie itself, so
+    a page resumed after the session ended gets the same redirect any other
+    request would, and with auth turned off for development it always passes.
+
+    Returns:
+        Response: Empty 204
+    """
+    return Response(status_code=HTTPStatus.NO_CONTENT)
 
 
 def get_user_from_session(request: Request) -> User | None:

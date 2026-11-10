@@ -9,17 +9,6 @@
     </div>
     <div class="editor-layout">
      <div class="editor-main">
-      <div class="draft-toggle" hidden="" id="draft-toggle">
-       <span class="draft-toggle__label">
-        unsaved local changes
-       </span>
-       <button class="button button--sm active" id="draft-server-btn" type="button">
-        server
-       </button>
-       <button class="button button--sm" id="draft-local-btn" type="button">
-        local
-       </button>
-      </div>
       <div class="editor-head" style="--head-accent: var(--color-border)">
        <span aria-hidden="true" class="editor-head__cap">
        </span>

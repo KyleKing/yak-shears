@@ -274,6 +274,11 @@ p {
 	flex: 1;
 }
 
+/* Set by nav.js while a resumed page waits to hear the session is still live. */
+.is-auth-pending .layout__inner {
+	visibility: hidden;
+}
+
 /* Content clears the header groove on every page. The editor is the exception:
    it is a full-height chassis that measures itself from --header-height and
    would be pushed past the viewport by any padding here. */
@@ -1986,6 +1991,12 @@ pre code {
 }
 .editor .checkbox.unchecked {
 	color: var(--color-text-dim);
+}
+/* Unresolved merge markers are a fault the save guard will stop on, so they
+   read as one before the reader presses save. */
+.editor .conflict-marker {
+	color: var(--color-danger);
+	font-weight: 700;
 }
 
 .page-info {
