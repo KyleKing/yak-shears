@@ -386,8 +386,12 @@ async def save_yak(yak_dir: Path, relative_path: str, content: str, expected_lea
     return yak_lease(content)
 
 
-async def delete_yak(yak_dir: Path, relative_path: str) -> None:
+async def delete_yak(yak_dir: Path, relative_path: str, expected_lease: str | None = None) -> None:
     """Delete a yak file.
+
+    Passing expected_lease refuses the delete with `read_leased`'s StaleYakError
+    when the file changed since the caller last saw it, so an offline client
+    cannot discard an edit it never read.
 
     Raises:
         FileNotFoundError: If yak doesn't exist
@@ -397,6 +401,8 @@ async def delete_yak(yak_dir: Path, relative_path: str) -> None:
         msg = f"Yak not found: {yak_path}"
         raise FileNotFoundError(msg)
 
+    if expected_lease is not None:
+        await read_leased(yak_path, expected_lease)
     await yak_path.unlink()
 
 
@@ -532,14 +538,16 @@ def highlight_content(content: str, query: str) -> str:
         merged: list[tuple[int, int, str]] = []
         for start, end, text in matches:
             if merged and start < merged[-1][1]:
-                merged[-1] = (merged[-1][0], max(end, merged[-1][1]), line[merged[-1][0]:max(end, merged[-1][1])])
+                merged[-1] = (merged[-1][0], max(end, merged[-1][1]), line[merged[-1][0] : max(end, merged[-1][1])])
             else:
                 merged.append((start, end, text))
 
         result: list[str] = []
         last_end = 0
         for start, end, text in merged:
-            result.extend((html.escape(line[last_end:start]), f'<span class="search-highlight">{html.escape(text)}</span>'))
+            result.extend(
+                (html.escape(line[last_end:start]), f'<span class="search-highlight">{html.escape(text)}</span>')
+            )
             last_end = end
         result.append(html.escape(line[last_end:]))
 

@@ -135,8 +135,23 @@ async def status_handler(request: Request) -> JSONResponse:  # noqa: RUF029
     return JSONResponse({"authenticated": False})
 
 
+def request_token(request: Request) -> str | None:
+    """Read the credential a request carries: a bearer token, else the session cookie.
+
+    Returns:
+        The raw token, or None when the request carries neither.
+    """
+    scheme, _, credentials = request.headers.get("Authorization", "").partition(" ")
+    if scheme.lower() == "bearer" and credentials.strip():
+        return credentials.strip()
+    return request.cookies.get("session_id")
+
+
 def get_user_from_session(request: Request) -> User | None:
-    """Get user from session cookie.
+    """Get the user behind the request's bearer token or session cookie.
+
+    Both are the same signed token, so a native client's `Authorization: Bearer`
+    header and a browser's cookie authorize through one check.
 
     Args:
         request: The incoming request
@@ -144,6 +159,6 @@ def get_user_from_session(request: Request) -> User | None:
     Returns:
         User | None: The authenticated user or None
     """
-    if (session_id := request.cookies.get("session_id")) and (user_id := storage.get_user_id_from_session(session_id)):
+    if (session_id := request_token(request)) and (user_id := storage.get_user_id_from_session(session_id)):
         return storage.get_user_by_id(user_id)
     return None

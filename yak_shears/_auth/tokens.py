@@ -21,6 +21,9 @@ DEFAULT_SECRET_PATH = Path(__file__).parents[1] / ".yak-shears-secret"
 DEFAULT_REVOCATION_PATH = Path(__file__).parents[1] / ".yak-shears-revoked.json"
 
 SESSION_TTL_SECONDS = int(getenv("YAK_SHEARS_SESSION_DAYS") or 30) * 86400
+# A native client signs in once and then syncs in the background for months, so its
+# bearer token outlives a browser session. Revoke one with DELETE /api/v1/token.
+API_TOKEN_TTL_SECONDS = int(getenv("YAK_SHEARS_API_TOKEN_DAYS") or 365) * 86400
 
 
 def _b64encode(raw: bytes) -> str:

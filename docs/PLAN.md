@@ -135,6 +135,27 @@ Design stance from the competitive research (folded from `NEXT_FEATURES.md`): **
 
 - A note references an external item in frontmatter (`linear: ENG-123`, `github: owner/repo#45`), rendered as a badge/link. Optional read-only status enrichment much later. Never two-way sync: it breaks file-first and no-lock-in, needs secrets on the VPS, and is a maintenance tax as those APIs change.
 
+## Native iOS and macOS app (2026-11)
+
+Startup latency and iOS integrations drove the move past the homescreen web app (ADR 0009 left offline open; this settles it). Decided in conversation rather than an ADR:
+
+- One SwiftUI project, iOS and macOS targets. Notes live as plain `.dj` files in the app's container, so launch reads local disk and works offline
+- Sync over HTTPS with a bearer token against `/api/v1` (see AGENTS.md "Sync API"). The server stays the single writer to the Syncthing vault; conflicts reuse the lease and the hand-resolution markers. Reading a Syncthing folder on iOS directly was rejected because it depends on a third-party app and iOS background limits
+- Native TextKit 2 editor with a line-level Swift tokenizer for highlighting and list editing; preview renders through the JS renderer in JavaScriptCore. The web keeps CodeJar with targeted UX fixes
+- Integrations: App Intents (New Yak, Append, Search, Siri quick note, Action Button), share extension, widget and quick actions, Spotlight, and screenshot-to-yak (import from a recent-screenshots picker or a Shortcut, OCR with Vision, then delete the photo; iOS always confirms the delete)
+- Distribution through TestFlight, uploaded from macOS CI
+- Djot vs Carve is undecided and only blocks the editor tokenizer. Sync, the list, and the integrations treat notes as opaque text
+
+Delivered as stacked PRs, each reviewable on its own:
+
+1. Server sync API and bearer tokens (`claude/ios-01-sync-api`)
+2. Xcode project skeleton: native list over local files, macOS CI building and uploading to TestFlight
+3. Swift sync engine against `/api/v1`, with conflict handling
+4. Plain native editor with save and offline editing end to end
+5. Editor behaviour: list continuation, indent, bold and italic, accessory bar, `[[` completion (needs the markup decision)
+6. Integrations, one PR each
+7. Web editor UX fixes, independent of the stack
+
 ## Opportunistic infrastructure
 
 Lower priority per the 2026-07-06 product-first decision. Do these between product phases; none blocks the product work except where noted.
