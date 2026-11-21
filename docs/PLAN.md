@@ -151,7 +151,7 @@ Delivered as stacked PRs, each reviewable on its own:
 1. Server sync API and bearer tokens (`claude/ios-01-sync-api`)
 2. Xcode project skeleton: native list over local files, macOS CI building and uploading to TestFlight (`claude/ios-02-xcode-skeleton`). XcodeGen spec, iOS 26 / macOS 26, bundle ID `me.kyleking.yakshears`
 3. Swift sync engine against `/api/v1`, with conflict handling, plus sign-in and sync in the app (`claude/ios-03-sync-engine`)
-4. Plain native editor with save and offline editing end to end
+4. Plain native editor with save and offline editing end to end (`claude/ios-04-native-editor`)
 5. Editor behaviour: list continuation, indent, bold and italic, accessory bar, `[[` completion (needs the markup decision)
 6. Integrations, one PR each
 7. Web editor UX fixes, independent of the stack

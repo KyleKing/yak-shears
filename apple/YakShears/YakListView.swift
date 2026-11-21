@@ -1,8 +1,8 @@
 import SwiftUI
 import YakShearsKit
 
-/// Every yak in the local vault, newest first, with the selected one beside it on
-/// wide screens and pushed on top of it on a phone.
+/// Every yak in the local vault, newest first, with the selected one open in the
+/// editor beside it on wide screens and pushed on top of it on a phone.
 ///
 /// The list draws from local files first and syncs after, so launch never waits on
 /// the network.
@@ -15,17 +15,28 @@ struct YakListView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(library.summaries, selection: $selection) { summary in
-                YakRow(summary: summary, isUnresolved: library.unresolved.contains(summary.path))
+            List(selection: $selection) {
+                ForEach(library.summaries) { summary in
+                    YakRow(summary: summary, isUnresolved: library.unresolved.contains(summary.path))
+                }
+                .onDelete { offsets in
+                    for summary in offsets.map({ library.summaries[$0] }) {
+                        library.delete(summary)
+                    }
+                    library.requestSync(with: account)
+                }
             }
             .navigationTitle("Yaks")
             .overlay { emptyState }
             .refreshable { await refresh() }
             .safeAreaInset(edge: .bottom) { SyncStatusLine(status: library.syncStatus) }
-            .toolbar { accountMenu }
+            .toolbar {
+                newYakMenu
+                accountMenu
+            }
         } detail: {
             if let summary = library.summaries.first(where: { $0.id == selection }) {
-                YakDetailView(summary: summary)
+                YakEditorView(summary: summary)
             } else {
                 ContentUnavailableView("No Yak Selected", systemImage: "doc.text")
             }
@@ -49,6 +60,29 @@ struct YakListView: View {
             await library.sync(with: account)
         } else {
             await library.reload()
+        }
+    }
+
+    /// New yaks go into a category, as on the web's /new picker, or the vault root.
+    @ToolbarContentBuilder private var newYakMenu: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Menu {
+                ForEach(library.categories, id: \.self) { category in
+                    Button(category) { create(in: category) }
+                }
+                Divider()
+                Button("No Category") { create(in: nil) }
+            } label: {
+                Label("New Yak", systemImage: "square.and.pencil")
+            }
+        }
+    }
+
+    private func create(in category: String?) {
+        Task {
+            if let path = await library.createYak(in: category) {
+                selection = path
+            }
         }
     }
 

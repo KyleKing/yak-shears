@@ -64,6 +64,44 @@ import Testing
         #expect(try vault.read("notes/2026-07-22T14_03_51Z.dj") == "# Newest")
     }
 
+    @Test func createdYaksAreCanonicalAndNeverCollide() throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let vault = Vault(root: root)
+        let instant = try #require(CanonicalName.date(from: "2026-11-21T09_15_00Z"))
+
+        let first = try vault.create(in: "notes", at: instant)
+        let second = try vault.create(in: "notes", at: instant)
+        let rooted = try vault.create(in: nil, at: instant)
+
+        #expect(first == "notes/2026-11-21T09_15_00Z.dj")
+        #expect(second == "notes/2026-11-21T09_15_01Z.dj")
+        #expect(rooted == "2026-11-21T09_15_00Z.dj")
+        #expect(try vault.read(first).isEmpty)
+    }
+
+    @Test(arguments: [
+        // (on disk when the editor saves, expected on disk after)
+        ("opened", "edited"),
+        ("synced in", "\(ConflictMarkup.open)\nsynced in\n\(ConflictMarkup.split)\nedited\n\(ConflictMarkup.close)"),
+        (nil, "edited"),
+    ] as [(String?, String)])
+    func saveNeverOverwritesAChangeMadeUnderneath(onDisk: String?, expected: String) throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let vault = Vault(root: root)
+        let path = "notes/2026-11-21T09_15_00Z.dj"
+        if let onDisk {
+            try vault.write(path, content: onDisk)
+        }
+
+        let saved = try vault.save(path, content: "edited", replacing: Lease.of("opened"))
+
+        #expect(saved.content == expected)
+        #expect(saved.lease == Lease.of(expected))
+        #expect(try vault.read(path) == expected)
+    }
+
     @Test func missingRootListsNothing() throws {
         let vault = Vault(root: FileManager.default.temporaryDirectory.appending(path: UUID().uuidString))
         #expect(try vault.summaries().isEmpty)

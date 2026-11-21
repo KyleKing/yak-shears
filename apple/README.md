@@ -41,6 +41,8 @@ To sync against a server on your laptop, run `uv run serve --host 0.0.0.0` and s
 | deleted     | edited    | download, because an edit beats a delete                      |
 | edited      | deleted   | re-create, because an edit beats a delete                     |
 
+The editor saves to the local vault as you type, half a second after the last keystroke, and requests a sync a few seconds after that. A save also names the lease it started from (`Vault.save`), so a sync that rewrote the open yak gets woven in with markers rather than overwritten.
+
 A yak with conflict markers is never uploaded. Once the markers are removed, it uploads as an ordinary edit. The rules are in `SyncPlan.swift`, and `SyncTests.swift` covers every row.
 
 The integration tests run two simulated devices against the real server:
