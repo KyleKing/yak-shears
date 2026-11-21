@@ -42,6 +42,7 @@ struct YakListView: View {
             }
         }
         .task {
+            library.drainInbox()
             await library.reload()
             await library.sync(with: account)
         }
@@ -55,6 +56,7 @@ struct YakListView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
+                library.drainInbox()
                 Task { await library.sync(with: account) }
             }
         }

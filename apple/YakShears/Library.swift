@@ -35,6 +35,16 @@ final class Library {
         self.vault = vault
     }
 
+    /// File what extensions captured while the app was away. Shared items land in
+    /// the vault root, named for when they were shared.
+    func drainInbox() {
+        do {
+            try AppGroup.inbox?.drain(into: vault, category: nil)
+        } catch {
+            loadError = error.localizedDescription
+        }
+    }
+
     func reload() async {
         let vault = vault
         do {
