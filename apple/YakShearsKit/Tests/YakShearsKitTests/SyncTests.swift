@@ -77,3 +77,30 @@ import Testing
         #expect(plan == (expected.map { [$0] } ?? []))
     }
 }
+
+@Suite struct InboxTests {
+    @Test func capturesMoveIntoTheVaultUnderTheirCaptureTime() throws {
+        let scratch = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: scratch) }
+        let inbox = Inbox(root: scratch.appending(path: "Inbox"))
+        let vault = Vault(root: scratch.appending(path: "Vault"))
+        let instant = try #require(CanonicalName.date(from: "2026-11-21T09_15_00Z"))
+        try inbox.add("first", at: instant)
+        try inbox.add("same second", at: instant)
+
+        let paths = try inbox.drain(into: vault, category: "inbox")
+
+        #expect(paths == ["inbox/2026-11-21T09_15_00Z.dj", "inbox/2026-11-21T09_15_01Z.dj"])
+        #expect(try vault.read(paths[1]) == "same second\n")
+        #expect(try inbox.drain(into: vault, category: "inbox").isEmpty)
+    }
+
+    @Test(arguments: [
+        ("", "https://example.com/a", "A [bracketed] title", "[A \\[bracketed\\] title](https://example.com/a)"),
+        ("  read later \n", "https://example.com/a", nil, "read later\n\n<https://example.com/a>"),
+        ("just text", nil, nil, "just text"),
+    ] as [(String, String?, String?, String)])
+    func sharedPagesBecomeDjotLinks(note: String, url: String?, title: String?, expected: String) {
+        #expect(SharedContent.compose(note: note, url: url.flatMap(URL.init(string:)), title: title) == expected)
+    }
+}

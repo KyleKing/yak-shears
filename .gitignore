@@ -210,3 +210,4 @@ apple/YakShearsKit/.build/
 apple/YakShearsKit/.swiftpm/
 xcuserdata/
 *.xcarchive
+apple/YakShearsShare/Info.plist

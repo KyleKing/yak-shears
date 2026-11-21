@@ -32,8 +32,11 @@ targets:
       - path: YakShears
         excludes:
           - "*.entitlements"
+      - path: Shared
     dependencies:
       - package: YakShearsKit
+      - target: YakShearsShare
+        destinationFilters: [iOS]
     info:
       path: YakShears/Info.plist
       properties:
@@ -56,7 +59,41 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS[sdk=macosx*]: YakShears/YakShears-macOS.entitlements
+        CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]: YakShears/YakShears-iOS.entitlements
+        CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]: YakShears/YakShears-iOS.entitlements
         ENABLE_HARDENED_RUNTIME[sdk=macosx*]: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+
+  # Share sheet: queues text and links in the App Group inbox for the app to file.
+  YakShearsShare:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: YakShearsShare
+        excludes:
+          - "*.entitlements"
+      - path: Shared
+    dependencies:
+      - package: YakShearsKit
+    info:
+      path: YakShearsShare/Info.plist
+      properties:
+        CFBundleDisplayName: Yak Shears
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsText: true
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.kyleking.yakshears.share
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: YakShearsShare/YakShearsShare.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"
 
 schemes:

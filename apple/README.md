@@ -8,7 +8,9 @@ A native client that keeps its own copy of the vault as plain `.dj` files and sy
 apple/
 ├── project.yml        # XcodeGen spec; the .xcodeproj is generated, never committed
 ├── ExportOptions.plist# TestFlight upload settings used by CI
+├── Shared/           # Source compiled into the app and its extensions (App Group)
 ├── YakShears/         # SwiftUI app (iOS 26, macOS 26)
+├── YakShearsShare/    # iOS share extension
 └── YakShearsKit/      # Swift package with the logic, no SwiftUI, tested on Linux and macOS
 ```
 
@@ -68,6 +70,14 @@ App Intents in `YakShears/Intents/` need no setup; Siri and Shortcuts find them 
 For one press from the lock screen to typing, set the Action Button (Settings › Action Button › Shortcut) to **Start a Yak**. For capture without looking, set it to **New Yak**, which asks for dictation.
 
 The intents share the app's `Library.shared` and `Account.shared`, so a sync an intent starts can never overlap the app's own.
+
+## Share sheet
+
+`YakShearsShare` is an iOS share extension for text and web links. Use it from Safari or any app's share sheet, add a note, and tap Save. The extension can't reach the app's vault, so it writes a finished `.dj` file into an **inbox** in the App Group container (`group.me.kyleking.yakshears`, see `Shared/AppGroup.swift`). The app files everything in the inbox into the vault root whenever it becomes active, then syncs. Sharing works offline and never waits on the network.
+
+A link becomes `[page title](url)` under your note. Images aren't accepted yet; they need attachment sync, which comes with screenshot-to-yak.
+
+The App Group and the extension's bundle ID (`me.kyleking.yakshears.share`) are registered automatically by the TestFlight job's cloud signing. When running from Xcode, pick your team on both targets.
 
 ## CI and TestFlight
 
