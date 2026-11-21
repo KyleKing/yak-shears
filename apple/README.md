@@ -1,6 +1,6 @@
 # Yak Shears for iOS and macOS
 
-A native client that keeps its own copy of the vault as plain `.dj` files and, from a later PR in the stack, syncs it with the server over `/api/v1` (see the "Sync API" section of `AGENTS.md`). The plan and the order of the stacked PRs are in `docs/PLAN.md` under "Native iOS and macOS app".
+A native client that keeps its own copy of the vault as plain `.dj` files and syncs it with the server over `/api/v1` (see the "Sync API" section of `AGENTS.md`). The plan and the order of the stacked PRs are in `docs/PLAN.md` under "Native iOS and macOS app".
 
 ## Layout
 
@@ -25,11 +25,36 @@ swift test --package-path apple/YakShearsKit
 
 Re-run `xcodegen generate` after adding or removing files, or after editing `project.yml`.
 
-Until sync lands, the app reads whatever is in its `Vault` folder. On iPhone that folder appears in the Files app under On My iPhone › Yak Shears › Vault, so you can copy notes in from the Syncthing folder to try the list.
+The `Vault` folder also appears in the Files app under On My iPhone › Yak Shears › Vault.
+
+To sync against a server on your laptop, run `uv run serve --host 0.0.0.0` and sign in from the phone with `http://<laptop-ip>:8080`. The app allows plain HTTP to local addresses only (`NSAllowsLocalNetworking`).
+
+## Sync
+
+`SyncEngine` keeps one piece of state besides the files: each yak's lease as of the last sync (the *base*), in `Application Support/sync-base-<host>.json`. A lease is a pure function of the text (`Lease.swift` mirrors the server's `yak_lease`), so comparing the file's lease and the server's to the base says which side changed:
+
+| This device | Server    | Result                                                        |
+| ----------- | --------- | ------------------------------------------------------------- |
+| unchanged   | edited    | download                                                      |
+| edited      | unchanged | upload with `If-Match: <base>`                                |
+| edited      | edited    | conflict markers in the local file (same as the web editor)  |
+| deleted     | edited    | download, because an edit beats a delete                      |
+| edited      | deleted   | re-create, because an edit beats a delete                     |
+
+A yak with conflict markers is never uploaded. Once the markers are removed, it uploads as an ordinary edit. The rules are in `SyncPlan.swift`, and `SyncTests.swift` covers every row.
+
+The integration tests run two simulated devices against the real server:
+
+```sh
+uv run python scripts/sync_fixture_server.py --port 8765 &   # throwaway vault and test user
+YAK_SHEARS_TEST_SERVER=http://127.0.0.1:8765 swift test --package-path apple/YakShearsKit
+```
+
+Without `YAK_SHEARS_TEST_SERVER` those tests are skipped. CI always runs them.
 
 ## CI and TestFlight
 
-`.github/workflows/apple.yml` runs on every PR that touches `apple/`, stacked PRs included. It tests the package, generates the project, and builds for the iOS Simulator and macOS without signing.
+`.github/workflows/apple.yml` runs on every PR that touches `apple/` or the server's sync and auth code, stacked PRs included. It starts the fixture server, tests the package against it, generates the project, and builds for the iOS Simulator and macOS without signing.
 
 The `testflight` job then archives and uploads an iOS build, using the workflow's run number as the build number. It stays skipped, with a notice, until the following one-time setup is done:
 

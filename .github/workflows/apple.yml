@@ -9,11 +9,17 @@ on:
     paths:
       - apple/**
       - .github/workflows/apple.yml
+      - scripts/sync_fixture_server.py
+      - yak_shears/_auth/**
+      - yak_shears/_sync/**
   push:
     branches: [main]
     paths:
       - apple/**
       - .github/workflows/apple.yml
+      - scripts/sync_fixture_server.py
+      - yak_shears/_auth/**
+      - yak_shears/_sync/**
   workflow_dispatch:
 
 concurrency:
@@ -40,8 +46,42 @@ jobs:
           unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
 
+      # The sync engine's integration tests run against the real server over a
+      # throwaway vault, so the Python app is installed too.
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          enable-cache: true
+
+      - name: Start the sync fixture server
+        env:
+          # mise pins 3.13; the runner's newest Python has no pillow-heif wheel yet.
+          UV_PYTHON: "3.13"
+        run: |
+          uv sync
+          uv run types-for-jinja wrapper
+          uv run python scripts/sync_fixture_server.py --port 8765 > "$RUNNER_TEMP/fixture.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/fixture.pid"
+          for attempt in $(seq 1 60); do
+            curl -s -o /dev/null http://127.0.0.1:8765/ && exit 0
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/fixture.log"
+          exit 1
+
       - name: Test YakShearsKit
+        env:
+          YAK_SHEARS_TEST_SERVER: http://127.0.0.1:8765
         run: swift test --package-path apple/YakShearsKit
+
+      # A running `uv run` holds uv's cache lock, and setup-uv's post-job cache prune
+      # waits on that lock until it times out and fails the job.
+      - name: Stop the sync fixture server
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/fixture.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/fixture.pid")" 2>/dev/null || true
+          fi
+          pkill -f sync_fixture_server.py || true
 
       - name: Generate the Xcode project
         run: xcodegen generate --spec apple/project.yml

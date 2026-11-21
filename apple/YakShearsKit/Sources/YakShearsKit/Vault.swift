@@ -30,16 +30,10 @@ public struct Vault: Sendable {
     /// Hidden directories (Syncthing's `.stversions`) are skipped, as the server's
     /// manifest skips them.
     public func summaries() throws -> [YakSummary] {
-        let keys: [URLResourceKey] = [.isRegularFileKey, .contentModificationDateKey]
-        guard let walker = FileManager.default.enumerator(
-            at: root, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles]
-        ) else { return [] }
-
         var summaries: [YakSummary] = []
-        for case let url as URL in walker where url.pathExtension == CanonicalName.fileExtension {
-            let values = try url.resourceValues(forKeys: Set(keys))
-            guard values.isRegularFile == true else { continue }
-            let path = relativePath(of: url)
+        for path in try yakPaths() {
+            let url = url(for: path)
+            let values = try url.resourceValues(forKeys: [.contentModificationDateKey])
             let content = try String(contentsOf: url, encoding: .utf8)
             let directory = (path as NSString).deletingLastPathComponent
             summaries.append(YakSummary(
@@ -60,6 +54,45 @@ public struct Vault: Sendable {
     /// A yak's text.
     public func read(_ path: String) throws -> String {
         try String(contentsOf: url(for: path), encoding: .utf8)
+    }
+
+    /// Write a yak atomically, creating its category directory if needed.
+    public func write(_ path: String, content: String) throws {
+        let destination = url(for: path)
+        try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data(content.utf8).write(to: destination, options: .atomic)
+    }
+
+    public func delete(_ path: String) throws {
+        try FileManager.default.removeItem(at: url(for: path))
+    }
+
+    /// The lease of every yak, and which of them still carry conflict markers.
+    public func leases() throws -> (leases: [String: String], unresolved: Set<String>) {
+        var leases: [String: String] = [:]
+        var unresolved: Set<String> = []
+        for path in try yakPaths() {
+            let content = try read(path)
+            leases[path] = Lease.of(content)
+            if ConflictMarkup.hasMarkers(content) {
+                unresolved.insert(path)
+            }
+        }
+        return (leases, unresolved)
+    }
+
+    /// Vault-relative paths of every `.dj` file outside hidden directories.
+    func yakPaths() throws -> [String] {
+        guard let walker = FileManager.default.enumerator(
+            at: root, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]
+        ) else { return [] }
+        var paths: [String] = []
+        for case let url as URL in walker where url.pathExtension == CanonicalName.fileExtension {
+            if try url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile == true {
+                paths.append(relativePath(of: url))
+            }
+        }
+        return paths
     }
 
     /// The file URL for a vault-relative path.
