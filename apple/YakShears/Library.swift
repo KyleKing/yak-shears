@@ -55,6 +55,7 @@ final class Library {
             self.summaries = summaries
             self.unresolved = unresolved
             loadError = nil
+            SpotlightIndex.shared.update(with: summaries, vault: vault)
         } catch {
             loadError = error.localizedDescription
         }

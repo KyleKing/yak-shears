@@ -142,7 +142,7 @@ Startup latency and iOS integrations drove the move past the homescreen web app 
 - One SwiftUI project, iOS and macOS targets. Notes live as plain `.dj` files in the app's container, so launch reads local disk and works offline
 - Sync over HTTPS with a bearer token against `/api/v1` (see AGENTS.md "Sync API"). The server stays the single writer to the Syncthing vault; conflicts reuse the lease and the hand-resolution markers. Reading a Syncthing folder on iOS directly was rejected because it depends on a third-party app and iOS background limits
 - Native TextKit 2 editor with a line-level Swift tokenizer for highlighting and list editing; preview renders through the JS renderer in JavaScriptCore. The web keeps CodeJar with targeted UX fixes
-- Integrations: App Intents (New Yak, Append, Search, Siri quick note, Action Button), share extension, widget and quick actions, Spotlight, and screenshot-to-yak (import from a recent-screenshots picker or a Shortcut, OCR with Vision, then delete the photo; iOS always confirms the delete)
+- Integrations: App Intents (New Yak, Append, Search, Siri quick note, Action Button), share extension, widget and quick actions, Spotlight (`claude/ios-06d-spotlight`), and screenshot-to-yak (import from a recent-screenshots picker or a Shortcut, OCR with Vision, then delete the photo; iOS always confirms the delete)
 - Distribution through TestFlight, uploaded from macOS CI
 - Djot vs Carve is undecided and only blocks the editor tokenizer. Sync, the list, and the integrations treat notes as opaque text
 
