@@ -37,6 +37,8 @@ targets:
       - package: YakShearsKit
       - target: YakShearsShare
         destinationFilters: [iOS]
+      - target: YakShearsWidgets
+        destinationFilters: [iOS]
     info:
       path: YakShears/Info.plist
       properties:
@@ -47,6 +49,10 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         UILaunchScreen: {}
         # Expose Documents/Vault in the Files app, so yaks can be copied in by hand.
+        # yakshears://open?path=… and yakshears://new, for widgets and controls (AppLink).
+        CFBundleURLTypes:
+          - CFBundleURLName: me.kyleking.yakshears
+            CFBundleURLSchemes: [yakshears]
         NSPhotoLibraryUsageDescription: Yak Shears turns screenshots you pick into yaks, with their text, and can remove the originals from Photos afterwards.
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
@@ -95,6 +101,35 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: me.kyleking.yakshears.share
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: YakShearsShare/YakShearsShare.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+
+  # Home and lock screen widgets, and the Control Center control.
+  YakShearsWidgets:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: YakShearsWidgets
+        excludes:
+          - "*.entitlements"
+      - path: Shared
+    dependencies:
+      - package: YakShearsKit
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    info:
+      path: YakShearsWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Yak Shears
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.kyleking.yakshears.widgets
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: YakShearsWidgets/YakShearsWidgets.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"
 
 schemes:

@@ -56,6 +56,14 @@ struct YakListView: View {
                 library.requestedPath = nil
             }
         }
+        .onOpenURL { url in
+            // From a widget or control (AppLink).
+            switch AppLink(url: url) {
+            case .open(let path): library.requestedPath = path
+            case .new(let category): create(in: category)
+            case nil: break
+            }
+        }
         .onContinueUserActivity(CSSearchableItemActionType) { activity in
             // A Spotlight result: its identifier is the yak's vault path.
             if let path = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String {

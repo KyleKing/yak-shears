@@ -6,10 +6,14 @@ import YakShearsKit
 enum AppGroup {
     static let identifier = "group.me.kyleking.yakshears"
 
-    /// Captures from extensions, waiting for the app to move them into the vault.
-    /// Nil when the entitlement is missing (an unsigned simulator build, say).
-    static var inbox: Inbox? {
+    /// The shared container. Nil when the entitlement is missing (an unsigned
+    /// simulator build, or macOS, which has no extensions yet).
+    static var container: URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: identifier)
-            .map { Inbox(root: $0.appending(path: "Inbox", directoryHint: .isDirectory)) }
+    }
+
+    /// Captures from extensions, waiting for the app to move them into the vault.
+    static var inbox: Inbox? {
+        container.map { Inbox(root: $0.appending(path: "Inbox", directoryHint: .isDirectory)) }
     }
 }
