@@ -3,8 +3,8 @@ import YakShearsKit
 
 @main
 struct YakShearsApp: App {
-    @State private var library = Library(vault: Vault(root: Library.defaultRoot))
-    @State private var account = Account()
+    @State private var library = Library.shared
+    @State private var account = Account.shared
 
     var body: some Scene {
         WindowGroup {

@@ -9,6 +9,9 @@ import YakShearsKit
 /// device only, so it is never in a backup or the Files app.
 @MainActor @Observable
 final class Account {
+    /// Shared by the app's views and its App Intents.
+    static let shared = Account()
+
     static let defaultServer = URL(string: "https://yak-shears.kyleking.me")!
     private static let serverKey = "serverURL"
 

@@ -102,6 +102,38 @@ import Testing
         #expect(try vault.read(path) == expected)
     }
 
+    @Test(arguments: [
+        ("", "added\n"),
+        ("# Note\n", "# Note\n\nadded\n"),
+        ("# Note", "# Note\n\nadded\n"),
+        ("# Note\n\n", "# Note\n\nadded\n"),
+    ])
+    func appendAddsAParagraph(existing: String, expected: String) throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let vault = Vault(root: root)
+        try vault.write("a.dj", content: existing)
+
+        try vault.append("added", to: "a.dj")
+
+        #expect(try vault.read("a.dj") == expected)
+    }
+
+    @Test func captureAndSearchFindByTitleThenBody() throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let vault = Vault(root: root)
+        let instant = try #require(CanonicalName.date(from: "2026-11-21T09_15_00Z"))
+        let titled = try vault.capture("# Café plans\nbook a table", in: "notes", at: instant)
+        let bodied = try vault.capture("# Errands\nfind the café receipt", in: nil, at: instant.addingTimeInterval(60))
+        try vault.capture("# Unrelated", in: nil, at: instant.addingTimeInterval(120))
+
+        #expect(try vault.read(titled) == "# Café plans\nbook a table\n")
+        #expect(try vault.search("cafe").map(\.path) == [titled, bodied])
+        #expect(try vault.search("CAFÉ receipt").map(\.path) == [bodied])
+        #expect(try vault.search("  ").count == 3)
+    }
+
     @Test func missingRootListsNothing() throws {
         let vault = Vault(root: FileManager.default.temporaryDirectory.appending(path: UUID().uuidString))
         #expect(try vault.summaries().isEmpty)
