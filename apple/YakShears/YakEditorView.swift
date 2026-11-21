@@ -1,7 +1,12 @@
 import SwiftUI
 import YakShearsKit
 
-/// Edits one yak's source text, saving to the local vault as you type.
+/// Edits one yak's Djot source in a native text view, saving to the local vault as
+/// you type.
+///
+/// Lists, indenting, bold and italic, and wikilinks behave as on the web, from the
+/// same rules in `DjotEditing`; on iPhone and iPad the commands ride on the
+/// keyboard's own accessory bar, and on the Mac in the toolbar.
 ///
 /// Saves go to disk only, so editing works offline; sync picks them up shortly
 /// after typing stops and again when the editor closes. Every save names the lease
@@ -17,6 +22,9 @@ struct YakEditorView: View {
     @State private var lease: String?
     @State private var loadError: String?
     @State private var pendingSave: Task<Void, Never>?
+    @State private var controller = EditorController()
+    /// The text after an open `[[`, while one is being typed.
+    @State private var wikilinkQuery: String?
 
     private static let saveDelay: Duration = .milliseconds(500)
 
@@ -27,13 +35,15 @@ struct YakEditorView: View {
             } else if lease == nil {
                 ProgressView()
             } else {
-                TextEditor(text: $text)
-                    .font(.body.monospaced())
-                    .contentMargins(.horizontal, 12, for: .scrollContent)
-                    #if os(iOS)
-                    .scrollDismissesKeyboard(.interactively)
-                    #endif
+                YakTextView(text: $text, controller: controller)
                     .onChange(of: text) { scheduleSave() }
+                    .safeAreaInset(edge: .bottom) {
+                        if let wikilinkQuery {
+                            WikilinkSuggestions(query: wikilinkQuery, current: summary) { target in
+                                controller.completeWikilink(target: target)
+                            }
+                        }
+                    }
             }
         }
         .safeAreaInset(edge: .top) {
@@ -45,6 +55,16 @@ struct YakEditorView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        #if os(macOS)
+        .toolbar {
+            ToolbarItemGroup {
+                ForEach(EditorCommand.allCases, id: \.self) { command in
+                    Button(command.title, systemImage: command.systemImage) { controller.perform(command) }
+                }
+            }
+        }
+        #endif
+        .onAppear { controller.onWikilinkQuery = { wikilinkQuery = $0 } }
         .task(id: summary.path) { await load() }
         .onChange(of: summary.modified) { refreshIfUntouched() }
         .onDisappear { finish() }
@@ -109,5 +129,44 @@ private struct ConflictBanner: View {
             .padding(10)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.orange.opacity(0.15))
+    }
+}
+
+/// Yaks to link while a `[[` is open: titles and filenames that contain the query,
+/// newest first. Tapping one finishes the link with the yak's filename stem, which
+/// is what the server resolves.
+private struct WikilinkSuggestions: View {
+    @Environment(Library.self) private var library
+    let query: String
+    let current: YakSummary
+    let onPick: (String) -> Void
+
+    private var matches: [YakSummary] {
+        let needle = query.trimmingCharacters(in: .whitespaces)
+        return library.summaries.filter { summary in
+            summary.path != current.path && (needle.isEmpty
+                || summary.title.localizedStandardContains(needle)
+                || summary.path.localizedStandardContains(needle))
+        }
+        .prefix(12)
+        .map { $0 }
+    }
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(matches) { summary in
+                    Button {
+                        onPick(((summary.path as NSString).lastPathComponent as NSString).deletingPathExtension)
+                    } label: {
+                        Text(summary.title).lineLimit(1)
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+        }
+        .background(.bar)
     }
 }

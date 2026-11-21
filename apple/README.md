@@ -57,6 +57,17 @@ YAK_SHEARS_TEST_SERVER=http://127.0.0.1:8765 swift test --package-path apple/Yak
 
 Without `YAK_SHEARS_TEST_SERVER` those tests are skipped. CI always runs them.
 
+## Editor
+
+A native text view (`Editor/YakTextView.swift`: `UITextView` on iOS, `NSTextView` on macOS) edits the Djot source with the same behaviour as the web editor. The rules live once, in YakShearsKit's `DjotEditing`, and are tested on Linux:
+
+- **Return** continues a list: `-`, `*`, `+`, `1.`, `1)`, and checklists, which come back unchecked. Return on an empty item ends the list.
+- **Tab / Shift-Tab**, or the bar's indent and outdent buttons, move the touched lines one level (4 spaces) as a block, never more than one level below the parent. A blank line is added ahead of a newly nested list, because Djot only nests after one.
+- **⌘B / ⌘I** wrap or unwrap `*strong*` and `_emphasis_`. **⌃L** cycles a line through `- [ ]`, `- [x]` and `-`.
+- **`[[`** shows matching yaks above the keyboard, and tapping one inserts `[[<filename stem>]]`. The link button opens a `[[` at the cursor, using any selection as the query.
+
+On iPhone and iPad the commands ride on the keyboard's own accessory bar. That's the native `inputAccessoryView` that ADR 0008 said only an app could have. On the Mac they're in the toolbar. Edits go through the text view's own replace, so they undo like typing. `DjotHighlighter` styles headings, list markers, checkboxes, emphasis, code, links, wikilinks, tags, frontmatter, and conflict markers. Spell checking is the system's.
+
 ## Siri, Shortcuts, and the Action Button
 
 App Intents in `YakShears/Intents/` need no setup; Siri and Shortcuts find them once the app is installed:
