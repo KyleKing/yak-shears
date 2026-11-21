@@ -49,11 +49,6 @@ tools = new {
     command = "uv tree --outdated"
     commandPattern = uvOutdated
   }
-  ["codejar"] = new {
-    resolver = "github-branch"
-    resolverName = "antonmedv/codejar@master"
-    sites = new { new Config.Site { file = downloadAssets; pattern = #"CODEJAR_VERSION:-([0-9a-f]{40})"# } }
-  }
   ["create-github-app-token"] = new {
     resolver = "github-action"
     resolverName = "actions/create-github-app-token"

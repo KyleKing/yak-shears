@@ -19,7 +19,7 @@ async def _open_editor(context: BrowserContext, page: Page, yak: str = "yak1.dj"
 
 async def _fill_editor(page: Page, fill: str) -> None:
     editor = page.locator(".editor")
-    # Fill sets the content directly, bypassing the KeyUp event expected by CodeJar
+    # Typed rather than filled, so Enter and friends run the editor's key handlers
     await editor.fill("")
     await editor.type(fill)
 
@@ -27,52 +27,29 @@ async def _fill_editor(page: Page, fill: str) -> None:
 async def _expect_editor_text(page: Page, expected: str) -> None:
     """Wait for the editor to hold exactly `expected`.
 
-    A bare `text_content()` read races the keypress or click that drives the
-    change, so the first read can land before CodeJar has rewritten the DOM.
-    Playwright's `to_have_text` is not usable here because it normalises
-    whitespace and these assertions are about indentation.
+    A bare read races the keypress or click that drives the change, so this
+    waits for the textarea's value to match exactly, indentation included.
     """
     await page.wait_for_function(
-        "expected => document.querySelector('.editor').textContent === expected",
+        "expected => document.querySelector('.editor').value === expected",
         arg=expected,
     )
 
 
-async def _validate_highlight(page: Page, fill: str, editor_locator: str, expected: str = "") -> None:
-    """Enter specified text into the editor and verify expected highlighting."""
-    await _fill_editor(page=page, fill=fill)
-
-    editor = page.locator(".editor")
-    highlighted = editor.locator(editor_locator)
-    await expect(highlighted).to_be_visible()
-    await expect(highlighted).to_contain_text(expected or fill)
-
-
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_editor_highlight_behavior(context: BrowserContext, page: Page, server_lifecycle):
+async def test_editor_holds_plain_text(context: BrowserContext, page: Page, server_lifecycle):
+    """The editor is a textarea: markup is kept as typed, never rendered or rewritten."""
     await login(context, page)
 
     await page.goto("/edit?yak=yak1.dj")
     await maybe_screenshot(page, ".github/screenshots/edit-page.png")
-    editor = page.locator(".editor")
+    editor = page.locator("textarea.editor")
     await expect(editor).to_be_editable()
 
-    await _validate_highlight(page, "_em_", "em")
-    await _validate_highlight(page, "*strong*", "strong")
-    for idx in (1, 3, 6):
-        await _validate_highlight(page, f"{'#' * idx} Title", f".heading.h{idx}")
-    await _validate_highlight(page, "- [x] done", ".checkbox.checked", "[x]")
-    await _validate_highlight(page, "- [ ] incomplete", ".checkbox.unchecked", "[ ]")
-
-    # PLANNED: Test HTML Escaping
-    await editor.fill("<tag>")
-    await expect(editor).to_contain_text("<tag>")
-
-    # Test does not lose characters
-    fill = "*bold _and_ more*\n Next line"
-    await _validate_highlight(page, fill, "strong em", "_and_")
-    await expect(editor).to_contain_text(fill.replace("\n", ""))
+    for fill in ("<tag> & *bold _and_ more*", "# Title\n\n- [x] done"):
+        await _fill_editor(page=page, fill=fill)
+        await expect(editor).to_have_value(fill)
 
 
 @pytest.mark.playwright
@@ -95,8 +72,7 @@ async def test_edit_save_persistence(context: BrowserContext, page: Page, server
         await expect(editor).to_be_editable()
 
         # Get initial content
-        initial_content = await editor.text_content()
-        assert initial_content is not None
+        initial_content = await editor.input_value()
 
         modified_content = initial_content + "\n\nModified for test"
         await _fill_editor(page=page, fill=modified_content)
@@ -106,7 +82,7 @@ async def test_edit_save_persistence(context: BrowserContext, page: Page, server
         # Refresh page to ensure changes are persisted
         await page.reload()
         await expect(editor).to_be_editable()
-        await expect(editor).to_contain_text(modified_content)
+        await expect(editor).to_have_value(modified_content)
 
         # Restore original content
         await _fill_editor(page=page, fill=initial_content)
@@ -167,12 +143,6 @@ async def test_preview_syntax_highlighting(context: BrowserContext, page: Page, 
     test_content = "Some text\n\n```python\nimport os\nprint('hello')\n```\n"
     await _fill_editor(page=page, fill=test_content)
 
-    # Check that the editor contains code block with correct language class
-    editor = page.locator("#editor-form")
-    code_block = editor.locator("pre code.language-python")
-    await expect(code_block).to_be_visible()
-    await expect(code_block).to_contain_text("python\nimport os")
-
     # Check that the preview contains code block with correct language class
     preview = page.locator("#preview-content")
     code_block = preview.locator("pre code.language-python")
@@ -202,54 +172,7 @@ async def test_text_stability_during_editing(context: BrowserContext, page: Page
 
     # Verify the content is correct (should be "line \n\n```py\nimport *\n```")
     expected_content = "line \n\n```py\nimport *\n```"
-    await expect(editor).to_contain_text(expected_content)
-
-    # Also verify the full content matches exactly
-    actual_content = await editor.text_content()
-    assert actual_content == expected_content
-
-
-_CARET_OFFSET_JS = """
-() => {
-  const editor = document.querySelector('.editor');
-  const sel = window.getSelection();
-  if (!sel.rangeCount || !editor.contains(sel.getRangeAt(0).startContainer)) return null;
-  const range = sel.getRangeAt(0);
-  const measured = document.createRange();
-  measured.selectNodeContents(editor);
-  measured.setEnd(range.startContainer, range.startOffset);
-  return measured.toString().length;
-}
-"""
-
-_DROP_AN_IMAGE_JS = """
-() => {
-  const editor = document.querySelector('.editor');
-  const img = document.createElement('img');
-  img.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
-  editor.appendChild(img);
-  editor.dispatchEvent(new DragEvent('drop', {
-    bubbles: true, cancelable: true, dataTransfer: new DataTransfer(),
-  }));
-}
-"""
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
-async def test_stripping_an_injected_node_keeps_the_caret(context: BrowserContext, page: Page, server_lifecycle):
-    """Rebuilding the editor after a drop or paste injects a node must not throw the
-    caret to the end of the note the reader was editing in the middle of."""
-    editor = await _open_editor(context, page)
-    await _fill_editor(page=page, fill="alpha\nbravo\ncharlie\n")
-    for _ in range(12):
-        await page.keyboard.press("ArrowLeft")
-    before = await page.evaluate(_CARET_OFFSET_JS)
-
-    await page.evaluate(_DROP_AN_IMAGE_JS)
-    await expect(editor.locator("img")).to_have_count(0)
-
-    assert await page.evaluate(_CARET_OFFSET_JS) == before
+    await expect(editor).to_have_value(expected_content)
 
 
 @pytest.mark.playwright
@@ -388,12 +311,7 @@ async def test_list_indent_inserts_blank_before_nested(context: BrowserContext, 
             window.jar.updateCode("- parent\\n- child");
             const ed = document.querySelector(".editor");
             ed.focus();
-            const range = document.createRange();
-            range.selectNodeContents(ed);
-            range.collapse(false);
-            const sel = getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
+            ed.setSelectionRange(ed.value.length, ed.value.length);
         }"""
     )
     await page.keyboard.press("Tab")
@@ -414,12 +332,7 @@ async def test_list_outdent_removes_nested_blank(context: BrowserContext, page: 
             window.jar.updateCode("- parent\\n\\n    - child");
             const ed = document.querySelector(".editor");
             ed.focus();
-            const range = document.createRange();
-            range.selectNodeContents(ed);
-            range.collapse(false);
-            const sel = getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
+            ed.setSelectionRange(ed.value.length, ed.value.length);
         }"""
     )
     await page.keyboard.press("Shift+Tab")
@@ -440,12 +353,7 @@ async def test_list_indent_stops_beyond_one_level(context: BrowserContext, page:
             window.jar.updateCode("- parent\\n\\n    - child");
             const ed = document.querySelector(".editor");
             ed.focus();
-            const range = document.createRange();
-            range.selectNodeContents(ed);
-            range.collapse(false);
-            const sel = getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
+            ed.setSelectionRange(ed.value.length, ed.value.length);
         }"""
     )
     await page.keyboard.press("Tab")
@@ -533,24 +441,6 @@ async def test_wrap_off_preference_persists_across_pages(context: BrowserContext
     assert await page.evaluate("() => localStorage.getItem('editorWrap')") == "false"
 
 
-@pytest.mark.playwright
-@pytest.mark.asyncio
-async def test_wrap_toggle_rewraps_editor_code_block(context: BrowserContext, page: Page, server_lifecycle):
-    """Wrap must also reach code blocks, which the highlighter nests in a <pre>."""
-    await _open_editor(context, page)
-
-    await page.evaluate('() => window.jar.updateCode("```py\\nx = 1\\n```")')
-
-    async def pre_white_space() -> str:
-        return await page.evaluate("() => getComputedStyle(document.querySelector('.editor pre')).whiteSpace")
-
-    assert await pre_white_space() == "pre-wrap"
-
-    await open_menu(page)
-    await page.locator("#wrap-toggle").click()
-    assert await pre_white_space() == "pre"
-
-
 # ============================================================================
 # Draft Recovery Tests
 # ============================================================================
@@ -565,22 +455,21 @@ async def test_draft_toggle_recovers_local_changes(context: BrowserContext, page
     toggle = page.locator("#draft-toggle")
     await expect(toggle).to_be_hidden()
 
-    server_content = await editor.text_content()
-    assert server_content is not None
+    server_content = await editor.input_value()
     draft = server_content + "\nlocal draft line"
     await page.evaluate("(draft) => localStorage.setItem('editor_yak1.dj', draft)", draft)
 
     await page.reload()
     await expect(editor).to_be_editable()
     await expect(toggle).to_be_visible()
-    await expect(editor).not_to_contain_text("local draft line")
+    await expect(editor).not_to_have_value(re.compile(r"local draft line"))
 
     await page.locator("#draft-local-btn").click()
-    await expect(editor).to_contain_text("local draft line")
+    await expect(editor).to_have_value(re.compile(r"local draft line"))
     await expect(page.locator("#save-status")).to_contain_text("Modified")
 
     await page.locator("#draft-server-btn").click()
-    await expect(editor).not_to_contain_text("local draft line")
+    await expect(editor).not_to_have_value(re.compile(r"local draft line"))
 
     # Previewing the server version must not delete the stored draft
     stored = await page.evaluate("() => localStorage.getItem('editor_yak1.dj')")
@@ -599,14 +488,7 @@ _SET_CODE_AND_CARET = """
         window.jar.updateCode(code);
         const ed = document.querySelector(".editor");
         ed.focus();
-        const from = getNodeAtOffset(ed, start);
-        const to = getNodeAtOffset(ed, end);
-        const range = document.createRange();
-        range.setStart(from.node, from.offset);
-        range.setEnd(to.node, to.offset);
-        const sel = getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
+        ed.setSelectionRange(start, end);
     }
 """
 
@@ -826,7 +708,7 @@ async def test_command_panel_bold_unwraps_selection(touch_page: Page, server_lif
 @pytest.mark.playwright
 @pytest.mark.asyncio
 async def test_dropped_image_uploads_instead_of_embedding(context: BrowserContext, page: Page, server_lifecycle):
-    """A dropped image is uploaded and inserted as Djot, never as a raw <img> node."""
+    """A dropped image is uploaded and inserted as Djot, never dropped in as a path or data URL."""
     editor = await _open_editor(context, page)
 
     uploads: list[str] = []
@@ -852,31 +734,15 @@ async def test_dropped_image_uploads_instead_of_embedding(context: BrowserContex
         }"""
     )
 
-    await expect(editor).to_contain_text("![drop](/media/drop.png)")
+    await expect(editor).to_have_value(re.compile(re.escape("![drop](/media/drop.png)")))
     assert uploads == ["POST"], f"Expected one POST to /media/upload but got {uploads}"
-    assert await editor.locator("img").count() == 0, "A raw <img> was inserted into the editor"
 
 
 # ============================================================================
 # Caret Stability Tests
 # ============================================================================
 
-# Measured with a Range rather than with getTextOffset, so these assertions do not
-# check the helper against itself. A caret at the very end of the note is anchored
-# on the editor element, not on a text node, and both forms have to read alike.
-_READ_CARET = """
-    () => {
-        const ed = document.querySelector(".editor");
-        const sel = getSelection();
-        if (!sel.rangeCount) return null;
-        const range = sel.getRangeAt(0);
-        if (!ed.contains(range.startContainer)) return "outside";
-        const probe = document.createRange();
-        probe.selectNodeContents(ed);
-        probe.setEnd(range.startContainer, range.startOffset);
-        return probe.toString().length;
-    }
-"""
+_READ_CARET = """() => document.querySelector(".editor").selectionStart"""
 
 # The editor handles keys in the capture phase, so a bubble-phase listener on the
 # document reads the caret the handler left behind, within the same event.
@@ -903,63 +769,6 @@ def _long_document() -> str:
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_caret_offset_of_an_element_container(context: BrowserContext, page: Page, server_lifecycle):
-    """Replacing the text collapses the selection onto the editor element itself.
-
-    Its offset is a child index, and reading it as a text offset must give the
-    position that index stands for, never the end of the document.
-    """
-    await _open_editor(context, page)
-
-    offsets = await page.evaluate(
-        """() => {
-            const ed = document.querySelector(".editor");
-            window.jar.updateCode("alpha\\nbravo\\ncharlie");
-            return {
-                start: getTextOffset(ed, ed, 0),
-                end: getTextOffset(ed, ed, ed.childNodes.length),
-                total: ed.textContent.length,
-            };
-        }"""
-    )
-
-    assert offsets["start"] == 0, f"Caret at the first child read as {offsets['start']}"
-    assert offsets["end"] == offsets["total"]
-
-
-_READ_CARET = """() => {
-    const range = getSelection().getRangeAt(0);
-    return getTextOffset(document.querySelector(".editor"), range.startContainer, range.startOffset);
-}"""
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
-async def test_caret_offset_of_a_boundary_child_without_text(
-    context: BrowserContext, page: Page, server_lifecycle
-):
-    """A caret can sit ahead of a child that holds no text, such as a `br` the
-    browser leaves on a line the reader emptied. Counting only the text ahead of
-    it must still give that position, not the end of the document."""
-    await _open_editor(context, page)
-
-    offsets = await page.evaluate(
-        """() => {
-            const ed = document.querySelector(".editor");
-            ed.innerHTML = "abc<br>def";
-            return {
-                before_br: getTextOffset(ed, ed, 1),
-                total: ed.textContent.length,
-            };
-        }"""
-    )
-
-    assert offsets["before_br"] == 3, f"Caret ahead of the br read as {offsets['before_br']}"
-    assert offsets["before_br"] != offsets["total"]
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
 async def test_reopening_a_note_restores_the_caret(context: BrowserContext, page: Page, server_lifecycle):
     """A note reopens where it was left, and one never edited opens at the top."""
     editor = await _open_editor(context, page)
@@ -972,13 +781,8 @@ async def test_reopening_a_note_restores_the_caret(context: BrowserContext, page
         """() => {
             const ed = document.querySelector(".editor");
             ed.focus();
-            const at = getNodeAtOffset(ed, 5);
-            const range = document.createRange();
-            range.setStart(at.node, at.offset);
-            range.collapse(true);
-            const sel = getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
+            ed.setSelectionRange(5, 5);
+            ed.dispatchEvent(new Event("selectionchange"));
         }"""
     )
     await page.reload()
@@ -1019,50 +823,6 @@ async def test_typing_a_wikilink_offers_other_notes(context: BrowserContext, pag
 
 @pytest.mark.playwright
 @pytest.mark.asyncio
-async def test_caret_outside_the_editor_has_no_offset(context: BrowserContext, page: Page, server_lifecycle):
-    """A caret elsewhere on the page has no position in the editor, so it reports none."""
-    await _open_editor(context, page)
-
-    offset = await page.evaluate(
-        """() => {
-            const ed = document.querySelector(".editor");
-            window.jar.updateCode("alpha bravo");
-            return getTextOffset(ed, document.getElementById("save-status").firstChild, 1);
-        }"""
-    )
-
-    assert offset is None, f"A caret outside the editor reported offset {offset}"
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
-async def test_highlighting_leaves_a_selection_outside_the_editor_alone(
-    context: BrowserContext, page: Page, server_lifecycle
-):
-    """Re-highlighting must not drag a selection made elsewhere back into the editor."""
-    await _open_editor(context, page)
-
-    still_outside = await page.evaluate(
-        """() => {
-            const ed = document.querySelector(".editor");
-            window.jar.updateCode("alpha bravo charlie");
-            const outside = document.getElementById("save-status").firstChild;
-            const range = document.createRange();
-            range.setStart(outside, 1);
-            range.collapse(true);
-            const sel = getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-            highlight(ed);
-            return !ed.contains(getSelection().getRangeAt(0).startContainer);
-        }"""
-    )
-
-    assert still_outside, "Highlighting stole the selection out of the save status and into the editor"
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
 async def test_indent_never_parks_the_caret_at_the_end(context: BrowserContext, page: Page, server_lifecycle):
     """Indenting mid-document leaves the caret on the line being edited.
 
@@ -1094,11 +854,10 @@ async def test_indent_never_parks_the_caret_at_the_end(context: BrowserContext, 
 @pytest.mark.playwright
 @pytest.mark.asyncio
 async def test_undo_steps_back_over_a_list_command(context: BrowserContext, page: Page, server_lifecycle):
-    """Indenting is one undo step.
+    """Indenting is one undo step, on the browser's own undo stack.
 
-    The commands preventDefault past CodeJar's own keydown handler, which is where
-    it records history, so each has to bracket its own edit or undo skips it and
-    lands on a much older state.
+    Commands replace only the changed span through execCommand("insertText"), which
+    joins native undo; assigning the textarea's value would wipe it instead.
     """
     await _open_editor(context, page)
 
@@ -1111,7 +870,10 @@ async def test_undo_steps_back_over_a_list_command(context: BrowserContext, page
     await page.keyboard.press("ControlOrMeta+z")
 
     await _expect_editor_text(page, flat)
-    assert await page.evaluate(_READ_CARET) == caret
+    # Native undo puts the caret where the undone change began, which is on the
+    # line that was indented, not wherever it was before the command.
+    bravo_line = flat.index("- bravo")
+    assert bravo_line - 1 <= await page.evaluate(_READ_CARET) <= caret
 
 
 @pytest.mark.playwright
@@ -1137,7 +899,12 @@ async def test_tab_keeps_the_selection_across_the_indent(context: BrowserContext
     await page.keyboard.press("Tab")
     await _expect_editor_text(page, "- intro\n\n    - alpha\n    - bravo")
 
-    selected = await page.evaluate("() => getSelection().toString()")
+    selected = await page.evaluate(
+        """() => {
+            const ed = document.querySelector(".editor");
+            return ed.value.substring(ed.selectionStart, ed.selectionEnd);
+        }"""
+    )
     assert selected == "alpha\n    - bravo", f"Selection became {selected!r}"
 
 
@@ -1186,50 +953,6 @@ async def test_media_snippet_lands_at_the_caret_without_exec_command(
     )
 
     await _expect_editor_text(page, "alpha\n![drop](/media/drop.png)\n\nbravo\ncharlie")
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
-async def test_stripping_injected_nodes_keeps_the_caret(context: BrowserContext, page: Page, server_lifecycle):
-    """Rebuilding the editor after an extension injects a node leaves the caret alone."""
-    await _open_editor(context, page)
-
-    caret = 20
-    await _set_code_and_select(page, "alpha line\nbravo line\ncharlie", caret, caret)
-    await page.evaluate(
-        """() => {
-            const ed = document.querySelector(".editor");
-            ed.appendChild(document.createElement("img"));
-            ed.dispatchEvent(new ClipboardEvent("paste", { clipboardData: new DataTransfer(), bubbles: true }));
-        }"""
-    )
-
-    await page.wait_for_function("() => document.querySelector('.editor img') === null")
-    assert await page.evaluate(_READ_CARET) == caret
-
-
-@pytest.mark.playwright
-@pytest.mark.asyncio
-async def test_a_command_with_the_caret_elsewhere_edits_nothing(context: BrowserContext, page: Page, server_lifecycle):
-    """A caret outside the editor has no line to act on, so a command must decline it."""
-    await _open_editor(context, page)
-
-    await page.evaluate('() => window.jar.updateCode("- alpha\\n- bravo")')
-    await page.evaluate(
-        """() => {
-            const range = document.createRange();
-            range.setStart(document.getElementById("save-status").firstChild, 1);
-            range.collapse(true);
-            const sel = getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-            document.querySelector(".editor").dispatchEvent(
-                new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }),
-            );
-        }"""
-    )
-
-    assert await page.evaluate("() => window.jar.toString()") == "- alpha\n- bravo"
 
 
 @pytest.mark.playwright

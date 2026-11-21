@@ -17,8 +17,6 @@ current_route: str
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/themes/prism.min.css">
   <!-- freshness: npm @djot/djot -->
   <script src="https://unpkg.com/@djot/djot@0.3.2/dist/djot.js"></script>
-  <script src="{{ static_url('js/codejar.min.js') }}"></script>
-  <script src="{{ static_url('js/highlight.js') }}"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/prism.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/plugins/autoloader/prism-autoloader.min.js"></script>
 {% endblock %}
@@ -65,12 +63,12 @@ current_route: str
         <form id="editor-form" method="post">
           <input type="hidden" name="yak" value="{{ yak_path }}">
           {#
-            CodeJar editor element
-            - data-manual: Prevents auto-init (we control initialization timing)
-            - data-gramm="false": Disables Grammarly browser extension interference
-            Initialized in editor.js:initEditor()
+            The editor is a plain textarea, so the browser owns the caret, selection,
+            autocorrect, and undo (the reason it is not contenteditable). Wired up in
+            editor.js:initEditor(); data-gramm="false" keeps Grammarly out of it.
           #}
-          <div class="editor" data-manual data-gramm="false"></div>
+          <textarea class="editor" aria-label="Yak text" spellcheck="true" autocapitalize="sentences"
+                    autocomplete="off" data-gramm="false" rows="12"></textarea>
         </form>
 
         {# Live preview pane - rendered from Djot via editor.js:renderPreview() #}

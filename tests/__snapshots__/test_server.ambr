@@ -44,8 +44,7 @@
       <div class="editor-container" id="editor-container">
        <form id="editor-form" method="post">
         <input name="yak" type="hidden" value="test.dj"/>
-        <div class="editor" data-gramm="false" data-manual="">
-        </div>
+        <textarea aria-label="Yak text" autocapitalize="sentences" autocomplete="off" class="editor" data-gramm="false" rows="12" spellcheck="true"></textarea>
        </form>
        <div class="preview" id="preview">
         <div class="preview-content" id="preview-content">

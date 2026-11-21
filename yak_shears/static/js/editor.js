@@ -3,7 +3,7 @@
  *
  * ARCHITECTURE:
  * This module manages three interconnected state systems:
- * 1. CodeJar Editor State: The actual text content and cursor position
+ * 1. Editor State: the <textarea>'s text and selection
  * 2. UI View State: Which view mode is active (editor/preview/split)
  * 3. Persistence State: localStorage sync for unsaved changes
  *
@@ -14,7 +14,7 @@
  * - "Saved": Recently saved (transitions to "Synced" after 2s)
  *
  * VIEW MODES:
- * - "editor": Show only the CodeJar editor (default on mobile)
+ * - "editor": Show only the editor (default on mobile)
  * - "side-by-side": Split view with editor + live preview (default on desktop)
  * - "preview": Show only rendered Djot preview
  *
@@ -31,8 +31,7 @@ let showConflict = () => {};
 
 /**
  * GLOBAL STATE
- * Note: These are module-level variables due to CodeJar's callback requirements.
- * Consider refactoring to a class-based approach for better encapsulation.
+ * Module-level, because the view toggles and the editor's handlers share them.
  */
 
 // List patterns for auto-continuation (order matters: more specific first)
@@ -43,7 +42,7 @@ const LIST_PATTERNS = {
 	bullet: /^(\s*)- (.*)$/,
 };
 let retries = 0;
-let jar; // CodeJar instance - provides text editing with syntax highlighting
+let jar; // The editor <textarea>'s adapter (_textareaJar): toString, updateCode, onUpdate
 let currentView = "editor"; // Active view mode: "editor" | "side-by-side" | "preview"
 let metadataPanelVisible = false; // Sidebar panel state (mobile: modal, desktop: optional pin)
 let panelPinned = false; // Desktop-only: panel stays open alongside editor
@@ -233,7 +232,7 @@ function renderPreview(content) {
  * Switch between editor view modes
  *
  * CSS CLASS MAPPING:
- * - "editor" → "editoronly" class: Shows only CodeJar editor
+ * - "editor" → "editoronly" class: Shows only the editor
  * - "side-by-side" → "sidebyside" class: 50/50 split editor + preview
  * - "preview" → "previewonly" class: Shows only rendered preview
  *
@@ -277,11 +276,11 @@ function setViewMode(mode) {
 }
 
 /**
- * Initialize the CodeJar editor with all event handlers and state management
+ * Initialize the editor <textarea> with all event handlers and state management
  *
  * INITIALIZATION FLOW:
  * 1. Wait for DOM element '.editor' to be available (retry up to 5s)
- * 2. Create CodeJar instance with syntax highlighting
+ * 2. Wrap the <textarea> in the small adapter the commands are written against
  * 3. Load content from server (window.serverContent, injected in template)
  * 4. Check localStorage for unsaved local changes
  * 5. Set up save status tracking
@@ -299,7 +298,6 @@ function setViewMode(mode) {
  * This handles race conditions with external script loading.
  *
  * CRITICAL DATA ATTRIBUTES:
- * - data-manual: Prevents CodeJar from auto-initializing (we control initialization)
  * - data-gramm="false": Disables Grammarly extension interference
  *
  * @returns {void}
@@ -307,12 +305,7 @@ function setViewMode(mode) {
 function initEditor() {
 	const editor = document.querySelector(".editor");
 	if (editor) {
-		// Initialize CodeJar with custom syntax highlighter
-		jar = CodeJar(editor, highlight, {
-			addClosing: false, // Don't auto-close brackets (Djot doesn't need it)
-			spellcheck: true, // Enable browser spell check
-			tab: " ".repeat(4), // Convert tabs to 4 spaces
-		});
+		jar = _textareaJar(editor);
 		window.jar = jar; // Expose for testing and debugging
 
 		// Upload failures have no status element of their own, so they hold the shared
@@ -326,7 +319,7 @@ function initEditor() {
 		// Cmd/Ctrl+Enter saves the document
 		editor.addEventListener(
 			"keydown",
-			function (e) {
+			(e) => {
 				// The completion popup owns the arrow, Enter, Tab, and Escape keys
 				// while it is open, so it is asked before any editor command.
 				if (linkComplete.keydown(e)) {
@@ -355,12 +348,14 @@ function initEditor() {
 					}
 				}
 
-				// Tab/Shift+Tab for list indentation
+				// Tab/Shift+Tab for list indentation; outside a list, Tab types four
+				// spaces rather than moving focus out of the editor
 				if (e.key === "Tab") {
-					if (_handleListIndentation(editor, jar, e.shiftKey)) {
-						e.preventDefault();
-						return;
+					e.preventDefault();
+					if (!_handleListIndentation(editor, jar, e.shiftKey) && !e.shiftKey) {
+						document.execCommand("insertText", false, INDENT_STR);
 					}
+					return;
 				}
 
 				// Cmd/Ctrl+K opens a link at the caret, the pointer-free way into
@@ -378,7 +373,7 @@ function initEditor() {
 					return;
 				}
 			},
-			true, // Use capture phase to handle before CodeJar
+			true, // Capture phase, so these run before any other key handling
 		);
 
 		// Load yak path from URL for localStorage key uniqueness
@@ -388,8 +383,7 @@ function initEditor() {
 		linkComplete = _setupLinkComplete(editor, jar, yak_path);
 		const caretKey = `editor_caret_${yak_path}`;
 		let serverContent = window.serverContent; // Injected in template: <script>window.serverContent = {{ content | tojson }};</script>
-		editor.textContent = serverContent;
-		highlight(editor); // Apply initial syntax highlighting
+		editor.value = serverContent;
 
 		// Reopen where the last session left the caret. A note opened for the first
 		// time starts at the top, because the end is only ever right for appending.
@@ -405,12 +399,23 @@ function initEditor() {
 
 		// The caret is worth remembering only while it is in the editor; anywhere
 		// else on the page it says nothing about where this note was being read.
-		document.addEventListener("selectionchange", () => {
+		// A textarea reports its own selection moves on itself, not always on the
+		// document, so listen on both, plus the keys and taps that move the caret.
+		// Only an actual move counts: a key the link popup consumed (ArrowDown) leaves
+		// the caret alone, and refreshing then would reset the popup's choice.
+		let lastCaret = null;
+		const rememberCaret = () => {
 			if (document.activeElement !== editor) return;
 			const offset = _getCursorPosition(editor);
-			if (offset !== null) localStorage.setItem(caretKey, String(offset));
+			if (offset === lastCaret) return;
+			lastCaret = offset;
+			localStorage.setItem(caretKey, String(offset));
 			linkComplete.refresh();
-		});
+		};
+		document.addEventListener("selectionchange", rememberCaret);
+		for (const type of ["selectionchange", "keyup", "pointerup"]) {
+			editor.addEventListener(type, rememberCaret);
+		}
 
 		// Check for unsaved local changes from previous session
 		const saved = localStorage.getItem(storageKey);
@@ -425,7 +430,7 @@ function initEditor() {
 
 		// Inject current editor content into the save request. Avoids hx-vals="js:...",
 		// which requires 'unsafe-eval' and is blocked by the page's Content-Security-Policy.
-		document.body.addEventListener("htmx:configRequest", function (evt) {
+		document.body.addEventListener("htmx:configRequest", (evt) => {
 			if (evt.target.id === "save-btn") {
 				evt.detail.parameters.content = getEditorContent();
 				evt.detail.parameters.lease =
@@ -434,7 +439,7 @@ function initEditor() {
 		});
 
 		// HTMX event listeners for save feedback (button clicks trigger HTMX POST)
-		document.body.addEventListener("htmx:beforeRequest", function (evt) {
+		document.body.addEventListener("htmx:beforeRequest", (evt) => {
 			if (evt.target.id === "save-btn") {
 				if (_markersBlockSave()) {
 					evt.preventDefault();
@@ -445,7 +450,7 @@ function initEditor() {
 			}
 		});
 
-		document.body.addEventListener("htmx:afterRequest", function (evt) {
+		document.body.addEventListener("htmx:afterRequest", (evt) => {
 			if (evt.target.id === "save-btn") {
 				document.getElementById("save-btn").disabled = false;
 				if (evt.detail.successful) {
@@ -584,7 +589,7 @@ function initEditor() {
 		const applyWrap = (on) => {
 			const container = document.getElementById("editor-container");
 			container.classList.toggle("wrap", on);
-			// CodeJar sets white-space inline, which beats a CSS class, so set it directly.
+			// Set inline so it wins over the stylesheet's default for .editor.
 			const editorEl = document.querySelector(".editor");
 			if (editorEl) {
 				editorEl.style.whiteSpace = on ? "pre-wrap" : "pre";
@@ -615,7 +620,7 @@ function initEditor() {
 
 		const insertAtCursor = (text) => {
 			editor.focus();
-			// execCommand fires an input event, so CodeJar re-highlights and onUpdate runs.
+			// execCommand joins the undo stack and fires an input event, so onUpdate runs.
 			if (document.execCommand("insertText", false, text)) return;
 			// Splice it in by hand rather than appending, which would move the snippet
 			// to the end of a note the reader never asked to reorder.
@@ -677,7 +682,6 @@ function initEditor() {
 				e.preventDefault();
 				uploadFiles(files);
 			}
-			requestAnimationFrame(() => _stripInjectedElements(editor, jar));
 		});
 
 		const setDragover = (active) =>
@@ -698,8 +702,8 @@ function initEditor() {
 			if (!editor.contains(e.relatedTarget)) setDragover(false);
 		});
 
-		// Always preventDefault: the browser default inserts a data-URL `img` node into the
-		// contenteditable, which leaves an unscrollable editor and never uploads the file.
+		// Always preventDefault: the browser default drops the file's path or a data URL in
+		// as text, which never uploads the file.
 		editor.addEventListener("drop", (e) => {
 			e.preventDefault();
 			setDragover(false);
@@ -710,7 +714,6 @@ function initEditor() {
 				const text = e.dataTransfer?.getData("text/plain");
 				if (text) insertAtCursor(text);
 			}
-			requestAnimationFrame(() => _stripInjectedElements(editor, jar));
 		});
 
 		_setupCommandPanel(editor, jar);
@@ -792,47 +795,128 @@ function initEditor() {
 // than coerce it, because a missing position reads as offset 0 and silently
 // rewrites the first line.
 function _getCursorPosition(editorEl) {
-	const sel = window.getSelection();
-	if (!sel.rangeCount) return null;
-	const range = sel.getRangeAt(0);
-	return getTextOffset(editorEl, range.startContainer, range.startOffset);
+	return editorEl.selectionStart;
+}
+
+/**
+ * The editor is a plain <textarea>, so the browser owns the caret, selection
+ * handles, autocorrect, dictation, and undo. CodeJar's contenteditable re-rendered
+ * on every keystroke to highlight, and on iOS that fought all four. This adapter
+ * keeps the small surface the commands below were written against.
+ */
+function _textareaJar(textarea) {
+	const listeners = [];
+	textarea.addEventListener("input", () => {
+		for (const listener of listeners) listener(textarea.value);
+	});
+	return {
+		toString: () => textarea.value,
+		// Replaces the text without firing onUpdate, as CodeJar's did. Setting the
+		// value resets native undo, so commands go through _applyEdit instead.
+		updateCode: (text) => {
+			textarea.value = text;
+		},
+		onUpdate: (listener) => listeners.push(listener),
+	};
 }
 
 /**
  * Replace the note and put the caret at `caretPos`, as one undo step.
  *
- * CodeJar records history from its own keydown handler, which every command here
- * preventDefaults past, so an edit that does not bracket itself is invisible to
- * undo: Ctrl+Z skips it and lands on a much older state.
+ * Only the span that changed is replaced, through execCommand("insertText"), which
+ * joins the browser's own undo stack; assigning `value` would wipe it. The input
+ * event it fires runs onUpdate, so the draft and save status follow.
  */
-function _applyEdit(editorEl, jarInstance, newText, caretPos) {
-	jarInstance.recordHistory();
-	jarInstance.updateCode(newText);
+function _applyEdit(editorEl, _jarInstance, newText, caretPos) {
+	const old = editorEl.value;
+	if (old !== newText) {
+		let start = 0;
+		while (
+			start < old.length &&
+			start < newText.length &&
+			old[start] === newText[start]
+		)
+			start++;
+		let oldEnd = old.length;
+		let newEnd = newText.length;
+		while (
+			oldEnd > start &&
+			newEnd > start &&
+			old[oldEnd - 1] === newText[newEnd - 1]
+		) {
+			oldEnd--;
+			newEnd--;
+		}
+		const inserted = newText.substring(start, newEnd);
+		editorEl.focus();
+		editorEl.setSelectionRange(start, oldEnd);
+		if (!document.execCommand("insertText", false, inserted)) {
+			editorEl.setRangeText(inserted, start, oldEnd, "end");
+			editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+		}
+	}
 	_setCursorPosition(editorEl, Math.max(0, caretPos));
-	jarInstance.recordHistory();
 }
 
-// A collapsed range still reports its place on the page; an all-zero rect means
-// it has no box yet, so there is nothing to scroll to.
+/**
+ * Where the caret sits on the page, measured with a hidden copy of the textarea
+ * laid out the same way, since a textarea exposes no geometry for its text.
+ */
+function _caretRect(textarea) {
+	const style = getComputedStyle(textarea);
+	const mirror = document.createElement("div");
+	for (const property of [
+		"boxSizing",
+		"width",
+		"fontFamily",
+		"fontSize",
+		"fontWeight",
+		"lineHeight",
+		"letterSpacing",
+		"paddingTop",
+		"paddingRight",
+		"paddingBottom",
+		"paddingLeft",
+		"borderTopWidth",
+		"borderRightWidth",
+		"borderBottomWidth",
+		"borderLeftWidth",
+		"whiteSpace",
+		"wordBreak",
+		"overflowWrap",
+		"tabSize",
+	]) {
+		mirror.style[property] = style[property];
+	}
+	mirror.style.position = "absolute";
+	mirror.style.visibility = "hidden";
+	mirror.style.top = "0";
+	mirror.style.left = "-9999px";
+	mirror.textContent = textarea.value.substring(0, textarea.selectionStart);
+	const marker = document.createElement("span");
+	marker.textContent = "\u200b";
+	mirror.append(marker);
+	document.body.append(mirror);
+	const box = textarea.getBoundingClientRect();
+	const top = box.top + marker.offsetTop - textarea.scrollTop;
+	const left = box.left + marker.offsetLeft - textarea.scrollLeft;
+	const height = marker.offsetHeight;
+	mirror.remove();
+	return { top, left, bottom: top + height, height };
+}
+
+// Keep the caret on screen after a command moved it, scrolling the page only when
+// the caret's line is outside the viewport.
 function _scrollCaretIntoView() {
-	const sel = window.getSelection();
-	if (!sel.rangeCount) return;
-	const rect = sel.getRangeAt(0).getBoundingClientRect();
-	if (!rect.height && !rect.top) return;
+	const editorEl = document.querySelector(".editor");
+	if (!editorEl) return;
+	const rect = _caretRect(editorEl);
 	if (rect.top >= 0 && rect.bottom <= window.innerHeight) return;
 	window.scrollBy({ top: rect.top - window.innerHeight / 2 });
 }
 
 function _setCursorPosition(editorEl, offset) {
-	const { node, offset: nodeOffset } = getNodeAtOffset(editorEl, offset);
-	if (node) {
-		const range = document.createRange();
-		range.setStart(node, nodeOffset);
-		range.collapse(true);
-		const sel = window.getSelection();
-		sel.removeAllRanges();
-		sel.addRange(range);
-	}
+	editorEl.setSelectionRange(offset, offset);
 }
 
 function _getCurrentLine(text, cursorPos) {
@@ -870,10 +954,11 @@ function _handleListContinuation(editorEl, jarInstance) {
 				case "checklistChecked":
 					continuation = `${indent}- [ ] `;
 					break;
-				case "numbered":
+				case "numbered": {
 					const nextNum = parseInt(match[2], 10) + 1;
 					continuation = `${indent}${nextNum}. `;
 					break;
+				}
 				case "bullet":
 					continuation = `${indent}- `;
 					break;
@@ -1143,34 +1228,10 @@ function _mediaFilesFrom(dataTransfer) {
 		.filter(Boolean);
 }
 
-// Extensions and browser quirks can still inject nodes into the contenteditable.
-// highlight() erases them on the next keystroke, but the editor is unusable until
-// then, so rebuild from the text immediately.
-function _stripInjectedElements(editorEl, jarInstance) {
-	if (!editorEl.querySelector("img, video, iframe, object, embed, svg")) return;
-	// The injected nodes hold no text, so the offset measured before the rebuild
-	// still names the same character after it.
-	const caret = _getCursorPosition(editorEl);
-	jarInstance.updateCode(jarInstance.toString());
-	if (caret !== null) _setCursorPosition(editorEl, caret);
-}
-
 // Null when either end of the selection is outside the editor, for the same
 // reason as _getCursorPosition.
 function _getSelectionRange(editorEl) {
-	const sel = window.getSelection();
-	if (!sel.rangeCount) return null;
-	const range = sel.getRangeAt(0);
-	const anchor = getTextOffset(
-		editorEl,
-		range.startContainer,
-		range.startOffset,
-	);
-	const focus = getTextOffset(editorEl, range.endContainer, range.endOffset);
-	if (anchor === null || focus === null) return null;
-	return anchor <= focus
-		? { start: anchor, end: focus }
-		: { start: focus, end: anchor };
+	return { start: editorEl.selectionStart, end: editorEl.selectionEnd };
 }
 
 const BULLET_PREFIX_RE = /^(\s*)- (\[[ x]\] )?/;
@@ -1259,7 +1320,6 @@ function _openWikilink(editorEl, jarInstance) {
 	);
 }
 
-
 function _runToolbarAction(action, editorEl, jarInstance) {
 	switch (action) {
 		case "outdent":
@@ -1296,15 +1356,7 @@ function _syncKeyboardInset() {
 }
 
 function _setSelectionRange(editorEl, start, end) {
-	const from = getNodeAtOffset(editorEl, start);
-	const to = getNodeAtOffset(editorEl, end);
-	if (!from.node || !to.node) return;
-	const range = document.createRange();
-	range.setStart(from.node, from.offset);
-	range.setEnd(to.node, to.offset);
-	const sel = window.getSelection();
-	sel.removeAllRanges();
-	sel.addRange(range);
+	editorEl.setSelectionRange(start, end);
 }
 
 // Group 1 is indent plus any list marker, group 2 is the line's own text. Wrapping
@@ -1426,9 +1478,7 @@ function _setupCommandPanel(editorEl, jarInstance) {
 	// Opening away from the caret keeps the line being edited visible. The panel
 	// hangs below the trigger when the caret is above it, and above it otherwise.
 	const placePanel = () => {
-		const sel = window.getSelection();
-		if (!sel.rangeCount) return;
-		const caret = sel.getRangeAt(0).getBoundingClientRect();
+		const caret = _caretRect(editorEl);
 		const anchor = trigger.getBoundingClientRect();
 		root.classList.toggle("cmd--above", caret.top >= anchor.bottom);
 	};
@@ -1450,7 +1500,7 @@ function _setupCommandPanel(editorEl, jarInstance) {
 	});
 
 	// Suppressing the default keeps focus, and the keyboard, on the editor. Without
-	// it the tap blurs the contenteditable and the selection the command needs is gone.
+	// it the tap blurs the editor and the selection the command needs is gone.
 	panel.addEventListener("pointerdown", (event) => {
 		if (event.target.closest("button")) event.preventDefault();
 	});
@@ -1800,9 +1850,7 @@ function _setupLinkComplete(editorEl, jarInstance, yakPath) {
 	};
 
 	const place = () => {
-		const sel = window.getSelection();
-		if (!sel.rangeCount) return;
-		const caret = sel.getRangeAt(0).getBoundingClientRect();
+		const caret = _caretRect(editorEl);
 		popup.style.left = `${Math.min(caret.left, window.innerWidth - popup.offsetWidth - 8)}px`;
 		const below = caret.bottom + popup.offsetHeight < window.innerHeight;
 		popup.style.top = below

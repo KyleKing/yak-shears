@@ -43,7 +43,7 @@ Derived data stays out of the synced vault by design, because sync and a live da
 
 ## Capabilities and Constraints
 
-Working today: email/password auth with sessions, yak listing with pagination and sorting, a CodeJar editor with live Djot preview and three view modes, fuzzy search over a DuckDB word table, frontmatter parsing, link and backlink extraction, media upload with HEIC/video transcoding and thumbnails, and a `/doctor` integrity report.
+Working today: email/password auth with sessions, yak listing with pagination and sorting, a plain-textarea editor with live Djot preview and three view modes, fuzzy search over a DuckDB word table, frontmatter parsing, link and backlink extraction, media upload with HEIC/video transcoding and thumbnails, and a `/doctor` integrity report.
 
 Standing constraints:
 
