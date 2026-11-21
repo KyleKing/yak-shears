@@ -67,7 +67,7 @@ final class Library {
         guard syncStatus != .syncing, let client = account.client, let stateURL = account.syncStateURL else { return }
         syncStatus = .syncing
         do {
-            let report = try await SyncEngine(vault: vault, client: client, stateURL: stateURL).sync()
+            let report = try await SyncEngine(vault: vault, client: client, stateURL: stateURL, media: .app).sync()
             syncStatus = .synced(at: .now, report: report)
         } catch SyncError.unauthorized {
             account.tokenWasRejected()

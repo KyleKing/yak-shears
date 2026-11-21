@@ -26,6 +26,14 @@ struct YakShortcuts: AppShortcutsProvider {
             shortTitle: "Append to Yak",
             systemImageName: "text.append"
         )
+        #if os(iOS)
+        AppShortcut(
+            intent: YakLatestScreenshotIntent(),
+            phrases: ["Yak my latest screenshot in \(.applicationName)", "Save my screenshot to \(.applicationName)"],
+            shortTitle: "Yak Screenshot",
+            systemImageName: "camera.viewfinder"
+        )
+        #endif
         AppShortcut(
             intent: OpenYakIntent(),
             phrases: ["Open a yak in \(.applicationName)"],

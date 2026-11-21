@@ -79,6 +79,17 @@ A link becomes `[page title](url)` under your note. Images aren't accepted yet; 
 
 The App Group and the extension's bundle ID (`me.kyleking.yakshears.share`) are registered automatically by the TestFlight job's cloud signing. When running from Xcode, pick your team on both targets.
 
+## Screenshot to yak
+
+Two ways in, both iOS only:
+
+- **New › Import Screenshots…** shows your recent screenshots. Pick any number and tap Import.
+- **Yak Latest Screenshot**, a Shortcuts action and Siri phrase. It imports the newest screenshot. Bind it to the Action Button or Back Tap (Settings › Accessibility › Touch › Back Tap) for screenshot-to-note in one gesture.
+
+Each screenshot becomes its own yak in `screenshots/`, named for when it was taken. The yak is titled by the first line of text Vision reads from the image, followed by the image and a `::: screenshot-text` div holding everything recognised. That makes the yak searchable by what the screenshot said. The originals are then deleted from Photos. iOS always asks you to confirm that, and declining keeps them; the yaks are made either way.
+
+Images go through `PendingMedia`, a queue outside the vault. The yak holds a `pending-media:` placeholder until the next sync uploads the image to `/media/upload`. The server converts it to JPEG and returns its URL, which replaces the placeholder. A yak waiting on media is held back from sync like one with conflict markers, so no other device ever sees a placeholder. Importing offline just waits for the network.
+
 ## CI and TestFlight
 
 `.github/workflows/apple.yml` runs on every PR that touches `apple/` or the server's sync and auth code, stacked PRs included. It starts the fixture server, tests the package against it, generates the project, and builds for the iOS Simulator and macOS without signing.
