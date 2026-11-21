@@ -1,3 +1,4 @@
+import CoreSpotlight
 import SwiftUI
 import YakShearsKit
 
@@ -53,6 +54,12 @@ struct YakListView: View {
                 await library.reload()
                 selection = path
                 library.requestedPath = nil
+            }
+        }
+        .onContinueUserActivity(CSSearchableItemActionType) { activity in
+            // A Spotlight result: its identifier is the yak's vault path.
+            if let path = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String {
+                library.requestedPath = path
             }
         }
         .onChange(of: scenePhase) { _, phase in

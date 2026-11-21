@@ -90,6 +90,10 @@ Each screenshot becomes its own yak in `screenshots/`, named for when it was tak
 
 Images go through `PendingMedia`, a queue outside the vault. The yak holds a `pending-media:` placeholder until the next sync uploads the image to `/media/upload`. The server converts it to JPEG and returns its URL, which replaces the placeholder. A yak waiting on media is held back from sync like one with conflict markers, so no other device ever sees a placeholder. Importing offline just waits for the network.
 
+## Spotlight
+
+Every yak is indexed with Core Spotlight: its title, full text, category as a keyword, and created and modified dates. System search then finds a yak by anything it says, and tapping a result opens it in the editor. The index updates after each reload with only what changed (`Spotlight/SpotlightIndex.swift`), and deleted yaks are removed.
+
 ## CI and TestFlight
 
 `.github/workflows/apple.yml` runs on every PR that touches `apple/` or the server's sync and auth code, stacked PRs included. It starts the fixture server, tests the package against it, generates the project, and builds for the iOS Simulator and macOS without signing.
