@@ -87,6 +87,27 @@ public struct SyncClient: Sendable {
         _ = try await send(request, accepting: [204])
     }
 
+    /// Upload a photo or video for a yak. The server transcodes it, files it under
+    /// the yak's category, and answers with the URL to embed.
+    public func uploadMedia(_ data: Data, filename: String, for yakPath: String) async throws -> String {
+        struct Uploaded: Decodable { let url: String }
+        let boundary = "yak-\(UUID().uuidString)"
+        var body = Data()
+        func field(_ name: String, _ value: String) {
+            body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n".utf8))
+        }
+        field("yak", yakPath)
+        body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\nContent-Type: application/octet-stream\r\n\r\n".utf8))
+        body.append(data)
+        body.append(Data("\r\n--\(boundary)--\r\n".utf8))
+
+        var request = authorized("media/upload", method: "POST")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+        let (response, _) = try await send(request, accepting: [200])
+        return try JSONDecoder().decode(Uploaded.self, from: response).url
+    }
+
     private func yakPath(_ path: String) -> String {
         "api/v1/yaks/" + path
     }

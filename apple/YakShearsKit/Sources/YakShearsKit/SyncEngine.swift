@@ -9,6 +9,10 @@ public struct SyncReport: Equatable, Sendable {
     public var conflicted: [String] = []
     /// Yaks held back because they still carry markers from an earlier conflict.
     public var unresolved: [String] = []
+    /// Yaks held back because their photos or videos have not reached the server.
+    public var waitingOnMedia: [String] = []
+    /// Media uploaded this sync, as the server URLs now in the yaks.
+    public var mediaUploaded: [String] = []
     /// Yaks that could not be synced this time (a hand-named new yak the server
     /// refuses, a file that could not be read), with the reason. The rest still ran.
     public var failed: [String: String] = [:]
@@ -29,23 +33,32 @@ public actor SyncEngine {
 
     /// - Parameter stateURL: Where the base leases are kept. Keep it outside the
     ///   vault, so it is never mistaken for a yak or exposed in the Files app.
-    public init(vault: Vault, client: SyncClient, stateURL: URL) {
+    private let media: PendingMedia?
+
+    /// - Parameter media: Where photos and videos wait for upload; nil when this
+    ///   device never adds media.
+    public init(vault: Vault, client: SyncClient, stateURL: URL, media: PendingMedia? = nil) {
         self.vault = vault
         self.client = client
         self.baseURL = stateURL
+        self.media = media
     }
 
     public func sync() async throws -> SyncReport {
+        var report = SyncReport()
+        try await uploadMedia(report: &report)
+
         let remote = try await client.manifest()
         let (local, unresolved) = try vault.leases()
+        let waiting = Set(media?.items().map(\.yakPath) ?? []).intersection(local.keys)
         var base = loadBase()
         defer { saveBase(base) }
 
-        var report = SyncReport()
         report.unresolved = unresolved.sorted()
+        report.waitingOnMedia = waiting.sorted()
         let actions = SyncPlanner.plan(
             local: local, remote: Dictionary(uniqueKeysWithValues: remote.map { ($0.path, $0.lease) }), base: base,
-            unresolved: unresolved
+            held: unresolved.union(waiting)
         )
         for action in actions {
             do {
@@ -106,6 +119,28 @@ public actor SyncEngine {
 
         case .forget(let path):
             base[path] = nil
+        }
+    }
+
+    /// Upload queued media and point each yak at the server's copy. Media whose
+    /// yak was deleted is dropped; a failed upload stays queued for the next sync.
+    private func uploadMedia(report: inout SyncReport) async throws {
+        guard let media else { return }
+        for item in media.items() {
+            guard (try? vault.read(item.yakPath)) != nil else {
+                try? media.discard(item)
+                continue
+            }
+            do {
+                let data = try Data(contentsOf: item.file)
+                let url = try await client.uploadMedia(data, filename: item.filename, for: item.yakPath)
+                try media.resolve(item, url: url, in: vault)
+                report.mediaUploaded.append(url)
+            } catch SyncError.unauthorized {
+                throw SyncError.unauthorized
+            } catch {
+                report.failed[item.yakPath] = Self.describe(error)
+            }
         }
     }
 

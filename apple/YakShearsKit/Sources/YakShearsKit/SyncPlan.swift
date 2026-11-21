@@ -29,18 +29,18 @@ public enum SyncPlanner {
     ///   - local: Lease of every yak on this device.
     ///   - remote: Lease of every yak on the server.
     ///   - base: Lease of every yak as of the last successful sync.
-    ///   - unresolved: Yaks on this device still carrying conflict markers, which are
-    ///     held back from upload until the reader resolves them.
+    ///   - held: Yaks on this device that must not upload yet: ones still carrying
+    ///     conflict markers, and ones waiting for their media to reach the server.
     public static func plan(
-        local: [String: String], remote: [String: String], base: [String: String], unresolved: Set<String> = []
+        local: [String: String], remote: [String: String], base: [String: String], held: Set<String> = []
     ) -> [SyncAction] {
         let paths = Set(local.keys).union(remote.keys).union(base.keys).sorted()
         return paths.compactMap { path in
-            action(path: path, local: local[path], remote: remote[path], base: base[path], unresolved: unresolved.contains(path))
+            action(path: path, local: local[path], remote: remote[path], base: base[path], held: held.contains(path))
         }
     }
 
-    static func action(path: String, local: String?, remote: String?, base: String?, unresolved: Bool) -> SyncAction? {
+    static func action(path: String, local: String?, remote: String?, base: String?, held: Bool) -> SyncAction? {
         let localChanged = local != base
         let remoteChanged = remote != base
 
@@ -54,7 +54,7 @@ public enum SyncPlanner {
                 // Deleted here, untouched there. A local change to nil implies a base.
                 return base.map { .deleteRemote(path: path, replacing: $0) }
             }
-            if unresolved { return nil }
+            if held { return nil }
             // A base with no remote is impossible here (remote unchanged == base), so
             // `base` is the lease the server holds, or nil for a yak never uploaded.
             return local == remote ? .adopt(path: path, lease: local) : .upload(path: path, replacing: base)
@@ -67,10 +67,10 @@ public enum SyncPlanner {
                 return .download(path: path)
             case (.some, nil):
                 // Edited here, deleted there: recreate it rather than lose the edit.
-                return unresolved ? nil : .upload(path: path, replacing: nil)
+                return held ? nil : .upload(path: path, replacing: nil)
             case (.some(let local), .some(let remote)):
                 if local == remote { return .adopt(path: path, lease: local) }
-                return unresolved ? nil : .conflict(path: path)
+                return held ? nil : .conflict(path: path)
             }
         }
     }

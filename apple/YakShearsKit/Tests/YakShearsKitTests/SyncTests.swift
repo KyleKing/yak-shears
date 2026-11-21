@@ -62,17 +62,17 @@ import Testing
         // An edit beats a delete, whichever side deleted.
         (nil, "B", "A", false, .download(path: "p")),
         ("B", nil, "A", false, .upload(path: "p", replacing: nil)),
-        // Unresolved markers hold every upload back, but never a download.
+        // A held yak (markers, or media still uploading) never uploads, but still downloads.
         ("B", "A", "A", true, nil),
         ("B", "C", "A", true, nil),
         ("B", nil, "A", true, nil),
     ] as [(String?, String?, String?, Bool, SyncAction?)])
-    func decidesFromThreeLeases(local: String?, remote: String?, base: String?, unresolved: Bool, expected: SyncAction?) {
+    func decidesFromThreeLeases(local: String?, remote: String?, base: String?, held: Bool, expected: SyncAction?) {
         let plan = SyncPlanner.plan(
             local: local.map { ["p": $0] } ?? [:],
             remote: remote.map { ["p": $0] } ?? [:],
             base: base.map { ["p": $0] } ?? [:],
-            unresolved: unresolved ? ["p"] : []
+            held: held ? ["p"] : []
         )
         #expect(plan == (expected.map { [$0] } ?? []))
     }
@@ -102,5 +102,39 @@ import Testing
     ] as [(String, String?, String?, String)])
     func sharedPagesBecomeDjotLinks(note: String, url: String?, title: String?, expected: String) {
         #expect(SharedContent.compose(note: note, url: url.flatMap(URL.init(string:)), title: title) == expected)
+    }
+}
+
+@Suite struct PendingMediaTests {
+    @Test func placeholdersResolveToTheServerURLAndHoldTheYakUntilThen() throws {
+        let scratch = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: scratch) }
+        let vault = Vault(root: scratch.appending(path: "Vault"))
+        let media = PendingMedia(root: scratch.appending(path: "Media"))
+        let path = "screenshots/2026-11-21T09_15_00Z.dj"
+
+        let embed = try media.enqueue(Data([1, 2, 3]), filename: "Screen Shot 1.png", for: path)
+        try vault.write(path, content: "\(embed)\n")
+        let item = try #require(media.items().first)
+
+        #expect(embed == "![Screen Shot 1](\(item.placeholder))")
+        #expect(item.filename == "Screen-Shot-1.png")
+        #expect(item.yakPath == path)
+
+        try media.resolve(item, url: "/media/screenshots/abc.jpg", in: vault)
+
+        #expect(try vault.read(path) == "![Screen Shot 1](/media/screenshots/abc.jpg)\n")
+        #expect(media.items().isEmpty)
+    }
+}
+
+@Suite struct ScreenshotYakTests {
+    @Test(arguments: [
+        (["  Order #1234 confirmed ", "", "Ships Tuesday"], "# Order #1234 confirmed\n\n![s](u)\n\n::: screenshot-text\nOrder #1234 confirmed\nShips Tuesday\n:::\n"),
+        ([], "# Screenshot\n\n![s](u)\n"),
+        ([String(repeating: "a", count: 70)], "# \(String(repeating: "a", count: 60))…\n\n![s](u)\n\n::: screenshot-text\n\(String(repeating: "a", count: 70))\n:::\n"),
+    ])
+    func titlesByTheFirstRecognisedLine(lines: [String], expected: String) {
+        #expect(ScreenshotYak.compose(embed: "![s](u)", recognizedText: lines) == expected)
     }
 }

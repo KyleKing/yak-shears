@@ -13,6 +13,7 @@ struct SyncEngineIntegrationTests {
 
     struct Device {
         let vault: Vault
+        let media: PendingMedia
         let engine: SyncEngine
 
         let category: String
@@ -36,10 +37,12 @@ struct SyncEngineIntegrationTests {
         let scratch = FileManager.default.temporaryDirectory.appending(path: "yak-device-\(UUID().uuidString)")
         let token = try await SyncClient(baseURL: server).signIn(email: "test@example.com", password: "secure123")
         let vault = Vault(root: scratch.appending(path: "Vault"))
+        let media = PendingMedia(root: scratch.appending(path: "Media"))
         let engine = SyncEngine(
-            vault: vault, client: SyncClient(baseURL: server, token: token), stateURL: scratch.appending(path: "sync-base.json")
+            vault: vault, client: SyncClient(baseURL: server, token: token), stateURL: scratch.appending(path: "sync-base.json"),
+            media: media
         )
-        return Device(vault: vault, engine: engine, category: category)
+        return Device(vault: vault, media: media, engine: engine, category: category)
     }
 
     @Test func editsTravelBothWaysAndConflictsAreWovenNotOverwritten() async throws {
@@ -94,6 +97,41 @@ struct SyncEngineIntegrationTests {
 
         #expect(report.failed.keys.sorted() == [handNamed])
         #expect(report.uploaded == [canonical])
+    }
+
+    @Test func mediaUploadsBeforeItsYakAndTheYakPointsAtTheServerCopy() async throws {
+        let phone = try await device()
+        let laptop = try await device()
+        let path = "\(category)/2026-11-21T11_00_00Z.dj"
+        // A 1x1 PNG, which the server transcodes to JPEG.
+        let png = try #require(Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="))
+        let embed = try phone.media.enqueue(png, filename: "dot.png", for: path)
+        try phone.vault.write(path, content: "# Screenshot\n\n\(embed)\n")
+
+        let report = try await phone.engine.sync()
+
+        let url = try #require(report.mediaUploaded.first)
+        #expect(url.hasPrefix("/media/\(category)/") && url.hasSuffix(".jpg"))
+        #expect(report.uploaded.contains(path))
+        #expect(try phone.vault.read(path) == "# Screenshot\n\n![dot](\(url))\n")
+        #expect(phone.media.items().isEmpty)
+        // What reaches other devices names the server's copy, never the placeholder.
+        _ = try await laptop.sync()
+        #expect(try laptop.vault.read(path) == "# Screenshot\n\n![dot](\(url))\n")
+    }
+
+    @Test func aYakWaitsWhileItsMediaCannotUpload() async throws {
+        let phone = try await device()
+        // The server files media by category, so a yak at the vault root cannot take it.
+        let path = "2026-11-21T11_30_00Z-\(category).dj"
+        let embed = try phone.media.enqueue(Data("not an image".utf8), filename: "x.png", for: path)
+        try phone.vault.write(path, content: "\(embed)\n")
+
+        let report = try await phone.engine.sync()
+
+        #expect(report.failed[path] != nil)
+        #expect(report.waitingOnMedia == [path])
+        #expect(!report.uploaded.contains(path))
     }
 
     @Test func aRevokedTokenStopsTheSync() async throws {

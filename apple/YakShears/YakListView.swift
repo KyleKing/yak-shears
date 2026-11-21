@@ -12,6 +12,7 @@ struct YakListView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var selection: YakSummary.ID?
     @State private var isSigningIn = false
+    @State private var isPickingScreenshots = false
 
     var body: some View {
         NavigationSplitView {
@@ -63,6 +64,9 @@ struct YakListView: View {
         .sheet(isPresented: $isSigningIn) {
             SignInView { Task { await library.sync(with: account) } }
         }
+        #if os(iOS)
+        .sheet(isPresented: $isPickingScreenshots) { ScreenshotPickerView() }
+        #endif
     }
 
     private func refresh() async {
@@ -82,6 +86,10 @@ struct YakListView: View {
                 }
                 Divider()
                 Button("No Category") { create(in: nil) }
+                #if os(iOS)
+                Divider()
+                Button("Import Screenshots…", systemImage: "camera.viewfinder") { isPickingScreenshots = true }
+                #endif
             } label: {
                 Label("New Yak", systemImage: "square.and.pencil")
             }

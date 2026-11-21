@@ -47,6 +47,7 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         UILaunchScreen: {}
         # Expose Documents/Vault in the Files app, so yaks can be copied in by hand.
+        NSPhotoLibraryUsageDescription: Yak Shears turns screenshots you pick into yaks, with their text, and can remove the originals from Photos afterwards.
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
         # Plain HTTP only to local addresses, so a dev server on the laptop can be synced
