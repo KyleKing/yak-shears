@@ -138,3 +138,35 @@ import Testing
         #expect(ScreenshotYak.compose(embed: "![s](u)", recognizedText: lines) == expected)
     }
 }
+
+@Suite struct AppLinkTests {
+    @Test(arguments: [
+        (AppLink.open(path: "notes/2026-11-21T09_15_00Z.dj"), "yakshears://open?path=notes/2026-11-21T09_15_00Z.dj"),
+        (AppLink.new(category: "inbox"), "yakshears://new?category=inbox"),
+        (AppLink.new(category: nil), "yakshears://new"),
+        (AppLink.open(path: "a b/c&d.dj"), "yakshears://open?path=a%20b/c%26d.dj"),
+    ])
+    func roundTrips(link: AppLink, expected: String) throws {
+        #expect(link.url.absoluteString == expected)
+        #expect(AppLink(url: link.url) == link)
+    }
+
+    @Test(arguments: ["https://open?path=x", "yakshears://open", "yakshears://delete?path=x"])
+    func rejectsAnythingElse(url: String) throws {
+        #expect(AppLink(url: try #require(URL(string: url))) == nil)
+    }
+
+    @Test func recentYaksKeepTheNewestEditsAndRoundTrip() throws {
+        let scratch = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: scratch) }
+        let summaries = (0..<10).map { index in
+            YakSummary(path: "\(index).dj", title: "Yak \(index)", category: nil, created: nil, modified: Date(timeIntervalSince1970: Double(index)))
+        }
+
+        let recent = RecentYaks(summaries: summaries, conflicts: 2)
+        try recent.write(to: scratch)
+
+        #expect(recent.entries.map(\.title) == (2...9).reversed().map { "Yak \($0)" })
+        #expect(RecentYaks.read(from: scratch) == recent)
+    }
+}

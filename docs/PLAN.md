@@ -153,7 +153,7 @@ Delivered as stacked PRs, each reviewable on its own:
 3. Swift sync engine against `/api/v1`, with conflict handling, plus sign-in and sync in the app (`claude/ios-03-sync-engine`)
 4. Plain native editor with save and offline editing end to end (`claude/ios-04-native-editor`)
 5. Editor behaviour: list continuation, indent, bold and italic, accessory bar, `[[` completion (needs the markup decision)
-6. Integrations, one PR each: App Intents for Siri, Shortcuts, and the Action Button (`claude/ios-06a-app-intents`); then share sheet via an App Group inbox (`claude/ios-06b-share-sheet`), screenshot to yak with attachment upload (`claude/ios-06c-screenshot-to-yak`), Spotlight, and the widget with quick actions
+6. Integrations, one PR each: App Intents for Siri, Shortcuts, and the Action Button (`claude/ios-06a-app-intents`); then share sheet via an App Group inbox (`claude/ios-06b-share-sheet`), screenshot to yak with attachment upload (`claude/ios-06c-screenshot-to-yak`), Spotlight, and widgets with a Control Center control (`claude/ios-06e-widgets`)
 7. Web editor UX fixes, independent of the stack
 
 ## Opportunistic infrastructure

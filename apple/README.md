@@ -11,6 +11,7 @@ apple/
 ├── Shared/           # Source compiled into the app and its extensions (App Group)
 ├── YakShears/         # SwiftUI app (iOS 26, macOS 26)
 ├── YakShearsShare/    # iOS share extension
+├── YakShearsWidgets/  # iOS widgets and Control Center control
 └── YakShearsKit/      # Swift package with the logic, no SwiftUI, tested on Linux and macOS
 ```
 
@@ -93,6 +94,18 @@ Images go through `PendingMedia`, a queue outside the vault. The yak holds a `pe
 ## Spotlight
 
 Every yak is indexed with Core Spotlight: its title, full text, category as a keyword, and created and modified dates. System search then finds a yak by anything it says, and tapping a result opens it in the editor. The index updates after each reload with only what changed (`Spotlight/SpotlightIndex.swift`), and deleted yaks are removed.
+
+## Widgets and controls
+
+`YakShearsWidgets` (iOS) adds:
+
+- **Recent Yaks** on the Home Screen (small, medium, large) and the Lock Screen (rectangular). It shows the yaks edited most recently, each opening in the editor. A ⚠️ marks unresolved conflicts, and a pencil starts a new yak.
+- **New Yak** on the Lock Screen (circular).
+- **New Yak** as a control for Control Center, the Lock Screen's bottom slots, and the Action Button's Controls list.
+
+Widgets can't read the app's Documents, so after each reload the app writes `recent-yaks.json` into the App Group (`RecentYaks`). It asks WidgetKit to redraw only when that snapshot changes, so the widget never polls. Taps come back as `yakshears://open?path=…` and `yakshears://new` (`AppLink`). The control uses the system's `OpenURLIntent`, so the extension runs no app code.
+
+Home-screen icon quick actions are not included. The App Shortcuts from the Siri section already appear in Spotlight and the Shortcuts app, and a static quick-action menu would duplicate them.
 
 ## CI and TestFlight
 

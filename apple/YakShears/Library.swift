@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import WidgetKit
 import YakShearsKit
 
 /// The list's view of the local vault, and the sync that keeps it current.
@@ -45,6 +46,16 @@ final class Library {
         }
     }
 
+    /// Hand the newest yaks to the widgets through the App Group, and have them
+    /// redraw only when that snapshot actually changed.
+    private func publishToWidgets() {
+        guard let container = AppGroup.container else { return }
+        let recent = RecentYaks(summaries: summaries, conflicts: unresolved.count)
+        guard recent != RecentYaks.read(from: container) else { return }
+        try? recent.write(to: container)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     func reload() async {
         let vault = vault
         do {
@@ -56,6 +67,7 @@ final class Library {
             self.unresolved = unresolved
             loadError = nil
             SpotlightIndex.shared.update(with: summaries, vault: vault)
+            publishToWidgets()
         } catch {
             loadError = error.localizedDescription
         }
