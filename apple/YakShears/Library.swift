@@ -66,6 +66,56 @@ final class Library {
         await reload()
     }
 
+    /// Create an empty yak and return its path. If its editor closes with nothing
+    /// written, `discardIfAbandoned` deletes it, so an abandoned "New" leaves nothing.
+    func createYak(in category: String?) async -> String? {
+        do {
+            let path = try vault.create(in: category)
+            freshYaks.insert(path)
+            await reload()
+            return path
+        } catch {
+            loadError = error.localizedDescription
+            return nil
+        }
+    }
+
+    /// Delete a yak locally; the next sync deletes it on the server, provided the
+    /// server still has the version this device last saw.
+    func delete(_ summary: YakSummary) {
+        try? vault.delete(summary.path)
+        summaries.removeAll { $0.id == summary.id }
+        unresolved.remove(summary.path)
+    }
+
+    /// Yaks created on this device and not yet closed, the only ones an empty editor
+    /// may discard. Clearing an existing yak's text is an edit, not a delete.
+    @ObservationIgnored private var freshYaks: Set<String> = []
+
+    /// Called when an editor closes: drop a new yak that was never written in.
+    func discardIfAbandoned(_ summary: YakSummary, text: String) {
+        guard freshYaks.remove(summary.path) != nil, text.isEmpty else { return }
+        delete(summary)
+    }
+
+    /// Category directories for the "New" menu, from the yaks already listed.
+    var categories: [String] {
+        Set(summaries.compactMap(\.category)).sorted()
+    }
+
+    @ObservationIgnored private var pendingSync: Task<Void, Never>?
+
+    /// Sync once things go quiet: each request restarts the wait, so a burst of
+    /// saves while typing becomes one sync a few seconds after the last keystroke.
+    func requestSync(with account: Account, after delay: Duration = .seconds(3)) {
+        pendingSync?.cancel()
+        pendingSync = Task {
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled else { return }
+            await sync(with: account)
+        }
+    }
+
     func content(of summary: YakSummary) async throws -> String {
         let vault = vault
         return try await Task.detached(priority: .userInitiated) { try vault.read(summary.path) }.value

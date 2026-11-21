@@ -56,6 +56,46 @@ public struct Vault: Sendable {
         try String(contentsOf: url(for: path), encoding: .utf8)
     }
 
+    /// Create an empty yak named for `date`, in `category` or the vault root.
+    ///
+    /// Two yaks created in the same second would share a name, so the instant moves
+    /// forward a second at a time until it is free, which keeps the name canonical
+    /// and the listing order true to creation order.
+    ///
+    /// - Returns: The new yak's vault-relative path.
+    @discardableResult
+    public func create(in category: String?, at date: Date = .now) throws -> String {
+        var instant = date
+        while true {
+            let name = "\(CanonicalName.stem(for: instant)).\(CanonicalName.fileExtension)"
+            let path = category.map { "\($0)/\(name)" } ?? name
+            if !FileManager.default.fileExists(atPath: url(for: path).path) {
+                try write(path, content: "")
+                return path
+            }
+            instant = instant.addingTimeInterval(1)
+        }
+    }
+
+    /// Save an edit made against the version whose lease is `replacing`.
+    ///
+    /// A sync can rewrite a yak while it is open. Rather than overwrite what it
+    /// downloaded, a save onto a file that moved weaves the two with conflict markers,
+    /// the same rule the server applies to every write. A yak deleted underneath the
+    /// editor is simply written back, because an edit beats a delete.
+    ///
+    /// - Returns: The text now on disk (the edit, or the woven conflict) and its lease.
+    public func save(_ path: String, content: String, replacing lease: String) throws -> (content: String, lease: String) {
+        let saved: String
+        if let current = try? read(path), Lease.of(current) != lease {
+            saved = ConflictMarkup.weave(theirs: current, mine: content)
+        } else {
+            saved = content
+        }
+        try write(path, content: saved)
+        return (saved, Lease.of(saved))
+    }
+
     /// Write a yak atomically, creating its category directory if needed.
     public func write(_ path: String, content: String) throws {
         let destination = url(for: path)
