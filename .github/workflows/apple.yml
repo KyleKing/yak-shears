@@ -60,6 +60,7 @@ jobs:
           uv sync
           uv run types-for-jinja wrapper
           uv run python scripts/sync_fixture_server.py --port 8765 > "$RUNNER_TEMP/fixture.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/fixture.pid"
           for attempt in $(seq 1 60); do
             curl -s -o /dev/null http://127.0.0.1:8765/ && exit 0
             sleep 1
@@ -71,6 +72,16 @@ jobs:
         env:
           YAK_SHEARS_TEST_SERVER: http://127.0.0.1:8765
         run: swift test --package-path apple/YakShearsKit
+
+      # A running `uv run` holds uv's cache lock, and setup-uv's post-job cache prune
+      # waits on that lock until it times out and fails the job.
+      - name: Stop the sync fixture server
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/fixture.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/fixture.pid")" 2>/dev/null || true
+          fi
+          pkill -f sync_fixture_server.py || true
 
       - name: Generate the Xcode project
         run: xcodegen generate --spec apple/project.yml
