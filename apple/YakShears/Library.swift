@@ -8,11 +8,13 @@ import YakShearsKit
 /// the list draws from local files immediately and sync runs after.
 @MainActor @Observable
 final class Library {
-    /// `Documents/Vault`, which iOS shows under "On My iPhone > Yak Shears" in the Files
-    /// app (`UIFileSharingEnabled`).
-    static var defaultRoot: URL {
-        URL.documentsDirectory.appending(path: "Vault", directoryHint: .isDirectory)
-    }
+    /// The one library in the process. The app's views and its App Intents share it,
+    /// so an intent's sync can never run alongside the app's on the same base file.
+    static let shared = Library(vault: .app)
+
+    /// A yak the app was asked to show (by an intent, a Spotlight result, or a new
+    /// capture); the list selects it and clears this.
+    var requestedPath: String?
 
     enum SyncStatus: Equatable {
         case idle

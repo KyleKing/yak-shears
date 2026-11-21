@@ -54,6 +54,21 @@ YAK_SHEARS_TEST_SERVER=http://127.0.0.1:8765 swift test --package-path apple/Yak
 
 Without `YAK_SHEARS_TEST_SERVER` those tests are skipped. CI always runs them.
 
+## Siri, Shortcuts, and the Action Button
+
+App Intents in `YakShears/Intents/` need no setup; Siri and Shortcuts find them once the app is installed:
+
+| Action          | Runs without opening the app | Siri phrase                         |
+| --------------- | ---------------------------- | ----------------------------------- |
+| New Yak         | yes, then syncs              | "New yak in Yak Shears"             |
+| Append to Yak   | yes, then syncs              | "Append to a yak in Yak Shears"     |
+| Open Yak        | opens the editor             | "Open a yak in Yak Shears"          |
+| Start a Yak     | opens a new, empty yak       | "Start a yak in Yak Shears"         |
+
+For one press from the lock screen to typing, set the Action Button (Settings › Action Button › Shortcut) to **Start a Yak**. For capture without looking, set it to **New Yak**, which asks for dictation.
+
+The intents share the app's `Library.shared` and `Account.shared`, so a sync an intent starts can never overlap the app's own.
+
 ## CI and TestFlight
 
 `.github/workflows/apple.yml` runs on every PR that touches `apple/` or the server's sync and auth code, stacked PRs included. It starts the fixture server, tests the package against it, generates the project, and builds for the iOS Simulator and macOS without signing.

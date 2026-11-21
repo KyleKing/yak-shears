@@ -45,6 +45,14 @@ struct YakListView: View {
             await library.reload()
             await library.sync(with: account)
         }
+        .onChange(of: library.requestedPath, initial: true) { _, path in
+            guard let path else { return }
+            Task {
+                await library.reload()
+                selection = path
+                library.requestedPath = nil
+            }
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 Task { await library.sync(with: account) }

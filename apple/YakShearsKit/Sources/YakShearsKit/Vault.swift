@@ -77,6 +77,46 @@ public struct Vault: Sendable {
         }
     }
 
+    /// Create a yak holding `text`, for captures that arrive from outside the app
+    /// (Siri, Shortcuts, the share sheet).
+    ///
+    /// - Returns: The new yak's vault-relative path.
+    @discardableResult
+    public func capture(_ text: String, in category: String?, at date: Date = .now) throws -> String {
+        let path = try create(in: category, at: date)
+        try write(path, content: Self.endingInNewline(text))
+        return path
+    }
+
+    /// Add `text` as a new paragraph at the end of a yak.
+    public func append(_ text: String, to path: String) throws {
+        let existing = try read(path)
+        let separator = existing.isEmpty ? "" : existing.hasSuffix("\n\n") ? "" : existing.hasSuffix("\n") ? "\n" : "\n\n"
+        try write(path, content: existing + separator + Self.endingInNewline(text))
+    }
+
+    /// Yaks whose title or text contains every word of `query`, ignoring case and
+    /// diacritics, newest first. Title matches rank ahead of body-only matches.
+    public func search(_ query: String) throws -> [YakSummary] {
+        let words = query.split(whereSeparator: \.isWhitespace).map(String.init)
+        let all = try summaries()
+        guard !words.isEmpty else { return all }
+        func matches(_ haystack: String) -> Bool {
+            words.allSatisfy { haystack.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil }
+        }
+        let inTitle = all.filter { matches($0.title) }
+        let titled = Set(inTitle.map(\.path))
+        let inBody = try all.filter { summary in
+            guard !titled.contains(summary.path) else { return false }
+            return matches(try read(summary.path))
+        }
+        return inTitle + inBody
+    }
+
+    private static func endingInNewline(_ text: String) -> String {
+        text.hasSuffix("\n") ? text : text + "\n"
+    }
+
     /// Save an edit made against the version whose lease is `replacing`.
     ///
     /// A sync can rewrite a yak while it is open. Rather than overwrite what it
