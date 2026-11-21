@@ -27,7 +27,9 @@ struct YakDetailView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .task(id: summary.id) {
+        // Keyed on the whole summary, which carries the modified date, so a sync that
+        // rewrites the open yak shows the new text.
+        .task(id: summary) {
             do {
                 content = .success(try await library.content(of: summary))
             } catch {

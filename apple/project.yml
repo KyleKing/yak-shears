@@ -46,6 +46,10 @@ targets:
         # Expose Documents/Vault in the Files app, so yaks can be copied in by hand.
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
+        # Plain HTTP only to local addresses, so a dev server on the laptop can be synced
+        # against from a phone on the same network. Everything else stays HTTPS-only.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: me.kyleking.yakshears
