@@ -149,7 +149,7 @@ Startup latency and iOS integrations drove the move past the homescreen web app 
 Delivered as stacked PRs, each reviewable on its own:
 
 1. Server sync API and bearer tokens (`claude/ios-01-sync-api`)
-2. Xcode project skeleton: native list over local files, macOS CI building and uploading to TestFlight
+2. Xcode project skeleton: native list over local files, macOS CI building and uploading to TestFlight (`claude/ios-02-xcode-skeleton`). XcodeGen spec, iOS 26 / macOS 26, bundle ID `me.kyleking.yakshears`
 3. Swift sync engine against `/api/v1`, with conflict handling
 4. Plain native editor with save and offline editing end to end
 5. Editor behaviour: list continuation, indent, bold and italic, accessory bar, `[[` completion (needs the markup decision)

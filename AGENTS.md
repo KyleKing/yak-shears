@@ -66,6 +66,10 @@ yak_shears/
 ├── _templates/         # Jinja2 HTML templates
 ├── static/             # Static CSS and JS files
 └── cli.py              # CLI Tool for User management
+apple/                  # Native iOS/macOS app (see apple/README.md)
+├── project.yml         # XcodeGen spec; the .xcodeproj is generated, never committed
+├── YakShears/          # SwiftUI app target, kept thin
+└── YakShearsKit/       # Swift package with the logic; `swift test` runs on Linux too
 ```
 
 ### Authentication System

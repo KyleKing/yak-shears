@@ -1,0 +1,62 @@
+# XcodeGen spec. `xcodegen generate --spec apple/project.yml` writes apple/YakShears.xcodeproj,
+# which is not committed: this file is the source of truth for the project.
+name: YakShears
+options:
+  bundleIdPrefix: me.kyleking
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "26.0"
+    macOS: "26.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Empty locally until set in Xcode; CI passes the team on the command line.
+    DEVELOPMENT_TEAM: ""
+
+packages:
+  YakShearsKit:
+    path: YakShearsKit
+
+targets:
+  YakShears:
+    type: application
+    platform: auto
+    supportedDestinations: [iOS, macOS]
+    deploymentTarget:
+      iOS: "26.0"
+      macOS: "26.0"
+    sources:
+      - path: YakShears
+        excludes:
+          - "*.entitlements"
+    dependencies:
+      - package: YakShearsKit
+    info:
+      path: YakShears/Info.plist
+      properties:
+        CFBundleDisplayName: Yak Shears
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.productivity
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen: {}
+        # Expose Documents/Vault in the Files app, so yaks can be copied in by hand.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.kyleking.yakshears
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS[sdk=macosx*]: YakShears/YakShears-macOS.entitlements
+        ENABLE_HARDENED_RUNTIME[sdk=macosx*]: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+
+schemes:
+  YakShears:
+    build:
+      targets:
+        YakShears: all

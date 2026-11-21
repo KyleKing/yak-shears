@@ -1,0 +1,115 @@
+name: Apple
+
+# Builds the native app on every PR that touches it, including PRs stacked on other
+# branches (ci.yaml only runs for PRs into main), and uploads to TestFlight once the
+# App Store Connect secrets exist. See apple/README.md for the one-time setup.
+
+on:
+  pull_request:
+    paths:
+      - apple/**
+      - .github/workflows/apple.yml
+  push:
+    branches: [main]
+    paths:
+      - apple/**
+      - .github/workflows/apple.yml
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+  XCODEGEN_VERSION: 2.44.1
+  XCODEGEN_SHA256: a2e905fb68446e9bb4008cdfe2e13e3f176d0cbcca828b71770f8e53fca91b73
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Install XcodeGen
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" \
+            "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN_VERSION/xcodegen.zip"
+          echo "$XCODEGEN_SHA256  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c -
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
+
+      - name: Test YakShearsKit
+        run: swift test --package-path apple/YakShearsKit
+
+      - name: Generate the Xcode project
+        run: xcodegen generate --spec apple/project.yml
+
+      - name: Build for the iOS Simulator
+        run: |
+          xcodebuild build -quiet -project apple/YakShears.xcodeproj -scheme YakShears \
+            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
+
+      - name: Build for macOS
+        run: |
+          xcodebuild build -quiet -project apple/YakShears.xcodeproj -scheme YakShears \
+            -destination 'generic/platform=macOS' CODE_SIGNING_ALLOWED=NO
+
+  testflight:
+    needs: build
+    runs-on: macos-26
+    # Forks never see the secrets; skip rather than fail.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+      TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+    steps:
+      - name: Check for App Store Connect credentials
+        id: credentials
+        run: |
+          if [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8" ] && [ -n "$TEAM_ID" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::TestFlight upload skipped: add the App Store Connect secrets and APPLE_TEAM_ID variable (apple/README.md)"
+          fi
+
+      - name: Checkout code
+        if: steps.credentials.outputs.present == 'true'
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Install XcodeGen
+        if: steps.credentials.outputs.present == 'true'
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" \
+            "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN_VERSION/xcodegen.zip"
+          echo "$XCODEGEN_SHA256  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c -
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
+
+      - name: Archive and upload to TestFlight
+        if: steps.credentials.outputs.present == 'true'
+        run: |
+          key_path="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          printf '%s' "$ASC_KEY_P8" > "$key_path"
+          auth=(-allowProvisioningUpdates
+                -authenticationKeyPath "$key_path"
+                -authenticationKeyID "$ASC_KEY_ID"
+                -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+
+          xcodegen generate --spec apple/project.yml
+          # The run number only grows, which is all App Store Connect asks of a build number.
+          xcodebuild archive -project apple/YakShears.xcodeproj -scheme YakShears \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/YakShears.xcarchive" \
+            DEVELOPMENT_TEAM="$TEAM_ID" CURRENT_PROJECT_VERSION="${{ github.run_number }}" "${auth[@]}"
+
+          /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM_ID" apple/ExportOptions.plist
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/YakShears.xcarchive" \
+            -exportOptionsPlist apple/ExportOptions.plist -exportPath "$RUNNER_TEMP/export" "${auth[@]}"
+
+      - name: Remove the signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8
