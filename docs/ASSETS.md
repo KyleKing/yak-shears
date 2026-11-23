@@ -12,7 +12,7 @@ any measure: `htmx.min.js` alone is 16.3KB gzipped. Both claims entered in `80ce
 the commit that recorded the design system, so they were aspirations written as fact
 and read as fact for months afterward.
 
-Measured 2026-07-27, gzipped:
+Measured 2026-07-27, gzipped. CodeJar (2.6KB) and `highlight.js` (1.5KB) have since been removed (2026-11, the editor became a plain `<textarea>`):
 
 | asset | size |
 | --- | --- |
@@ -20,8 +20,6 @@ Measured 2026-07-27, gzipped:
 | `js/htmx.min.js` | 16.2KB (vendored) |
 | `js/editor.js` | 10.8KB |
 | `js/search.js` | 2.7KB |
-| `js/codejar.min.js` | 2.6KB (vendored) |
-| `js/highlight.js` | 1.5KB |
 | `js/nav.js` | 0.8KB |
 | everything static | 53.3KB |
 

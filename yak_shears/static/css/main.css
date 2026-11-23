@@ -1413,23 +1413,19 @@ pre code {
 	font-family:
 		ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 	font-size: 0.9375rem;
+	/* A textarea: the browser owns caret, selection, and undo (editor.js) */
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	resize: none;
+	tab-size: 4;
 }
 
 /* Word-wrap toggle (2.5): .wrap re-wraps preview code blocks. The editor's
-   own white-space is set inline by editor.js because CodeJar owns that style. */
+   own white-space is set inline by editor.js so it beats the default above. */
 .editor-container.wrap .preview-content pre,
 .editor-container.wrap .preview-content pre code {
 	white-space: pre-wrap;
-	word-break: break-word;
-}
-
-/* The highlighter wraps Djot code blocks in <pre><code> inside the editor; a
-   nested <pre> keeps the UA default white-space: pre, so the inline pre-wrap on
-   .editor never reaches it. Re-wrap those blocks when the wrap toggle is on. */
-.editor-container.wrap .editor pre,
-.editor-container.wrap .editor pre code {
-	white-space: pre-wrap;
-	overflow-wrap: break-word;
 	word-break: break-word;
 }
 
@@ -1446,16 +1442,6 @@ pre code {
 	border-color: var(--color-accent);
 	border-style: dashed;
 	background: var(--color-surface-alt);
-}
-
-/* The editor holds plain text, so any element node here arrived from a browser
-   drop or paste that slipped past the handlers. Cap it so a dropped photo
-   cannot render at full size and make the note unscrollable. */
-.editor img,
-.editor video {
-	max-width: 100%;
-	max-height: 60vh;
-	height: auto;
 }
 
 /* ============================================================================
@@ -1879,8 +1865,6 @@ pre code {
 	}
 }
 
-.editor pre[class*="language-"],
-.editor code[class*="language-"],
 .preview-content pre[class*="language-"],
 .preview-content code[class*="language-"] {
 	color: var(--code-fg);
@@ -1889,15 +1873,10 @@ pre code {
 	background: none;
 }
 
-.editor pre[class*="language-"],
 .preview-content pre[class*="language-"] {
 	background: var(--code-bg);
 }
 
-.editor .token.comment,
-.editor .token.prolog,
-.editor .token.doctype,
-.editor .token.cdata,
 .preview-content .token.comment,
 .preview-content .token.prolog,
 .preview-content .token.doctype,
@@ -1906,18 +1885,10 @@ pre code {
 	font-style: italic;
 }
 
-.editor .token.punctuation,
 .preview-content .token.punctuation {
 	color: var(--token-punctuation);
 }
 
-.editor .token.number,
-.editor .token.boolean,
-.editor .token.constant,
-.editor .token.symbol,
-.editor .token.property,
-.editor .token.tag,
-.editor .token.deleted,
 .preview-content .token.number,
 .preview-content .token.boolean,
 .preview-content .token.constant,
@@ -1928,12 +1899,6 @@ pre code {
 	color: var(--token-literal);
 }
 
-.editor .token.string,
-.editor .token.char,
-.editor .token.attr-name,
-.editor .token.selector,
-.editor .token.builtin,
-.editor .token.inserted,
 .preview-content .token.string,
 .preview-content .token.char,
 .preview-content .token.attr-name,
@@ -1943,27 +1908,17 @@ pre code {
 	color: var(--token-string);
 }
 
-.editor .token.keyword,
-.editor .token.atrule,
-.editor .token.attr-value,
 .preview-content .token.keyword,
 .preview-content .token.atrule,
 .preview-content .token.attr-value {
 	color: var(--token-keyword);
 }
 
-.editor .token.function,
-.editor .token.class-name,
 .preview-content .token.function,
 .preview-content .token.class-name {
 	color: var(--token-function);
 }
 
-.editor .token.operator,
-.editor .token.entity,
-.editor .token.url,
-.editor .token.variable,
-.editor .token.regex,
 .preview-content .token.operator,
 .preview-content .token.entity,
 .preview-content .token.url,
@@ -1971,21 +1926,6 @@ pre code {
 .preview-content .token.regex {
 	color: var(--token-operator);
 	background: none;
-}
-
-/* Syntax highlighting for editor content (applied by highlight.js) */
-/* TODO: Pick more appropriate colors for these tokens */
-.editor .heading {
-	font-weight: 600;
-}
-.editor .quote {
-	color: var(--color-text-dim);
-}
-.editor .checkbox.checked {
-	color: var(--color-text-dim);
-}
-.editor .checkbox.unchecked {
-	color: var(--color-text-dim);
 }
 
 .page-info {

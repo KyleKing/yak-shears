@@ -20,7 +20,7 @@ What exists today. Sequenced work lives in [PLAN.md](./PLAN.md) and the vision i
 |---------|--------|-------|
 | User authentication | ✅ | Email/password with sessions (in-memory; persistence planned) |
 | Yak listing | ✅ | Pagination, sorting, categories, rendered card previews |
-| Editor | ✅ | CodeJar with live preview, wrap toggle, list indent rules, mobile keyboard toolbar (ADR 0008) |
+| Editor | ✅ | Plain `<textarea>` (CodeJar until 2026-11) with live preview, wrap toggle, list indent rules, mobile keyboard toolbar (ADR 0008) |
 | Search | ✅ | DuckDB word table with fuzzy matching (backend swap planned); reused connection, prefix prefilter, stage timing logs |
 | Frontmatter parsing | ✅ | YAML fences and Apple Notes export format; read-only panel (ADR 0003) |
 | Link extraction | ✅ | `[[wikilinks]]` and `#tags` indexed on save and on the vault scan; repeats collapse to one edge |

@@ -136,7 +136,7 @@ Two consumers with different needs:
   per-keystroke line edits, so if the editing API is the goal, an importable
   extension module matters more than the CLI.
 - **JavaScript, in the editor.** `editor.js` runs these on every keystroke against
-  the CodeJar buffer, so a network round trip is out. That points at a WASM build,
+  the editor buffer, so a network round trip is out. That points at a WASM build,
   which the repo does not have a target for today. Without one, the line
   classification and edit rules stay duplicated in JS and the two copies keep
   drifting, which is the situation now.
