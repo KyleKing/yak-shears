@@ -6,9 +6,13 @@ from warnings import catch_warnings, filterwarnings
 from beartype.roar import BeartypeDecorHintPep585DeprecationWarning
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import RedirectResponse, Response
+from starlette.responses import JSONResponse, RedirectResponse, Response
 
 from . import handlers  # for test mocking
+
+# A client of these paths is a program, which wants a status it can act on rather
+# than a login page to follow.
+API_PATH_PREFIX = "/api/v1/"
 
 # Ignore deprecation warnings only from specific starlette types
 # https://beartype.readthedocs.io/en/latest/api_roar/#pep-585-deprecations
@@ -48,4 +52,10 @@ with catch_warnings():
                 return await call_next(request)
             if handlers.get_user_from_session(request):
                 return await call_next(request)
+            if request.url.path.startswith(API_PATH_PREFIX):
+                return JSONResponse(
+                    {"error": "Authentication required"},
+                    status_code=401,
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
             return RedirectResponse(url=f"/auth/login?redirect={request.url.path}")

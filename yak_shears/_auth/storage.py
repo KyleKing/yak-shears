@@ -14,7 +14,7 @@ from anyio import Path
 
 from .models import HashedPassword, Password, SessionId, User
 from .password import create_password_hash, hash_password, verify_password
-from .tokens import DEFAULT_REVOCATION_PATH, DEFAULT_SECRET_PATH, TokenSigner
+from .tokens import API_TOKEN_TTL_SECONDS, DEFAULT_REVOCATION_PATH, DEFAULT_SECRET_PATH, TokenSigner
 
 DEFAULT_USER_DATA_PATH = SyncPath(__file__).parents[1] / ".yak-shears-users.json"
 
@@ -201,6 +201,14 @@ class UserStore:
         """
         return self._signer.issue(user_id)
 
+    def create_api_token(self, user_id: str) -> SessionId:
+        """Create a long-lived bearer token for a native client.
+
+        Returns:
+            Signed token, verified and revoked exactly like a session token.
+        """
+        return self._signer.issue(user_id, ttl_seconds=API_TOKEN_TTL_SECONDS)
+
     def delete_session(self, session_id: str) -> None:
         """Revoke a session token until its expiry passes."""
         self._signer.revoke(session_id)
@@ -293,6 +301,15 @@ def create_session(user_id: str) -> SessionId:
         New session ID.
     """
     return _default_store.create_session(user_id)
+
+
+def create_api_token(user_id: str) -> SessionId:
+    """Create a long-lived bearer token for a native client.
+
+    Returns:
+        Signed bearer token.
+    """
+    return _default_store.create_api_token(user_id)
 
 
 def delete_session(session_id: str) -> None:

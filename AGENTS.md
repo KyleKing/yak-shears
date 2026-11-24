@@ -56,6 +56,7 @@ yak_shears/
 │   ├── storage.py      # UserStore class for user/session management
 │   ├── handlers.py     # Auth HTTP handlers (login, logout)
 │   └── middleware.py   # Session middleware
+├── _sync/              # Sync API for native clients (/api/v1)
 ├── _yak/               # Yak management
 │   ├── database.py     # DuckDB operations for search index
 │   ├── services.py     # Business logic (CRUD, search, pagination)
@@ -175,6 +176,15 @@ A read-mostly integrity report at `/doctor`, covering attachments, filenames, an
 - Names that are not a timestamp in any known format are listed and never renamed. A hand-written filename is a choice, not a defect
 - A rename that would collide with an existing name is reported instead of resolved
 - Search index: where it resolved to, a warning when that is inside the synced vault, and any stray copy left by the old default
+
+### Sync API
+
+The native iOS/macOS app keeps its own copy of the vault and reconciles it over `/api/v1` (`_sync/`). The server stays the only writer to the vault.
+
+- `POST /api/v1/token` trades `{"email", "password"}` for a bearer token (365 days, `YAK_SHEARS_API_TOKEN_DAYS`), sharing the login rate limit. `DELETE /api/v1/token` revokes the token it carries. Bearer tokens and session cookies are the same signed token, so `Authorization: Bearer` works on every route, `/media/upload` included
+- `GET /api/v1/yaks` is the manifest: every yak's path, lease, and modified time. Hidden directories (`.stversions`) are skipped
+- `GET|PUT|DELETE /api/v1/yaks/{path}`. Leases travel as `ETag`. Updates and deletes send `If-Match`, creates send `If-None-Match: *` and must use a canonical name. A write with neither is refused with 428, and a mismatch answers 412 with the file on disk as the body and its lease as the ETag
+- Unauthenticated `/api/v1/` requests get 401 rather than the login redirect
 
 ## Page Specifications
 

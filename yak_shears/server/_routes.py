@@ -15,6 +15,8 @@ from yak_shears._auth.middleware import AuthMiddleware
 from yak_shears._auth.routes import PUBLIC_PATHS as AUTH_PUBLIC_PATHS
 from yak_shears._auth.routes import ROUTES as AUTH_ROUTES
 from yak_shears._log_utils import log
+from yak_shears._sync.routes import PUBLIC_PATHS as SYNC_PUBLIC_PATHS
+from yak_shears._sync.routes import ROUTES as SYNC_ROUTES
 from yak_shears._yak.routes import ROUTES as YAK_ROUTES
 
 from ._handlers import favicon_handler, not_found, root_handler
@@ -35,6 +37,7 @@ ROUTES = [
     Route("/favicon.ico", endpoint=favicon_handler),
     *YAK_ROUTES,
     *AUTH_ROUTES,
+    *SYNC_ROUTES,
 ]
 
 
@@ -115,7 +118,7 @@ def create_app() -> Starlette:  # pragma: no cover
     """
     app = _base_app(ImmutableStaticFiles(directory="yak_shears/static"))
 
-    public_paths = {r"^/$", r"^/favicon.ico$", r"^/static/.+", *AUTH_PUBLIC_PATHS}
+    public_paths = {r"^/$", r"^/favicon.ico$", r"^/static/.+", *AUTH_PUBLIC_PATHS, *SYNC_PUBLIC_PATHS}
     app.add_middleware(AuthMiddleware, public_paths=public_paths)
     app.add_middleware(SecurityHeadersMiddleware)
 
